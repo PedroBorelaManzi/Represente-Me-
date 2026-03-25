@@ -11,7 +11,7 @@ export default function Landing() {
       <nav className="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <img src={logo} alt="Represente-Me!" className="h-10 w-auto" />
+            <img src={logo} alt="Represente-Me!" className="h-12 w-auto" />
             <div className="hidden md:flex items-center gap-8">
               <a href="#funcionalidades" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Funcionalidades</a>
               <a href="#planos" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Planos</a>
@@ -137,7 +137,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="bg-slate-900 py-12 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <img src={logo} alt="Represente-Me!" className="h-12 w-auto mx-auto mb-6" />
+          <img src={logo} alt="Represente-Me!" className="h-20 w-auto mx-auto mb-6" />
           <p className="text-slate-400 text-sm">
             © 2026 Represente-Me!. Conectando Vendas, Agilizando Processos.
           </p>
@@ -186,3 +186,4 @@ function PricingCard({ title, description, price, features, buttonText, popular 
     </div>
   );
 }
+

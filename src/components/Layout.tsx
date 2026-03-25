@@ -102,7 +102,7 @@ export default function Layout() {
       )}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-slate-100 dark:border-zinc-900">
           <Link to="/" className="block p-4 bg-slate-950 rounded-xl mb-4">
-            <img src={logo} alt="Represente-Me!" className="h-10 w-auto mx-auto" />
+            <img src={logo} alt="Represente-Me!" className="h-14 w-auto mx-auto" />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
             <X className="w-6 h-6" />
@@ -397,3 +397,4 @@ export default function Layout() {
     </div>
   );
 }
+
