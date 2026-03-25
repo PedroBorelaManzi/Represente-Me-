@@ -62,9 +62,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
-        <div className="p-8 text-center bg-slate-950 text-white">
-          <img src={logo} alt="Represente-Me!" className="h-20 w-auto mx-auto mb-4" />
-          <p className="text-indigo-100 text-sm mt-1">Gestão inteligente para representantes</p>
+        <div className="p-8 text-center pt-8">
+          <img src={logo} alt="Represente-Me!" className="h-32 w-auto mx-auto mb-4 object-contain" />
+          <p className="text-slate-500 font-medium text-sm mt-1">Gestão inteligente para representantes</p>
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-5">
