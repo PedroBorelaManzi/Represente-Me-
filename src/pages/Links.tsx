@@ -133,7 +133,7 @@ export default function LinksPage() {
             <button 
               onClick={() => setIsFullScreen(!isFullScreen)}
               className="p-2 hover:bg-slate-50 dark:hover:bg-zinc-900 rounded-xl text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1.5 text-xs font-medium"
-              title={isFullScreen ? "Sair da Expandir" : "Expandir"}
+              title={isFullScreen ? "Contrair" : "Expandir"}
             >
               {isFullScreen ? (
                 <><Minimize2 className="w-4 h-4" /> Contrair</>
