@@ -102,7 +102,7 @@ export default function Layout() {
       )}>
         <div className="flex items-center justify-between pt-8 px-6 border-b border-slate-100 dark:border-zinc-900">
           <Link to="/" className="flex items-center justify-center p-2 mb-6">
-            <img src={logo} alt="Represente-Me!" className="h-24 w-auto mx-auto object-contain" />
+            <img src={logo} alt="Represente-Me!" className="h-32 w-auto mx-auto object-contain" />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
             <X className="w-6 h-6" />
