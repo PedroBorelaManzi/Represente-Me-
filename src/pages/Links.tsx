@@ -115,7 +115,7 @@ export default function LinksPage() {
       <div className={cn(
         "flex flex-col space-y-4 transition-all duration-300",
         isFullScreen 
-          ? "fixed inset-0 z-[60] bg-slate-50 dark:bg-zinc-950 p-4 h-screen w-screen" 
+          ? "h-[calc(100vh-4rem)] bg-slate-50 dark:bg-zinc-950 z-10" 
           : "h-[calc(100vh-10rem)]"
       )}>
         <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -133,12 +133,12 @@ export default function LinksPage() {
             <button 
               onClick={() => setIsFullScreen(!isFullScreen)}
               className="p-2 hover:bg-slate-50 dark:hover:bg-zinc-900 rounded-xl text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1.5 text-xs font-medium"
-              title={isFullScreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+              title={isFullScreen ? "Sair da Expandir" : "Expandir"}
             >
               {isFullScreen ? (
                 <><Minimize2 className="w-4 h-4" /> Contrair</>
               ) : (
-                <><Maximize2 className="w-4 h-4" /> Tela Cheia</>
+                <><Maximize2 className="w-4 h-4" /> Expandir</>
               )}
             </button>
             <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1" />
