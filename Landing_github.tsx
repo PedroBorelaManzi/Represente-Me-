@@ -22,7 +22,7 @@ export default function Landing() {
             </div>
           </div>
         </div>
-      </nav>
+      </section>
 
       {/* Hero Section */}
       <section className="relative pt-24 pb-32 overflow-hidden">
