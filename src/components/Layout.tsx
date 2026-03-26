@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from "react-router-dom";
+﻿import { Outlet, Link, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
 import { MapPin, LayoutDashboard, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -80,7 +80,7 @@ export default function Layout() {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Mapa", href: "/dashboard/map", icon: MapPin },
-    { name: "Integrações", href: "/dashboard/links", icon: LinkIcon },
+    { name: "IntegraÃ§Ãµes", href: "/dashboard/links", icon: LinkIcon },
     { name: "Clientes", href: "/dashboard/clientes", icon: Users },
     { name: "Empresas", href: "/dashboard/empresas", icon: Building2 },
   ];
@@ -101,7 +101,7 @@ export default function Layout() {
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-slate-100 dark:border-zinc-900">
-          <Link to="/" className="block p-4 bg-slate-950 rounded-xl mb-4">
+          <Link to="/" className="flex items-center justify-center p-2 mb-6">
             <img src={logo} alt="Represente-Me!" className="h-24 w-auto mx-auto object-contain" />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
@@ -113,7 +113,7 @@ export default function Layout() {
           <nav className="space-y-1">
 {navigation.map((item) => {
               const isActive = location.pathname === item.href;
-              const isIntegracoes = item.name === "Integrações";
+              const isIntegracoes = item.name === "IntegraÃ§Ãµes";
 
               if (isIntegracoes) {
                 return (
@@ -227,7 +227,7 @@ export default function Layout() {
                   <div className="flex items-center justify-between p-2.5 bg-orange-50">
                     <div className="flex items-center gap-2">
                        <div className="w-2 h-2 rounded-full bg-orange-500" />
-                       <span className="text-xs font-bold text-orange-900">Crítico ({settings.critico_days}D)</span>
+                       <span className="text-xs font-bold text-orange-900">CrÃ­tico ({settings.critico_days}D)</span>
                     </div>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded-md">{stats.critico.length}</span>
                   </div>
@@ -274,14 +274,14 @@ export default function Layout() {
               {user?.email?.charAt(0).toUpperCase() || "U"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 dark:text-zinc-100 truncate">Usuário Ativo</p>
+              <p className="text-sm font-medium text-slate-900 dark:text-zinc-100 truncate">UsuÃ¡rio Ativo</p>
               <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">{user?.email}</p>
             </div>
           </div>
           <div className="mt-4 space-y-1">
             <button onClick={() => setSettingsOpen(true)} className="w-full group flex items-center px-3 py-2 text-sm font-medium text-slate-600 dark:text-zinc-400 rounded-xl hover:bg-slate-50 dark:bg-zinc-950 transition-colors mb-1">
               <Settings className="mr-3 flex-shrink-0 h-5 w-5 text-slate-400 dark:text-zinc-500 group-hover:text-slate-500 dark:text-zinc-400" />
-              Configurações
+              ConfiguraÃ§Ãµes
             </button>
             <button onClick={signOut} className="w-full group flex items-center px-3 py-2 text-sm font-medium text-red-600 rounded-xl hover:bg-red-50 transition-colors">
               <LogOut className="mr-3 flex-shrink-0 h-5 w-5 text-red-500 group-hover:text-red-600" />
@@ -309,7 +309,7 @@ export default function Layout() {
         </div>
       </main>
 
-      {/* Modal de Configurações */}
+      {/* Modal de ConfiguraÃ§Ãµes */}
       <AnimatePresence>
         {settingsOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -317,7 +317,7 @@ export default function Layout() {
               
               {settingsTab === 'menu' && (
                 <>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Configurações</h2>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">ConfiguraÃ§Ãµes</h2>
                   <div className="space-y-2">
                     <button onClick={() => setSettingsTab('alerta')} className="w-full p-3 text-left bg-slate-50 dark:bg-zinc-950 hover:bg-slate-100 rounded-xl font-medium text-slate-800 transition-colors">Configurar Alertas</button>
                     <button onClick={() => setSettingsTab('tema')} className="w-full p-3 text-left bg-slate-50 dark:bg-zinc-950 hover:bg-slate-100 rounded-xl font-medium text-slate-800 transition-colors">Escolher Tema</button>
@@ -352,7 +352,7 @@ export default function Layout() {
                       <input name="alerta" type="number" defaultValue={settings.alerta_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" required />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Crítico (dias)</label>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">CrÃ­tico (dias)</label>
                       <input name="critico" type="number" defaultValue={settings.critico_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" required />
                     </div>
                     <div>
@@ -397,4 +397,5 @@ export default function Layout() {
     </div>
   );
 }
+
 
