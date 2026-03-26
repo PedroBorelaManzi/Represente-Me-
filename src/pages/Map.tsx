@@ -45,6 +45,20 @@ export default function MapPage() {
     loadClients();
   }, []);
 
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCenter([position.coords.latitude, position.coords.longitude]);
+          setZoom(14);
+        },
+        (error) => {
+          console.error("Erro ao obter localização:", error);
+        }
+      );
+    }
+  }, []);
+
   const handleMarkerDrag = async (id: string, latlng: { lat: number, lng: number }) => {
     const { error } = await supabase
       .from("clients")
