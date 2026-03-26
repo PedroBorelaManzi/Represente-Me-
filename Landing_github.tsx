@@ -22,7 +22,7 @@ export default function Landing() {
             </div>
           </div>
         </div>
-      </section>
+      </nav>
 
       {/* Hero Section */}
       <section className="relative pt-24 pb-32 overflow-hidden">
@@ -132,7 +132,7 @@ export default function Landing() {
             />
           </div>
         </div>
-      </nav>
+      </section>
 
       {/* Footer */}
       <footer className="bg-slate-900 py-12 border-t border-slate-800">
