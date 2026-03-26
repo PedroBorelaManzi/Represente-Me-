@@ -145,7 +145,14 @@ export default function ClientDetailsPage() {
       });
       
       await Promise.all(filesPromises);
-      setCategories([...uniqueCats]);
+      
+      // Normalizar usando o settings.categories do contexto global
+      const normalizedCats = [...uniqueCats].map(cat => {
+          const matched = settings.categories?.find(c => c.toLowerCase() === cat.toLowerCase());
+          return matched || cat;
+      });
+      
+      setCategories([...new Set(normalizedCats)]);
     }
   };
 
@@ -154,7 +161,8 @@ export default function ClientDetailsPage() {
     loadClient();
     loadFiles();
     loadCategories();
-  }, [id, user]);
+  }, [id, user, settings.categories]); // Adicionado settings.categories como dependência
+
   useEffect(() => {
     if (selectedFile) {
       handleAnalyzePDF();
@@ -164,26 +172,38 @@ export default function ClientDetailsPage() {
 
   const handleDeleteCategory = (categoryToDelete: string) => {
     if (!window.confirm(`Deseja realmente excluir a categoria "${categoryToDelete}"?`)) return;
-    const updated = categories.filter(cat => cat !== categoryToDelete);
+    const updated = categories.filter(cat => cat.toLowerCase() !== categoryToDelete.toLowerCase());
     setCategories(updated);
     setSelectedCategory(updated.length > 0 ? updated[0] : "");
   };
 
   const saveNewCategory = async () => {
-    if (newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
+    if (newCategoryName.trim()) {
       const catName = newCategoryName.trim();
-      const updated = [...categories, catName];
-      setCategories(updated);
-      setSelectedCategory(catName);
       
-      // Persistir globalmente para aparecer em "Empresas"
-      const currentGlobal = (settings.categories || []);
-      if (!currentGlobal.includes(catName)) {
+      // Verificar se já existe (ignorando case)
+      const exists = settings.categories?.some(c => c.toLowerCase() === catName.toLowerCase()) || 
+                     categories.some(c => c.toLowerCase() === catName.toLowerCase());
+      
+      if (!exists) {
+        const updated = [...categories, catName];
+        setCategories(updated);
+        setSelectedCategory(catName);
+        
+        // Persistir globalmente para aparecer em "Empresas"
+        const currentGlobal = (settings.categories || []);
         await updateSettings({ categories: [...currentGlobal, catName] });
+        
+        setNewCategoryName("");
+        setIsCreatingCategory(false);
+      } else {
+          // Se existe, apenas seleciona a existente
+          const existing = settings.categories?.find(c => c.toLowerCase() === catName.toLowerCase()) || 
+                           categories.find(c => c.toLowerCase() === catName.toLowerCase());
+          if (existing) setSelectedCategory(existing);
+          setNewCategoryName("");
+          setIsCreatingCategory(false);
       }
-      
-      setNewCategoryName("");
-      setIsCreatingCategory(false);
     }
   };
 
@@ -206,14 +226,16 @@ export default function ClientDetailsPage() {
       .upload(path, selectedFile, { upsert: true });
 
     if (!error) {
-      // Garantir que a categoria esteja no global settings
-      if (!settings.categories?.includes(selectedCategory)) {
+      // Garantir que a categoria esteja no global settings (ignora case)
+      const alreadyInGlobal = settings.categories?.some(c => c.toLowerCase() === selectedCategory.toLowerCase());
+      if (!alreadyInGlobal) {
         const currentGlobal = settings.categories || [];
         await updateSettings({ categories: [...currentGlobal, selectedCategory] });
       }
 
       // Safely update category_last_contact in db
-            const currentCats = client?.category_last_contact || {};
+      const currentCats = client?.category_last_contact || {};
+      // Atualizar no DB respeitando o case da categoria atual
       const updatedCats = { 
         ...currentCats, 
         [selectedCategory]: new Date().toISOString() 
@@ -284,6 +306,9 @@ export default function ClientDetailsPage() {
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>;
   if (!client) return null;
 
+  // Lista definitiva de categorias (Settings + Descobertas locais) normalizada
+  const allAvailableCategories = [...new Set([...(settings.categories || []), ...categories])];
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -346,7 +371,10 @@ export default function ClientDetailsPage() {
               {files.map((file) => {
                 const parts = file.name.split("___");
                 const hasCategory = parts.length > 1;
-                const categoryName = hasCategory ? parts[0] : "Documento";
+                const rawCategory = hasCategory ? parts[0] : "Documento";
+                const matchedCat = settings.categories?.find(c => c.toLowerCase() === rawCategory.toLowerCase());
+                const categoryName = matchedCat || rawCategory;
+
                 const actualName = hasCategory ? parts.slice(1).join("___") : file.name;
                 const uploadDate = new Date(file.created_at).toLocaleDateString('pt-BR');
                 const uploadTime = new Date(file.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -424,10 +452,10 @@ export default function ClientDetailsPage() {
                          className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-900 dark:text-zinc-100"
                          required
                        >
-                         {categories.length === 0 && (
+                         {allAvailableCategories.length === 0 && (
                            <option value="" disabled>Escolha ou digite...</option>
                          )}
-                         {[...new Set([...(settings.categories || []), ...categories])].map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                         {allAvailableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                        </select>
                        
                        {selectedCategory && (

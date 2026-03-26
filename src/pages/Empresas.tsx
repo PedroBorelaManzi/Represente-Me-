@@ -8,11 +8,11 @@ import { Link } from "react-router-dom";
 
 export default function EmpresasPage() {
   const { user } = useAuth();
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, loading: settingsLoading } = useSettings();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [newCat, setNewCat] = useState("");
   const [allOrders, setAllOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newCat, setNewCat] = useState("");
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -36,6 +36,7 @@ export default function EmpresasPage() {
     if (!error && clients) {
       const orders: any[] = [];
       const discoveredCategories = new Set<string>();
+      const currentGlobal = settings.categories || [];
       
       const filesPromises = clients.map(async (client: any) => {
          const { data: files } = await supabase.storage
@@ -46,7 +47,11 @@ export default function EmpresasPage() {
              files.forEach((file: any) => {
                  const parts = file.name.split("___");
                  const hasCategory = parts.length > 1;
-                 const categoryName = hasCategory ? parts[0] : "Documento";
+                 const rawCategory = hasCategory ? parts[0] : "Documento";
+                 
+                 // Normalizar o nome da categoria usando as configurações globais (ignora case)
+                 const matchedCat = currentGlobal.find(c => c.toLowerCase() === rawCategory.toLowerCase());
+                 const categoryName = matchedCat || rawCategory;
                  
                  if (hasCategory) discoveredCategories.add(categoryName);
                  
@@ -69,9 +74,11 @@ export default function EmpresasPage() {
 
       await Promise.all(filesPromises);
       
-      // Sincronizar categorias descobertas com o Settings global
-      const currentGlobal = settings.categories || [];
-      const newCats = [...discoveredCategories].filter(c => !currentGlobal.includes(c));
+      // Sincronizar categorias descobertas (ignora case para evitar duplicatas)
+      const newCats = [...discoveredCategories].filter(c => 
+          !currentGlobal.some(gc => gc.toLowerCase() === c.toLowerCase())
+      );
+      
       if (newCats.length > 0) {
           await updateSettings({ categories: [...currentGlobal, ...newCats] });
       }
@@ -83,15 +90,20 @@ export default function EmpresasPage() {
   };
 
   useEffect(() => {
-    loadOrders();
-  }, [user]);
+    if (!settingsLoading) {
+       loadOrders();
+    }
+  }, [user, settingsLoading]);
 
   const addCategory = async () => {
-    if (newCat.trim() && !settings.categories?.includes(newCat.trim())) {
+    if (newCat.trim() && !settings.categories?.some(c => c.toLowerCase() === newCat.trim().toLowerCase())) {
       const updated = [...(settings.categories || []), newCat.trim()];
       await updateSettings({ categories: updated });
       setNewCat("");
       if (!selectedCategory) setSelectedCategory(newCat.trim());
+    } else if (newCat.trim()) {
+        alert("Esta empresa já existe!");
+        setNewCat("");
     }
   };
 
@@ -108,23 +120,24 @@ export default function EmpresasPage() {
       }
       
       const oldCat = editingCategory;
-      const newCat = editNameInput.trim();
+      const newCatName = editNameInput.trim();
 
       setLoading(true);
 
       try {
-          const { data: clients } = await supabase.from("clients").select("id, faturamento");
+          const { data: clients } = await supabase.from("clients").select("id, faturamento, category_last_contact");
           if (clients) {
               for (const client of clients) {
-                  // 1. Rename files in storage
+                  // 1. Rename files in storage (case-insensitive search)
                   const { data: files } = await supabase.storage
                     .from("client_vault")
                     .list(`${user?.id}/${client.id}`);
                   
                   if (files) {
                       for (const file of files) {
-                          if (file.name.startsWith(oldCat + "___")) {
-                              const newName = file.name.replace(oldCat + "___", newCat + "___");
+                          const parts = file.name.split("___");
+                          if (parts.length > 0 && parts[0].toLowerCase() === oldCat.toLowerCase()) {
+                              const newName = file.name.replace(parts[0], newCatName);
                               const oldPath = `${user?.id}/${client.id}/${file.name}`;
                               const newPath = `${user?.id}/${client.id}/${newName}`;
                               await supabase.storage.from("client_vault").copy(oldPath, newPath);
@@ -133,26 +146,54 @@ export default function EmpresasPage() {
                       }
                   }
 
-                  // 2. Update faturamento table row
+                  // 2. Update faturamento and categories table row (with case correction)
+                  let needsUpdate = false;
                   const fat = client.faturamento || {};
-                  if (fat[oldCat] !== undefined) {
-                      fat[newCat] = fat[oldCat];
-                      delete fat[oldCat];
-                      await supabase.from("clients").update({ faturamento: fat }).eq("id", client.id);
+                  const lastContact = client.category_last_contact || {};
+
+                  // Verificar faturamento (procurar por qualquer case do nome antigo)
+                  Object.keys(fat).forEach(key => {
+                      if (key.toLowerCase() === oldCat.toLowerCase()) {
+                          const val = fat[key];
+                          delete fat[key];
+                          fat[newCatName] = val;
+                          needsUpdate = true;
+                      }
+                  });
+
+                  // Verificar last contact
+                  Object.keys(lastContact).forEach(key => {
+                      if (key.toLowerCase() === oldCat.toLowerCase()) {
+                          const val = lastContact[key];
+                          delete lastContact[key];
+                          lastContact[newCatName] = val;
+                          needsUpdate = true;
+                      }
+                  });
+
+                  if (needsUpdate) {
+                      await supabase.from("clients").update({ 
+                          faturamento: fat,
+                          category_last_contact: lastContact
+                      }).eq("id", client.id);
                   }
               }
           }
 
-          // 3. Save core settings
-          const updated = (settings.categories || []).map(c => c === oldCat ? newCat : c);
+          // 3. Save core settings (remove duplicates, use new name)
+          const updated = (settings.categories || [])
+             .filter(c => c.toLowerCase() !== oldCat.toLowerCase())
+             .concat(newCatName);
+          
           await updateSettings({ categories: updated });
 
-          if (selectedCategory === oldCat) {
-              setSelectedCategory(newCat);
+          if (selectedCategory.toLowerCase() === oldCat.toLowerCase()) {
+              setSelectedCategory(newCatName);
           }
           await loadOrders();
       } catch (err) {
           console.error("Erro no rename sync:", err);
+          alert("Erro ao renomear: " + (err instanceof Error ? err.message : String(err)));
       } finally {
           setLoading(false);
           setIsEditModalOpen(false);
@@ -160,10 +201,10 @@ export default function EmpresasPage() {
   };
 
   const handleDeleteSub = async () => {
-      if (window.confirm(`Deseja realmente excluir a empresa/categoria "${editingCategory}"?`)) {
-          const updated = (settings.categories || []).filter(c => c !== editingCategory);
+      if (window.confirm(`Deseja realmente excluir a empresa/categoria "${editingCategory}"? TODOS os arquivos e dados vinculados serão mantidos, mas a categoria não aparecerá mais nos filtros.`)) {
+          const updated = (settings.categories || []).filter(c => c.toLowerCase() !== editingCategory.toLowerCase());
           await updateSettings({ categories: updated });
-          if (selectedCategory === editingCategory) {
+          if (selectedCategory.toLowerCase() === editingCategory.toLowerCase()) {
              setSelectedCategory(updated.length > 0 ? updated[0] : "");
           }
           setIsEditModalOpen(false);
@@ -174,25 +215,35 @@ export default function EmpresasPage() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
 
-  // Compute Totals
+  // Compute Totals (Case-Insensitive)
   const catTotals = (settings.categories || []).reduce((acc: any, cat: string) => {
-      acc[cat] = allOrders.filter(o => o.category === cat).reduce((s, o) => s + o.value, 0);
+      acc[cat] = allOrders
+          .filter(o => o.category.toLowerCase() === cat.toLowerCase())
+          .reduce((s, o) => s + o.value, 0);
       return acc;
   }, {});
 
   const totalGeral = Object.values(catTotals).reduce((sum: number, val: any) => sum + Number(val), 0) as number;
 
-  const filteredOrders = allOrders.filter(o => o.category === selectedCategory);
+  const filteredOrders = allOrders.filter(o => o.category.toLowerCase() === selectedCategory.toLowerCase());
   const totalCategory = filteredOrders.reduce((sum, o) => sum + o.value, 0);
 
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-          <Building2 className="w-7 h-7 text-indigo-600" /> Empresas e Representações
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Gerencie suas representações e visualize todos os pedidos vinculados.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+            <Building2 className="w-7 h-7 text-indigo-600" /> Empresas e Representações
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Gerencie suas representações e visualize todos os pedidos vinculados.</p>
+        </div>
+        <button 
+          onClick={() => loadOrders()} 
+          className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold px-3 py-1.5 bg-indigo-50 dark:bg-zinc-900 rounded-lg border border-indigo-100 dark:border-zinc-800 transition-colors"
+        >
+          Sincronizar Agora
+        </button>
       </div>
 
       {/* 🟢 Consolidated Total Revenue Card */}
@@ -221,14 +272,14 @@ export default function EmpresasPage() {
                      key={cat}
                      onClick={() => setSelectedCategory(cat)}
                      className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
-                       selectedCategory === cat 
+                       selectedCategory.toLowerCase() === cat.toLowerCase() 
                          ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-200" 
                          : "border-slate-100 dark:border-zinc-850 hover:bg-slate-50 dark:hover:bg-zinc-950 text-slate-700 dark:text-zinc-300"
                      }`}
                    >
                      <div className="flex flex-col truncate flex-1">
                        <div className="flex items-center gap-2 truncate">
-                          <Building2 className={`w-4 h-4 ${selectedCategory === cat ? "text-indigo-600" : "text-slate-400"}`} />
+                          <Building2 className={`w-4 h-4 ${selectedCategory.toLowerCase() === cat.toLowerCase() ? "text-indigo-600" : "text-slate-400"}`} />
                           <span className="font-bold text-sm truncate">{cat}</span>
                        </div>
                        <span className="text-sm font-black text-indigo-600 dark:text-indigo-400 mt-1 pl-6">

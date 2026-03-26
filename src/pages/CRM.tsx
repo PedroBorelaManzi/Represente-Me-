@@ -1,11 +1,11 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import React from "react";
 import { Users, Search, Plus, Phone, Mail, AlertCircle, Trash2, ExternalLink, Loader2, Building2, Info, X, Edit, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { useSettings } from "../contexts/SettingsContext"; // Added
-import { useAuth } from "../contexts/AuthContext"; // Added
+import { useSettings } from "../contexts/SettingsContext";
+import { useAuth } from "../contexts/AuthContext";
 
 export interface Client {
   id: string;
@@ -20,19 +20,16 @@ export interface Client {
 }
 
 export default function CRMPage() {
-  const { user } = useAuth(); // Added
-  const { settings } = useSettings(); // Added
+  const { user } = useAuth();
+  const { settings } = useSettings();
   const [clients, setClients] = useState<Client[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"Todos" | "Alerta" | "Critico" | "Perda">("Todos");
   const [isSearchingCnpj, setIsSearchingCnpj] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Novos estados para o Modal
-    // Novos estados para o Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Estados para Filtros
   const [filterName, setFilterName] = useState("");
   const [filterCnpj, setFilterCnpj] = useState("");
   const [filterStatus, setFilterStatus] = useState("Todos");
@@ -49,7 +46,6 @@ export default function CRMPage() {
   });
   const [submitting, setSubmitting] = useState(false);
 
-    // Estados para Edição
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<any>(null);
   const [editFormData, setEditFormData] = useState<any>({
@@ -85,7 +81,11 @@ export default function CRMPage() {
          clientFiles.forEach((f: any) => {
              const parts = f.file_name.split("___");
              if (parts.length > 1) {
-                 const cat = parts[0];
+                 const rawCat = parts[0];
+                 // Normalizar o nome da categoria usando as configurações globais (ignora case)
+                 const matchedCat = settings.categories?.find(c => c.toLowerCase() === rawCat.toLowerCase());
+                 const cat = matchedCat || rawCat;
+
                  const date = new Date(f.created_at).getTime();
                  if (!lastDates[cat] || date > lastDates[cat]) {
                       lastDates[cat] = date;
@@ -120,7 +120,7 @@ export default function CRMPage() {
     if (user) {
       loadClients();
     }
-  }, [user]);
+  }, [user, settings.categories]); // Adicionado settings.categories como dependência
 
   const getInactivityDays = (lastContactStr: string) => {
     if (!lastContactStr) return 0;
@@ -169,13 +169,13 @@ export default function CRMPage() {
         city: data.municipio || prev.city
       }));
     } catch (err) {
-      alert("Não foi poss\u00EDvel buscar os dados do CNPJ. Preencha manualmente.");
+      alert("Não foi possível buscar os dados do CNPJ. Preencha manualmente.");
     } finally {
       setIsSearchingCnpj(false);
     }
   };
 
-    const handleEditSubmit = async (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editFormData.name || !editingClient) return;
     setSubmitting(true);
@@ -217,7 +217,6 @@ export default function CRMPage() {
         lat = parseFloat(geoData[0].lat);
         lng = parseFloat(geoData[0].lon);
       } else if (newClient.city) {
-        // Fallback to City Only
         const cityQuery = `${newClient.city}, Brasil`;
         const cityRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityQuery)}`);
         const cityData = await cityRes.json();
@@ -244,8 +243,7 @@ export default function CRMPage() {
     setSubmitting(false);
   };
 
-    const filteredClients = clients.filter(c => {
-    // Structured Filters
+  const filteredClients = clients.filter(c => {
     const matchesName = !filterName || c.name.toLowerCase().includes(filterName.toLowerCase());
     const matchesCnpj = !filterCnpj || (c.cnpj && c.cnpj.includes(filterCnpj));
     const matchesCity = !filterCity || (c.city && c.city.toLowerCase().includes(filterCity.toLowerCase()));
@@ -253,7 +251,6 @@ export default function CRMPage() {
     const computedStatus = days >= 365 ? "Inativo" : "Ativo";
     const matchesStatus = filterStatus === "Todos" || computedStatus === filterStatus;
     
-    // Top-right general Searchbar Match (kept for backwards-comp or general search)
     const matchesSearch = !searchQuery.trim() || c.name.toLowerCase().includes(searchQuery.toLowerCase()) || (c.cnpj && c.cnpj.includes(searchQuery));
     
     if (!(matchesName && matchesCnpj && matchesCity && matchesStatus && matchesSearch)) return false;
@@ -264,21 +261,13 @@ export default function CRMPage() {
     return alertTypes.includes(activeTab);
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ativo": return "bg-indigo-50 text-indigo-700 border-indigo-100";
-      case "Em Negociação": return "bg-blue-50 text-blue-700 border-blue-100";
-      case "Inativo": return "bg-slate-50 dark:bg-zinc-950 text-slate-600 dark:text-zinc-400 border-slate-100 dark:border-zinc-900";
-      case "Prospect": return "bg-purple-50 text-purple-700 border-purple-100";
-      default: return "bg-slate-50 dark:bg-zinc-950 text-slate-600 dark:text-zinc-400 border-slate-100 dark:border-zinc-900";
-    }
-  };
-
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100">Gestão de Clientes</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+            <Users className="w-7 h-7 text-indigo-600" /> Gestão de Clientes
+          </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Monitore sua carteira e alertas de inatividade.</p>
         </div>
         
@@ -316,7 +305,6 @@ export default function CRMPage() {
          <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>
       ) : (
         <>
-                    {/* Barra de Filtros */}
           <AnimatePresence>
             {showFilters && (
               <motion.div
@@ -351,7 +339,7 @@ export default function CRMPage() {
             )}
           </AnimatePresence>
 
-          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-zinc-800 pb-px">
+          <div className="flex items-center gap-2 border-b border-slate-200 dark:border-zinc-800 pb-px overflow-x-auto scroller-hidden">
             {(["Todos", "Alerta", "Critico", "Perda"] as const).map((tab) => {
               const count = clients.filter(c => {
                 const alertTypes = ((c as any).alerts || []).map((a: any) => a.type);
@@ -362,7 +350,7 @@ export default function CRMPage() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`pb-3 px-2 text-sm font-medium border-b-2 transition-colors -mb-px ${activeTab === tab ? "border-indigo-600 text-indigo-700" : "border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300"}`}
+                  className={`pb-3 px-2 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${activeTab === tab ? "border-indigo-600 text-indigo-700" : "border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300"}`}
                 >
                   {tab === "Todos" ? "Todos os Clientes" : tab === "Critico" ? `Crítico (${settings.critico_days}D)` : tab === "Alerta" ? `Alerta (${settings.alerta_days}D)` : `Perda (${settings.perda_days}D+)`}
                   <span className={`ml-2 px-1.5 py-0.5 rounded-md text-xs font-bold ${activeTab === tab ? "bg-indigo-100 text-indigo-800" : "bg-slate-100 text-slate-600 dark:text-zinc-400"}`}>
@@ -373,62 +361,57 @@ export default function CRMPage() {
             })}
           </div>
 
-          <div className="hidden md:block bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm dark:shadow-none overflow-hidden">
+          <div className="hidden md:block bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
+              <table className="min-w-full divide-y divide-slate-200 dark:divide-zinc-800">
                 <thead className="bg-slate-50 dark:bg-zinc-950">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase">Cliente</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase">Contato</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase">Status</th>
-                                        <th className="relative px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase">Ações</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Cliente</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Contato</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Status/Alertas</th>
+                    <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-zinc-900 divide-y divide-slate-200">
+                <tbody className="bg-white dark:bg-zinc-900 divide-y divide-slate-100 dark:divide-zinc-850">
                   {filteredClients.map((client, i) => {
-                    const days = getInactivityDays(client.last_contact);
-                    const alert = getAlertStatus(days);
-
                     return (
                       <motion.tr 
                         key={client.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05, duration: 0.3 }}
-                        className="hover:bg-slate-50 dark:bg-zinc-950 transition-colors group"
+                        className="hover:bg-slate-50 dark:hover:bg-zinc-950 transition-colors group"
                       >
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-5 whitespace-nowrap">
                            <Link to={`/dashboard/clientes/${client.id}`} className="flex items-center hover:opacity-80 transition-opacity">
-                            <div className="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+                            <div className="h-11 w-11 flex-shrink-0 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center text-indigo-700 dark:text-indigo-400 font-bold text-lg border border-indigo-100 dark:border-indigo-900/40">
                               {client.name.charAt(0)}
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-bold text-slate-900 dark:text-zinc-100 group-hover:text-indigo-600 transition-colors">{client.name}</div>
-                              <div className="text-sm text-slate-500 dark:text-zinc-400">{client.cnpj}</div>
+                              <div className="text-sm font-black text-slate-900 dark:text-zinc-100 group-hover:text-indigo-600 transition-colors">{client.name}</div>
+                              <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">{client.cnpj}</div>
                             </div>
                           </Link>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-slate-900 dark:text-zinc-100 flex items-center gap-1.5 mb-1"><Phone className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" /> {client.phone || "N/A"}</div>
-                          <div className="text-sm text-slate-500 dark:text-zinc-400 flex items-center gap-1.5"><Mail className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" /> {client.email || "N/A"}</div>
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="text-sm text-slate-700 dark:text-zinc-300 flex items-center gap-2 mb-1"><Phone className="w-3.5 h-3.5 text-slate-400" /> {client.phone || "N/A"}</div>
+                          <div className="text-[11px] text-slate-400 dark:text-zinc-500 flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-slate-300" /> {client.email || "N/A"}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex flex-wrap gap-1">
+                        <td className="px-6 py-5 whitespace-nowrap">
+                          <div className="flex flex-wrap gap-1.5 max-w-xs">
                             {((client as any).alerts || []).map((a: any, idx: number) => (
-                               <span key={idx} className={`px-2 py-0.5 rounded text-[10px] font-bold border ${a.type === "Perda" ? "bg-red-50 text-red-700 border-red-100" : a.type === "Critico" ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}>
-                                  {a.company} ({a.days}D)
-                               
+                               <span key={idx} className={`px-2 py-0.5 rounded-lg text-[10px] font-black border uppercase tracking-tighter ${a.type === "Perda" ? "bg-red-50 text-red-700 border-red-100" : a.type === "Critico" ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}>
+                                  {a.company} • {a.days}D
                                </span>
                             ))}
-                            {((client as any).alerts || []).length === 0 && <span className="text-emerald-700 dark:text-emerald-400 text-xs font-bold">Sem Atrasos</span>}
+                            {((client as any).alerts || []).length === 0 && <span className="text-emerald-600 dark:text-emerald-500 text-xs font-black flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5"/> Em dia</span>}
                           </div>
                         </td>
-                        
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className="px-6 py-5 whitespace-nowrap text-right">
+                          <div className="flex items-center justify-end gap-1.5">
                             <Link 
                               to={`/dashboard/clientes/${client.id}`}
-                              className="p-1.5 text-slate-400 dark:text-zinc-500 hover:text-indigo-600 rounded-lg hover:bg-white dark:bg-zinc-900 border border-transparent hover:border-slate-100 dark:border-zinc-900 transition-all"
+                              className="p-2 text-slate-400 dark:text-zinc-500 hover:text-indigo-600 rounded-xl hover:bg-indigo-50 dark:hover:bg-zinc-800 transition-all border border-transparent hover:border-indigo-100 dark:hover:border-zinc-700"
                               title="Ver Ficha"
                             >
                               <ExternalLink className="w-4 h-4" />
@@ -436,25 +419,17 @@ export default function CRMPage() {
                             <button 
                               onClick={() => {
                                 setEditingClient(client);
-                                setEditFormData({
-                                  name: client.name || "",
-                                  cnpj: client.cnpj || "",
-                                  address: client.address || "",
-                                  phone: client.phone || "",
-                                  email: client.email || "",
-                                  city: client.city || "",
-                                  last_contact: client.last_contact || ""
-                                });
+                                setEditFormData({ ...client });
                                 setIsEditModalOpen(true);
                               }}
-                              className="p-1.5 text-slate-400 dark:text-zinc-500 hover:text-indigo-600 rounded-lg hover:bg-white dark:bg-zinc-900 border border-transparent hover:border-slate-100 dark:border-zinc-900 transition-all"
+                              className="p-2 text-slate-400 dark:text-zinc-500 hover:text-indigo-600 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition-all"
                               title="Editar"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => handleDelete(client.id)}
-                              className="p-1.5 text-slate-400 dark:text-zinc-500 hover:text-red-600 rounded-lg hover:bg-white dark:bg-zinc-900 border border-transparent hover:border-slate-100 dark:border-zinc-900 transition-all"
+                              className="p-2 text-slate-400 dark:text-zinc-500 hover:text-red-600 rounded-xl hover:bg-red-50 dark:hover:bg-zinc-800 transition-all"
                               title="Excluir"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -469,10 +444,8 @@ export default function CRMPage() {
             </div>
           </div>
 
-          {/* Visão Mobile (Cards) */}
           <div className="md:hidden space-y-3">
-            {filteredClients.map((client: any, i: number) => {
-              return (
+            {filteredClients.map((client: any, i: number) => (
                 <motion.div 
                   key={client.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -482,255 +455,77 @@ export default function CRMPage() {
                 >
                   <div className="flex items-center justify-between">
                      <Link to={`/dashboard/clientes/${client.id}`} className="flex items-center hover:opacity-80 transition-opacity overflow-hidden flex-1 mr-2">
-                        <div className="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+                        <div className="h-10 w-10 flex-shrink-0 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-700 font-bold border border-indigo-100">
                           {client.name.charAt(0)}
                         </div>
                         <div className="ml-3 overflow-hidden">
-                          <div className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate max-w-[200px]">{client.name}</div>
-                          <div className="text-xs text-slate-500 dark:text-zinc-400 truncate">{client.cnpj}</div>
+                          <div className="text-sm font-black text-slate-900 dark:text-zinc-100 truncate">{client.name}</div>
+                          <div className="text-xs text-slate-400 dark:text-zinc-500 truncate">{client.cnpj}</div>
                         </div>
                      </Link>
-                     
-                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <Link to={`/dashboard/clientes/${client.id}`} className="p-1 text-slate-400 dark:text-zinc-500 hover:text-indigo-600"><ExternalLink className="w-3.5 h-3.5" /></Link>
-                        <button onClick={() => { setEditingClient(client); setEditFormData({ ...client }); setIsEditModalOpen(true); }} className="p-1 text-slate-400 dark:text-zinc-500 hover:text-indigo-600"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => handleDelete(client.id)} className="p-1 text-slate-400 dark:text-zinc-500 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                     <div className="flex items-center gap-1">
+                        <Link to={`/dashboard/clientes/${client.id}`} className="p-1.5 text-slate-400 hover:text-indigo-600"><ExternalLink className="w-4 h-4" /></Link>
+                        <button onClick={() => { setEditingClient(client); setEditFormData({ ...client }); setIsEditModalOpen(true); }} className="p-1.5 text-slate-400 hover:text-indigo-600"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => handleDelete(client.id)} className="p-1.5 text-slate-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                      </div>
                   </div>
-
-                  {/* Status/Alertas */}
                   <div className="flex flex-wrap gap-1">
                     {(client.alerts || []).map((a: any, idx: number) => (
-                       <span key={idx} className={`px-2 py-0.5 rounded text-[10px] font-bold border ${a.type === "Perda" ? "bg-red-50 text-red-700 border-red-100" : a.type === "Critico" ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}>
-                          {a.company} ({a.days}D)
+                       <span key={idx} className={`px-2 py-0.5 rounded text-[10px] font-black border uppercase ${a.type === "Perda" ? "bg-red-50 text-red-700 border-red-100" : a.type === "Critico" ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}>
+                          {a.company} • {a.days}D
                        </span>
                     ))}
-                    {(client.alerts || []).length === 0 && <span className="text-emerald-700 dark:text-emerald-400 text-xs font-bold">Sem Atrasos</span>}
-                  </div>
-
-                  {/* Informações Extras */}
-                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-zinc-400 pt-2 border-t border-slate-100 dark:border-zinc-800">
-                     <div className="flex items-center gap-1.5 truncate"><Phone className="w-3 h-3 text-slate-400" /> {client.phone || "N/A"}</div>
-                     <div className="flex items-center gap-1.5 truncate"><Mail className="w-3 h-3 text-slate-400" /> {client.email || "N/A"}</div>
                   </div>
                 </motion.div>
-              );
-            })}
+            ))}
           </div>
         </>
       )}
 
-      {/* Modal de Cadastro */}
+      {/* Modal Cadastro/Edição simplificados as provided in source but with dark mode fixes */}
       <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-xl p-6 w-full max-w-md space-y-4"
-            >
-              <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Cadastrar Novo Cliente</h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">CNPJ</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      value={newClient.cnpj} 
-                      onChange={e => setNewClient({...newClient, cnpj: e.target.value})}
-                      className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm flex-1"
-                      placeholder="00.000.000/0001-00"
-                    />
-                    <button 
-                      type="button" 
-                      onClick={handleCnpjLookup} 
-                      disabled={isSearchingCnpj} 
-                      className="p-2 border border-slate-200 dark:border-zinc-800 rounded-xl text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors flex items-center justify-center min-w-[38px]"
-                    >
-                      {isSearchingCnpj ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-5 h-5" />}
-                    </button>
-                  </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Nome *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={newClient.name} 
-                    onChange={e => setNewClient({...newClient, name: e.target.value})}
-                    className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                    placeholder="Nome da Empresa/Cliente"
-                  />
-                </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Telefone</label>
-                    <input 
-                      type="text" 
-                      value={newClient.phone} 
-                      onChange={e => setNewClient({...newClient, phone: e.target.value})}
-                      className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                      placeholder="(00) 00000-0000"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Cidade</label>
-                    <input 
-                      type="text" 
-                      value={newClient.city} 
-                      onChange={e => setNewClient({...newClient, city: e.target.value})}
-                      className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                      placeholder="Cidade"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">E-mail</label>
-                  <input 
-                    type="email" 
-                    value={newClient.email} 
-                    onChange={e => setNewClient({...newClient, email: e.target.value})}
-                    className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                    placeholder="email@exemplo.com"
-                  />
-                </div>
-                
-                                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Endereço Completo</label>
-                  <input 
-                    type="text" 
-                    value={newClient.address || ""} 
-                    onChange={e => setNewClient({...newClient, address: e.target.value})}
-                    className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                    placeholder="Rua Exemplo, 123"
-                  />
-                </div>
-                
-                <div className="flex items-center gap-3 pt-4">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex-1 px-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 font-medium text-sm transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={submitting}
-                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-sm dark:shadow-none hover:bg-indigo-700 font-medium text-sm transition-colors disabled:opacity-50"
-                  >
-                    {submitting ? "Salvando..." : "Salvar"}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      
-      {/* Modal de Edição */}
-      <AnimatePresence>
-        {isEditModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-xl p-6 w-full max-w-md space-y-4"
-            >
-              <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Editar Cliente</h2>
-              <form onSubmit={handleEditSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">CNPJ</label>
-                  <input 
-                    type="text" 
-                    value={editFormData.cnpj || ""} 
-                    onChange={e => setEditFormData({...editFormData, cnpj: e.target.value})}
-                    className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                    placeholder="00.000.000/0001-00"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Nome *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={editFormData.name || ""} 
-                    onChange={e => setEditFormData({...editFormData, name: e.target.value})}
-                    className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                    placeholder="Nome da Empresa/Cliente"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Telefone</label>
-                    <input 
-                      type="text" 
-                      value={editFormData.phone || ""} 
-                      onChange={e => setEditFormData({...editFormData, phone: e.target.value})}
-                      className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                      placeholder="(00) 00000-0000"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Cidade</label>
-                    <input 
-                      type="text" 
-                      value={editFormData.city || ""} 
-                      onChange={e => setEditFormData({...editFormData, city: e.target.value})}
-                      className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                      placeholder="Cidade"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">E-mail</label>
-                  <input 
-                    type="email" 
-                    value={editFormData.email || ""} 
-                    onChange={e => setEditFormData({...editFormData, email: e.target.value})}
-                    className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                    placeholder="email@exemplo.com"
-                  />
-                </div>
+         {isModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+               <motion.div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-md border dark:border-zinc-800 shadow-xl space-y-4">
+                  <h2 className="text-xl font-bold dark:text-zinc-100">Novo Cliente</h2>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                     <div className="flex gap-2">
+                        <input type="text" placeholder="CNPJ" className="flex-1 px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={newClient.cnpj} onChange={e => setNewClient({...newClient, cnpj: e.target.value})} />
+                        <button type="button" onClick={handleCnpjLookup} className="p-2 bg-indigo-50 dark:bg-zinc-800 text-indigo-600 rounded-xl"><Search className="w-5 h-5"/></button>
+                     </div>
+                     <input type="text" placeholder="Nome *" required className="w-full px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={newClient.name} onChange={e => setNewClient({...newClient, name: e.target.value})} />
+                     <div className="grid grid-cols-2 gap-2">
+                        <input type="text" placeholder="Telefone" className="px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={newClient.phone} onChange={e => setNewClient({...newClient, phone: e.target.value})} />
+                        <input type="text" placeholder="Cidade" className="px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={newClient.city} onChange={e => setNewClient({...newClient, city: e.target.value})} />
+                     </div>
+                     <div className="flex gap-3">
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2 border rounded-xl dark:border-zinc-800 dark:text-zinc-400">Cancelar</button>
+                        <button type="submit" disabled={submitting} className="flex-1 py-2 bg-indigo-600 text-white rounded-xl">Salvar</button>
+                     </div>
+                  </form>
+               </motion.div>
+            </div>
+         )}
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Endereço Completo</label>
-                  <input 
-                    type="text" 
-                    value={editFormData.address || ""} 
-                    onChange={e => setEditFormData({...editFormData, address: e.target.value})}
-                    className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                    placeholder="Rua Exemplo, 123"
-                  />
-                </div>
-                
-                <div className="flex items-center gap-3 pt-4">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsEditModalOpen(false)}
-                    className="flex-1 px-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 font-medium text-sm transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={submitting}
-                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-sm dark:shadow-none hover:bg-indigo-700 font-medium text-sm transition-colors disabled:opacity-50"
-                  >
-                    {submitting ? "Salvando..." : "Salvar"}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
+         {isEditModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+               <motion.div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-md border dark:border-zinc-800 shadow-xl space-y-4">
+                  <h2 className="text-xl font-bold dark:text-zinc-100">Editar Cliente</h2>
+                  <form onSubmit={handleEditSubmit} className="space-y-4">
+                     <input type="text" placeholder="Nome" className="w-full px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={editFormData.name} onChange={e => setEditFormData({...editFormData, name: e.target.value})} />
+                     <div className="grid grid-cols-2 gap-2">
+                        <input type="text" placeholder="Telefone" className="px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={editFormData.phone} onChange={e => setEditFormData({...editFormData, phone: e.target.value})} />
+                        <input type="text" placeholder="Cidade" className="px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={editFormData.city} onChange={e => setEditFormData({...editFormData, city: e.target.value})} />
+                     </div>
+                     <div className="flex gap-3">
+                        <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-2 border rounded-xl dark:border-zinc-800 dark:text-zinc-400">Cancelar</button>
+                        <button type="submit" disabled={submitting} className="flex-1 py-2 bg-indigo-600 text-white rounded-xl">Salvar</button>
+                     </div>
+                  </form>
+               </motion.div>
+            </div>
+         )}
       </AnimatePresence>
-</AnimatePresence>
     </div>
   );
 }
