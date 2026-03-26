@@ -35,6 +35,8 @@ export default function EmpresasPage() {
 
     if (!error && clients) {
       const orders: any[] = [];
+      const discoveredCategories = new Set<string>();
+      
       const filesPromises = clients.map(async (client: any) => {
          const { data: files } = await supabase.storage
            .from("client_vault")
@@ -45,6 +47,9 @@ export default function EmpresasPage() {
                  const parts = file.name.split("___");
                  const hasCategory = parts.length > 1;
                  const categoryName = hasCategory ? parts[0] : "Documento";
+                 
+                 if (hasCategory) discoveredCategories.add(categoryName);
+                 
                  const hasValue = parts.length > 2 && parts[1].startsWith("VALOR_");
                  const valueString = hasValue ? parts[1].replace("VALOR_", "") : "0";
                  const orderValue = parseFloat(valueString) || 0;
@@ -63,6 +68,14 @@ export default function EmpresasPage() {
       });
 
       await Promise.all(filesPromises);
+      
+      // Sincronizar categorias descobertas com o Settings global
+      const currentGlobal = settings.categories || [];
+      const newCats = [...discoveredCategories].filter(c => !currentGlobal.includes(c));
+      if (newCats.length > 0) {
+          await updateSettings({ categories: [...currentGlobal, ...newCats] });
+      }
+
       orders.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setAllOrders(orders);
     }

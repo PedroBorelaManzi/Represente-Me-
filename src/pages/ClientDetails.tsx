@@ -19,7 +19,7 @@ export default function ClientDetailsPage() {
 
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const [client, setClient] = useState<any>(null);
   const [files, setFiles] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -169,11 +169,19 @@ export default function ClientDetailsPage() {
     setSelectedCategory(updated.length > 0 ? updated[0] : "");
   };
 
-  const saveNewCategory = () => {
+  const saveNewCategory = async () => {
     if (newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
-      const updated = [...categories, newCategoryName.trim()];
+      const catName = newCategoryName.trim();
+      const updated = [...categories, catName];
       setCategories(updated);
-      setSelectedCategory(newCategoryName.trim());
+      setSelectedCategory(catName);
+      
+      // Persistir globalmente para aparecer em "Empresas"
+      const currentGlobal = (settings.categories || []);
+      if (!currentGlobal.includes(catName)) {
+        await updateSettings({ categories: [...currentGlobal, catName] });
+      }
+      
       setNewCategoryName("");
       setIsCreatingCategory(false);
     }
@@ -198,6 +206,12 @@ export default function ClientDetailsPage() {
       .upload(path, selectedFile, { upsert: true });
 
     if (!error) {
+      // Garantir que a categoria esteja no global settings
+      if (!settings.categories?.includes(selectedCategory)) {
+        const currentGlobal = settings.categories || [];
+        await updateSettings({ categories: [...currentGlobal, selectedCategory] });
+      }
+
       // Safely update category_last_contact in db
             const currentCats = client?.category_last_contact || {};
       const updatedCats = { 
