@@ -227,7 +227,7 @@ export default function Layout() {
                   <div className="flex items-center justify-between p-2.5 bg-orange-50">
                     <div className="flex items-center gap-2">
                        <div className="w-2 h-2 rounded-full bg-orange-500" />
-                       <span className="text-xs font-bold text-orange-900">CrÃ­tico ({settings.critico_days}D)</span>
+                       <span className="text-xs font-bold text-orange-900">Crítico ({settings.critico_days}D)</span>
                     </div>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded-md">{stats.critico.length}</span>
                   </div>
@@ -352,7 +352,7 @@ export default function Layout() {
                       <input name="alerta" type="number" defaultValue={settings.alerta_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" required />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">CrÃ­tico (dias)</label>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Crítico (dias)</label>
                       <input name="critico" type="number" defaultValue={settings.critico_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" required />
                     </div>
                     <div>

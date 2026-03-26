@@ -138,7 +138,7 @@ export default function CRMPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Deseja realmente excluir este cliente? Ele também serÃ¡ removido do Mapa.")) {
+    if (window.confirm("Deseja realmente excluir este cliente? Ele também será removido do Mapa.")) {
       const { error } = await supabase.from("clients").delete().eq("id", id);
       if (!error) {
         setClients(clients.filter(c => c.id !== id));
@@ -151,14 +151,14 @@ export default function CRMPage() {
   const handleCnpjLookup = async () => {
     const cleanedCnpj = newClient.cnpj ? newClient.cnpj.replace(/\D/g, "") : "";
     if (!cleanedCnpj || cleanedCnpj.length !== 14) {
-      alert("Por favor, insira um CNPJ vÃ¡lido com 14 dÃ­gitos.");
+      alert("Por favor, insira um CNPJ válido com 14 dígitos.");
       return;
     }
 
     setIsSearchingCnpj(true);
     try {
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanedCnpj}`);
-      if (!response.ok) throw new Error("CNPJ nÃ£o encontrado");
+      if (!response.ok) throw new Error("CNPJ não encontrado");
       
       const data = await response.json();
       
@@ -169,7 +169,7 @@ export default function CRMPage() {
         city: data.municipio || prev.city
       }));
     } catch (err) {
-      alert("NÃ£o foi poss\u00EDvel buscar os dados do CNPJ. Preencha manualmente.");
+      alert("Não foi poss\u00EDvel buscar os dados do CNPJ. Preencha manualmente.");
     } finally {
       setIsSearchingCnpj(false);
     }
