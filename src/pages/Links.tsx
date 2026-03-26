@@ -129,7 +129,20 @@ export default function LinksPage() {
             <div className="w-1 h-6 bg-slate-200" />
             <h1 className="text-lg font-bold text-slate-900">{activeLink.title}</h1>
           </div>
-          <a 
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setIsFullScreen(!isFullScreen)}
+              className="p-2 hover:bg-slate-50 dark:hover:bg-zinc-900 rounded-xl text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1.5 text-xs font-medium"
+              title={isFullScreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+            >
+              {isFullScreen ? (
+                <><Minimize2 className="w-4 h-4" /> Contrair</>
+              ) : (
+                <><Maximize2 className="w-4 h-4" /> Tela Cheia</>
+              )}
+            </button>
+            <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1" />
+            <a 
             href={activeLink.url} 
             target="_blank" 
             rel="noreferrer" 
@@ -137,6 +150,7 @@ export default function LinksPage() {
           >
             Abrir original <ExternalLink className="w-4 h-4" />
           </a>
+          </div>
         </div>
         
         {isBlockedIframe ? (
