@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Link as LinkIcon, Plus, ExternalLink, MoreVertical, Search, MessageSquare, Mail, FileText, Briefcase, X, Trash2, HardDrive, Calendar } from "lucide-react";
+import { Link as LinkIcon, Plus, ExternalLink, MoreVertical, Search, MessageSquare, Mail, FileText, Briefcase, X, Trash2, HardDrive, Calendar, Maximize2, Minimize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "../lib/utils";
 
 const initialLinks = [
   { id: "1", title: "WhatsApp Web", url: "https://web.whatsapp.com", icon: "MessageSquare", color: "bg-emerald-500" },
@@ -42,6 +43,7 @@ export default function LinksPage() {
   const [url, setUrl] = useState("");
   const [color, setColor] = useState("bg-indigo-500");
   const [icon, setIcon] = useState("LinkIcon");
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("crm_shortcut_links");
@@ -110,7 +112,12 @@ export default function LinksPage() {
     const IconComponent = iconMap[activeLink.icon] || LinkIcon;
 
     return (
-      <div className="flex flex-col h-[calc(100vh-10rem)] space-y-4">
+      <div className={cn(
+        "flex flex-col space-y-4 transition-all duration-300",
+        isFullScreen 
+          ? "fixed inset-0 z-[60] bg-slate-50 dark:bg-zinc-950 p-4 h-screen w-screen" 
+          : "h-[calc(100vh-10rem)]"
+      )}>
         <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
             <button 
