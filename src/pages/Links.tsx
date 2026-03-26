@@ -115,10 +115,10 @@ export default function LinksPage() {
       <div className={cn(
         "flex flex-col space-y-4 transition-all duration-300",
         isFullScreen 
-          ? "h-[calc(100vh-4rem)] bg-slate-50 dark:bg-zinc-950 z-10" 
+          ? "fixed top-0 bottom-0 right-0 left-0 md:left-72 z-40 bg-slate-50 dark:bg-zinc-950 p-4 md:p-8" 
           : "h-[calc(100vh-10rem)]"
       )}>
-        <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between bg-white dark:bg-zinc-900 p-4 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm mb-2">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setSearchParams({})}
