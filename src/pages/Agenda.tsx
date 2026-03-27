@@ -259,14 +259,14 @@ export default function Agenda() {
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col min-w-[800px] lg:min-w-0 overflow-auto custom-scrollbar">
-          <div className="grid grid-cols-7 border-b border-slate-200 dark:border-zinc-800 bg-slate-100/30 dark:bg-zinc-950/80 sticky top-0 z-10">
+        <div className="flex-1 flex flex-col overflow-x-auto custom-scrollbar">
+          <div className="grid grid-cols-7 border-b border-slate-200 dark:border-zinc-800 bg-slate-100/30 dark:bg-zinc-950/80 sticky top-0 z-10 min-w-[800px]">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
               <div key={day} className="p-4 text-center text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">{day}</div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 flex-1 bg-slate-50 dark:bg-zinc-950/30 auto-rows-fr">
+          <div className="grid grid-cols-7 flex-1 bg-slate-50 dark:bg-zinc-950/30 auto-rows-fr min-w-[800px]">
             {daysArray.map((date, i) => {
               const dateIso = date ? formatDateLocal(date) : null;
               const isToday = dateIso === formatDateLocal(new Date());

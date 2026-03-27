@@ -98,7 +98,7 @@ export default function Layout() {
       )}
 
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:flex md:flex-col",
+        "fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:flex md:flex-col h-screen",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex items-center justify-between pt-8 px-6 border-b border-slate-100 dark:border-zinc-900">
@@ -394,3 +394,4 @@ export default function Layout() {
     </div>
   );
 }
+
