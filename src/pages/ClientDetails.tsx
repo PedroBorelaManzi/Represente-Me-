@@ -69,7 +69,7 @@ export default function ClientDetailsPage() {
                data: base64 as string
              }
            },
-           "Extraia o valor total final deste pedido ou orÃ§amento. Retorne APENAS o nÃºmero sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50"
+           "Extraia o valor total final deste pedido ou orçamento. Retorne APENAS o nÃºmero sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50"
         ]
       });
 
@@ -194,7 +194,7 @@ export default function ClientDetailsPage() {
     loadFiles();
     loadCategories();
     loadAppointments();
-  }, [id, user, settings.categories]); // Adicionado settings.categories como dependÃªncia
+  }, [id, user, settings.categories]); // Adicionado settings.categories como dependência
 
   useEffect(() => {
     if (selectedFile) {
@@ -214,7 +214,7 @@ export default function ClientDetailsPage() {
     if (newCategoryName.trim()) {
       const catName = newCategoryName.trim();
       
-      // Verificar se jÃ¡ existe (ignorando case)
+      // Verificar se já existe (ignorando case)
       const exists = settings.categories?.some(c => c.toLowerCase() === catName.toLowerCase()) || 
                      categories.some(c => c.toLowerCase() === catName.toLowerCase());
       
@@ -382,16 +382,16 @@ export default function ClientDetailsPage() {
             </div>
           </div>
 
-          {/* Nova SeÃ§Ã£o: Compromissos e ObservaÃ§Ãµes */}
+          {/* Nova Seção: Compromissos e ObservaçÃµes */}
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 shadow-sm dark:shadow-none space-y-6">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 mb-3">
-                <FileText className="w-4 h-4 text-indigo-500" /> ObservaÃ§Ãµes Gerais
+                <FileText className="w-4 h-4 text-indigo-500" /> ObservaçÃµes Gerais
               </h3>
               <textarea 
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Digite aqui observaÃ§Ãµes sobre este cliente, pontos a melhorar, etc..."
+                placeholder="Digite aqui observaçÃµes sobre este cliente, pontos a melhorar, etc..."
                 className="w-full h-32 px-3 py-2 text-sm border border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
               />
               <button 
@@ -399,7 +399,7 @@ export default function ClientDetailsPage() {
                 disabled={isSavingNotes}
                 className="mt-2 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
               >
-                {isSavingNotes ? "Salvando..." : "Salvar ObservaÃ§Ãµes"}
+                {isSavingNotes ? "Salvando..." : "Salvar ObservaçÃµes"}
               </button>
             </div>
 
@@ -430,7 +430,7 @@ export default function ClientDetailsPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5"><HardDrive className="w-5 h-5 text-indigo-500" /> Nuvem de Arquivos</h2>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">FaÃ§a upload de documentos vinculados a este cliente (Armazenamento Privado).</p>
+              <p className="text-xs text-slate-500 dark:text-zinc-400">Faça upload de documentos vinculados a este cliente (Armazenamento Privado).</p>
             </div>
             
             <button 

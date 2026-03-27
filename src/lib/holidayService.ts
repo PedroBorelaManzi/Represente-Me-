@@ -33,7 +33,9 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       });
 
     const locationHolidaysPromises = uniqueLocations.map(async (loc) => {
-      const url = `${API_BASE_URL}?year=${year}&state=${loc.state}&city=${encodeURIComponent(loc.city)}`;
+      // Normalize city name (remove accents) for better match results in feriados.dev
+      const normalizedCity = loc.city.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const url = `${API_BASE_URL}?year=${year}&state=${loc.state}&city=${encodeURIComponent(normalizedCity)}`;
       try {
         const res = await fetch(url);
         const data = await res.json();

@@ -111,7 +111,7 @@ export default function Agenda() {
   const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert("Erro: Client ID do Google nÃ£o configurado.");
+      alert("Erro: Client ID do Google não configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -196,7 +196,7 @@ export default function Agenda() {
 
         <div className="flex-1 flex flex-col overflow-x-auto custom-scrollbar">
           <div className="grid grid-cols-7 border-b border-slate-300 dark:border-zinc-700/50 bg-slate-100/30 dark:bg-zinc-950/80 sticky top-0 z-10 min-w-[800px]">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b'].map(day => (
+            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
               <div key={day} className="p-4 text-center text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">{day}</div>
             ))}
           </div>

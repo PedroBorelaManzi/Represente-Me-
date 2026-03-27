@@ -15,6 +15,10 @@ export interface Client {
   phone?: string;
   email?: string;
   city?: string;
+  state?: string;
+  address?: string;
+  lat?: number;
+  lng?: number;
   last_contact: string;
   created_at?: string;
 }
@@ -42,6 +46,7 @@ export default function CRMPage() {
     phone: "",
     email: "",
     city: "",
+    state: "",
     last_contact: new Date().toISOString().split('T')[0]
   });
   const [submitting, setSubmitting] = useState(false);
@@ -82,7 +87,7 @@ export default function CRMPage() {
              const parts = f.file_name.split("___");
              if (parts.length > 1) {
                  const rawCat = parts[0];
-                 // Normalizar o nome da categoria usando as configuraÃ§Ãµes globais (ignora case)
+                 // Normalizar o nome da categoria usando as configuraçÃµes globais (ignora case)
                  const matchedCat = settings.categories?.find(c => c.toLowerCase() === rawCat.toLowerCase());
                  const cat = matchedCat || rawCat;
 
@@ -120,7 +125,7 @@ export default function CRMPage() {
     if (user) {
       loadClients();
     }
-  }, [user, settings.categories]); // Adicionado settings.categories como dependÃªncia
+  }, [user, settings.categories]); // Adicionado settings.categories como dependência
 
   const getInactivityDays = (lastContactStr: string) => {
     if (!lastContactStr) return 0;
@@ -132,13 +137,13 @@ export default function CRMPage() {
 
   const getAlertStatus = (days: number) => {
     if (days >= settings.perda_days) return { label: `Perda (${settings.perda_days}D+)`, color: "bg-red-50 text-red-700 border-red-100", type: "Perda" };
-    if (days >= settings.critico_days) return { label: `CrÃ­tico (${settings.critico_days}D)`, color: "bg-orange-50 text-orange-700 border-orange-100", type: "Critico" };
+    if (days >= settings.critico_days) return { label: `Crítico (${settings.critico_days}D)`, color: "bg-orange-50 text-orange-700 border-orange-100", type: "Critico" };
     if (days >= settings.alerta_days) return { label: `Alerta (${settings.alerta_days}D)`, color: "bg-amber-50 text-amber-700 border-amber-100", type: "Alerta" };
     return { label: "Sem Atraso", color: "bg-emerald-50 text-emerald-700 border-emerald-100", type: "Normal" };
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm("Deseja realmente excluir este cliente? Ele tambÃ©m serÃ¡ removido do Mapa.")) {
+    if (window.confirm("Deseja realmente excluir este cliente? Ele também será removido do Mapa.")) {
       const { error } = await supabase.from("clients").delete().eq("id", id);
       if (!error) {
         setClients(clients.filter(c => c.id !== id));
@@ -151,14 +156,14 @@ export default function CRMPage() {
   const handleCnpjLookup = async () => {
     const cleanedCnpj = newClient.cnpj ? newClient.cnpj.replace(/\D/g, "") : "";
     if (!cleanedCnpj || cleanedCnpj.length !== 14) {
-      alert("Por favor, insira um CNPJ vÃ¡lido com 14 dÃ­gitos.");
+      alert("Por favor, insira um CNPJ válido com 14 dígitos.");
       return;
     }
 
     setIsSearchingCnpj(true);
     try {
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanedCnpj}`);
-      if (!response.ok) throw new Error("CNPJ nÃ£o encontrado");
+      if (!response.ok) throw new Error("CNPJ não encontrado");
       
       const data = await response.json();
       
@@ -169,7 +174,7 @@ export default function CRMPage() {
         city: data.municipio || prev.city
       }));
     } catch (err) {
-      alert("NÃ£o foi possÃ­vel buscar os dados do CNPJ. Preencha manualmente.");
+      alert("Não foi possível buscar os dados do CNPJ. Preencha manualmente.");
     } finally {
       setIsSearchingCnpj(false);
     }
@@ -210,7 +215,8 @@ export default function CRMPage() {
     let lat = null;
     let lng = null;
     try {
-      const addressQuery = newClient.address ? `${newClient.address}, ${newClient.city || ""}, Brasil` : `${newClient.city || ""}, Brasil`;
+      // Improved geocoding with state and zip prioritization if available
+      const addressQuery = `${newClient.address || ""}, ${newClient.city || ""}, ${newClient.state || ""}, Brasil`.replace(/^,\s*/, '');
       let geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}`);
       let geoData = await geoResponse.json();
       
@@ -230,14 +236,12 @@ export default function CRMPage() {
 
     const { error } = await supabase
       .from("clients")
-      .insert([{ ...newClient, lat, lng, status: "Ativo" }]);
+      .insert([{ ...newClient, state: newClient.state || null, lat, lng, status: "Ativo" }]);
 
     if (!error) {
       loadClients();
       setIsModalOpen(false);
-      setNewClient({ name: "", cnpj: "",
-    address: "",
-    phone: "", email: "", city: "", last_contact: new Date().toISOString().split('T')[0] });
+      setNewClient({ name: "", cnpj: "", address: "", phone: "", email: "", city: "", state: "", last_contact: new Date().toISOString().split('T')[0] });
     } else {
       alert("Erro ao cadastrar: " + error.message);
     }
@@ -267,7 +271,7 @@ export default function CRMPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-            <Users className="w-7 h-7 text-indigo-600" /> GestÃ£o de Clientes
+            <Users className="w-7 h-7 text-indigo-600" /> Gestão de Clientes
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Monitore sua carteira e alertas de inatividade.</p>
         </div>
@@ -353,7 +357,7 @@ export default function CRMPage() {
                   onClick={() => setActiveTab(tab)}
                   className={`pb-3 px-2 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${activeTab === tab ? "border-indigo-600 text-indigo-700" : "border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300"}`}
                 >
-                  {tab === "Todos" ? "Todos os Clientes" : tab === "Critico" ? `CrÃ­tico (${settings.critico_days}D)` : tab === "Alerta" ? `Alerta (${settings.alerta_days}D)` : `Perda (${settings.perda_days}D+)`}
+                  {tab === "Todos" ? "Todos os Clientes" : tab === "Critico" ? `Crítico (${settings.critico_days}D)` : tab === "Alerta" ? `Alerta (${settings.alerta_days}D)` : `Perda (${settings.perda_days}D+)`}
                   <span className={`ml-2 px-1.5 py-0.5 rounded-md text-xs font-bold ${activeTab === tab ? "bg-indigo-100 text-indigo-800" : "bg-slate-100 text-slate-600 dark:text-zinc-400"}`}>
                     {count}
                   </span>
@@ -370,7 +374,7 @@ export default function CRMPage() {
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Cliente</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Contato</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Status/Alertas</th>
-                    <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">AÃ§Ãµes</th>
+                    <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-zinc-900 divide-y divide-slate-100 dark:divide-zinc-850">
@@ -402,7 +406,7 @@ export default function CRMPage() {
                           <div className="flex flex-wrap gap-1.5 max-w-xs">
                             {((client as any).alerts || []).map((a: any, idx: number) => (
                                <span key={idx} className={`px-2 py-0.5 rounded-lg text-[10px] font-black border uppercase tracking-tighter ${a.type === "Perda" ? "bg-red-50 text-red-700 border-red-100" : a.type === "Critico" ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}>
-                                  {a.company} â€¢ {a.days}D
+                                  {a.company} • {a.days}D
                                </span>
                             ))}
                             {((client as any).alerts || []).length === 0 && <span className="text-emerald-600 dark:text-emerald-500 text-xs font-black flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5"/> Em dia</span>}
@@ -473,7 +477,7 @@ export default function CRMPage() {
                   <div className="flex flex-wrap gap-1">
                     {(client.alerts || []).map((a: any, idx: number) => (
                        <span key={idx} className={`px-2 py-0.5 rounded text-[10px] font-black border uppercase ${a.type === "Perda" ? "bg-red-50 text-red-700 border-red-100" : a.type === "Critico" ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}>
-                          {a.company} â€¢ {a.days}D
+                          {a.company} • {a.days}D
                        </span>
                     ))}
                   </div>
@@ -483,7 +487,7 @@ export default function CRMPage() {
         </>
       )}
 
-      {/* Modal Cadastro/EdiÃ§Ã£o simplificados as provided in source but with dark mode fixes */}
+      {/* Modal Cadastro/Edição simplificados as provided in source but with dark mode fixes */}
       <AnimatePresence>
          {isModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -497,7 +501,10 @@ export default function CRMPage() {
                      <input type="text" placeholder="Nome *" required className="w-full px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={newClient.name} onChange={e => setNewClient({...newClient, name: e.target.value})} />
                      <div className="grid grid-cols-2 gap-2">
                         <input type="text" placeholder="Telefone" className="px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={newClient.phone} onChange={e => setNewClient({...newClient, phone: e.target.value})} />
-                        <input type="text" placeholder="Cidade" className="px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={newClient.city} onChange={e => setNewClient({...newClient, city: e.target.value})} />
+                        <div className="grid grid-cols-3 gap-2">
+                          <input type="text" placeholder="Cidade" className="col-span-2 px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={newClient.city} onChange={e => setNewClient({...newClient, city: e.target.value})} />
+                          <input type="text" placeholder="UF" maxLength={2} className="px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100 font-bold" value={newClient.state} onChange={e => setNewClient({...newClient, state: e.target.value.toUpperCase()})} />
+                        </div>
                      </div>
                      <input type="text" placeholder="Endereço (Rua, número, etc.)" className="w-full px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={(newClient as any).address} onChange={e => setNewClient({...newClient, address: e.target.value} as any)} />
                      <div className="flex gap-3">
