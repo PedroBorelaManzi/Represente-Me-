@@ -1,6 +1,6 @@
-﻿import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
-import { MapPin, LayoutDashboard, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft } from "lucide-react";
+import { MapPin, LayoutDashboard, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -78,11 +78,12 @@ export default function Layout() {
   }, [user, settings]);
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Início", href: "/dashboard", icon: LayoutDashboard },
     { name: "Mapa", href: "/dashboard/map", icon: MapPin },
     { name: "Integrações", href: "/dashboard/links", icon: LinkIcon },
     { name: "Clientes", href: "/dashboard/clientes", icon: Users },
     { name: "Empresas", href: "/dashboard/empresas", icon: Building2 },
+    { name: "Agenda", href: "/dashboard/agenda", icon: Calendar },
   ];
 
   const isIntegrationView = location.pathname.includes('/links') && location.search.includes('id=');

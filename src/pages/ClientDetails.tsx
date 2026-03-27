@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { GoogleGenAI } from "@google/genai";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -24,6 +24,10 @@ export default function ClientDetailsPage() {
   const [files, setFiles] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  const [notes, setNotes] = useState("");
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [clientAppointments, setClientAppointments] = useState<any[]>([]);
 
   // Upload Modal State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -97,6 +101,7 @@ export default function ClientDetailsPage() {
       navigate("/dashboard/clientes");
     } else {
       setClient(data);
+      setNotes(data.notes || "");
     }
     setLoading(false);
   };
@@ -113,6 +118,33 @@ export default function ClientDetailsPage() {
       setFiles(sorted);
     }
   };
+
+  const loadAppointments = async () => {
+    if (!id) return;
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("client_id", id)
+      .order("date", { ascending: true });
+    
+    if (!error && data) {
+      setClientAppointments(data);
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    setIsSavingNotes(true);
+    const { error } = await supabase
+      .from("clients")
+      .update({ notes })
+      .eq("id", id);
+    
+    if (error) {
+      alert("Erro ao salvar notas: " + error.message);
+    }
+    setIsSavingNotes(false);
+  };
+
   const loadCategories = async () => {
     if (!user) return;
     const { data: clients, error } = await supabase
@@ -161,6 +193,7 @@ export default function ClientDetailsPage() {
     loadClient();
     loadFiles();
     loadCategories();
+    loadAppointments();
   }, [id, user, settings.categories]); // Adicionado settings.categories como dependência
 
   useEffect(() => {
@@ -346,6 +379,49 @@ export default function ClientDetailsPage() {
               <span className={`px-2.5 py-1 text-xs font-semibold rounded-md border ${getInactivityDays(client.last_contact) < 365 ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-slate-50 dark:bg-zinc-950 text-slate-600 dark:text-zinc-400 border-slate-100 dark:border-zinc-900"}`}>
                 {getInactivityDays(client.last_contact) < 365 ? "Ativo" : "Inativo"}
               </span>
+            </div>
+          </div>
+
+          {/* Nova Seção: Compromissos e Observações */}
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 shadow-sm dark:shadow-none space-y-6">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 mb-3">
+                <FileText className="w-4 h-4 text-indigo-500" /> Observações Gerais
+              </h3>
+              <textarea 
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Digite aqui observações sobre este cliente, pontos a melhorar, etc..."
+                className="w-full h-32 px-3 py-2 text-sm border border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
+              />
+              <button 
+                onClick={handleSaveNotes}
+                disabled={isSavingNotes}
+                className="mt-2 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isSavingNotes ? "Salvando..." : "Salvar Observações"}
+              </button>
+            </div>
+
+            <div className="pt-6 border-t border-slate-100 dark:border-zinc-800">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 mb-4">
+                <Calendar className="w-4 h-4 text-indigo-500" /> Compromissos na Agenda
+              </h3>
+              <div className="space-y-3">
+                {clientAppointments.length === 0 ? (
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 italic">Nenhum compromisso vinculado.</p>
+                ) : (
+                  clientAppointments.map(app => (
+                    <div key={app.id} className="p-3 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-900 rounded-xl flex flex-col gap-1">
+                      <div className="text-xs font-bold text-slate-800 dark:text-zinc-200">{app.title}</div>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
+                        <Clock className="w-3 h-3 text-indigo-500" />
+                        {new Date(app.date).toLocaleDateString('pt-BR')} | {app.time}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>

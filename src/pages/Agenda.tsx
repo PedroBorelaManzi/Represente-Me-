@@ -1,10 +1,24 @@
-import React, { useState } from "react";
-import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X, Loader2, Users } from "lucide-react";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
 
-type EventType = { id: number; title: string; time: string; date: Date };
+type EventType = { 
+  id: string; 
+  title: string; 
+  time: string; 
+  date: string; 
+  client_id?: string;
+};
 
 export default function Agenda() {
+  const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [events, setEvents] = useState<EventType[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingEvent, setEditingEvent] = useState<Partial<EventType> | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const getFirstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
@@ -12,7 +26,6 @@ export default function Agenda() {
   const daysInMonth = getDaysInMonth(currentDate);
   const firstDay = getFirstDayOfMonth(currentDate);
   
-  // Fill the grid based on 6 weeks (42 slots)
   const daysArray = Array.from({ length: 42 }, (_, i) => {
     const dayNumber = i - firstDay + 1;
     if (dayNumber > 0 && dayNumber <= daysInMonth) {
@@ -21,49 +34,126 @@ export default function Agenda() {
     return null; 
   });
 
-  const isSameDay = (d1: Date | null, d2: Date) => {
+  const isSameDay = (d1: Date | null, d2: string) => {
     if (!d1) return false;
-    return d1.getDate() === d2.getDate() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getFullYear() === d2.getFullYear();
+    const d2Date = new Date(d2);
+    return d1.getDate() === d2Date.getDate() &&
+           d1.getMonth() === d2Date.getMonth() &&
+           d1.getFullYear() === d2Date.getFullYear();
   };
 
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-  // Mock
-  const [events, setEvents] = useState<EventType[]>([
-    { id: 1, title: "Reunião de Alinhamento", time: "09:00", date: new Date() },
-    { id: 2, title: "Apresentação Cliente X", time: "14:00", date: new Date() },
-    { id: 3, title: "Follow-up Propostas", time: "10:00", date: new Date(new Date().setDate(new Date().getDate() + 1)) },
-    { id: 4, title: "Envio de Relatório", time: "18:00", date: new Date(new Date().setDate(new Date().getDate() + 5)) },
-  ]);
+  const loadData = async () => {
+    if (!user) return;
+    setLoading(true);
+    
+    const { data: clientsData } = await supabase
+      .from("clients")
+      .select("id, name")
+      .order("name");
+    setClients(clientsData || []);
 
-  const [editingEvent, setEditingEvent] = useState<EventType | null>(null);
+    const { data: appData } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("user_id", user.id);
+    
+    setEvents(appData || []);
+    setLoading(false);
+  };
 
-  const onDragStart = (e: React.DragEvent, id: number) => {
-    e.dataTransfer.setData("eventId", id.toString());
+  useEffect(() => {
+    loadData();
+  }, [user]);
+
+  const onDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData("eventId", id);
   };
 
   const onDragOver = (e: React.DragEvent) => {
     e.preventDefault(); 
   };
 
-  const onDrop = (e: React.DragEvent, targetDate: Date | null) => {
+  const onDrop = async (e: React.DragEvent, targetDate: Date | null) => {
     e.preventDefault();
     if (!targetDate) return;
-    const id = parseInt(e.dataTransfer.getData("eventId"));
+    const id = e.dataTransfer.getData("eventId");
     if (!id) return;
     
+    const isoDate = targetDate.toISOString().split('T')[0];
+    
     setEvents(events.map(ev => 
-      ev.id === id ? { ...ev, date: new Date(targetDate) } : ev
+      ev.id === id ? { ...ev, date: isoDate } : ev
     ));
+
+    await supabase
+      .from("appointments")
+      .update({ date: isoDate })
+      .eq("id", id);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingEvent) return;
-    setEvents(events.map(ev => ev.id === editingEvent.id ? editingEvent : ev));
+    if (!editingEvent || !user) return;
+    setIsSaving(true);
+
+    const payload = {
+      title: editingEvent.title,
+      time: editingEvent.time,
+      date: editingEvent.date,
+      client_id: editingEvent.client_id || null,
+      user_id: user.id
+    };
+
+    if (editingEvent.id) {
+      const { error } = await supabase
+        .from("appointments")
+        .update(payload)
+        .eq("id", editingEvent.id);
+      
+      if (!error) {
+        setEvents(events.map(ev => ev.id === editingEvent.id ? { ...ev, ...payload } as EventType : ev));
+      }
+    } else {
+      const { data, error } = await supabase
+        .from("appointments")
+        .insert([payload])
+        .select()
+        .single();
+      
+      if (!error && data) {
+        setEvents([...events, data]);
+      }
+    }
+
+    setIsSaving(false);
     setEditingEvent(null);
+  };
+
+  const handleDelete = async () => {
+    if (!editingEvent?.id || !window.confirm("Deseja realmente excluir este compromisso?")) return;
+    setIsSaving(true);
+    
+    const { error } = await supabase
+      .from("appointments")
+      .delete()
+      .eq("id", editingEvent.id);
+    
+    if (!error) {
+      setEvents(events.filter(ev => ev.id !== editingEvent.id));
+      setEditingEvent(null);
+    }
+    setIsSaving(false);
+  };
+
+  const openNewEventModal = () => {
+    setEditingEvent({
+      title: "",
+      time: "09:00 - 10:00",
+      date: new Date().toISOString().split('T')[0],
+      client_id: ""
+    });
   };
 
   return (
@@ -73,14 +163,16 @@ export default function Agenda() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100">Agenda</h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Visão mensal dos seus compromissos e atividades.</p>
         </div>
-        <button className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm w-full sm:w-auto">
+        <button 
+          onClick={openNewEventModal}
+          className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm w-full sm:w-auto"
+        >
           <Plus className="w-4 h-4" />
           Novo Agendamento
         </button>
       </div>
 
       <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-[600px]">
-        {/* Header Calendário Mensal */}
         <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-950/50">
           <h2 className="text-xl font-bold text-slate-800 dark:text-zinc-100 flex items-center gap-2">
             <CalendarIcon className="w-5 h-5 text-indigo-600" />
@@ -99,9 +191,7 @@ export default function Agenda() {
           </div>
         </div>
 
-        {/* Corpo do Calendário */}
         <div className="flex-1 flex flex-col min-w-[700px] overflow-auto custom-scrollbar">
-          {/* Cabeçalho dos Dias da Semana */}
           <div className="grid grid-cols-7 border-b border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-950/80 sticky top-0 z-10">
             {['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'].map(day => (
               <div key={day} className="p-3 text-center text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
@@ -112,13 +202,14 @@ export default function Agenda() {
 
           <div className="grid grid-cols-7 flex-1 bg-slate-50 dark:bg-zinc-950/30 auto-rows-fr">
             {daysArray.map((date, i) => {
-              const isToday = isSameDay(date, new Date());
-              const dayEvents = date ? events.filter(e => isSameDay(e.date, date)) : [];
+              const dateIso = date ? date.toISOString().split('T')[0] : null;
+              const isToday = dateIso === new Date().toISOString().split('T')[0];
+              const dayEvents = dateIso ? events.filter(e => e.date === dateIso) : [];
               
               return (
                 <div 
                   key={i} 
-                  className={`border-r border-b border-slate-200 dark:border-zinc-800/50 p-1 flex flex-col min-h-[100px] transition-colors ${date ? 'bg-white dark:bg-zinc-900' : 'bg-slate-50 dark:bg-zinc-950/30'} ${isToday ? 'bg-indigo-50/20 dark:bg-indigo-900/10' : ''}`}
+                  className={`border-r border-b border-slate-200 dark:border-zinc-800/50 p-1 flex flex-col min-h-[120px] transition-colors ${date ? 'bg-white dark:bg-zinc-900' : 'bg-slate-50 dark:bg-zinc-950/30'} ${isToday ? 'bg-indigo-50/20 dark:bg-indigo-900/10' : ''}`}
                   onDragOver={date ? onDragOver : undefined}
                   onDrop={date ? (e) => onDrop(e, date) : undefined}
                 >
@@ -130,17 +221,28 @@ export default function Agenda() {
                         </span>
                       </div>
                       <div className="flex-1 space-y-1 overflow-y-auto custom-scrollbar pr-1">
-                        {dayEvents.map(event => (
-                          <div 
-                            key={event.id}
-                            draggable
-                            onDragStart={(e) => onDragStart(e, event.id)}
-                            onClick={() => setEditingEvent(event)}
-                            className="text-[10px] sm:text-xs font-medium px-1.5 py-1 rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-500/20 shadow-sm truncate cursor-grab active:cursor-grabbing hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
-                          >
-                            {event.time} - {event.title}
-                          </div>
-                        ))}
+                        {dayEvents.map(event => {
+                          const clientName = clients.find(c => c.id === event.client_id)?.name;
+                          return (
+                            <div 
+                              key={event.id}
+                              draggable
+                              onDragStart={(e) => onDragStart(e, event.id)}
+                              onClick={() => setEditingEvent(event)}
+                              className="text-[10px] font-medium px-2 py-1.5 rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-500/20 shadow-sm cursor-grab active:cursor-grabbing hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors flex flex-col gap-0.5"
+                            >
+                              <div className="font-bold truncate">{event.title}</div>
+                              {clientName && (
+                                <div className="text-[8px] uppercase tracking-tighter opacity-70 flex items-center gap-1">
+                                  <Users className="w-2 h-2" /> {clientName}
+                                </div>
+                              )}
+                              <div className="text-[8px] opacity-70 flex items-center gap-1">
+                                <Clock className="w-2 h-2" /> {event.time}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </>
                   )}
@@ -155,7 +257,9 @@ export default function Agenda() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <form onSubmit={handleSave} className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-xl p-6 w-full max-w-sm">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">Editar Compromisso</h3>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">
+                {editingEvent.id ? "Editar Compromisso" : "Novo Compromisso"}
+              </h3>
               <button type="button" onClick={() => setEditingEvent(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300">
                 <X className="w-5 h-5" />
               </button>
@@ -172,6 +276,21 @@ export default function Agenda() {
                   required
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Vincular Cliente</label>
+                <select 
+                  value={editingEvent.client_id || ""}
+                  onChange={e => setEditingEvent({...editingEvent, client_id: e.target.value})}
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 text-sm"
+                >
+                  <option value="">Nenhum cliente</option>
+                  {clients.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Horário</label>
                 <input 
@@ -179,14 +298,28 @@ export default function Agenda() {
                   value={editingEvent.time} 
                   onChange={e => setEditingEvent({...editingEvent, time: e.target.value})}
                   className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Ex: 14:00"
+                  placeholder="Ex: 09:00 - 10:00"
                   required
                 />
               </div>
               
-              <div className="pt-2">
-                <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-xl transition-colors">
-                  Salvar Alterações
+              <div className="pt-2 flex gap-2">
+                {editingEvent.id && (
+                  <button 
+                    type="button" 
+                    onClick={handleDelete}
+                    disabled={isSaving}
+                    className="flex-1 bg-red-50 text-red-600 hover:bg-red-100 font-medium py-2 rounded-xl transition-colors"
+                  >
+                    Excluir
+                  </button>
+                )}
+                <button 
+                  type="submit" 
+                  disabled={isSaving}
+                  className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-xl transition-colors flex items-center justify-center"
+                >
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Salvar"}
                 </button>
               </div>
             </div>
