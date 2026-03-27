@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Plus, ChevronLeft, ChevronRight, X, Calendar as CalendarIcon, Loader2, Globe, RefreshCw, AlertCircle } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -24,7 +24,7 @@ const formatDateLocal = (date: Date) => {
 export default function Agenda() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [events, setEvents] = useState<Appointment[]>([]);
+  const [events, setEvents] = useState<Appointment[]>([]);`n  const [clients, setClients] = useState<any[]>([]);`n  const [isSaving, setIsSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,7 +50,7 @@ export default function Agenda() {
     if (error) {
       console.error("Erro ao buscar eventos:", error);
     } else {
-      setEvents(data || []);
+      setEvents(data || []);`n    const { data: clientsData } = await supabase.from("clients").select("id, name").order("name");`n    setClients(clientsData || []);
     }
     setLoading(false);
   };
@@ -70,10 +70,10 @@ export default function Agenda() {
     setIsSyncing(false);
   };
 
-  const handleGoogleConnect = () => {
+  const handleSave = async (payload: any) => {`n    if (!user) return;`n    setIsSaving(true);`n    const savePayload = { ...payload, user_id: user.id };`n    if (editingEvent?.id) {`n      const { error } = await supabase.from("appointments").update(savePayload).eq("id", editingEvent.id);`n      if (!error) await fetchEvents();`n    } else {`n      const { error } = await supabase.from("appointments").insert([savePayload]);`n      if (!error) await fetchEvents();`n    }`n    setIsSaving(false);`n    setIsModalOpen(false);`n    setEditingEvent(null);`n  };`n`n  const handleDelete = async () => {`n    if (!editingEvent?.id || !window.confirm("Deseja realmente excluir este compromisso?")) return;`n    setIsSaving(true);`n    const { error } = await supabase.from("appointments").delete().eq("id", editingEvent.id);`n    if (!error) await fetchEvents();`n    setIsSaving(false);`n    setIsModalOpen(false);`n    setEditingEvent(null);`n  };`n`n  const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert("Erro: Client ID do Google não configurado.");
+      alert("Erro: Client ID do Google nÃ£o configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -112,7 +112,7 @@ export default function Agenda() {
         </div>
       </div>
 
-      <div className="bg-slate-50/50 dark:bg-zinc-950/20 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-[500px]">
+      <div className="bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-200/50 dark:ring-zinc-700/30 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-[500px]">
         <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-zinc-900 z-20 gap-4">
           <div className="flex items-center gap-4">
             <h2 className="text-base font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest leading-none">
@@ -158,12 +158,12 @@ export default function Agenda() {
 
         <div className="flex-1 flex flex-col overflow-x-auto custom-scrollbar">
           <div className="grid grid-cols-7 border-b border-slate-200 dark:border-zinc-800 bg-slate-100/30 dark:bg-zinc-950/80 sticky top-0 z-10 min-w-[800px]">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
+            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b'].map(day => (
               <div key={day} className="p-4 text-center text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">{day}</div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 flex-1 bg-slate-50/50 dark:bg-zinc-950/20 auto-rows-fr min-w-[800px]">
+          <div className="grid grid-cols-7 flex-1 bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-200/50 dark:ring-zinc-700/30 auto-rows-fr min-w-[800px]">
             {daysArray.map((date, i) => {
               const dateIso = date ? formatDateLocal(date) : null;
               const isToday = dateIso === formatDateLocal(new Date());
@@ -193,7 +193,7 @@ export default function Agenda() {
                             onClick={(e) => { e.stopPropagation(); setEditingEvent(event); setIsModalOpen(true); }}
                             className="text-[10px] font-bold p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 truncate shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group/item"
                           >
-                            <span className="text-indigo-600 dark:text-indigo-400 mr-1 opacity-50">•</span>
+                            <span className="text-indigo-600 dark:text-indigo-400 mr-1 opacity-50">â€¢</span>
                             {event.title}
                           </div>
                         ))}
@@ -209,11 +209,16 @@ export default function Agenda() {
 
       {isModalOpen && (
         <AppointmentForm
-          appointment={editingEvent || undefined}
+          appointment={editingEvent}
           onClose={() => { setIsModalOpen(false); setEditingEvent(null); }}
-          onSaved={() => { setIsModalOpen(false); setEditingEvent(null); fetchEvents(); }}
+          onSaved={fetchEvents}
+          clients={clients}
+          onSave={handleSave}
+          onDelete={handleDelete}
+          isSaving={isSaving}
         />
       )}
     </div>
   );
 }
+
