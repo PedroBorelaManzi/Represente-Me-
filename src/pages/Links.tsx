@@ -115,25 +115,25 @@ export default function LinksPage() {
       <div className={cn(
         "flex flex-col space-y-4 transition-all duration-300",
         isFullScreen 
-          ? "fixed top-0 bottom-0 right-0 left-0 md:left-72 z-40 bg-slate-50 dark:bg-zinc-950 p-4 md:p-8" 
+          ? "fixed inset-0 z-[60] bg-white dark:bg-zinc-950 p-2 md:p-4" 
           : "h-[calc(100vh-10rem)]"
       )}>
-        <div className="flex items-center justify-between bg-white dark:bg-zinc-900 p-4 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm mb-2">
+        <div className="flex items-center justify-between bg-white dark:bg-zinc-900 p-3 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm mb-2">
           <div className="flex items-center gap-3">
             <button 
-              onClick={() => setSearchParams({})}
-              className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors flex items-center gap-1 text-sm font-medium"
+              onClick={() => { setSearchParams({}); setIsFullScreen(false); }}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl text-slate-600 dark:text-zinc-400 transition-colors flex items-center gap-1 text-sm font-medium"
             >
-              <X className="w-5 h-5" /> Voltar para o Hub
+              <X className="w-5 h-5" /> {isFullScreen ? "Sair" : "Voltar para o Hub"}
             </button>
-            <div className="w-1 h-6 bg-slate-200" />
-            <h1 className="text-lg font-bold text-slate-900">{activeLink.title}</h1>
+            <div className="w-1 h-6 bg-slate-200 dark:bg-zinc-800" />
+            <h1 className="text-lg font-bold text-slate-900 dark:text-zinc-100 truncate max-w-[150px] md:max-w-none">{activeLink.title}</h1>
           </div>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setIsFullScreen(!isFullScreen)}
-              className="p-2 hover:bg-slate-50 dark:hover:bg-zinc-900 rounded-xl text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1.5 text-xs font-medium"
-              title={isFullScreen ? "Contrair" : "Expandir"}
+              className="p-2 bg-indigo-50 dark:bg-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-xl text-indigo-600 dark:text-indigo-400 transition-colors flex items-center gap-1.5 text-xs font-bold ring-1 ring-indigo-200 dark:ring-indigo-800"
+              title={isFullScreen ? "Contrair" : "Expandir Tela Cheia"}
             >
               {isFullScreen ? (
                 <><Minimize2 className="w-4 h-4" /> Contrair</>
@@ -141,12 +141,12 @@ export default function LinksPage() {
                 <><Maximize2 className="w-4 h-4" /> Expandir</>
               )}
             </button>
-            <div className="w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1" />
+            <div className="hidden md:block w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1" />
             <a 
             href={activeLink.url} 
             target="_blank" 
             rel="noreferrer" 
-            className="p-2 hover:bg-slate-50 rounded-xl text-slate-500 hover:text-indigo-600 transition-colors flex items-center gap-1 text-xs"
+            className="hidden md:flex p-2 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl text-slate-500 dark:text-zinc-400 hover:text-indigo-600 transition-colors items-center gap-1 text-xs"
           >
             Abrir original <ExternalLink className="w-4 h-4" />
           </a>
