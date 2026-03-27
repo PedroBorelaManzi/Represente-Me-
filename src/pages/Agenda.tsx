@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X, Loader2, Users, Clock, Globe } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { cn } from "../lib/utils";
 
 type EventType = { 
   id: string; 
@@ -58,7 +59,7 @@ export default function Agenda() {
       .from("user_google_tokens")
       .select("id")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle(); // maybeSingle instead of single to handle no data
     setGoogleConnected(!!tokenData);
 
     const { data: clientsData } = await supabase
@@ -80,9 +81,19 @@ export default function Agenda() {
     loadData();
   }, [user]);
 
-  const handleGoogleConnect = async () => {
-    // In a real scenario, this would redirect to a Supabase Edge Function or Auth URL
-    alert("Para finalizar a integração, precisaremos das credenciais (Client ID) do Google Cloud Console. Estou preparando a estrutura!");
+  const handleGoogleConnect = () => {
+    // URL de autorização do Google
+    const clientId = "816743208237-040m7pclnn9de9biqfvhoflt0etdaabm.apps.googleusercontent.com";
+    const redirectUri = `${window.location.origin}/auth/callback/google`;
+    const scope = "https://www.googleapis.com/auth/calendar.events";
+    const responseType = "code";
+    const accessType = "offline";
+    const prompt = "consent";
+
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=${responseType}&access_type=${accessType}&prompt=${prompt}`;
+    
+    // Redireciona para o Google
+    window.location.href = authUrl;
   };
 
   const onDragStart = (e: React.DragEvent, id: string) => {
