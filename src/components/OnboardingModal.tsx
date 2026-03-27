@@ -133,7 +133,12 @@ export default function OnboardingModal() {
                     <span className="font-semibold text-amber-600">Dias para Alerta (Frio)</span>
                     <span className="font-bold text-slate-700 dark:text-zinc-300">{alerta} dias</span>
                   </div>
-                  <input type="range" min="5" max="60" step="5" value={alerta} onChange={(e) => setAlerta(Number(e.target.value))} className="w-full accent-amber-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
+                  <input type="range" min="5" max="60" step="5" value={alerta} onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setAlerta(val);
+                    if (critico <= val) setCritico(val + 5);
+                    if (perda <= val + 5) setPerda(val + 10);
+                  }} className="w-full accent-amber-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
                 </div>
 
                 <div className="space-y-1">
@@ -141,7 +146,11 @@ export default function OnboardingModal() {
                     <span className="font-semibold text-orange-600">Dias para Crítico (Quente)</span>
                     <span className="font-bold text-slate-700 dark:text-zinc-300">{critico} dias</span>
                   </div>
-                  <input type="range" min={alerta + 1} max="90" step="5" value={critico} onChange={(e) => setCritico(Math.max(alerta + 1, Number(e.target.value)))} className="w-full accent-orange-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
+                  <input type="range" min={alerta + 5} max="90" step="5" value={critico} onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setCritico(val);
+                    if (perda <= val) setPerda(val + 5);
+                  }} className="w-full accent-orange-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
                 </div>
 
                 <div className="space-y-1">
@@ -149,7 +158,7 @@ export default function OnboardingModal() {
                     <span className="font-semibold text-red-600">Dias para Perda</span>
                     <span className="font-bold text-slate-700 dark:text-zinc-300">{perda} dias</span>
                   </div>
-                  <input type="range" min={critico + 1} max="180" step="5" value={perda} onChange={(e) => setPerda(Math.max(critico + 1, Number(e.target.value)))} className="w-full accent-red-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
+                  <input type="range" min={critico + 5} max="180" step="5" value={perda} onChange={(e) => setPerda(Number(e.target.value))} className="w-full accent-red-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
                 </div>
               </div>
 

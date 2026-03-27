@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "../lib/utils";
 import { useAuth } from "../contexts/AuthContext";
-import { useSettings } from "../contexts/SettingsContext"; // Added
+import { useSettings } from "../contexts/SettingsContext";
 import OnboardingModal from "./OnboardingModal";
 import { supabase } from "../lib/supabase";
 
@@ -14,8 +14,8 @@ export default function Layout() {
 
   const location = useLocation();
   const { signOut, user } = useAuth();
-  const { settings, updateSettings } = useSettings(); // Added
-  const [settingsOpen, setSettingsOpen] = useState(false); // Added
+  const { settings, updateSettings } = useSettings();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'menu' | 'alerta' | 'tema'>('menu');
   const [integracoesOpen, setIntegracoesOpen] = useState(false);
   const [shortcutLinks, setShortcutLinks] = useState<any[]>([]);
@@ -75,7 +75,7 @@ export default function Layout() {
     return () => {
       window.removeEventListener('crm_shortcut_links_updated', loadLinks);
     };
-  }, [user]);
+  }, [user, settings]); // Adicionado settings aqui para atualizar ao mudar prazos
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -85,12 +85,10 @@ export default function Layout() {
     { name: "Empresas", href: "/dashboard/empresas", icon: Building2 },
   ];
 
-  // Identificar se estamos em uma página de integração aberta
   const isIntegrationView = location.pathname.includes('/links') && location.search.includes('id=');
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 font-sans flex">
-      {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
           className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm md:hidden"
@@ -98,7 +96,6 @@ export default function Layout() {
         />
       )}
 
-      {/* Sidebar */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:flex md:flex-col",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -150,7 +147,6 @@ export default function Layout() {
                           exit={{ opacity: 0, height: 0 }}
                           className="overflow-hidden pl-8 space-y-1"
                         >
-                          {/* Item geral */}
                           <Link
                             to="/dashboard/links"
                             className="flex items-center px-3 py-1.5 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-indigo-600 rounded-lg hover:bg-slate-50 dark:bg-zinc-950 transition-colors"
@@ -197,7 +193,6 @@ export default function Layout() {
             })}
           </nav>
 
-          {/* Inactivity Stats Section */}
           <div className="mt-6 pt-6 border-t border-slate-100 dark:border-zinc-900">
              <h3 className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-3 mb-3">
                Acompanhamento
@@ -294,9 +289,7 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile Header */}
         <div className="md:hidden flex items-center justify-between h-16 px-4 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800">
           <button onClick={() => setSidebarOpen(true)} className="text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
             <Menu className="w-6 h-6" />
@@ -315,7 +308,6 @@ export default function Layout() {
         </div>
       </main>
 
-      {/* Modal de Configurações */}
       <AnimatePresence>
         {settingsOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -355,15 +347,15 @@ export default function Layout() {
                   }} className="space-y-4">
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Alerta (dias)</label>
-                      <input name="alerta" type="number" defaultValue={settings.alerta_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" required />
+                      <input name="alerta" type="number" step="5" min="0" defaultValue={settings.alerta_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Crítico (dias)</label>
-                      <input name="critico" type="number" defaultValue={settings.critico_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" required />
+                      <input name="critico" type="number" step="5" min="0" defaultValue={settings.critico_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Perda (dias)</label>
-                      <input name="perda" type="number" defaultValue={settings.perda_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm" required />
+                      <input name="perda" type="number" step="5" min="0" defaultValue={settings.perda_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div className="flex items-center gap-3 pt-2">
                       <button type="button" onClick={() => setSettingsTab('menu')} className="flex-1 px-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 font-medium text-sm">Voltar</button>
