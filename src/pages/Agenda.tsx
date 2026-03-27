@@ -11,6 +11,14 @@ type EventType = {
   client_id?: string;
 };
 
+// Helper consistent with Dashboard.tsx
+const formatDateLocal = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function Agenda() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -36,10 +44,7 @@ export default function Agenda() {
 
   const isSameDay = (d1: Date | null, d2: string) => {
     if (!d1) return false;
-    const d2Date = new Date(d2);
-    return d1.getDate() === d2Date.getDate() &&
-           d1.getMonth() === d2Date.getMonth() &&
-           d1.getFullYear() === d2Date.getFullYear();
+    return formatDateLocal(d1) === d2;
   };
 
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -81,7 +86,7 @@ export default function Agenda() {
     const id = e.dataTransfer.getData("eventId");
     if (!id) return;
     
-    const isoDate = targetDate.toISOString().split('T')[0];
+    const isoDate = formatDateLocal(targetDate);
     
     setEvents(events.map(ev => 
       ev.id === id ? { ...ev, date: isoDate } : ev
@@ -151,7 +156,7 @@ export default function Agenda() {
     setEditingEvent({
       title: "",
       time: "09:00 - 10:00",
-      date: new Date().toISOString().split('T')[0],
+      date: formatDateLocal(new Date()),
       client_id: ""
     });
   };
@@ -202,8 +207,8 @@ export default function Agenda() {
 
           <div className="grid grid-cols-7 flex-1 bg-slate-50 dark:bg-zinc-950/30 auto-rows-fr">
             {daysArray.map((date, i) => {
-              const dateIso = date ? date.toISOString().split('T')[0] : null;
-              const isToday = dateIso === new Date().toISOString().split('T')[0];
+              const dateIso = date ? formatDateLocal(date) : null;
+              const isToday = dateIso === formatDateLocal(new Date());
               const dayEvents = dateIso ? events.filter(e => e.date === dateIso) : [];
               
               return (

@@ -14,6 +14,14 @@ type EventType = {
 
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 7); // 07:00 to 21:00
 
+// Helper to format date as YYYY-MM-DD in local time
+const formatDateLocal = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -38,16 +46,14 @@ export default function Dashboard() {
   });
 
   const isSameDay = (d1: Date, d2: string) => {
-    const d2Date = new Date(d2);
-    return d1.getDate() === d2Date.getDate() &&
-           d1.getMonth() === d2Date.getMonth() &&
-           d1.getFullYear() === d2Date.getFullYear();
+    return formatDateLocal(d1) === d2;
   };
 
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
     
+    // Use standard appointments table - correctly synced with Agenda.tsx
     const { data: clientsData } = await supabase
       .from("clients")
       .select("id, name")
@@ -67,10 +73,8 @@ export default function Dashboard() {
     loadData();
   }, [user]);
 
-  // Drag and Drop handlers
   const onDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData("eventId", id);
-    // Hidden ghost
     const img = new Image();
     img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
     e.dataTransfer.setDragImage(img, 0, 0);
@@ -87,15 +91,13 @@ export default function Dashboard() {
     const id = e.dataTransfer.getData("eventId");
     if (!id) return;
     
-    const isoDate = targetDate.toISOString().split('T')[0];
+    const isoDate = formatDateLocal(targetDate);
     const newTime = `${String(targetHour).padStart(2, '0')}:00 - ${String(targetHour + 1).padStart(2, '0')}:00`;
     
-    // Optimistic Update
     setEvents(events.map(ev => 
       ev.id === id ? { ...ev, date: isoDate, time: newTime } : ev
     ));
 
-    // Persist
     await supabase
       .from("appointments")
       .update({ date: isoDate, time: newTime })
@@ -161,7 +163,7 @@ export default function Dashboard() {
     setEditingEvent({
       title: "",
       time: timeStr,
-      date: date.toISOString().split('T')[0],
+      date: formatDateLocal(date),
       client_id: ""
     });
   };
@@ -171,14 +173,10 @@ export default function Dashboard() {
       const start = time.split(" - ")[0];
       const hour = parseInt(start.split(":")[0]);
       const minute = parseInt(start.split(":")[1] || "0");
-      
-      if (hour < 7 || hour > 21) return null; // Outside business hours
-      
+      if (hour < 7 || hour > 21) return null;
       const top = (hour - 7) * 60 + minute;
       return top;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   };
 
   return (
@@ -189,7 +187,7 @@ export default function Dashboard() {
             <LayoutDashboard className="w-6 h-6 text-indigo-600" />
             Início
           </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Sua agenda semanal e visão geral.</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Sua agenda semanal e visão geral de compromissos.</p>
         </div>
         <button 
           onClick={() => openNewEventModal(new Date())}
@@ -200,133 +198,112 @@ export default function Dashboard() {
         </button>
       </div>
       
-      <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
+      {/* Width set to grid-cols-1 as requested by user to occupy full space */}
+      <div className="grid grid-cols-1 gap-6 flex-1 min-h-0">
         
-        {/* Calendar Header */}
-        <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900 z-20">
-          <div className="flex items-center gap-4">
-             <h2 className="text-lg font-bold text-slate-800 dark:text-zinc-100 uppercase tracking-tight">
-               {weekDays[0].toLocaleDateString('pt-BR', { month: 'long' })} {weekDays[0].getFullYear()}
-             </h2>
-             <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-lg">
-                <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-md text-slate-600 dark:text-zinc-400 transition-all shadow-none hover:shadow-sm">
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-xs font-bold text-slate-700 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400">
-                  Hoje
-                </button>
-                <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-md text-slate-600 dark:text-zinc-400 transition-all shadow-none hover:shadow-sm">
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-             </div>
-          </div>
-        </div>
-
-        {/* Timeline Table */}
-        <div className="flex-1 flex flex-col overflow-auto custom-scrollbar relative">
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden flex flex-col h-full min-h-[600px]">
           
-          {/* Days Header */}
-          <div className="flex bg-slate-50/80 dark:bg-zinc-950/80 border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-20 backdrop-blur-md">
-            <div className="w-16 flex-shrink-0" /> {/* Hours spacer */}
-            <div className="flex-1 grid grid-cols-7 divide-x divide-slate-200 dark:divide-zinc-800">
-              {weekDays.map((date, i) => {
-                const isToday = isSameDay(date, new Date().toISOString());
-                return (
-                  <div key={i} className={cn(
-                    "p-3 text-center transition-colors",
-                    isToday ? "bg-indigo-50/50 dark:bg-indigo-500/10" : ""
-                  )}>
-                    <div className={cn(
-                      "text-[10px] font-bold uppercase tracking-widest mb-1",
-                      isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-zinc-500"
-                    )}>
-                      {date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
-                    </div>
-                    <div className={cn(
-                      "text-base font-black w-8 h-8 flex items-center justify-center rounded-full mx-auto transition-transform hover:scale-110",
-                      isToday ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none" : "text-slate-700 dark:text-zinc-300"
-                    )}>
-                      {date.getDate()}
-                    </div>
-                  </div>
-                );
-              })}
+          <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900 z-20">
+            <div className="flex items-center gap-4">
+               <h2 className="text-lg font-bold text-slate-800 dark:text-zinc-100 uppercase tracking-tight">
+                 {weekDays[0].toLocaleDateString('pt-BR', { month: 'long' })} {weekDays[0].getFullYear()}
+               </h2>
+               <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-lg">
+                  <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-md text-slate-600 dark:text-zinc-400 transition-all">
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Hoje
+                  </button>
+                  <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-md text-slate-600 dark:text-zinc-400 transition-all">
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+               </div>
             </div>
           </div>
 
-          {/* Grid Rows */}
-          <div className="flex flex-1 min-h-[900px]">
-            {/* Hours Labels */}
-            <div className="w-16 flex flex-col bg-white dark:bg-zinc-900 border-r border-slate-100 dark:border-zinc-800/50">
-              {HOURS.map(hour => (
-                <div key={hour} className="h-[60px] text-[10px] font-bold text-slate-400 dark:text-zinc-600 text-center py-2 -mt-2.5">
-                  {String(hour).padStart(2, '0')}:00
-                </div>
-              ))}
+          <div className="flex-1 flex flex-col overflow-auto custom-scrollbar relative">
+            <div className="flex bg-slate-50/80 dark:bg-zinc-950/80 border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-20 backdrop-blur-md">
+              <div className="w-16 flex-shrink-0" />
+              <div className="flex-1 grid grid-cols-7 divide-x divide-slate-200 dark:divide-zinc-800">
+                {weekDays.map((date, i) => {
+                  const isToday = isSameDay(date, formatDateLocal(new Date()));
+                  return (
+                    <div key={i} className={cn("p-3 text-center", isToday ? "bg-indigo-50/50 dark:bg-indigo-500/10" : "")}>
+                      <div className={cn("text-[10px] font-bold uppercase tracking-widest mb-1", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-zinc-500")}>
+                        {date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
+                      </div>
+                      <div className={cn("text-base font-black w-8 h-8 flex items-center justify-center rounded-full mx-auto", isToday ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none" : "text-slate-700 dark:text-zinc-300")}>
+                        {date.getDate()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Event Columns */}
-            <div className="flex-1 grid grid-cols-7 divide-x divide-slate-100 dark:divide-zinc-800/30 relative">
-              {weekDays.map((date, dayIdx) => {
-                const dayEvents = events.filter(e => isSameDay(date, e.date));
-                const isToday = isSameDay(date, new Date().toISOString());
-
-                return (
-                  <div key={dayIdx} className={cn(
-                    "relative group h-full transition-colors",
-                    isToday ? "bg-indigo-50/10 dark:bg-indigo-500/[0.02]" : ""
-                  )}>
-                    {/* Hour Slots for dropping */}
-                    {HOURS.map(hour => (
-                      <div 
-                        key={hour} 
-                        className={cn(
-                          "h-[60px] border-b border-slate-50 dark:border-zinc-800/20 cursor-pointer ",
-                          dragOverInfo?.dayIndex === dayIdx && dragOverInfo?.hour === hour ? "bg-indigo-500/10" : "hover:bg-slate-50/50 dark:hover:bg-zinc-800/10"
-                        )}
-                        onDragOver={(e) => onDragOver(e, dayIdx, hour)}
-                        onDrop={(e) => onDrop(e, date, hour)}
-                        onClick={() => openNewEventModal(date, hour)}
-                      />
-                    ))}
-
-                    {/* Events Container */}
-                    <div className="absolute inset-0 pointer-events-none p-1">
-                      {dayEvents.map(event => {
-                        const top = getEventPosition(event.time);
-                        if (top === null) return null;
-                        
-                        const clientName = clients.find(c => c.id === event.client_id)?.name;
-
-                        return (
-                          <div
-                            key={event.id}
-                            draggable
-                            onDragStart={(e) => onDragStart(e, event.id)}
-                            onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }}
-                            className="absolute left-1 right-1 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-500 rounded-lg p-2 transition-all cursor-grab active:cursor-grabbing group/event z-10 overflow-hidden"
-                            style={{ top: `${top}px`, minHeight: '55px' }}
-                          >
-                            <div className="text-[11px] font-extrabold text-slate-800 dark:text-zinc-100 mb-1 leading-tight truncate">
-                              {event.title}
-                            </div>
-                            {clientName && (
-                              <div className="flex items-center gap-1 text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter mb-1 truncate">
-                                <Users className="w-2.5 h-2.5 flex-shrink-0" />
-                                {clientName}
-                              </div>
-                            )}
-                            <div className="flex items-center gap-1 text-[9px] font-bold text-slate-500 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-900/50 px-1.5 py-0.5 rounded-md w-fit">
-                              <Clock className="w-2.5 h-2.5 text-indigo-500" />
-                              {event.time.split(" - ")[0]}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+            <div className="flex flex-1 min-h-[900px]">
+              <div className="w-16 flex flex-col bg-white dark:bg-zinc-900 border-r border-slate-100 dark:border-zinc-800/50">
+                {HOURS.map(hour => (
+                  <div key={hour} className="h-[60px] text-[10px] font-bold text-slate-400 dark:text-zinc-600 text-center py-2 -mt-2.5">
+                    {String(hour).padStart(2, '0')}:00
                   </div>
-                );
-              })}
+                ))}
+              </div>
+
+              <div className="flex-1 grid grid-cols-7 divide-x divide-slate-100 dark:divide-zinc-800/30 relative">
+                {weekDays.map((date, dayIdx) => {
+                  const dayEvents = events.filter(e => isSameDay(date, e.date));
+                  const isToday = isSameDay(date, formatDateLocal(new Date()));
+
+                  return (
+                    <div key={dayIdx} className={cn("relative group h-full", isToday ? "bg-indigo-50/10 dark:bg-indigo-500/[0.02]" : "")}>
+                      {HOURS.map(hour => (
+                        <div 
+                          key={hour} 
+                          className={cn("h-[60px] border-b border-slate-50 dark:border-zinc-800/20 cursor-pointer ", dragOverInfo?.dayIndex === dayIdx && dragOverInfo?.hour === hour ? "bg-indigo-500/10" : "hover:bg-slate-50/50 dark:hover:bg-zinc-800/10")}
+                          onDragOver={(e) => onDragOver(e, dayIdx, hour)}
+                          onDrop={(e) => onDrop(e, date, hour)}
+                          onClick={() => openNewEventModal(date, hour)}
+                        />
+                      ))}
+
+                      <div className="absolute inset-0 pointer-events-none p-1">
+                        {dayEvents.map(event => {
+                          const top = getEventPosition(event.time);
+                          if (top === null) return null;
+                          const clientName = clients.find(c => c.id === event.client_id)?.name;
+
+                          return (
+                            <div
+                              key={event.id}
+                              draggable
+                              onDragStart={(e) => onDragStart(e, event.id)}
+                              onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }}
+                              className="absolute left-1 right-1 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-500 rounded-lg p-2 transition-all cursor-grab active:cursor-grabbing z-10 overflow-hidden"
+                              style={{ top: `${top}px`, minHeight: '55px' }}
+                            >
+                              <div className="text-[11px] font-extrabold text-slate-800 dark:text-zinc-100 mb-1 truncate">
+                                {event.title}
+                              </div>
+                              {clientName && (
+                                <div className="flex items-center gap-1 text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter mb-1 truncate">
+                                  <Users className="w-2.5 h-2.5 flex-shrink-0" />
+                                  {clientName}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1 text-[9px] font-bold text-slate-500 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-900/50 px-1.5 py-0.5 rounded-md w-fit">
+                                <Clock className="w-2.5 h-2.5 text-indigo-500" />
+                                {event.time.split(" - ")[0]}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -334,12 +311,12 @@ export default function Dashboard() {
 
       {editingEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-          <form onSubmit={handleSave} className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-8 w-full max-w-sm transform transition-all scale-100">
+          <form onSubmit={handleSave} className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-8 w-full max-w-sm">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">
                 {editingEvent.id ? "Editar Compromisso" : "Novo Compromisso"}
               </h3>
-              <button type="button" onClick={() => setEditingEvent(null)} className="p-2 bg-slate-100 dark:bg-zinc-800 rounded-full text-slate-500 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors">
+              <button type="button" onClick={() => setEditingEvent(null)} className="p-2 bg-slate-100 dark:bg-zinc-800 rounded-full text-slate-500 hover:text-slate-900">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -352,26 +329,20 @@ export default function Dashboard() {
                   value={editingEvent.title} 
                   onChange={e => setEditingEvent({...editingEvent, title: e.target.value})}
                   className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
-                  placeholder="Ex: Reunião com diretoria"
                   required
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Cliente Vinculado</label>
-                <div className="relative">
-                  <select 
-                    value={editingEvent.client_id || ""}
-                    onChange={e => setEditingEvent({...editingEvent, client_id: e.target.value})}
-                    className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 appearance-none transition-all font-medium text-sm"
-                  >
-                    <option value="">Nenhum cliente</option>
-                    {clients.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  <Users className="absolute right-4 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
+                <select 
+                  value={editingEvent.client_id || ""}
+                  onChange={e => setEditingEvent({...editingEvent, client_id: e.target.value})}
+                  className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 text-sm"
+                >
+                  <option value="">Nenhum cliente</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -381,7 +352,7 @@ export default function Dashboard() {
                       type="date"
                       value={editingEvent.date}
                       onChange={e => setEditingEvent({...editingEvent, date: e.target.value})}
-                      className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 text-sm"
+                      className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 dark:text-zinc-100 text-sm"
                     />
                  </div>
                  <div>
@@ -390,8 +361,7 @@ export default function Dashboard() {
                       type="text" 
                       value={editingEvent.time} 
                       onChange={e => setEditingEvent({...editingEvent, time: e.target.value})}
-                      className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 text-sm"
-                      placeholder="09:00 - 10:00"
+                      className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 dark:text-zinc-100 text-sm"
                       required
                     />
                  </div>
@@ -399,22 +369,9 @@ export default function Dashboard() {
               
               <div className="pt-4 flex gap-3">
                 {editingEvent.id && (
-                  <button 
-                    type="button" 
-                    onClick={handleDelete}
-                    disabled={isSaving}
-                    className="flex-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 font-bold py-3 rounded-2xl transition-all"
-                  >
-                    Excluir
-                  </button>
+                  <button type="button" onClick={handleDelete} className="flex-1 bg-red-50 dark:bg-red-500/10 text-red-600 font-bold py-3 rounded-2xl transition-all">Excluir</button>
                 )}
-                <button 
-                  type="submit" 
-                  disabled={isSaving}
-                  className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl shadow-lg shadow-indigo-200 dark:shadow-none transition-all flex items-center justify-center gap-2"
-                >
-                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Salvar Alterações</>}
-                </button>
+                <button type="submit" className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl shadow-lg transition-all">Salvar Alterações</button>
               </div>
             </div>
           </form>
