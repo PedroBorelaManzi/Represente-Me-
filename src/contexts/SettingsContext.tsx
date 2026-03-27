@@ -95,13 +95,16 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-
-
   useEffect(() => {
+    const root = document.documentElement;
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    
     if (settings.theme === 'dark') {
-      document.documentElement.classList.add('dark');
+      root.classList.add('dark');
+      if (metaThemeColor) metaThemeColor.setAttribute('content', '#09090b');
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
+      if (metaThemeColor) metaThemeColor.setAttribute('content', '#f8fafc');
     }
   }, [settings.theme]);
 
