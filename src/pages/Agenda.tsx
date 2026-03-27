@@ -46,7 +46,7 @@ export default function Agenda() {
       .maybeSingle();
     setGoogleConnected(!!tokenData);
 
-    const { data: clientsData } = await supabase.from("clients").select("id, name, city, state");
+    const { data: clientsData } = await supabase.from("clients").select("id, name, city, state").order("name");
     setClients(clientsData || []);
 
     // Fetch Holidays
@@ -63,8 +63,6 @@ export default function Agenda() {
       console.error("Erro ao buscar eventos:", error);
     } else {
       setEvents(data || []);
-    const { data: clientsData } = await supabase.from("clients").select("id, name").order("name");
-    setClients(clientsData || []);
     }
     setLoading(false);
   };

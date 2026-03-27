@@ -64,7 +64,7 @@ export default function Dashboard() {
       .maybeSingle();
     setGoogleConnected(!!tokenData);
 
-    const { data: clientsData } = await supabase.from("clients").select("id, name").order("name");
+    const { data: clientsData } = await supabase.from("clients").select("id, name, city, state").order("name");
     setClients(clientsData || []);
     const { data: appData } = await supabase.from("appointments").select("*").eq("user_id", user.id);
 

@@ -499,6 +499,7 @@ export default function CRMPage() {
                         <input type="text" placeholder="Telefone" className="px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={newClient.phone} onChange={e => setNewClient({...newClient, phone: e.target.value})} />
                         <input type="text" placeholder="Cidade" className="px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={newClient.city} onChange={e => setNewClient({...newClient, city: e.target.value})} />
                      </div>
+                     <input type="text" placeholder="Endereço (Rua, número, etc.)" className="w-full px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={(newClient as any).address} onChange={e => setNewClient({...newClient, address: e.target.value} as any)} />
                      <div className="flex gap-3">
                         <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2 border rounded-xl dark:border-zinc-800 dark:text-zinc-400">Cancelar</button>
                         <button type="submit" disabled={submitting} className="flex-1 py-2 bg-indigo-600 text-white rounded-xl">Salvar</button>
@@ -518,6 +519,7 @@ export default function CRMPage() {
                         <input type="text" placeholder="Telefone" className="px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={editFormData.phone} onChange={e => setEditFormData({...editFormData, phone: e.target.value})} />
                         <div className="grid grid-cols-3 gap-2"> <input type="text" placeholder="Cidade" className="col-span-2 px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={editFormData.city} onChange={e => setEditFormData({...editFormData, city: e.target.value})} /> <input type="text" placeholder="UF" maxLength={2} className="px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100 font-bold" value={editFormData.state} onChange={e => setEditFormData({...editFormData, state: e.target.value.toUpperCase()})} /> </div>
                      </div>
+                     <input type="text" placeholder="Endereço (Rua, número, etc.)" className="w-full px-3 py-2 border rounded-xl dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100" value={editFormData.address} onChange={e => setEditFormData({...editFormData, address: e.target.value})} />
                      <div className="flex gap-3">
                         <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-2 border rounded-xl dark:border-zinc-800 dark:text-zinc-400">Cancelar</button>
                         <button type="submit" disabled={submitting} className="flex-1 py-2 bg-indigo-600 text-white rounded-xl">Salvar</button>

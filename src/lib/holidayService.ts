@@ -14,11 +14,16 @@ const API_BASE_URL = 'https://api.feriados.dev/v1/holidays';
 
 export async function fetchHolidays(year: number, locations: { city: string; state: string }[]): Promise<Holiday[]> {
   try {
-    // 1. Fetch National Holidays
-    const nationalUrl = `${API_BASE_URL}?year=${year}&type=national`;
+    // 1. Fetch National Holidays from BrasilAPI (more reliable)
+    const nationalUrl = `https://brasilapi.com.br/api/feriados/v1/${year}`;
     const nationalRes = await fetch(nationalUrl);
     const nationalData = await nationalRes.json();
-    let allHolidays: Holiday[] = nationalData.success ? nationalData.data : [];
+    let allHolidays: Holiday[] = Array.isArray(nationalData) ? nationalData.map((h: any) => ({
+      id: h.name,
+      name: h.name,
+      date: h.date,
+      type: 'national'
+    })) : [];
 
     // 2. Fetch Municipal and State Holidays for unique locations
     const uniqueLocations = Array.from(new Set(locations.map(l => `${l.city.toUpperCase()}|${l.state.toUpperCase()}`)))
