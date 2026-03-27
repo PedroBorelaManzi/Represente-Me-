@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Plus, ChevronLeft, ChevronRight, Clock, X, LayoutDashboard, Loader2, Users, Globe } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Clock, X, LayoutDashboard, Loader2, Users, Globe, RefreshCw } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
+import { syncGoogleEvents } from "../lib/googleSync";
 
 type EventType = { 
   id: string; 
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const [dragOverInfo, setDragOverInfo] = useState<{ dayIndex: number; hour: number } | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const startOfWeek = new Date(currentDate);
   const day = startOfWeek.getDay();
@@ -68,16 +70,26 @@ export default function Dashboard() {
 
   useEffect(() => { loadData(); }, [user]);
 
+  const handleSync = async () => {
+    if (!user) return;
+    setIsSyncing(true);
+    const res = await syncGoogleEvents(user.id);
+    alert(res.message);
+    if (res.success) {
+      await loadData();
+    }
+    setIsSyncing(false);
+  };
+
   const handleGoogleConnect = () => {
-    const clientId = "816743208237-040m7pclnn9de9biqfvhoflt0etdaabm.apps.googleusercontent.com";
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      alert("Erro: Client ID do Google não configurado.");
+      return;
+    }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
     const scope = "https://www.googleapis.com/auth/calendar.events";
-    const responseType = "code";
-    const accessType = "offline";
-    const prompt = "consent";
-
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=${responseType}&access_type=${accessType}&prompt=${prompt}`;
-    
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code&access_type=offline&prompt=consent`;
     window.location.href = authUrl;
   };
 
@@ -147,13 +159,23 @@ export default function Dashboard() {
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-tight">
             <LayoutDashboard className="w-6 h-6 text-indigo-600" />
             Início
           </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Sua agenda semanal e visão geral.</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Sua agenda semanal sincronizada.</p>
         </div>
         <div className="flex items-center gap-2">
+          {googleConnected && (
+            <button 
+              onClick={handleSync}
+              disabled={isSyncing}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-white border border-slate-200 text-indigo-600 hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-indigo-400 dark:hover:bg-zinc-800"
+            >
+              <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
+              {isSyncing ? "Sincronizando..." : "Sincronizar Agora"}
+            </button>
+          )}
           <button 
             onClick={handleGoogleConnect}
             className={cn(
@@ -164,7 +186,7 @@ export default function Dashboard() {
             )}
           >
             <Globe className={cn("w-4 h-4", googleConnected ? "text-emerald-500" : "text-slate-400")} />
-            {googleConnected ? "Google Conectado" : "Conectar Google"}
+            {googleConnected ? "Conectado" : "Conectar Google"}
           </button>
           <button onClick={() => openNewEventModal(new Date())} className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-sm">
             <Plus className="w-4 h-4" /> Novo Agendamento
@@ -176,15 +198,15 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
         
         {/* Left Column: Agenda (Occupying ~50%) */}
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden flex flex-col h-full min-h-[500px]">
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden flex flex-col h-full min-h-[500px]">
           <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900 z-20">
-            <h2 className="text-base font-bold text-slate-800 dark:text-zinc-100 uppercase tracking-wider">
+            <h2 className="text-base font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest">
               {weekDays[0].toLocaleDateString('pt-BR', { month: 'long' })} {weekDays[0].getFullYear()}
             </h2>
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-lg">
-              <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-md text-slate-600 dark:text-zinc-400 transition-all"><ChevronLeft className="w-4 h-4" /></button>
-              <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-[10px] font-bold text-slate-700 dark:text-zinc-300">Hoje</button>
-              <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-md text-slate-600 dark:text-zinc-400 transition-all"><ChevronRight className="w-4 h-4" /></button>
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1.5 rounded-xl">
+              <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-zinc-400 transition-all"><ChevronLeft className="w-4 h-4" /></button>
+              <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-[10px] font-black text-slate-700 dark:text-zinc-300 uppercase tracking-tighter">Hoje</button>
+              <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-zinc-400 transition-all"><ChevronRight className="w-4 h-4" /></button>
             </div>
           </div>
 
@@ -196,8 +218,8 @@ export default function Dashboard() {
                   const isToday = isSameDay(date, formatDateLocal(new Date()));
                   return (
                     <div key={i} className={cn("py-2 text-center", isToday ? "bg-indigo-50/50 dark:bg-indigo-500/10" : "")}>
-                      <div className={cn("text-[8px] font-bold uppercase tracking-widest", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-zinc-500")}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
-                      <div className={cn("text-xs font-black", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-zinc-300")}>{date.getDate()}</div>
+                      <div className={cn("text-[8px] font-black uppercase tracking-widest", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-zinc-500")}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
+                      <div className={cn("text-xs font-black", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-zinc-100")}>{date.getDate()}</div>
                     </div>
                   );
                 })}
@@ -206,9 +228,9 @@ export default function Dashboard() {
 
             {/* Grid Container Adjusted to match 16 hours precisely (16 * 60px = 960px) */}
             <div className="flex flex-1 min-h-[960px]">
-              <div className="w-12 flex flex-col bg-white dark:bg-zinc-900 border-r border-slate-100 dark:border-zinc-800/50">
+              <div className="w-12 flex flex-col bg-white dark:bg-zinc-900 border-r border-slate-100 dark:border-zinc-800/50 text-slate-400">
                 {HOURS.map(hour => (
-                  <div key={hour} className="h-[60px] text-[9px] font-bold text-slate-400 dark:text-zinc-600 text-center py-2 -mt-2.5">{String(hour).padStart(2, '0')}:00</div>
+                  <div key={hour} className="h-[60px] text-[9px] font-black text-center py-2 -mt-2.5 tracking-tight">{String(hour).padStart(2, '0')}:00</div>
                 ))}
               </div>
               <div className="flex-1 grid grid-cols-7 divide-x divide-slate-100 dark:divide-zinc-800/30 relative">
@@ -218,17 +240,17 @@ export default function Dashboard() {
                   return (
                     <div key={dayIdx} className={cn("relative h-full", isToday ? "bg-indigo-50/5" : "")}>
                       {HOURS.map(hour => (
-                        <div key={hour} className={cn("h-[60px] border-b border-slate-50 dark:border-zinc-800/20 cursor-pointer ", dragOverInfo?.dayIndex === dayIdx && dragOverInfo?.hour === hour ? "bg-indigo-500/10" : "hover:bg-slate-50/30")} onDragOver={(e) => onDragOver(e, dayIdx, hour)} onDrop={(e) => onDrop(e, date, hour)} onClick={() => openNewEventModal(date, hour)} />
+                        <div key={hour} className={cn("h-[60px] border-b border-slate-50 dark:border-zinc-800/20 cursor-pointer transition-colors", dragOverInfo?.dayIndex === dayIdx && dragOverInfo?.hour === hour ? "bg-indigo-500/10" : "hover:bg-slate-50/30")} onDragOver={(e) => onDragOver(e, dayIdx, hour)} onDrop={(e) => onDrop(e, date, hour)} onClick={() => openNewEventModal(date, hour)} />
                       ))}
-                      <div className="absolute inset-0 pointer-events-none p-0.5">
+                      <div className="absolute inset-0 pointer-events-none p-1">
                         {dayEvents.map(event => {
                           const top = getEventPosition(event.time);
                           if (top === null) return null;
                           const clientName = clients.find(c => c.id === event.client_id)?.name;
                           return (
-                            <div key={event.id} draggable onDragStart={(e) => onDragStart(e, event.id)} onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }} className="absolute left-0.5 right-0.5 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm rounded-md p-1.5 transition-all cursor-grab active:cursor-grabbing z-10 overflow-hidden" style={{ top: `${top}px`, minHeight: '50px' }}>
-                              <div className="text-[10px] font-black text-slate-800 dark:text-zinc-100 mb-0.5 truncate">{event.title}</div>
-                              {clientName && <div className="text-[8px] font-bold text-indigo-600 dark:text-indigo-400 uppercase truncate">@{clientName}</div>}
+                            <div key={event.id} draggable onDragStart={(e) => onDragStart(e, event.id)} onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }} className="absolute left-1 right-1 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm rounded-xl p-2 transition-all cursor-grab active:cursor-grabbing z-10 overflow-hidden ring-1 ring-slate-900/5" style={{ top: `${top}px`, minHeight: '52px' }}>
+                              <div className="text-[10px] font-black text-slate-900 dark:text-zinc-100 mb-0.5 truncate">{event.title}</div>
+                              {clientName && <div className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 uppercase truncate">@{clientName}</div>}
                             </div>
                           );
                         })}
@@ -249,20 +271,20 @@ export default function Dashboard() {
       </div>
 
       {editingEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
           <form onSubmit={handleSave} className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-8 w-full max-sm mb-4 sm:mb-0">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{editingEvent.id ? "Editar Compromisso" : "Novo Compromisso"}</h3>
-              <button type="button" onClick={() => setEditingEvent(null)} className="p-2 bg-slate-100 dark:bg-zinc-800 rounded-full text-slate-500 hover:text-slate-900"><X className="w-5 h-5" /></button>
+              <button type="button" onClick={() => setEditingEvent(null)} className="p-2 bg-slate-100 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-slate-900 transition-all"><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-5">
               <div>
                 <label className="block text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Título do Evento</label>
-                <input type="text" value={editingEvent.title} onChange={e => setEditingEvent({...editingEvent, title: e.target.value})} className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 font-medium" required />
+                <input type="text" value={editingEvent.title} onChange={e => setEditingEvent({...editingEvent, title: e.target.value})} className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 font-bold" required />
               </div>
               <div>
                 <label className="block text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Cliente Vinculado</label>
-                <select value={editingEvent.client_id || ""} onChange={e => setEditingEvent({...editingEvent, client_id: e.target.value})} className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 text-sm">
+                <select value={editingEvent.client_id || ""} onChange={e => setEditingEvent({...editingEvent, client_id: e.target.value})} className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 font-bold text-sm">
                   <option value="">Nenhum cliente</option>
                   {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
@@ -270,16 +292,16 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 gap-4">
                  <div>
                     <label className="block text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Data</label>
-                    <input type="date" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 dark:text-zinc-100 text-sm" />
+                    <input type="date" value={editingEvent.date} onChange={e => setEditingEvent({...editingEvent, date: e.target.value})} className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 dark:text-zinc-100 text-sm font-bold" />
                  </div>
                  <div>
                     <label className="block text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Horário</label>
-                    <input type="text" value={editingEvent.time} onChange={e => setEditingEvent({...editingEvent, time: e.target.value})} className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 dark:text-zinc-100 text-sm" required />
+                    <input type="text" value={editingEvent.time} onChange={e => setEditingEvent({...editingEvent, time: e.target.value})} className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 dark:text-zinc-100 text-sm font-bold" required />
                  </div>
               </div>
               <div className="pt-4 flex gap-3">
-                {editingEvent.id && <button type="button" onClick={handleDelete} className="flex-1 bg-red-50 dark:bg-red-500/10 text-red-600 font-bold py-3 rounded-2xl transition-all">Excluir</button>}
-                <button type="submit" className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl shadow-lg transition-all">Salvar Alterações</button>
+                {editingEvent.id && <button type="button" onClick={handleDelete} className="flex-1 bg-red-50 text-red-600 font-black py-3 rounded-2xl transition-all">Excluir</button>}
+                <button type="submit" className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-2xl shadow-lg transition-all">Salvar</button>
               </div>
             </div>
           </form>
