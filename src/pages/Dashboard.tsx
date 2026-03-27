@@ -171,7 +171,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
         
         {/* Left Column: Agenda (Occupying ~50%) */}
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden flex flex-col h-full min-h-[500px]">
+        <div className="bg-slate-50/50 dark:bg-zinc-950/20 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden flex flex-col h-full min-h-[500px]">
           <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-zinc-900 z-40 gap-4">
             <div className="flex items-center gap-4">
               <h2 className="text-base font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest leading-none">
@@ -204,7 +204,6 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               <div className="flex items-center bg-slate-100 dark:bg-zinc-800 p-1.5 rounded-xl">
                 <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-zinc-400 transition-all"><ChevronLeft className="w-4 h-4" /></button>
-                <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-[10px] font-black text-slate-700 dark:text-zinc-300 uppercase tracking-tighter">Hoje</button>
                 <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-zinc-400 transition-all"><ChevronRight className="w-4 h-4" /></button>
               </div>
               <button 
@@ -219,8 +218,8 @@ export default function Dashboard() {
           <div className="flex-1 flex flex-col overflow-auto custom-scrollbar relative">
             <div className="flex flex-1 min-h-[960px] overflow-x-auto custom-scrollbar">
               <div className="flex flex-col flex-1 min-w-[700px]">
-                <div className="flex bg-slate-50/80 dark:bg-zinc-950/80 border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-30 backdrop-blur-md">
-                  <div className="w-12 flex-shrink-0 sticky left-0 bg-slate-50 dark:bg-zinc-950 z-40 border-r border-slate-200 dark:border-zinc-800" />
+                <div className="flex bg-slate-100/30 dark:bg-zinc-950/40 border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-30 backdrop-blur-md">
+                  <div className="w-12 flex-shrink-0 sticky left-0 bg-slate-100 dark:bg-zinc-950/40 z-40 border-r border-slate-200 dark:border-zinc-800" />
                   <div className="flex-1 grid grid-cols-7 divide-x divide-slate-200 dark:divide-zinc-800">
                     {weekDays.map((date, i) => {
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
@@ -235,19 +234,19 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex flex-1">
-                  <div className="w-12 flex flex-col bg-white dark:bg-zinc-900 border-r border-slate-100 dark:border-zinc-800/50 text-slate-400 flex-shrink-0 sticky left-0 z-30 shadow-sm">
+                  <div className="w-12 flex flex-col bg-slate-100/20 dark:bg-zinc-950/20 border-r border-slate-100 dark:border-zinc-800/20 text-slate-400 flex-shrink-0 sticky left-0 z-30 shadow-sm">
                     {HOURS.map(hour => (
-                      <div key={hour} className="h-[60px] text-[9px] font-black text-center py-2 -mt-2.5 tracking-tight flex items-center justify-center bg-white dark:bg-zinc-900">{String(hour).padStart(2, '0')}:00</div>
+                      <div key={hour} className="h-[60px] text-[9px] font-black text-center py-2 -mt-2.5 tracking-tight flex items-center justify-center">{String(hour).padStart(2, '0')}:00</div>
                     ))}
                   </div>
-                  <div className="flex-1 grid grid-cols-7 divide-x divide-slate-100 dark:divide-zinc-800/30 relative">
+                  <div className="flex-1 grid grid-cols-7 divide-x divide-slate-100 dark:divide-zinc-800/10 relative">
                     {weekDays.map((date, dayIdx) => {
                       const dayEvents = events.filter(e => isSameDay(date, e.date));
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
                       return (
                         <div key={dayIdx} className={cn("relative h-full", isToday ? "bg-indigo-50/5" : "")}>
                           {HOURS.map(hour => (
-                            <div key={hour} className={cn("h-[60px] border-b border-slate-50 dark:border-zinc-800/20 cursor-pointer transition-colors", dragOverInfo?.dayIndex === dayIdx && dragOverInfo?.hour === hour ? "bg-indigo-500/10" : "hover:bg-slate-50/30")} onDragOver={(e) => onDragOver(e, dayIdx, hour)} onDrop={(e) => onDrop(e, date, hour)} onClick={() => openNewEventModal(date, hour)} />
+                            <div key={hour} className={cn("h-[60px] border-b border-slate-50 dark:border-zinc-800/10 cursor-pointer transition-colors", dragOverInfo?.dayIndex === dayIdx && dragOverInfo?.hour === hour ? "bg-indigo-500/10" : "hover:bg-slate-50/30")} onDragOver={(e) => onDragOver(e, dayIdx, hour)} onDrop={(e) => onDrop(e, date, hour)} onClick={() => openNewEventModal(date, hour)} />
                           ))}
                           <div className="absolute inset-0 pointer-events-none p-1">
                             {dayEvents.map(event => {
