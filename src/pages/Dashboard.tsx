@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Plus, ChevronLeft, ChevronRight, Clock, X, LayoutDashboard, Loader2, Users, Calendar, BarChart3, TrendingUp, PieChart } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, ChevronLeft, ChevronRight, Clock, X, LayoutDashboard, Loader2, Users } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
@@ -12,7 +12,8 @@ type EventType = {
   client_id?: string;
 };
 
-const HOURS = Array.from({ length: 15 }, (_, i) => i + 7); // 07:00 to 21:00
+// Extended to 22:00 (16 hours total from 07:00)
+const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); 
 
 const formatDateLocal = (date: Date) => {
   const year = date.getFullYear();
@@ -114,7 +115,7 @@ export default function Dashboard() {
       const start = time.split(" - ")[0];
       const hour = parseInt(start.split(":")[0]);
       const minute = parseInt(start.split(":")[1] || "0");
-      if (hour < 7 || hour > 21) return null;
+      if (hour < 7 || hour > 22) return null;
       return (hour - 7) * 60 + minute;
     } catch { return null; }
   };
@@ -134,17 +135,18 @@ export default function Dashboard() {
         </button>
       </div>
       
-      {/* Layout returned to 2 columns (lg:grid-cols-2) */}
+      {/* 2 columns layout main container */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
         
+        {/* Left Column: Agenda (Occupying ~50%) */}
         <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden flex flex-col h-full min-h-[500px]">
           <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900 z-20">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-zinc-100 uppercase tracking-tight">
+            <h2 className="text-base font-bold text-slate-800 dark:text-zinc-100 uppercase tracking-wider">
               {weekDays[0].toLocaleDateString('pt-BR', { month: 'long' })} {weekDays[0].getFullYear()}
             </h2>
             <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-lg">
               <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-md text-slate-600 dark:text-zinc-400 transition-all"><ChevronLeft className="w-4 h-4" /></button>
-              <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-xs font-bold text-slate-700 dark:text-zinc-300">Hoje</button>
+              <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-[10px] font-bold text-slate-700 dark:text-zinc-300">Hoje</button>
               <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-md text-slate-600 dark:text-zinc-400 transition-all"><ChevronRight className="w-4 h-4" /></button>
             </div>
           </div>
@@ -165,7 +167,8 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="flex flex-1 min-h-[900px]">
+            {/* Grid Container Adjusted to match 16 hours precisely (16 * 60px = 960px) */}
+            <div className="flex flex-1 min-h-[960px]">
               <div className="w-12 flex flex-col bg-white dark:bg-zinc-900 border-r border-slate-100 dark:border-zinc-800/50">
                 {HOURS.map(hour => (
                   <div key={hour} className="h-[60px] text-[9px] font-bold text-slate-400 dark:text-zinc-600 text-center py-2 -mt-2.5">{String(hour).padStart(2, '0')}:00</div>
@@ -201,57 +204,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Second column for other info (Placeholder) */}
-        <div className="space-y-6">
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg overflow-hidden relative">
-             <div className="absolute top-0 right-0 p-4 opacity-10">
-                <TrendingUp className="w-24 h-24" />
-             </div>
-             <h3 className="text-xl font-black mb-2 tracking-tight">Resumo de Vendas</h3>
-             <p className="text-indigo-100 text-sm mb-4">Seu desempenho esta semana teve um aumento de 12% em relação à anterior.</p>
-             <div className="flex gap-4">
-                <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 flex-1">
-                   <div className="text-xs text-indigo-100 font-bold uppercase">Pedidos</div>
-                   <div className="text-2xl font-black">14</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 flex-1">
-                   <div className="text-xs text-indigo-100 font-bold uppercase">Meta</div>
-                   <div className="text-2xl font-black">72%</div>
-                </div>
-             </div>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-             <div className="flex items-center justify-between mb-4">
-                <h3 className="font-black text-slate-800 dark:text-zinc-100 flex items-center gap-2">
-                   <BarChart3 className="w-5 h-5 text-indigo-500" />
-                   Status dos Clientes
-                </h3>
-             </div>
-             <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                   <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span className="text-sm font-bold text-slate-600 dark:text-zinc-400">Ativos</span>
-                   </div>
-                   <span className="text-sm font-black text-slate-900 dark:text-zinc-100">84%</span>
-                </div>
-                <div className="w-full bg-slate-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
-                   <div className="bg-emerald-500 h-full" style={{ width: '84%' }} />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                   <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-amber-500" />
-                      <span className="text-sm font-bold text-slate-600 dark:text-zinc-400">Inativos (Alerta)</span>
-                   </div>
-                   <span className="text-sm font-black text-slate-900 dark:text-zinc-100">12%</span>
-                </div>
-                <div className="w-full bg-slate-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
-                   <div className="bg-amber-500 h-full" style={{ width: '12%' }} />
-                </div>
-             </div>
-          </div>
+        {/* Right Column: Empty (As requested, widgets removed to clear space) */}
+        <div className="hidden lg:block h-full">
+           {/* Space reserved for future updates */}
         </div>
 
       </div>
