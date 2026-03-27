@@ -228,7 +228,6 @@ export default function Agenda() {
                         </div>
                       ))}
 
-                    <>
                       <span className={cn(
                         "text-[10px] font-black mb-2 px-1.5 py-0.5 rounded-md self-start transition-all",
                         isToday ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 dark:text-zinc-500 group-hover:text-indigo-600"
@@ -242,7 +241,7 @@ export default function Agenda() {
                             onClick={(e) => { e.stopPropagation(); setEditingEvent(event); setIsModalOpen(true); }}
                             className="text-[10px] font-bold p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 truncate shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group/item"
                           >
-                            <span className="text-indigo-600 dark:text-indigo-400 mr-1 opacity-50">â€¢</span>
+                            <span className="text-indigo-600 dark:text-indigo-400 mr-1 opacity-50">•</span>
                             {event.title}
                           </div>
                         ))}
@@ -270,12 +269,3 @@ export default function Agenda() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
