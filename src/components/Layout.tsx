@@ -75,7 +75,7 @@ export default function Layout() {
     return () => {
       window.removeEventListener('crm_shortcut_links_updated', loadLinks);
     };
-  }, [user, settings]); // Adicionado settings aqui para atualizar ao mudar prazos
+  }, [user, settings]);
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -199,7 +199,6 @@ export default function Layout() {
              </h3>
              <div className="space-y-3 px-1">
                 
-                {/* Perda */}
                 <div className="rounded-xl border border-red-100 bg-red-50/50 overflow-hidden">
                   <div className="flex items-center justify-between p-2.5 bg-red-50">
                     <div className="flex items-center gap-2">
@@ -220,7 +219,6 @@ export default function Layout() {
                   )}
                 </div>
 
-                {/* Critico */}
                 <div className="rounded-xl border border-orange-100 bg-orange-50/50 overflow-hidden">
                   <div className="flex items-center justify-between p-2.5 bg-orange-50">
                     <div className="flex items-center gap-2">
@@ -233,15 +231,14 @@ export default function Layout() {
                     <div className="p-2 space-y-1.5 border-t border-orange-100/50">
                       {stats.critico.map((item, idx) => (
                         <div key={idx} className="text-[11px] leading-tight flex flex-col gap-0.5 p-1.5 hover:bg-orange-100/50 rounded-lg transition-colors">
-                          <span className="font-bold text-orange-900">{item.category} <span className="text-orange-500 font-medium">({item.days}d)</span></span>
-                          <span className="text-orange-700 truncate opacity-90">{item.clientName}</span>
+                          <span className="font-bold text-red-900">{item.category} <span className="text-red-500 font-medium">({item.days}d)</span></span>
+                          <span className="text-red-700 truncate opacity-90">{item.clientName}</span>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
 
-                {/* Alerta */}
                 <div className="rounded-xl border border-amber-100 bg-amber-50/50 overflow-hidden">
                   <div className="flex items-center justify-between p-2.5 bg-amber-50">
                     <div className="flex items-center gap-2">
@@ -341,6 +338,7 @@ export default function Layout() {
                             critico_days: Number(formData.get('critico')),
                             perda_days: Number(formData.get('perda'))
                          });
+                         // Close the modal after successful save
                          setSettingsTab('menu');
                          setSettingsOpen(false);
                      } catch (err) { alert("Erro ao salvar."); }
@@ -372,11 +370,11 @@ export default function Layout() {
                     <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Escolher Tema</h2>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <button onClick={async () => { await updateSettings({ theme: 'light' }); }} className={`p-4 border rounded-xl flex flex-col items-center gap-2 ${settings.theme === 'light' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 dark:border-zinc-800'}`}>
+                    <button onClick={async () => { await updateSettings({ theme: 'light' }); setSettingsOpen(false); setSettingsTab('menu'); }} className={`p-4 border rounded-xl flex flex-col items-center gap-2 ${settings.theme === 'light' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 dark:border-zinc-800'}`}>
                        <Sun className="w-6 h-6 text-slate-600 dark:text-zinc-400" />
                        <span className="text-sm font-medium text-slate-800">Claro</span>
                     </button>
-                    <button onClick={async () => { await updateSettings({ theme: 'dark' }); }} className={`p-4 border rounded-xl flex flex-col items-center gap-2 ${settings.theme === 'dark' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 dark:border-zinc-800'}`}>
+                    <button onClick={async () => { await updateSettings({ theme: 'dark' }); setSettingsOpen(false); setSettingsTab('menu'); }} className={`p-4 border rounded-xl flex flex-col items-center gap-2 ${settings.theme === 'dark' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 dark:border-zinc-800'}`}>
                        <Moon className="w-6 h-6 text-slate-600 dark:text-zinc-400" />
                        <span className="text-sm font-medium text-slate-800">Escuro</span>
                     </button>
