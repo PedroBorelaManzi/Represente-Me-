@@ -24,7 +24,9 @@ const formatDateLocal = (date: Date) => {
 export default function Agenda() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [events, setEvents] = useState<Appointment[]>([]);`n  const [clients, setClients] = useState<any[]>([]);`n  const [isSaving, setIsSaving] = useState(false);
+  const [events, setEvents] = useState<Appointment[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,9 @@ export default function Agenda() {
     if (error) {
       console.error("Erro ao buscar eventos:", error);
     } else {
-      setEvents(data || []);`n    const { data: clientsData } = await supabase.from("clients").select("id, name").order("name");`n    setClients(clientsData || []);
+      setEvents(data || []);
+    const { data: clientsData } = await supabase.from("clients").select("id, name").order("name");
+    setClients(clientsData || []);
     }
     setLoading(false);
   };
@@ -70,7 +74,33 @@ export default function Agenda() {
     setIsSyncing(false);
   };
 
-  const handleSave = async (payload: any) => {`n    if (!user) return;`n    setIsSaving(true);`n    const savePayload = { ...payload, user_id: user.id };`n    if (editingEvent?.id) {`n      const { error } = await supabase.from("appointments").update(savePayload).eq("id", editingEvent.id);`n      if (!error) await fetchEvents();`n    } else {`n      const { error } = await supabase.from("appointments").insert([savePayload]);`n      if (!error) await fetchEvents();`n    }`n    setIsSaving(false);`n    setIsModalOpen(false);`n    setEditingEvent(null);`n  };`n`n  const handleDelete = async () => {`n    if (!editingEvent?.id || !window.confirm("Deseja realmente excluir este compromisso?")) return;`n    setIsSaving(true);`n    const { error } = await supabase.from("appointments").delete().eq("id", editingEvent.id);`n    if (!error) await fetchEvents();`n    setIsSaving(false);`n    setIsModalOpen(false);`n    setEditingEvent(null);`n  };`n`n  const handleGoogleConnect = () => {
+  const handleSave = async (payload: any) => {
+    if (!user) return;
+    setIsSaving(true);
+    const savePayload = { ...payload, user_id: user.id };
+    if (editingEvent?.id) {
+      const { error } = await supabase.from("appointments").update(savePayload).eq("id", editingEvent.id);
+      if (!error) await fetchEvents();
+    } else {
+      const { error } = await supabase.from("appointments").insert([savePayload]);
+      if (!error) await fetchEvents();
+    }
+    setIsSaving(false);
+    setIsModalOpen(false);
+    setEditingEvent(null);
+  };
+
+  const handleDelete = async () => {
+    if (!editingEvent?.id || !window.confirm("Deseja realmente excluir este compromisso?")) return;
+    setIsSaving(true);
+    const { error } = await supabase.from("appointments").delete().eq("id", editingEvent.id);
+    if (!error) await fetchEvents();
+    setIsSaving(false);
+    setIsModalOpen(false);
+    setEditingEvent(null);
+  };
+
+  const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
       alert("Erro: Client ID do Google nÃ£o configurado.");
@@ -221,4 +251,5 @@ export default function Agenda() {
     </div>
   );
 }
+
 
