@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, ChevronLeft, ChevronRight, Clock, X, LayoutDashboard, Loader2, Users } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Clock, X, LayoutDashboard, Loader2, Users, Globe } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [editingEvent, setEditingEvent] = useState<Partial<EventType> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [dragOverInfo, setDragOverInfo] = useState<{ dayIndex: number; hour: number } | null>(null);
+  const [googleConnected, setGoogleConnected] = useState(false);
 
   const startOfWeek = new Date(currentDate);
   const day = startOfWeek.getDay();
@@ -49,6 +50,15 @@ export default function Dashboard() {
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
+
+    // Check Google Connection
+    const { data: tokenData } = await supabase
+      .from("user_google_tokens")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    setGoogleConnected(!!tokenData);
+
     const { data: clientsData } = await supabase.from("clients").select("id, name").order("name");
     setClients(clientsData || []);
     const { data: appData } = await supabase.from("appointments").select("*").eq("user_id", user.id);
@@ -57,6 +67,19 @@ export default function Dashboard() {
   };
 
   useEffect(() => { loadData(); }, [user]);
+
+  const handleGoogleConnect = () => {
+    const clientId = "816743208237-040m7pclnn9de9biqfvhoflt0etdaabm.apps.googleusercontent.com";
+    const redirectUri = `${window.location.origin}/auth/callback/google`;
+    const scope = "https://www.googleapis.com/auth/calendar.events";
+    const responseType = "code";
+    const accessType = "offline";
+    const prompt = "consent";
+
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=${responseType}&access_type=${accessType}&prompt=${prompt}`;
+    
+    window.location.href = authUrl;
+  };
 
   const onDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData("eventId", id);
@@ -130,9 +153,23 @@ export default function Dashboard() {
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Sua agenda semanal e visão geral.</p>
         </div>
-        <button onClick={() => openNewEventModal(new Date())} className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm">
-          <Plus className="w-4 h-4" /> Novo Agendamento
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={handleGoogleConnect}
+            className={cn(
+               "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border",
+               googleConnected 
+                 ? "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400" 
+                 : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            )}
+          >
+            <Globe className={cn("w-4 h-4", googleConnected ? "text-emerald-500" : "text-slate-400")} />
+            {googleConnected ? "Google Conectado" : "Conectar Google"}
+          </button>
+          <button onClick={() => openNewEventModal(new Date())} className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-sm">
+            <Plus className="w-4 h-4" /> Novo Agendamento
+          </button>
+        </div>
       </div>
       
       {/* 2 columns layout main container */}
@@ -213,7 +250,7 @@ export default function Dashboard() {
 
       {editingEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-          <form onSubmit={handleSave} className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-8 w-full max-w-sm">
+          <form onSubmit={handleSave} className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-8 w-full max-sm mb-4 sm:mb-0">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{editingEvent.id ? "Editar Compromisso" : "Novo Compromisso"}</h3>
               <button type="button" onClick={() => setEditingEvent(null)} className="p-2 bg-slate-100 dark:bg-zinc-800 rounded-full text-slate-500 hover:text-slate-900"><X className="w-5 h-5" /></button>
