@@ -143,7 +143,7 @@ export default function Agenda() {
       </div>
 
       <div className="bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-[500px]">
-        <div className="p-4 border-b border-slate-300 dark:border-zinc-700/50 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-zinc-900 z-20 gap-4">
+        <div className="p-4 border-b border-slate-300 dark:border-zinc-700/50 flex flex-col sm:flex-row sm:items-center justify-between bg-slate-100 dark:bg-zinc-800/40 z-20 gap-4">
           <div className="flex items-center gap-4">
             <h2 className="text-base font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest leading-none">
               {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
@@ -251,6 +251,7 @@ export default function Agenda() {
     </div>
   );
 }
+
 
 
 
