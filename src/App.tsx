@@ -9,6 +9,7 @@ import CRMPage from "./pages/CRM";
 import ClientDetailsPage from "./pages/ClientDetails";
 import EmpresasPage from "./pages/Empresas";
 import AgendaPage from "./pages/Agenda";
+import GoogleCallback from "./pages/GoogleCallback";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -34,6 +35,9 @@ export default function App() {
               <Route path="agenda" element={<AgendaPage />} />
             </Route>
           </Route>
+
+          {/* Google OAuth Callback */}
+          <Route path="/auth/callback/google" element={<GoogleCallback />} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
