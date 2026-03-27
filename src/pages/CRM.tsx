@@ -188,7 +188,8 @@ export default function CRMPage() {
          address: editFormData.address,
          phone: editFormData.phone,
          email: editFormData.email,
-         city: editFormData.city,`n         state: editFormData.state
+         city: editFormData.city,
+         state: editFormData.state
       })
       .eq("id", editingClient.id);
 
@@ -529,6 +530,8 @@ export default function CRMPage() {
     </div>
   );
 }
+
+
 
 
 

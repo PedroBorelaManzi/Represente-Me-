@@ -3,7 +3,8 @@ import { Plus, ChevronLeft, ChevronRight, X, Calendar as CalendarIcon, Loader2, 
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import AppointmentForm from "../components/AppointmentForm";
-import { syncGoogleEvents } from "../lib/googleSync";`nimport { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
+import { syncGoogleEvents } from "../lib/googleSync";
+import { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
 import { cn } from "../lib/utils";
 
 type Appointment = {
@@ -31,7 +32,8 @@ export default function Agenda() {
   const [editingEvent, setEditingEvent] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [googleConnected, setGoogleConnected] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);`n  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
 
   const fetchEvents = async () => {
     if (!user) return;
@@ -44,7 +46,15 @@ export default function Agenda() {
       .maybeSingle();
     setGoogleConnected(!!tokenData);
 
-    const { data: clientsData } = await supabase.from("clients").select("id, name, city, state");`n    setClients(clientsData || []);`n`n    // Fetch Holidays`n    const locations = (clientsData || []).filter(c => c.city && c.state).map(c => ({ city: c.city, state: c.state }));`n    const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);`n    setHolidays(fetchedHolidays);`n`n    const { data, error } = await supabase
+    const { data: clientsData } = await supabase.from("clients").select("id, name, city, state");
+    setClients(clientsData || []);
+
+    // Fetch Holidays
+    const locations = (clientsData || []).filter(c => c.city && c.state).map(c => ({ city: c.city, state: c.state }));
+    const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
+    setHolidays(fetchedHolidays);
+
+    const { data, error } = await supabase
       .from("appointments")
       .select("*")
       .eq("user_id", user.id);
@@ -208,7 +218,16 @@ export default function Agenda() {
                   )}
                   onClick={() => date && dateIso && (setEditingEvent({ id: '', title: '', date: dateIso, time: '09:00 - 10:00' }), setIsModalOpen(true))}
                 >
-                  {date && (`n                    <>`n                      {/* Holidays */}`n                      {holidays.filter(h => h.date === dateIso).map((h, idx) => (`n                        <div key={idx} className="mb-1 px-1.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-[9px] font-black text-amber-700 dark:text-amber-400 rounded-lg border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm" title={h.name}>`n                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />`n                          <span className="truncate">{h.name}</span>`n                        </div>`n                      ))}`n
+                  {date && (
+                    <>
+                      {/* Holidays */}
+                      {holidays.filter(h => h.date === dateIso).map((h, idx) => (
+                        <div key={idx} className="mb-1 px-1.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-[9px] font-black text-amber-700 dark:text-amber-400 rounded-lg border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm" title={h.name}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          <span className="truncate">{h.name}</span>
+                        </div>
+                      ))}
+
                     <>
                       <span className={cn(
                         "text-[10px] font-black mb-2 px-1.5 py-0.5 rounded-md self-start transition-all",
@@ -251,6 +270,8 @@ export default function Agenda() {
     </div>
   );
 }
+
+
 
 
 
