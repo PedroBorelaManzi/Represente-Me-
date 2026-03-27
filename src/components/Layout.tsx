@@ -98,10 +98,10 @@ export default function Layout() {
       )}
 
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:flex md:flex-col h-screen",
+        "fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static flex flex-col h-screen overflow-y-auto overscroll-contain shadow-2xl md:shadow-none",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="flex items-center justify-between pt-8 px-6 border-b border-slate-100 dark:border-zinc-900">
+        <div className="flex-shrink-0 flex items-center justify-between pt-8 px-6 border-b border-slate-100 dark:border-zinc-900">
           <Link to="/" className="flex items-center justify-center p-2 mb-6">
             <img src={logo} alt="Represente-Me!" className="h-32 w-auto mx-auto object-contain" />
           </Link>
@@ -110,7 +110,7 @@ export default function Layout() {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-6 px-4">
+        <div className="flex-1 py-6 px-4">
           <nav className="space-y-1">
 {navigation.map((item) => {
               const isActive = location.pathname === item.href;
@@ -201,7 +201,7 @@ export default function Layout() {
              <div className="space-y-3 px-1">
                 
                 <div className="rounded-xl border border-red-100 bg-red-50/50 overflow-hidden">
-                  <div className="flex items-center justify-between p-2.5 bg-red-50">
+                   <div className="flex items-center justify-between p-2.5 bg-red-50">
                     <div className="flex items-center gap-2">
                        <div className="w-2 h-2 rounded-full bg-red-500" />
                        <span className="text-xs font-bold text-red-900">Perda ({settings.perda_days}D+)</span>
@@ -264,7 +264,7 @@ export default function Layout() {
           </div>
         </div>
 
-        <div className="p-4 border-t border-slate-100 dark:border-zinc-900">
+        <div className="flex-shrink-0 p-4 border-t border-slate-100 dark:border-zinc-900 bg-white dark:bg-zinc-900">
           <div className="flex items-center gap-3 px-3 py-2">
             <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
               {user?.email?.charAt(0).toUpperCase() || "U"}
@@ -394,4 +394,3 @@ export default function Layout() {
     </div>
   );
 }
-

@@ -172,7 +172,7 @@ export default function Dashboard() {
         
         {/* Left Column: Agenda (Occupying ~50%) */}
         <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden flex flex-col h-full min-h-[500px]">
-          <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-zinc-900 z-20 gap-4">
+          <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-zinc-900 z-40 gap-4">
             <div className="flex items-center gap-4">
               <h2 className="text-base font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest leading-none">
                 {weekDays[0].toLocaleDateString('pt-BR', { month: 'long' })} {weekDays[0].getFullYear()}
@@ -219,8 +219,8 @@ export default function Dashboard() {
           <div className="flex-1 flex flex-col overflow-auto custom-scrollbar relative">
             <div className="flex flex-1 min-h-[960px] overflow-x-auto custom-scrollbar">
               <div className="flex flex-col flex-1 min-w-[700px]">
-                <div className="flex bg-slate-50/80 dark:bg-zinc-950/80 border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-20 backdrop-blur-md">
-                  <div className="w-12 flex-shrink-0" />
+                <div className="flex bg-slate-50/80 dark:bg-zinc-950/80 border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-30 backdrop-blur-md">
+                  <div className="w-12 flex-shrink-0 sticky left-0 bg-slate-50 dark:bg-zinc-950 z-40 border-r border-slate-200 dark:border-zinc-800" />
                   <div className="flex-1 grid grid-cols-7 divide-x divide-slate-200 dark:divide-zinc-800">
                     {weekDays.map((date, i) => {
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
@@ -235,9 +235,9 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex flex-1">
-                  <div className="w-12 flex flex-col bg-white dark:bg-zinc-900 border-r border-slate-100 dark:border-zinc-800/50 text-slate-400 flex-shrink-0">
+                  <div className="w-12 flex flex-col bg-white dark:bg-zinc-900 border-r border-slate-100 dark:border-zinc-800/50 text-slate-400 flex-shrink-0 sticky left-0 z-30 shadow-sm">
                     {HOURS.map(hour => (
-                      <div key={hour} className="h-[60px] text-[9px] font-black text-center py-2 -mt-2.5 tracking-tight">{String(hour).padStart(2, '0')}:00</div>
+                      <div key={hour} className="h-[60px] text-[9px] font-black text-center py-2 -mt-2.5 tracking-tight flex items-center justify-center bg-white dark:bg-zinc-900">{String(hour).padStart(2, '0')}:00</div>
                     ))}
                   </div>
                   <div className="flex-1 grid grid-cols-7 divide-x divide-slate-100 dark:divide-zinc-800/30 relative">
