@@ -142,8 +142,8 @@ export default function Agenda() {
         </div>
       </div>
 
-      <div className="bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-200/50 dark:ring-zinc-700/30 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-[500px]">
-        <div className="p-4 border-b border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-zinc-900 z-20 gap-4">
+      <div className="bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-[500px]">
+        <div className="p-4 border-b border-slate-300 dark:border-zinc-700/50 flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-zinc-900 z-20 gap-4">
           <div className="flex items-center gap-4">
             <h2 className="text-base font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest leading-none">
               {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
@@ -187,13 +187,13 @@ export default function Agenda() {
         </div>
 
         <div className="flex-1 flex flex-col overflow-x-auto custom-scrollbar">
-          <div className="grid grid-cols-7 border-b border-slate-200 dark:border-zinc-800 bg-slate-100/30 dark:bg-zinc-950/80 sticky top-0 z-10 min-w-[800px]">
+          <div className="grid grid-cols-7 border-b border-slate-300 dark:border-zinc-700/50 bg-slate-100/30 dark:bg-zinc-950/80 sticky top-0 z-10 min-w-[800px]">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b'].map(day => (
               <div key={day} className="p-4 text-center text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">{day}</div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 flex-1 bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-200/50 dark:ring-zinc-700/30 auto-rows-fr min-w-[800px]">
+          <div className="grid grid-cols-7 flex-1 bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 auto-rows-fr min-w-[800px]">
             {daysArray.map((date, i) => {
               const dateIso = date ? formatDateLocal(date) : null;
               const isToday = dateIso === formatDateLocal(new Date());
@@ -202,7 +202,7 @@ export default function Agenda() {
                 <div 
                   key={i} 
                   className={cn(
-                    "border-r border-b border-slate-200 dark:border-zinc-800/50 p-2 flex flex-col min-h-[120px] transition-all relative group",
+                    "border-r border-b border-slate-300 dark:border-zinc-700/50/50 p-2 flex flex-col min-h-[120px] transition-all relative group",
                     date ? 'bg-white/60 dark:bg-zinc-900/40' : 'bg-slate-100/20 dark:bg-zinc-950/10',
                     isToday && 'ring-1 ring-inset ring-indigo-500/20 bg-indigo-50/20 dark:bg-indigo-500/10',
                   )}
@@ -251,5 +251,7 @@ export default function Agenda() {
     </div>
   );
 }
+
+
 
 
