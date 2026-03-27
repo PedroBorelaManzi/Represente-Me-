@@ -3,7 +3,7 @@ import { Plus, ChevronLeft, ChevronRight, Clock, X, LayoutDashboard, Loader2, Us
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
-import { syncGoogleEvents } from "../lib/googleSync";
+import { syncGoogleEvents } from "../lib/googleSync";`nimport { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
 import AppointmentForm from "../components/AppointmentForm";
 
 type EventType = { 
@@ -34,7 +34,7 @@ export default function Dashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const [dragOverInfo, setDragOverInfo] = useState<{ dayIndex: number; hour: number } | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);`n  const [holidays, setHolidays] = useState<Holiday[]>([]);
 
   const startOfWeek = new Date(currentDate);
   const day = startOfWeek.getDay();
@@ -64,7 +64,7 @@ export default function Dashboard() {
 
     const { data: clientsData } = await supabase.from("clients").select("id, name").order("name");
     setClients(clientsData || []);
-    const { data: appData } = await supabase.from("appointments").select("*").eq("user_id", user.id);
+    const { data: appData } = await supabase.from("appointments").select("*").eq("user_id", user.id);`n`n    // Fetch Holidays`n    const locations = await getClientLocations(user.id);`n    const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);`n    setHolidays(fetchedHolidays);
     setEvents(appData || []);
     setLoading(false);
   };
@@ -227,7 +227,7 @@ export default function Dashboard() {
                       return (
                         <div key={i} className={cn("py-2 text-center", isToday ? "bg-indigo-50/50 dark:bg-indigo-500/10" : "")}>
                           <div className={cn("text-[8px] font-black uppercase tracking-widest", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-zinc-500")}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
-                          <div className={cn("text-xs font-black", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-zinc-100")}>{date.getDate()}</div>
+                          <div className={cn("text-xs font-black", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-zinc-100")}>{date.getDate()}</div>`n`n                          {/* Holidays for this day */}`n                          {holidays.filter(h => h.date === formatDateLocal(date)).map((h, idx) => (`n                            <div key={idx} className="mt-1 px-1 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-[7px] font-black text-amber-700 dark:text-amber-400 rounded-md border border-amber-200 dark:border-amber-800 truncate" title={h.name}>`n                              {h.name}`n                            </div>`n                          ))}
                         </div>
                       );
                     })}
@@ -293,6 +293,8 @@ export default function Dashboard() {
     </div>
   );
 }
+
+
 
 
 
