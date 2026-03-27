@@ -3,7 +3,8 @@ import { Plus, ChevronLeft, ChevronRight, Clock, X, LayoutDashboard, Loader2, Us
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
-import { syncGoogleEvents } from "../lib/googleSync";`nimport AppointmentForm from "../components/AppointmentForm";
+import { syncGoogleEvents } from "../lib/googleSync";
+import AppointmentForm from "../components/AppointmentForm";
 
 type EventType = { 
   id: string; 
@@ -292,4 +293,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
