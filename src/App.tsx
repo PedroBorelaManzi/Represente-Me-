@@ -8,6 +8,7 @@ import LinksPage from "./pages/Links";
 import CRMPage from "./pages/CRM";
 import ClientDetailsPage from "./pages/ClientDetails";
 import EmpresasPage from "./pages/Empresas";
+import AgendaPage from "./pages/Agenda";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -30,6 +31,7 @@ export default function App() {
               <Route path="clientes" element={<CRMPage />} />
               <Route path="clientes/:id" element={<ClientDetailsPage />} />
               <Route path="empresas" element={<EmpresasPage />} />
+              <Route path="agenda" element={<AgendaPage />} />
             </Route>
           </Route>
           
