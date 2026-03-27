@@ -9,32 +9,28 @@ export async function syncGoogleEvents(userId: string) {
       .maybeSingle();
 
     if (tokenError || !tokenData) {
-      console.error('Nenhum token do Google encontrado.');
-      return { success: false, message: 'Conta Google não conectada.' };
+      return { success: false, message: 'Google não conectado.' };
     }
 
     let accessToken = tokenData.access_token;
     
-    // Função interna para buscar eventos
+    // Busca eventos nos últimos 7 dias para garantir que nada seja perdido
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const timeMin = sevenDaysAgo.toISOString();
+
     const fetchEvents = async (token: string) => {
-      return fetch(
-        'https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=' + new Date().toISOString() + '&maxResults=50&singleEvents=true&orderBy=startTime',
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(timeMin)}&maxResults=250&singleEvents=true&orderBy=startTime`;
+      console.log('Buscando eventos do Google:', url);
+      return fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     };
 
     let response = await fetchEvents(accessToken);
 
-    // Se o token estiver expirado (401), tentamos renovar usando o refresh_token
     if (response.status === 401 && tokenData.refresh_token) {
-      console.log('Access token expirado, tentando renovar com refresh_token...');
-      
+      console.log('Token expirado, renovando...');
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
       const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
-
-      if (!clientId || !clientSecret) {
-        return { success: false, message: 'Erro: Variáveis de ambiente (Client ID/Secret) não configuradas no servidor.' };
-      }
 
       const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
@@ -48,48 +44,38 @@ export async function syncGoogleEvents(userId: string) {
       });
 
       const refreshData = await refreshResponse.json();
-
       if (refreshData.access_token) {
         accessToken = refreshData.access_token;
-        
-        // Atualizar o novo token no banco de dados
-        await supabase
-          .from('user_google_tokens')
-          .update({
-            access_token: accessToken,
-            expires_at: new Date(Date.now() + refreshData.expires_in * 1000).toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', userId);
-
-        // Tenta buscar eventos novamente com o novo token
+        await supabase.from('user_google_tokens').update({ 
+          access_token: accessToken,
+          updated_at: new Date().toISOString() 
+        }).eq('user_id', userId);
         response = await fetchEvents(accessToken);
-      } else {
-        return { success: false, message: 'Sessão do Google expirada. Por favor, conecte novamente clicando em "Conectar Google".' };
       }
     }
 
     if (!response.ok) {
-      return { success: false, message: 'Erro ao buscar eventos do Google. Verifique sua conexão.' };
+      return { success: false, message: 'O Google não retornou eventos. Verifique suas permissões.' };
     }
 
     const data = await response.json();
     const googleEvents = data.items || [];
+    console.log('Eventos encontrados no Google:', googleEvents.length);
 
-    // 2. Salvar no Supabase (Upsert baseado no google_event_id)
+    if (googleEvents.length === 0) {
+      return { success: true, count: 0, message: 'Nenhum evento encontrado no seu Google Agenda (últimos 7 dias).' };
+    }
+
     const syncResults = await Promise.all(googleEvents.map(async (gevent: any) => {
       if (!gevent.start?.dateTime && !gevent.start?.date) return null;
       
       const start = new Date(gevent.start.dateTime || gevent.start.date);
       const end = new Date(gevent.end.dateTime || gevent.end.date);
       
-      // Formata data e hora para o padrão do site
       const dateStr = start.toISOString().split('T')[0];
-      const startH = start.getHours().toString().padStart(2, '0');
-      const startM = start.getMinutes().toString().padStart(2, '0');
-      const endH = end.getHours().toString().padStart(2, '0');
-      const endM = end.getMinutes().toString().padStart(2, '0');
-      const timeStr = `${startH}:${startM} - ${endH}:${endM}`;
+      const timeStr = gevent.start.dateTime 
+        ? `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`
+        : "08:00 - 18:00 (Dia Inteiro)";
 
       const { error } = await supabase
         .from('appointments')
@@ -102,17 +88,27 @@ export async function syncGoogleEvents(userId: string) {
           updated_at: new Date().toISOString()
         }, { onConflict: 'google_event_id' });
 
-      return error ? null : gevent.id;
+      if (error) {
+        console.error('Erro ao salvar evento:', gevent.summary, error);
+        return null;
+      }
+      return gevent.summary || 'Evento';
     }));
+
+    const successfulSyncs = syncResults.filter(Boolean);
+    const titles = successfulSyncs.slice(0, 3).join(', ');
+    const more = successfulSyncs.length > 3 ? ` e mais ${successfulSyncs.length - 3}...` : '';
 
     return { 
       success: true, 
-      count: syncResults.filter(Boolean).length,
-      message: `Sincronização concluída! ${syncResults.filter(Boolean).length} eventos atualizados.` 
+      count: successfulSyncs.length,
+      message: successfulSyncs.length > 0 
+        ? `Sucesso! Sincronizados: ${titles}${more}` 
+        : 'Sincronizado, mas os eventos não puderam ser salvos.' 
     };
 
   } catch (error) {
-    console.error('Erro na sincronização:', error);
-    return { success: false, message: 'Erro inesperado na sincronização.' };
+    console.error('Erro técnico:', error);
+    return { success: false, message: 'Erro técnico na sincronização.' };
   }
 }
