@@ -3,7 +3,7 @@ import { Plus, ChevronLeft, ChevronRight, X, Calendar as CalendarIcon, Loader2, 
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import AppointmentForm from "../components/AppointmentForm";
-import { syncGoogleEvents } from "../lib/googleSync";
+import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../lib/googleSync";
 import { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
 import { cn } from "../lib/utils";
 
@@ -86,13 +86,19 @@ export default function Agenda() {
     if (!user) return;
     setIsSaving(true);
     const savePayload = { ...payload, user_id: user.id };
+    
+    let dbResult;
     if (editingEvent?.id) {
-      const { error } = await supabase.from("appointments").update(savePayload).eq("id", editingEvent.id);
-      if (!error) await fetchEvents();
+      dbResult = await supabase.from("appointments").update(savePayload).eq("id", editingEvent.id).select().single();
     } else {
-      const { error } = await supabase.from("appointments").insert([savePayload]);
-      if (!error) await fetchEvents();
+      dbResult = await supabase.from("appointments").insert([savePayload]).select().single();
     }
+
+    if (!dbResult.error && dbResult.data) {
+      await pushEventToGoogle(user.id, dbResult.data);
+      await fetchEvents();
+    }
+    
     setIsSaving(false);
     setIsModalOpen(false);
     setEditingEvent(null);
@@ -102,6 +108,9 @@ export default function Agenda() {
     if (!editingEvent?.id || !window.confirm("Deseja realmente excluir este compromisso?")) return;
     setIsSaving(true);
     const { error } = await supabase.from("appointments").delete().eq("id", editingEvent.id);
+    if (!error && editingEvent.google_event_id) {
+      await deleteEventFromGoogle(user.id, editingEvent.google_event_id);
+    }
     if (!error) await fetchEvents();
     setIsSaving(false);
     setIsModalOpen(false);
@@ -137,6 +146,39 @@ export default function Agenda() {
   };
 
   const daysArray = getDaysInMonth(currentDate);
+
+  
+  const onDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData("eventId", id);
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const onDrop = async (e: React.DragEvent, targetDate: string) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData("eventId");
+    if (!id || !user) return;
+
+    const eventToMove = events.find(ev => ev.id === id);
+    if (!eventToMove || eventToMove.date === targetDate) return;
+
+    // Local update for immediate feedback
+    setEvents(events.map(ev => ev.id === id ? { ...ev, date: targetDate } : ev));
+
+    const { data, error } = await supabase
+      .from("appointments")
+      .update({ date: targetDate })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (!error && data) {
+      await pushEventToGoogle(user.id, data);
+      await fetchEvents();
+    }
+  };
 
   return (
     <div className="space-y-6 h-full flex flex-col">
@@ -214,6 +256,8 @@ export default function Agenda() {
                     date ? 'bg-white/60 dark:bg-zinc-900/40' : 'bg-slate-100/20 dark:bg-zinc-950/10',
                     isToday && 'ring-1 ring-inset ring-indigo-500/20 bg-indigo-50/20 dark:bg-indigo-500/10',
                   )}
+                  onDragOver={onDragOver}
+                  onDrop={(e) => dateIso && onDrop(e, dateIso)}
                   onClick={() => date && dateIso && (setEditingEvent({ id: '', title: '', date: dateIso, time: '09:00 - 10:00' }), setIsModalOpen(true))}
                 >
                   {date && (
@@ -237,6 +281,8 @@ export default function Agenda() {
                           <div 
                             key={event.id}
                             onClick={(e) => { e.stopPropagation(); setEditingEvent(event); setIsModalOpen(true); }}
+                            draggable
+                            onDragStart={(e) => onDragStart(e, event.id)}
                             className="text-[10px] font-bold p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 truncate shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group/item"
                           >
                             <span className="text-indigo-600 dark:text-indigo-400 mr-1 opacity-50">•</span>

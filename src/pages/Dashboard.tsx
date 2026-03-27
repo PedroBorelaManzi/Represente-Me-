@@ -3,7 +3,7 @@ import { Plus, ChevronLeft, ChevronRight, Clock, X, LayoutDashboard, Loader2, Us
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
-import { syncGoogleEvents } from "../lib/googleSync";
+import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../lib/googleSync";
 import { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
 import AppointmentForm from "../components/AppointmentForm";
 
@@ -122,20 +122,38 @@ export default function Dashboard() {
     const newTime = `${String(targetHour).padStart(2, '0')}:00 - ${String(targetHour + 1).padStart(2, '0')}:00`;
     setEvents(events.map(ev => ev.id === id ? { ...ev, date: isoDate, time: newTime } : ev));
     await supabase.from("appointments").update({ date: isoDate, time: newTime }).eq("id", id);
+    // Push updated event to Google
+    const updatedEvent = events.find(ev => ev.id === id);
+    if (updatedEvent) {
+      await pushEventToGoogle(user.id, { ...updatedEvent, date: isoDate, time: newTime });
+    }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingEvent || !user) return;
+  const handleSave = async (payload: any) => {
+    if (!user) return;
     setIsSaving(true);
-    const payload = { title: editingEvent.title, time: editingEvent.time, date: editingEvent.date, client_id: editingEvent.client_id || null, user_id: user.id };
-    if (editingEvent.id) {
-      const { error } = await supabase.from("appointments").update(payload).eq("id", editingEvent.id);
-      if (!error) setEvents(events.map(ev => ev.id === editingEvent.id ? { ...ev, ...payload } as EventType : ev));
+    const savePayload = { ...payload, user_id: user.id };
+    
+    let savedEvent = null;
+    if (editingEvent?.id) {
+      const { error } = await supabase.from("appointments").update(savePayload).eq("id", editingEvent.id);
+      if (!error) {
+        savedEvent = { ...editingEvent, ...savePayload };
+        setEvents(events.map(ev => ev.id === editingEvent.id ? savedEvent : ev));
+      }
     } else {
-      const { data, error } = await supabase.from("appointments").insert([payload]).select().single();
-      if (!error && data) setEvents([...events, data]);
+      const { data, error } = await supabase.from("appointments").insert([savePayload]).select().single();
+      if (!error && data) {
+        savedEvent = data;
+        setEvents([...events, data]);
+      }
     }
+
+    if (savedEvent) {
+      // Push to Google if connected
+      await pushEventToGoogle(user.id, savedEvent);
+    }
+
     setIsSaving(false);
     setEditingEvent(null);
   };
@@ -144,7 +162,13 @@ export default function Dashboard() {
     if (!editingEvent?.id || !window.confirm("Deseja realmente excluir este compromisso?")) return;
     setIsSaving(true);
     const { error } = await supabase.from("appointments").delete().eq("id", editingEvent.id);
-    if (!error) { setEvents(events.filter(ev => ev.id !== editingEvent.id)); setEditingEvent(null); }
+    if (!error) {
+        if (editingEvent.google_event_id) {
+          await deleteEventFromGoogle(user.id, editingEvent.google_event_id);
+        }
+        setEvents(events.filter(ev => ev.id !== editingEvent.id)); 
+        setEditingEvent(null); 
+      }
     setIsSaving(false);
   };
 

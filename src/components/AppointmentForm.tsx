@@ -38,7 +38,11 @@ export default function AppointmentForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSave(formData);
+    const payload = {
+      ...formData,
+      client_id: formData.client_id || null
+    };
+    await onSave(payload);
   };
 
   return (
