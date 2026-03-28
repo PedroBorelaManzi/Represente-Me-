@@ -39,7 +39,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-200 dark:ring-zinc-700/60 border border-slate-100 dark:border-zinc-800 rounded-3xl p-6 flex flex-col h-full overflow-hidden">
+    <div className="bg-white dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-200 dark:ring-zinc-700/60 border border-slate-100 dark:border-zinc-800 rounded-3xl p-6 flex flex-col h-full">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-sm font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2">
@@ -64,7 +64,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
         </div>
 
         {/* Chart Area */}
-        <div className="flex-1 flex items-end justify-around gap-4 relative bg-slate-50/50 dark:bg-zinc-950/20 rounded-2xl p-4 overflow-hidden border border-slate-100/50 dark:border-zinc-900/50">
+        <div className="flex-1 flex items-end justify-around gap-4 relative bg-slate-50/50 dark:bg-zinc-950/20 rounded-2xl p-4 border border-slate-100/50 dark:border-zinc-900/50">
           {loading ? (
              <div className="absolute inset-0 flex items-center justify-center">
                 <div className="w-6 h-6 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
@@ -160,3 +160,4 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
 };
 
 export default RevenueChart;
+
