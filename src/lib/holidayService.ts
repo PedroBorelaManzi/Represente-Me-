@@ -1,4 +1,4 @@
-﻿import { supabase } from './supabase';
+import { supabase } from './supabase';
 
 const MANUAL_HOLIDAYS_BY_CITY: Record<string, { month: number, day: number, name: string }[]> = {
   "porto feliz": [
@@ -10,7 +10,6 @@ const MANUAL_HOLIDAYS_BY_CITY: Record<string, { month: number, day: number, name
     { month: 4, day: 3, name: "Aniversário de Cerquilho" }
   ]
 };
-
 
 export type Holiday = {
   id: string;
@@ -60,9 +59,12 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
     const nationalUrl = `https://brasilapi.com.br/api/feriados/v1/${year}`;
     const nationalRes = await fetch(nationalUrl);
     const nationalData = await nationalRes.json();
+    
     let allHolidays: Holiday[] = Array.isArray(nationalData) ? nationalData.map((h: any) => ({
       id: h.name,
-      name: h.name,`n      date: h.date,`n      type: "national" as const
+      name: h.name,
+      date: h.date,
+      type: "national" as const
     })) : [];
 
     if (locations.length === 0) return allHolidays;
@@ -79,8 +81,7 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       return allHolidays;
     }
 
-    // 3. Map state acronyms to codes (e.g., "SP" -> 35)
-    // Structure: Array of { uf: string, codigo_uf: number, nome: string }
+    // 3. Map state acronyms to codes
     const stateToCode = new Map<string, number>();
     estados.forEach(e => {
       const key = (e.uf || e.sigla || '').toUpperCase();
@@ -95,10 +96,7 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       const stateKey = loc.state.trim().toUpperCase();
       const stateCode = stateToCode.get(stateKey);
       
-      if (!stateCode) {
-        console.warn(`[holidayService] State code not found for: ${stateKey}`);
-        return;
-      }
+      if (!stateCode) return;
 
       const normCity = normalize(loc.city);
       const match = municipios.find(m => 
@@ -109,8 +107,6 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
         const ibge = Number(match.codigo_ibge);
         targetIbgeCodes.add(ibge);
         cityMap.set(ibge, match.nome);
-      } else {
-        console.warn(`[holidayService] City not found in IBGE database: ${loc.city} (${stateKey})`);
       }
     });
 
@@ -121,7 +117,7 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
         const cityName = cityMap.get(ibge);
         if (!cityName || !targetIbgeCodes.has(ibge)) return false;
         
-        // If we have a manual override for this city, ignore the DB entry to avoid trash/duplicates
+        // If we have a manual override for this city, ignore the DB entry
         if (MANUAL_HOLIDAYS_BY_CITY[normalize(cityName)]) return false;
         
         return true;
@@ -139,7 +135,7 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
         let finalName = h.nome || h.name || "Feriado";
         
         const normName = finalName.toLowerCase();
-        if ((normName.includes("aniversario") || normName.includes("cidade")) && cityName) {
+        if ((normName.includes("Aniversário") || normName.includes("cidade")) && cityName) {
           finalName = `Aniversário de ${cityName}`;
         } else if (normName === "feriado municipal" && cityName) {
           finalName = `Feriado - ${cityName}`;
@@ -156,25 +152,19 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
         };
       });
 
+    // 6. Merge national + municipal
     const combinedHolidays = [...allHolidays, ...municipalHolidays];
 
-    // 6. Remove duplicates and return
+    // 7. Deduplicate initially
     const seen = new Set();
     const finalHolidays = combinedHolidays.filter(h => {
       const key = `${h.date}-${h.name}-${h.city || 'national'}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
-    }).sort((a, b) => a.date.localeCompare(b.date));
-
-    console.log(`[holidayService] Sync complete for ${year}:`, {
-      total: finalHolidays.length,
-      municipal: municipalHolidays.length,
-      citiesMatched: targetIbgeCodes.size
     });
 
-    
-    // 6. Apply Manual Overrides for accuracy (These cities already had DB entries filtered out)
+    // 8. Apply Manual Overrides
     locations.forEach(loc => {
       const cityKey = normalize(loc.city);
       const overrides = MANUAL_HOLIDAYS_BY_CITY[cityKey];
@@ -192,10 +182,6 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
         });
       }
     });
-          }
-        });
-      }
-    });
 
     return finalHolidays.sort((a, b) => a.date.localeCompare(b.date));
 
@@ -208,7 +194,9 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       const data = await res.json();
       return Array.isArray(data) ? data.map((h: any) => ({
         id: h.name,
-        name: h.name,`n      date: h.date,`n      type: "national" as const
+        name: h.name,
+        date: h.date,
+        type: "national" as const
       })) : [];
     } catch {
       return [];
@@ -240,6 +228,3 @@ export async function getClientLocations(userId: string): Promise<{ city: string
       return true;
     });
 }
-
-
-
