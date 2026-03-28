@@ -10,8 +10,8 @@ const MANUAL_HOLIDAYS_BY_CITY: Record<string, { month: number, day: number, name
     { month: 4, day: 3, name: "Aniversário de Cerquilho" }
   ],
   "angatuba": [
-    { month: 3, day: 11, name: "Aniversário de Angatuba" },
-    { month: 6, day: 4, name: "Corpus Christi - Angatuba" }
+    { month: 3, day: 11, name: "Aniversário de Angatuba" }
+    // Corpus Christi removed because it's a moving holiday and already present in municipal/national bases
   ]
 };
 
@@ -79,7 +79,7 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
 
     if (!municipios || !estados || !masterHolidays) {
       console.warn("Could not load municipal holiday database. Showing only national holidays.");
-      return allHolidays;
+      return deDuplicate(allHolidays);
     }
 
     const stateToCode = new Map<string, number>();
@@ -115,9 +115,7 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       .filter(h => {
         const ibge = Number(h.codigo_ibge);
         const cityName = cityMap.get(ibge);
-        if (!cityName || !targetIbgeCodes.has(ibge)) return false;
-        if (MANUAL_HOLIDAYS_BY_CITY[normalize(cityName)]) return false;
-        return true;
+        return cityName && targetIbgeCodes.has(ibge);
       })
       .map(h => {
         const dateParts = h.data.split("/");
@@ -149,23 +147,14 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
         };
       });
 
-    const combinedHolidays = [...allHolidays, ...municipalHolidays];
-
-    const seen = new Set();
-    const finalHolidays = combinedHolidays.filter(h => {
-      const key = `${h.date}-${h.name}-${h.city || 'national'}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
+    const manualHolidays: Holiday[] = [];
     locations.forEach(loc => {
       const cityKey = normalize(loc.city);
       const overrides = MANUAL_HOLIDAYS_BY_CITY[cityKey];
       if (overrides) {
         overrides.forEach(ov => {
           const isoDate = `${year}-${String(ov.month).padStart(2, "0")}-${String(ov.day).padStart(2, "0")}`;
-          finalHolidays.push({
+          manualHolidays.push({
             id: `manual-${isoDate}-${ov.name}-${cityKey}`,
             name: ov.name,
             date: isoDate,
@@ -177,7 +166,8 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       }
     });
 
-    return finalHolidays.sort((a, b) => a.date.localeCompare(b.date));
+    const combinedHolidays = [...allHolidays, ...municipalHolidays, ...manualHolidays];
+    return deDuplicate(combinedHolidays).sort((a, b) => a.date.localeCompare(b.date));
 
   } catch (error) {
     console.error('Error in fetchHolidays:', error);
@@ -185,16 +175,54 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       const nationalUrl = `https://brasilapi.com.br/api/feriados/v1/${year}`;
       const res = await fetch(nationalUrl);
       const data = await res.json();
-      return Array.isArray(data) ? data.map((h: any) => ({
+      return Array.isArray(data) ? deDuplicate(data.map((h: any) => ({
         id: h.name,
         name: h.name,
         date: h.date,
         type: "national" as const
-      })) : [];
+      }))) : [];
     } catch {
       return [];
     }
   }
+}
+
+function deDuplicate(holidays: Holiday[]): Holiday[] {
+  const seen = new Map<string, Holiday>();
+  
+  holidays.forEach(h => {
+    // Unique key per date
+    const dateKey = h.date;
+    const existing = seen.get(dateKey);
+    
+    if (existing) {
+      const normNew = normalize(h.name);
+      const normExisting = normalize(existing.name);
+      
+      // If one contains the other, or they are on the same day with similar names
+      if (normNew.includes(normExisting) || normExisting.includes(normNew)) {
+        // Keep the one with city/state precision if possible, or just the more specific name
+        if (h.type === 'municipal' && existing.type !== 'municipal') {
+          seen.set(dateKey, h);
+        } else if (normNew.length > normExisting.length) {
+          seen.set(dateKey, h);
+        }
+      } else {
+        // If they are distinct holidays on the same day, we might actually want to show both
+        // But the user specifically complained about duplicate entries of basically the same holiday
+        // So let's refine the key to date + normalized name snippet
+        const nameSnippet = normNew.substring(0, 5); 
+        const nameKey = `${dateKey}-${nameSnippet}`;
+        if (!seen.has(nameKey)) {
+          seen.set(nameKey, h);
+        }
+      }
+    } else {
+      seen.set(dateKey, h);
+    }
+  });
+  
+  return Array.from(seen.values());
 }
 
 export async function getClientLocations(userId: string): Promise<{ city: string; state?: string }[]> {
