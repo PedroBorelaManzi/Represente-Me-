@@ -70,18 +70,25 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
     }
 
     // 3. Map state acronyms to codes (e.g., "SP" -> 35)
+    // Structure: Array of { uf: string, codigo_uf: number, nome: string }
     const stateToCode = new Map<string, number>();
     estados.forEach(e => {
-      if (e.sigla) stateToCode.set(e.sigla.toUpperCase(), e.codigo_uf);
+      const key = (e.uf || e.sigla || '').toUpperCase();
+      if (key) stateToCode.set(key, e.codigo_uf);
     });
 
     // 4. Identify IBGE codes for the requested locations
     const targetIbgeCodes = new Set<number>();
-    const cityMap = new Map<number, string>(); // Store city name for display
+    const cityMap = new Map<number, string>(); 
 
     locations.forEach(loc => {
-      const stateCode = stateToCode.get(loc.state.toUpperCase());
-      if (!stateCode) return;
+      const stateKey = loc.state.trim().toUpperCase();
+      const stateCode = stateToCode.get(stateKey);
+      
+      if (!stateCode) {
+        console.warn(`[holidayService] State code not found for: ${stateKey}`);
+        return;
+      }
 
       const normCity = normalize(loc.city);
       const match = municipios.find(m => 
@@ -89,16 +96,18 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       );
 
       if (match) {
-        targetIbgeCodes.add(match.codigo_ibge);
-        cityMap.set(match.codigo_ibge, match.nome);
+        const ibge = Number(match.codigo_ibge);
+        targetIbgeCodes.add(ibge);
+        cityMap.set(ibge, match.nome);
+      } else {
+        console.warn(`[holidayService] City not found in IBGE database: ${loc.city} (${stateKey})`);
       }
     });
 
     // 5. Filter municipal holidays by IBGE codes
     const municipalHolidays: Holiday[] = masterHolidays
-      .filter(h => targetIbgeCodes.has(h.codigo_ibge))
+      .filter(h => targetIbgeCodes.has(Number(h.codigo_ibge)))
       .map(h => {
-        // Convert date from DD/MM/YYYY to YYYY-MM-DD
         const dateParts = h.data.split('/');
         let isoDate = h.data;
         if (dateParts.length === 3) {
@@ -106,31 +115,53 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
           isoDate = `${yearPart}-${month}-${day}`;
         }
         
+        const ibge = Number(h.codigo_ibge);
         return {
-          id: `${isoDate}-${h.name}-${h.codigo_ibge}`,
+          id: `${isoDate}-${h.name}-${ibge}`,
           name: h.name,
           date: isoDate,
           type: 'municipal' as const,
-          city: cityMap.get(h.codigo_ibge),
+          city: cityMap.get(ibge) || h.municipio,
           state: h.uf,
-          description: h.descricao
+          description: h.descricao || h.name
         };
       });
 
-    allHolidays = [...allHolidays, ...municipalHolidays];
+    const combinedHolidays = [...allHolidays, ...municipalHolidays];
 
     // 6. Remove duplicates and return
     const seen = new Set();
-    return allHolidays.filter(h => {
+    const finalHolidays = combinedHolidays.filter(h => {
       const key = `${h.date}-${h.name}-${h.city || 'national'}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     }).sort((a, b) => a.date.localeCompare(b.date));
 
+    console.log(`[holidayService] Sync complete for ${year}:`, {
+      total: finalHolidays.length,
+      municipal: municipalHolidays.length,
+      citiesMatched: targetIbgeCodes.size
+    });
+
+    return finalHolidays;
+
   } catch (error) {
-    console.error('Error fetching holidays:', error);
-    return [];
+    console.error('Error in fetchHolidays:', error);
+    // Fallback to national holidays only
+    try {
+      const nationalUrl = `https://brasilapi.com.br/api/feriados/v1/${year}`;
+      const res = await fetch(nationalUrl);
+      const data = await res.json();
+      return Array.isArray(data) ? data.map((h: any) => ({
+        id: h.name,
+        name: h.name,
+        date: h.date,
+        type: 'national'
+      })) : [];
+    } catch {
+      return [];
+    }
   }
 }
 
