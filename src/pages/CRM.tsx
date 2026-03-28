@@ -66,6 +66,7 @@ export default function CRMPage() {
     success: number;
     failed: number;
     skipped: number;
+    failedList: { cnpj: string; name?: string; reason: string }[];
   } | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -83,7 +84,7 @@ export default function CRMPage() {
 
     setImporting(true);
     setShowImportModal(true);
-    setImportResults({ total: 0, processed: 0, success: 0, failed: 0, skipped: 0 });
+    setImportResults({ total: 0, processed: 0, success: 0, failed: 0, skipped: 0, failedList: [] });
     
     try {
       const cnpjs = await parseFileForCnpjs(file);
@@ -95,7 +96,7 @@ export default function CRMPage() {
         return;
       }
 
-      setImportResults({ total: cnpjs.length, processed: 0, success: 0, failed: 0, skipped: 0 });
+      setImportResults({ total: cnpjs.length, processed: 0, success: 0, failed: 0, skipped: 0, failedList: [] });
       
       const existingCnpjs = new Set(clients.map(c => c.cnpj?.replace(/\D/g, "")).filter(Boolean));
 
@@ -117,11 +118,21 @@ export default function CRMPage() {
           
           let lat = null, lng = null;
           try {
-             const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${address}, ${city}, ${state}, Brasil`)}`);
-             const geoData = await geoRes.json();
+             // 1. Full Address search
+             let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${address}, ${city}, ${state}, Brasil`)}`);
+             let geoData = await geoRes.json();
+             
              if (geoData?.[0]) {
                lat = parseFloat(geoData[0].lat);
                lng = parseFloat(geoData[0].lon);
+             } else {
+               // 2. Fallback to City/State center
+               geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${city}, ${state}, Brasil`)}`);
+               geoData = await geoRes.json();
+               if (geoData?.[0]) {
+                 lat = parseFloat(geoData[0].lat);
+                 lng = parseFloat(geoData[0].lon);
+               }
              }
           } catch(e) {}
 
@@ -140,8 +151,13 @@ export default function CRMPage() {
 
           if (error) throw error;
           setImportResults(prev => prev ? { ...prev, processed: prev.processed + 1, success: prev.success + 1 } : null);
-        } catch (err) {
-          setImportResults(prev => prev ? { ...prev, processed: prev.processed + 1, failed: prev.failed + 1 } : null);
+        } catch (err: any) {
+          setImportResults(prev => prev ? { 
+            ...prev, 
+            processed: prev.processed + 1, 
+            failed: prev.failed + 1,
+            failedList: [...prev.failedList, { cnpj, reason: err.message || "Falha no processamento" }] 
+          } : null);
         }
         
         // Pequeno delay para evitar rate limiting
@@ -384,10 +400,10 @@ export default function CRMPage() {
           </div>
           <button 
             onClick={() => setShowFilters(!showFilters)}
-            className={`p-2 rounded-xl border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors ${showFilters ? 'bg-slate-100 dark:bg-zinc-800 border-indigo-200 dark:border-indigo-900 text-indigo-600' : 'bg-white dark:bg-zinc-900 shadow-sm dark:shadow-none'}`}
+            className={`p-2 rounded-xl border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors \${showFilters ? 'bg-slate-100 dark:bg-zinc-800 border-indigo-200 dark:border-indigo-900 text-indigo-600' : 'bg-white dark:bg-zinc-900 shadow-sm dark:shadow-none'}`}
             title="Filtrar Clientes"
           >
-            <Filter className={`w-4 h-4 ${showFilters ? 'animate-pulse' : ''}`} />
+            <Filter className={`w-4 h-4 \${showFilters ? 'animate-pulse' : ''}`} />
           </button>
           
           <button 
@@ -463,10 +479,10 @@ export default function CRMPage() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`pb-3 px-2 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${activeTab === tab ? "border-indigo-600 text-indigo-700" : "border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300"}`}
+                  className={`pb-3 px-2 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap \${activeTab === tab ? "border-indigo-600 text-indigo-700" : "border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300"}`}
                 >
-                  {tab === "Todos" ? "Todos os Clientes" : tab === "Critico" ? `Crítico (${settings.critico_days}D)` : tab === "Alerta" ? `Alerta (${settings.alerta_days}D)` : `Perda (${settings.perda_days}D+)`}
-                  <span className={`ml-2 px-1.5 py-0.5 rounded-md text-xs font-bold ${activeTab === tab ? "bg-indigo-100 text-indigo-800" : "bg-slate-100 text-slate-600 dark:text-zinc-400"}`}>
+                  {tab === "Todos" ? "Todos os Clientes" : tab === "Critico" ? `Crítico (\${settings.critico_days}D)` : tab === "Alerta" ? `Alerta (\${settings.alerta_days}D)` : `Perda (\${settings.perda_days}D+)`}
+                  <span className={`ml-2 px-1.5 py-0.5 rounded-md text-xs font-bold \${activeTab === tab ? "bg-indigo-100 text-indigo-800" : "bg-slate-100 text-slate-600 dark:text-zinc-400"}`}>
                     {count}
                   </span>
                 </button>
@@ -496,7 +512,7 @@ export default function CRMPage() {
                         className="hover:bg-slate-50 dark:hover:bg-zinc-950 transition-colors group"
                       >
                         <td className="px-6 py-5 whitespace-nowrap">
-                           <Link to={`/dashboard/clientes/${client.id}`} className="flex items-center hover:opacity-80 transition-opacity">
+                           <Link to={`/dashboard/clientes/\${client.id}`} className="flex items-center hover:opacity-80 transition-opacity">
                             <div className="h-11 w-11 flex-shrink-0 rounded-2xl bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center text-indigo-700 dark:text-indigo-400 font-bold text-lg border border-indigo-100 dark:border-indigo-900/40">
                               {client.name.charAt(0)}
                             </div>
@@ -513,7 +529,7 @@ export default function CRMPage() {
                         <td className="px-6 py-5 whitespace-nowrap">
                           <div className="flex flex-wrap gap-1.5 max-w-xs">
                             {((client as any).alerts || []).map((a: any, idx: number) => (
-                               <span key={idx} className={`px-2 py-0.5 rounded-lg text-[10px] font-black border uppercase tracking-tighter ${a.type === "Perda" ? "bg-red-50 text-red-700 border-red-100" : a.type === "Critico" ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}>
+                               <span key={idx} className={`px-2 py-0.5 rounded-lg text-[10px] font-black border uppercase tracking-tighter \${a.type === "Perda" ? "bg-red-50 text-red-700 border-red-100" : a.type === "Critico" ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}>
                                   {a.company} • {a.days}D
                                </span>
                             ))}
@@ -523,7 +539,7 @@ export default function CRMPage() {
                         <td className="px-6 py-5 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <Link 
-                              to={`/dashboard/clientes/${client.id}`}
+                              to={`/dashboard/clientes/\${client.id}`}
                               className="p-2 text-slate-400 dark:text-zinc-500 hover:text-indigo-600 rounded-xl hover:bg-indigo-50 dark:hover:bg-zinc-800 transition-all border border-transparent hover:border-indigo-100 dark:hover:border-zinc-700"
                               title="Ver Ficha"
                             >
@@ -689,7 +705,7 @@ export default function CRMPage() {
                    <motion.div 
                      className="h-full bg-indigo-600" 
                      initial={{ width: 0 }}
-                     animate={{ width: `${(importResults.processed / (importResults.total || 1)) * 100}%` }}
+                     animate={{ width: \`\${(importResults.processed / (importResults.total || 1)) * 100}%\` }}
                    />
                 </div>
 
@@ -707,6 +723,21 @@ export default function CRMPage() {
                       <div className="text-[10px] font-bold text-red-600/70 uppercase tracking-widest mt-1">Falhas</div>
                    </div>
                 </div>
+
+                {importResults.failedList.length > 0 && !importing && (
+                   <div className="bg-red-50 dark:bg-red-950/20 rounded-2xl p-4 border border-red-100 dark:border-red-900/40 max-h-40 overflow-y-auto scroller-hidden">
+                      <h4 className="text-red-800 dark:text-red-400 text-xs font-black uppercase mb-2 flex items-center gap-2">
+                         <X className="w-3 h-3" /> Falhas no Cadastro
+                      </h4>
+                      <div className="space-y-2">
+                         {importResults.failedList.map((f, i) => (
+                            <div key={i} className="text-[10px] text-red-600/80 dark:text-red-400/60 font-medium">
+                               O cliente <span className="font-bold">{f.cnpj}</span> não foi possível concluir o cadastro. Faça manualmente.
+                            </div>
+                         ))}
+                      </div>
+                   </div>
+                )}
 
                 {importing ? (
                   <div className="flex items-center justify-center gap-3 py-4 text-indigo-600 font-black text-sm animate-pulse">
