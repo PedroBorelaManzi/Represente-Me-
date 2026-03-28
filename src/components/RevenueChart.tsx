@@ -95,33 +95,6 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
                     onMouseLeave={() => setSelectedIdx(null)}
                     onClick={() => setSelectedIdx(isSelected ? null : idx)}
                   >
-                    {/* Tooltip Box - Inspired by user example */}
-                    <AnimatePresence>
-                      {isSelected && (
-                        <motion.div 
-                          initial={{ opacity: 0, scale: 0.95, y: 5 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: 5 }}
-                          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 z-50 pointer-events-none"
-                        >
-                          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 min-w-[160px] shadow-xl ring-1 ring-black/5">
-                            <div className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest border-b border-slate-100 dark:border-zinc-800 pb-2 mb-2 truncate">
-                              {item.name}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.4)]" />
-                              <span className="text-[11px] font-bold text-slate-600 dark:text-zinc-400">Faturamento:</span>
-                              <span className="text-[11px] font-black text-slate-900 dark:text-zinc-100 ml-auto whitespace-nowrap">
-                                {formatCurrency(item.value)}
-                              </span>
-                            </div>
-                          </div>
-                          {/* Triangle pointer */}
-                          <div className="w-3 h-3 bg-white dark:bg-zinc-900 border-r border-b border-slate-200 dark:border-zinc-700 rotate-45 absolute -bottom-1.5 left-1/2 -translate-x-1/2" />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: `${heightPercent}%`, opacity: 1 }}
@@ -132,6 +105,33 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
                         isSelected && "bg-indigo-600 dark:bg-indigo-500 ring-4 ring-indigo-500/20 ring-offset-2 dark:ring-offset-zinc-900"
                       )}
                     >
+                      {/* Tooltip Box - Now relative to the actual bar's top */}
+                      <AnimatePresence>
+                        {isSelected && (
+                          <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 z-50 pointer-events-none"
+                          >
+                            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 min-w-[160px] shadow-xl ring-1 ring-black/5">
+                              <div className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest border-b border-slate-100 dark:border-zinc-800 pb-2 mb-2 truncate">
+                                {item.name}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.4)]" />
+                                <span className="text-[11px] font-bold text-slate-600 dark:text-zinc-400">Faturamento:</span>
+                                <span className="text-[11px] font-black text-slate-900 dark:text-zinc-100 ml-auto whitespace-nowrap">
+                                  {formatCurrency(item.value)}
+                                </span>
+                              </div>
+                            </div>
+                            {/* Triangle pointer */}
+                            <div className="w-3 h-3 bg-white dark:bg-zinc-900 border-r border-b border-slate-200 dark:border-zinc-700 rotate-45 absolute -bottom-1.5 left-1/2 -translate-x-1/2" />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
                        {!isSelected && (
                          <div className="absolute bottom-1.5 left-0 right-0 text-center text-[7px] font-black text-white/40 group-hover:text-white transition-colors">
                             {(heightPercent).toFixed(0)}%
@@ -160,4 +160,3 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
 };
 
 export default RevenueChart;
-
