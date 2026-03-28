@@ -13,10 +13,12 @@ import GoogleCallback from "./pages/GoogleCallback";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { Toaster } from "sonner";
 
 export default function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-right" expand={false} richColors />
       <SettingsProvider>
       <BrowserRouter>
         <Routes>
