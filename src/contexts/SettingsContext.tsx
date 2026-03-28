@@ -64,10 +64,14 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           inativo_days: data.inativo_days ?? defaultSettings.inativo_days,
           theme: data.theme ?? defaultSettings.theme,
           has_completed_onboarding: data.has_completed_onboarding ?? defaultSettings.has_completed_onboarding,
-          categories: data.categories ?? defaultSettings.categories,
+          categories: data.categories || [], // Explicitly empty for new users
         });
       } else if (error) {
          console.error("Error loading settings:", error);
+         setSettings(defaultSettings);
+      } else {
+        // No error but no data (brand new user)
+        setSettings(defaultSettings);
       }
       setLoading(false);
     }
@@ -114,3 +118,4 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     </SettingsContext.Provider>
   );
 };
+
