@@ -116,14 +116,27 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
         }
         
         const ibge = Number(h.codigo_ibge);
+        const cityName = cityMap.get(ibge) || h.municipio || "";
+        let finalName = h.nome || h.name || "Feriado";
+        
+        // Customize names for municipal holidays as requested
+        const normName = finalName.toLowerCase();
+        if ((normName.includes("aniversario") || normName.includes("cidade")) && cityName) {
+          finalName = `Aniversário de ${cityName}`;
+        } else if (normName === "feriado municipal" && cityName) {
+          finalName = `Feriado - ${cityName}`;
+        } else if (normName.startsWith("dia de") && cityName) {
+          finalName = `${finalName} - ${cityName}`;
+        }
+
         return {
-          id: `${isoDate}-${h.nome}-${ibge}`,
-          name: h.nome,
+          id: `${isoDate}-${finalName}-${ibge}`,
+          name: finalName,
           date: isoDate,
-          type: 'municipal' as const,
-          city: cityMap.get(ibge) || h.municipio,
+          type: "municipal" as const,
+          city: cityName,
           state: h.uf,
-          description: h.descricao || h.nome
+          description: h.descricao || finalName
         };
       });
 
@@ -189,3 +202,4 @@ export async function getClientLocations(userId: string): Promise<{ city: string
       return true;
     });
 }
+

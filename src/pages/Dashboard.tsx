@@ -262,8 +262,9 @@ export default function Dashboard() {
 
                           {/* Holidays for this day */}
                           {holidays.filter(h => h.date === formatDateLocal(date)).map((h, idx) => (
-                            <div key={idx} className="mt-1 px-1 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-[7px] font-black text-amber-700 dark:text-amber-400 rounded-md border border-amber-200 dark:border-amber-800 truncate" title={h.name}>
-                              {h.name}
+                            <div key={idx} className="mt-1 px-1 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-[7px] font-black text-amber-700 dark:text-amber-400 rounded-md border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm" title={h.name}>
+                              <span className="w-1 h-1 rounded-full bg-amber-500 flex-shrink-0" />
+                              <span className="truncate flex-1 min-w-0">{h.name}</span>
                             </div>
                           ))}
                         </div>
@@ -331,6 +332,7 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
 
 

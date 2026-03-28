@@ -269,7 +269,7 @@ export default function Agenda() {
                       {holidays.filter(h => h.date === dateIso).map((h, idx) => (
                         <div key={idx} className="mb-1 px-1.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-[9px] font-black text-amber-700 dark:text-amber-400 rounded-lg border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm" title={h.name}>
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                          <span className="truncate">{h.name}</span>
+                          <span className="truncate flex-1 min-w-0">{h.name}</span>
                         </div>
                       ))}
 
@@ -316,5 +316,6 @@ export default function Agenda() {
     </div>
   );
 }
+
 
 
