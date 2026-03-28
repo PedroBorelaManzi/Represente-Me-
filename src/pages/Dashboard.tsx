@@ -76,7 +76,7 @@ export default function Dashboard() {
     setLoading(false);
   };
 
-  useEffect(() => { loadData(); }, [user]);
+  useEffect(() => { loadData(); }, [user, currentDate.getFullYear()]);
 
   const handleSync = async () => {
     if (!user) return;
@@ -331,6 +331,7 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
 
 

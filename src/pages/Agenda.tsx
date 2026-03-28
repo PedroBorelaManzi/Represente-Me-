@@ -67,9 +67,7 @@ export default function Agenda() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchEvents();
-  }, [user]);
+  useEffect(() => { fetchEvents(); }, [user, currentDate.getFullYear()]);
 
   const handleSync = async () => {
     if (!user) return;
@@ -313,3 +311,4 @@ export default function Agenda() {
     </div>
   );
 }
+
