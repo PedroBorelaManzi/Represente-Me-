@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
-import { MapPin, LayoutDashboard, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar } from "lucide-react";
+import { MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -78,7 +78,7 @@ export default function Layout() {
   }, [user, settings]);
 
   const navigation = [
-    { name: "Início", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Início", href: "/dashboard", icon: Home },
     { name: "Mapa", href: "/dashboard/map", icon: MapPin },
     { name: "Integrações", href: "/dashboard/links", icon: LinkIcon },
     { name: "Clientes", href: "/dashboard/clientes", icon: Users },

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { TrendingUp, Info } from 'lucide-react';
@@ -47,7 +47,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
             Faturamento por Empresa
           </h2>
           <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-tighter mt-1">
-            Clique na barra para ver o valor
+            Passe o mouse ou clique na barra para ver o valor
           </p>
         </div>
         <div className="p-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl">
@@ -91,6 +91,8 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
                   <div 
                     key={idx} 
                     className="flex-1 flex flex-col items-center group relative h-full justify-end z-10"
+                    onMouseEnter={() => setSelectedIdx(idx)}
+                    onMouseLeave={() => setSelectedIdx(null)}
                     onClick={() => setSelectedIdx(isSelected ? null : idx)}
                   >
                     {/* FLAT Tooltip Box - No shadow, no pointer */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, ChevronLeft, ChevronRight, Clock, X, LayoutDashboard, Loader2, Users, Globe, RefreshCw } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Clock, X, Home, Loader2, Users, Globe, RefreshCw } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
@@ -247,7 +247,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-tight">
-            <LayoutDashboard className="w-6 h-6 text-indigo-600" />
+            <Home className="w-6 h-6 text-indigo-600" />
             Início
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Sua agenda semanal sincronizada e faturamento.</p>
