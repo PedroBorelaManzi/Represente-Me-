@@ -95,23 +95,29 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
                     onMouseLeave={() => setSelectedIdx(null)}
                     onClick={() => setSelectedIdx(isSelected ? null : idx)}
                   >
-                    {/* FLAT Tooltip Box - No shadow, no pointer */}
+                    {/* Tooltip Box - Inspired by user example */}
                     <AnimatePresence>
                       {isSelected && (
                         <motion.div 
-                          initial={{ opacity: 0, y: 5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 5 }}
-                          className="absolute -top-16 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+                          initial={{ opacity: 0, scale: 0.95, y: 5 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: 5 }}
+                          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 z-50 pointer-events-none"
                         >
-                          <div className="bg-indigo-600 text-white dark:bg-zinc-100 dark:text-zinc-900 p-2.5 rounded-xl border border-indigo-400 dark:border-zinc-300 min-w-[120px] text-center shadow-lg shadow-indigo-500/10">
-                            <p className="text-[12px] font-black whitespace-nowrap">
-                              {formatCurrency(item.value)}
-                            </p>
-                            <p className="text-[7px] font-bold opacity-80 uppercase tracking-wider">
+                          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl p-3 min-w-[160px] shadow-xl ring-1 ring-black/5">
+                            <div className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest border-b border-slate-100 dark:border-zinc-800 pb-2 mb-2 truncate">
                               {item.name}
-                            </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.4)]" />
+                              <span className="text-[11px] font-bold text-slate-600 dark:text-zinc-400">Faturamento:</span>
+                              <span className="text-[11px] font-black text-slate-900 dark:text-zinc-100 ml-auto whitespace-nowrap">
+                                {formatCurrency(item.value)}
+                              </span>
+                            </div>
                           </div>
+                          {/* Triangle pointer */}
+                          <div className="w-3 h-3 bg-white dark:bg-zinc-900 border-r border-b border-slate-200 dark:border-zinc-700 rotate-45 absolute -bottom-1.5 left-1/2 -translate-x-1/2" />
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -123,7 +129,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
                       className={cn(
                         "w-full max-w-[64px] min-w-[16px] rounded-t-xl bg-indigo-600/80 hover:bg-indigo-600 transition-all cursor-pointer relative",
                         "dark:bg-indigo-500/80 dark:hover:bg-indigo-50",
-                        isSelected && "bg-indigo-600 dark:bg-indigo-500 ring-2 ring-indigo-400 ring-offset-2 dark:ring-offset-zinc-900"
+                        isSelected && "bg-indigo-600 dark:bg-indigo-500 ring-4 ring-indigo-500/20 ring-offset-2 dark:ring-offset-zinc-900"
                       )}
                     >
                        {!isSelected && (
