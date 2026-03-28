@@ -8,6 +8,10 @@ const MANUAL_HOLIDAYS_BY_CITY: Record<string, { month: number, day: number, name
   "cerquilho": [
     { month: 3, day: 19, name: "São José - Cerquilho" },
     { month: 4, day: 3, name: "Aniversário de Cerquilho" }
+  ],
+  "angatuba": [
+    { month: 3, day: 11, name: "Aniversário de Angatuba" },
+    { month: 6, day: 4, name: "Corpus Christi - Angatuba" }
   ]
 };
 
@@ -25,14 +29,13 @@ const BASE_URL_GITHUB = 'https://cdn.jsdelivr.net/gh/joaopbini/feriados-brasil@m
 
 // Helper to normalize strings for comparison
 const normalize = (str: string) => 
-  str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 async function getCachedOrFetch<T>(key: string, url: string): Promise<T | null> {
   const cached = localStorage.getItem(key);
   if (cached) {
     try {
       const { data, timestamp } = JSON.parse(cached);
-      // Cache for 24 hours
       if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
         return data as T;
       }
@@ -53,9 +56,8 @@ async function getCachedOrFetch<T>(key: string, url: string): Promise<T | null> 
   }
 }
 
-export async function fetchHolidays(year: number, locations: { city: string; state: string }[]): Promise<Holiday[]> {
+export async function fetchHolidays(year: number, locations: { city: string; state?: string }[]): Promise<Holiday[]> {
   try {
-    // 1. Fetch National Holidays from BrasilAPI (Reliable)
     const nationalUrl = `https://brasilapi.com.br/api/feriados/v1/${year}`;
     const nationalRes = await fetch(nationalUrl);
     const nationalData = await nationalRes.json();
@@ -69,7 +71,6 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
 
     if (locations.length === 0) return allHolidays;
 
-    // 2. Fetch Mappings and Master Holiday List
     const [municipios, estados, masterHolidays] = await Promise.all([
       getCachedOrFetch<any[]>('br_municipios', `${BASE_URL_GITHUB}/localizacao/municipios/municipios.json`),
       getCachedOrFetch<any[]>('br_estados', `${BASE_URL_GITHUB}/localizacao/estados/estados.json`),
@@ -81,27 +82,27 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       return allHolidays;
     }
 
-    // 3. Map state acronyms to codes
     const stateToCode = new Map<string, number>();
     estados.forEach(e => {
       const key = (e.uf || e.sigla || '').toUpperCase();
       if (key) stateToCode.set(key, e.codigo_uf);
     });
 
-    // 4. Identify IBGE codes for the requested locations
     const targetIbgeCodes = new Set<number>();
     const cityMap = new Map<number, string>(); 
 
     locations.forEach(loc => {
-      const stateKey = loc.state.trim().toUpperCase();
+      const stateKey = (loc.state || "").trim().toUpperCase();
       const stateCode = stateToCode.get(stateKey);
-      
-      if (!stateCode) return;
-
       const normCity = normalize(loc.city);
-      const match = municipios.find(m => 
-        m.codigo_uf === stateCode && normalize(m.nome) === normCity
-      );
+      
+      const match = municipios.find(m => {
+        const cityMatch = normalize(m.nome) === normCity;
+        if (stateCode) {
+          return m.codigo_uf === stateCode && cityMatch;
+        }
+        return cityMatch;
+      });
 
       if (match) {
         const ibge = Number(match.codigo_ibge);
@@ -110,16 +111,12 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       }
     });
 
-    // 5. Filter municipal holidays by IBGE codes, avoiding duplicates if manual override exists
     const municipalHolidays: Holiday[] = masterHolidays
       .filter(h => {
         const ibge = Number(h.codigo_ibge);
         const cityName = cityMap.get(ibge);
         if (!cityName || !targetIbgeCodes.has(ibge)) return false;
-        
-        // If we have a manual override for this city, ignore the DB entry
         if (MANUAL_HOLIDAYS_BY_CITY[normalize(cityName)]) return false;
-        
         return true;
       })
       .map(h => {
@@ -135,7 +132,7 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
         let finalName = h.nome || h.name || "Feriado";
         
         const normName = finalName.toLowerCase();
-        if ((normName.includes("Aniversário") || normName.includes("cidade")) && cityName) {
+        if ((normName.includes("aniversário") || normName.includes("cidade")) && cityName) {
           finalName = `Aniversário de ${cityName}`;
         } else if (normName === "feriado municipal" && cityName) {
           finalName = `Feriado - ${cityName}`;
@@ -152,10 +149,8 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
         };
       });
 
-    // 6. Merge national + municipal
     const combinedHolidays = [...allHolidays, ...municipalHolidays];
 
-    // 7. Deduplicate initially
     const seen = new Set();
     const finalHolidays = combinedHolidays.filter(h => {
       const key = `${h.date}-${h.name}-${h.city || 'national'}`;
@@ -164,7 +159,6 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       return true;
     });
 
-    // 8. Apply Manual Overrides
     locations.forEach(loc => {
       const cityKey = normalize(loc.city);
       const overrides = MANUAL_HOLIDAYS_BY_CITY[cityKey];
@@ -187,7 +181,6 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
 
   } catch (error) {
     console.error('Error in fetchHolidays:', error);
-    // Fallback to national holidays only
     try {
       const nationalUrl = `https://brasilapi.com.br/api/feriados/v1/${year}`;
       const res = await fetch(nationalUrl);
@@ -204,25 +197,23 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
   }
 }
 
-export async function getClientLocations(userId: string): Promise<{ city: string; state: string }[]> {
+export async function getClientLocations(userId: string): Promise<{ city: string; state?: string }[]> {
   const { data, error } = await supabase
     .from('clients')
     .select('city, state')
     .eq('user_id', userId)
-    .not('city', 'is', null)
-    .not('state', 'is', null);
+    .not('city', 'is', null);
 
   if (error || !data) return [];
   
-  // Return unique combinations
   const seen = new Set();
   return data
     .map(c => ({
       city: c.city!.trim(),
-      state: c.state!.trim().toUpperCase()
+      state: c.state ? c.state.trim().toUpperCase() : undefined
     }))
     .filter(c => {
-      const key = `${normalize(c.city)}|${c.state}`;
+      const key = `${normalize(c.city)}|${c.state || ''}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;

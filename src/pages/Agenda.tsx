@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Plus, ChevronLeft, ChevronRight, X, Calendar as CalendarIcon, Loader2, Globe, RefreshCw, AlertCircle } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -34,6 +34,7 @@ export default function Agenda() {
   const [googleConnected, setGoogleConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [selectedHoliday, setSelectedHoliday] = useState<Holiday | null>(null);
 
   const fetchEvents = async () => {
     if (!user) return;
@@ -49,8 +50,8 @@ export default function Agenda() {
     const { data: clientsData } = await supabase.from("clients").select("id, name, city, state").order("name");
     setClients(clientsData || []);
 
-    // Fetch Holidays
-    const locations = (clientsData || []).filter(c => c.city && c.state).map(c => ({ city: c.city, state: c.state }));
+    // Fetch Holidays for all client cities
+    const locations = (clientsData || []).filter(c => c.city).map(c => ({ city: c.city, state: c.state }));
     const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
     setHolidays(fetchedHolidays);
 
@@ -150,7 +151,6 @@ export default function Agenda() {
 
   const daysArray = getDaysInMonth(currentDate);
 
-  
   const onDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData("eventId", id);
   };
@@ -267,7 +267,13 @@ export default function Agenda() {
                     <>
                       {/* Holidays */}
                       {holidays.filter(h => h.date === dateIso).map((h, idx) => (
-                        <div key={idx} className="mb-1 px-1.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-[9px] font-black text-amber-700 dark:text-amber-400 rounded-lg border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm" title={h.name}>
+                        <div 
+                          key={idx} 
+                          onClick={(e) => { e.stopPropagation(); setSelectedHoliday(h); }}
+                          draggable={false}
+                          className="mb-1 px-1.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-[9px] font-black text-amber-700 dark:text-amber-400 rounded-lg border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm cursor-help hover:scale-[1.02] transition-transform active:scale-95" 
+                          title={h.name}
+                        >
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                           <span className="truncate flex-1 min-w-0">{h.name}</span>
                         </div>
@@ -313,9 +319,57 @@ export default function Agenda() {
           isSaving={isSaving}
         />
       )}
+
+      {/* Holiday Details Modal */}
+      {selectedHoliday && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-2xl">
+                    <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight leading-tight">
+                      {selectedHoliday.name}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] font-black px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-full uppercase tracking-widest">
+                        {selectedHoliday.type === "national" ? "Feriado Nacional" : `Feriado Municipal - ${selectedHoliday.city}`}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500">
+                        {new Date(selectedHoliday.date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "long" })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedHoliday(null)}
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-slate-400 dark:text-zinc-500"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="mt-6 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-2xl border border-slate-100 dark:border-zinc-800">
+                <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed font-medium">
+                  {selectedHoliday.description || "Este é um feriado oficial. Fique atento às alterações nos seus compromissos e planeje-se com antecedência para otimizar suas visitas a clientes nesta região."}
+                </p>
+              </div>
+
+              <div className="mt-8">
+                <button 
+                  onClick={() => setSelectedHoliday(null)}
+                  className="w-full bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:opacity-90 transition-opacity active:scale-[0.98]"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-
-
