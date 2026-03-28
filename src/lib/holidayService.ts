@@ -2,7 +2,7 @@
 
 const MANUAL_HOLIDAYS_BY_CITY: Record<string, { month: number, day: number, name: string }[]> = {
   "porto feliz": [
-    { month: 8, day: 15, name: "Padroeira - Porto Feliz" },
+    { month: 8, day: 15, name: "Nossa Senhora Mãe dos Homens - Porto Feliz" },
     { month: 10, day: 13, name: "Aniversário de Porto Feliz" }
   ],
   "cerquilho": [
@@ -62,9 +62,7 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
     const nationalData = await nationalRes.json();
     let allHolidays: Holiday[] = Array.isArray(nationalData) ? nationalData.map((h: any) => ({
       id: h.name,
-      name: h.nome,
-      date: h.date,
-      type: 'national'
+      name: h.name,`n      date: h.date,`n      type: "national" as const
     })) : [];
 
     if (locations.length === 0) return allHolidays;
@@ -116,11 +114,20 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       }
     });
 
-    // 5. Filter municipal holidays by IBGE codes
+    // 5. Filter municipal holidays by IBGE codes, avoiding duplicates if manual override exists
     const municipalHolidays: Holiday[] = masterHolidays
-      .filter(h => targetIbgeCodes.has(Number(h.codigo_ibge)))
+      .filter(h => {
+        const ibge = Number(h.codigo_ibge);
+        const cityName = cityMap.get(ibge);
+        if (!cityName || !targetIbgeCodes.has(ibge)) return false;
+        
+        // If we have a manual override for this city, ignore the DB entry to avoid trash/duplicates
+        if (MANUAL_HOLIDAYS_BY_CITY[normalize(cityName)]) return false;
+        
+        return true;
+      })
       .map(h => {
-        const dateParts = h.data.split('/');
+        const dateParts = h.data.split("/");
         let isoDate = h.data;
         if (dateParts.length === 3) {
           const [day, month, yearPart] = dateParts;
@@ -131,14 +138,11 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
         const cityName = cityMap.get(ibge) || h.municipio || "";
         let finalName = h.nome || h.name || "Feriado";
         
-        // Customize names for municipal holidays as requested
         const normName = finalName.toLowerCase();
         if ((normName.includes("aniversario") || normName.includes("cidade")) && cityName) {
           finalName = `Aniversário de ${cityName}`;
         } else if (normName === "feriado municipal" && cityName) {
           finalName = `Feriado - ${cityName}`;
-        } else if (normName.startsWith("dia de") && cityName) {
-          finalName = `${finalName} - ${cityName}`;
         }
 
         return {
@@ -170,24 +174,24 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
     });
 
     
-    // 6. Apply Manual Overrides for accuracy
+    // 6. Apply Manual Overrides for accuracy (These cities already had DB entries filtered out)
     locations.forEach(loc => {
       const cityKey = normalize(loc.city);
       const overrides = MANUAL_HOLIDAYS_BY_CITY[cityKey];
       if (overrides) {
         overrides.forEach(ov => {
           const isoDate = `${year}-${String(ov.month).padStart(2, "0")}-${String(ov.day).padStart(2, "0")}`;
-          // Add if not already there with same name
-          const exists = finalHolidays.some(h => h.date === isoDate && h.city === loc.city);
-          if (!exists) {
-            finalHolidays.push({
-              id: `manual-${isoDate}-${ov.name}`,
-              name: ov.name,
-              date: isoDate,
-              type: "municipal",
-              city: loc.city,
-              state: loc.state
-            });
+          finalHolidays.push({
+            id: `manual-${isoDate}-${ov.name}-${cityKey}`,
+            name: ov.name,
+            date: isoDate,
+            type: "municipal",
+            city: loc.city,
+            state: loc.state
+          });
+        });
+      }
+    });
           }
         });
       }
@@ -204,9 +208,7 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       const data = await res.json();
       return Array.isArray(data) ? data.map((h: any) => ({
         id: h.name,
-        name: h.nome,
-        date: h.date,
-        type: 'national'
+        name: h.name,`n      date: h.date,`n      type: "national" as const
       })) : [];
     } catch {
       return [];
@@ -238,5 +240,6 @@ export async function getClientLocations(userId: string): Promise<{ city: string
       return true;
     });
 }
+
 
 
