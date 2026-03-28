@@ -50,7 +50,7 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
     const nationalData = await nationalRes.json();
     let allHolidays: Holiday[] = Array.isArray(nationalData) ? nationalData.map((h: any) => ({
       id: h.name,
-      name: h.name,
+      name: h.nome,
       date: h.date,
       type: 'national'
     })) : [];
@@ -117,13 +117,13 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
         
         const ibge = Number(h.codigo_ibge);
         return {
-          id: `${isoDate}-${h.name}-${ibge}`,
-          name: h.name,
+          id: `${isoDate}-${h.nome}-${ibge}`,
+          name: h.nome,
           date: isoDate,
           type: 'municipal' as const,
           city: cityMap.get(ibge) || h.municipio,
           state: h.uf,
-          description: h.descricao || h.name
+          description: h.descricao || h.nome
         };
       });
 
@@ -155,7 +155,7 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       const data = await res.json();
       return Array.isArray(data) ? data.map((h: any) => ({
         id: h.name,
-        name: h.name,
+        name: h.nome,
         date: h.date,
         type: 'national'
       })) : [];

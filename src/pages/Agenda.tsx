@@ -140,6 +140,11 @@ export default function Agenda() {
     for (let i = 1; i <= daysInMonth; i++) {
       days.push(new Date(year, month, i));
     }
+    
+    // Ensure we always have 6 rows (42 cells) to keep layout stable
+    while (days.length < 42) {
+      days.push(null);
+    }
     return days;
   };
 
@@ -311,4 +316,5 @@ export default function Agenda() {
     </div>
   );
 }
+
 
