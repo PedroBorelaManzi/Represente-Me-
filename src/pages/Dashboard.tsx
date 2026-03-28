@@ -42,8 +42,9 @@ export default function Dashboard() {
   const [userCategories, setUserCategories] = useState<string[]>([]);
 
   const startOfWeek = new Date(currentDate);
-  const day = startOfWeek.getDay();
-  const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); 
+  const day = startOfWeek.getDay(); 
+  // Sunday is 0, Monday is 1... We start exactly at Sunday
+  const diff = startOfWeek.getDate() - day; 
   startOfWeek.setDate(diff);
   startOfWeek.setHours(0, 0, 0, 0);
 
@@ -253,11 +254,11 @@ export default function Dashboard() {
         </div>
       </div>
       
-      {/* 3 columns layout main container: 2 for agenda, 1 for chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+      {/* 5 columns layout main container: 3 for agenda (60%), 2 for chart (40%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 flex-1 min-h-0">
         
-        {/* Left Column: Agenda (Occupying ~66% - 2/3) */}
-        <div className="lg:col-span-2 bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden flex flex-col h-full min-h-[500px]">
+        {/* Left Column: Agenda (Occupying ~60% - 3/5) */}
+        <div className="lg:col-span-3 bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden flex flex-col h-full min-h-[500px]">
           <div className="p-4 border-b border-slate-300 dark:border-zinc-700/50 flex flex-col sm:flex-row sm:items-center justify-between bg-slate-100 dark:bg-zinc-800/40 z-40 gap-4">
             <div className="flex items-center gap-4">
               <h2 className="text-sm font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest leading-none">
@@ -365,8 +366,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right Column: Revenue Chart (~33% - 1/3 Width, 50% Height) */}
-        <div className="lg:col-span-1 h-full flex flex-col gap-6">
+        {/* Right Column: Revenue Chart (~40% - 2/5 Width, 50% Height) */}
+        <div className="lg:col-span-2 h-full flex flex-col gap-6">
            <div className="h-1/2 min-h-[300px]">
               <RevenueChart data={revenueChartData} loading={loading} />
            </div>
