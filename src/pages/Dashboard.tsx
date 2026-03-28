@@ -253,11 +253,11 @@ export default function Dashboard() {
         </div>
       </div>
       
-      {/* 2 columns layout main container */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
+      {/* 3 columns layout main container: 2 for agenda, 1 for chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
         
-        {/* Left Column: Agenda (Occupying ~50%) */}
-        <div className="bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden flex flex-col h-full min-h-[500px]">
+        {/* Left Column: Agenda (Occupying ~66% - 2/3) */}
+        <div className="lg:col-span-2 bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden flex flex-col h-full min-h-[500px]">
           <div className="p-4 border-b border-slate-300 dark:border-zinc-700/50 flex flex-col sm:flex-row sm:items-center justify-between bg-slate-100 dark:bg-zinc-800/40 z-40 gap-4">
             <div className="flex items-center gap-4">
               <h2 className="text-sm font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest leading-none">
@@ -365,9 +365,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right Column: Revenue Chart */}
-        <div className="h-full flex flex-col">
-           <RevenueChart data={revenueChartData} loading={loading} />
+        {/* Right Column: Revenue Chart (~33% - 1/3 Width, 50% Height) */}
+        <div className="lg:col-span-1 h-full flex flex-col gap-6">
+           <div className="h-1/2 min-h-[300px]">
+              <RevenueChart data={revenueChartData} loading={loading} />
+           </div>
+           {/* Space below for layout balance */}
+           <div className="hidden lg:block h-1/2" />
         </div>
 
       </div>

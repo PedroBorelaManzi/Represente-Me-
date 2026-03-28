@@ -29,44 +29,44 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-200 dark:ring-zinc-700/60 border border-slate-100 dark:border-zinc-800 rounded-3xl p-6 flex flex-col h-full min-h-[500px]">
-      <div className="flex items-center justify-between mb-8">
+    <div className="bg-white dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-200 dark:ring-zinc-700/60 border border-slate-100 dark:border-zinc-800 rounded-3xl p-6 flex flex-col h-full overflow-hidden">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-base font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-indigo-600" />
+          <h2 className="text-sm font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-indigo-600" />
             Faturamento por Empresa
           </h2>
           <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-tighter mt-1">
             Total consolidado por representada
           </p>
         </div>
-        <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl">
-           <Info className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+        <div className="p-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl">
+           <Info className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
         </div>
       </div>
 
-      <div className="flex-1 flex gap-4 relative">
+      <div className="flex-1 flex gap-3 relative min-h-0">
         {/* Y Axis Labels */}
-        <div className="flex flex-col justify-between text-[9px] font-black text-slate-400 dark:text-zinc-600 pb-10 w-10 border-r border-slate-100 dark:border-zinc-800/50 pr-2">
+        <div className="flex flex-col justify-between text-[8px] font-black text-slate-400 dark:text-zinc-600 pb-8 w-10 border-r border-slate-100 dark:border-zinc-800/50 pr-2">
           {scaleMarks.map(mark => (
-            <span key={mark}>{formatCurrency(mark)}</span>
+            <span key={mark} className="leading-none">{formatCurrency(mark)}</span>
           ))}
         </div>
 
         {/* Chart Area */}
-        <div className="flex-1 flex items-end justify-around gap-2 relative bg-slate-50/50 dark:bg-zinc-950/20 rounded-2xl p-4 overflow-hidden border border-slate-100/50 dark:border-zinc-900/50">
+        <div className="flex-1 flex items-end justify-around gap-1.5 relative bg-slate-50/50 dark:bg-zinc-950/20 rounded-2xl p-3 overflow-hidden border border-slate-100/50 dark:border-zinc-900/50">
           {loading ? (
              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
+                <div className="w-6 h-6 border-4 border-indigo-600/20 border-t-indigo-600 rounded-full animate-spin" />
              </div>
           ) : data.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-slate-400 dark:text-zinc-600 uppercase tracking-widest text-center px-10">
-               Nenhum faturamento registrado nas suas categorias.
+            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-slate-400 dark:text-zinc-600 uppercase tracking-widest text-center px-6">
+               Nenhum dado.
             </div>
           ) : (
             <>
               {/* Background Grid Lines */}
-              <div className="absolute inset-0 p-4 flex flex-col justify-between pointer-events-none">
+              <div className="absolute inset-0 p-3 flex flex-col justify-between pointer-events-none">
                 {scaleMarks.map(m => (
                     <div key={m} className="w-full border-t border-slate-200/50 dark:border-zinc-800/30" />
                 ))}
@@ -90,18 +90,18 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
                       animate={{ height: `${heightPercent}%`, opacity: 1 }}
                       transition={{ delay: idx * 0.1, duration: 0.8, ease: "circOut" }}
                       className={cn(
-                        "w-full max-w-[48px] min-w-[12px] rounded-t-xl bg-gradient-to-t from-indigo-600 to-indigo-400 shadow-lg shadow-indigo-500/20 relative group-hover:to-indigo-300 transition-colors cursor-pointer",
+                        "w-full max-w-[40px] min-w-[10px] rounded-t-lg bg-gradient-to-t from-indigo-600 to-indigo-400 shadow-lg shadow-indigo-500/10 relative group-hover:to-indigo-300 transition-colors cursor-pointer",
                         "dark:shadow-none dark:from-indigo-500 dark:to-indigo-300"
                       )}
                     >
-                       <div className="absolute bottom-2 left-0 right-0 text-center text-[8px] font-black text-white/40 group-hover:text-white transition-colors">
+                       <div className="absolute bottom-1 left-0 right-0 text-center text-[7px] font-black text-white/40 group-hover:text-white transition-colors">
                           {(heightPercent).toFixed(0)}%
                        </div>
                     </motion.div>
                     
                     {/* Label */}
-                    <div className="mt-4 w-full text-center">
-                       <p className="text-[9px] font-black text-slate-700 dark:text-zinc-400 uppercase truncate px-1">
+                    <div className="mt-2 w-full text-center">
+                       <p className="text-[8px] font-black text-slate-700 dark:text-zinc-400 uppercase truncate px-1">
                           {item.name}
                        </p>
                     </div>
