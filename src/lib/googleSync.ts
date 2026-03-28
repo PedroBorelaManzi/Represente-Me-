@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+﻿import { supabase } from './supabase';
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_CALENDAR_API_URL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
@@ -44,14 +44,13 @@ async function refreshAccessToken(userId: string, refreshToken: string) {
 export async function syncGoogleEvents(userId: string) {
   try {
     const auth = await getValidToken(userId);
-    if (!auth) return { success: false, message: 'Google não conectado.' };
+    if (!auth) return { success: false, message: 'Google nÃ£o conectado.' };
 
     let accessToken = auth.accessToken;
     
-    // Fetch events from last 7 days
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const timeMin = sevenDaysAgo.toISOString();
+    // Fetch events from a wider range (last 60 days to next 300 days)
+    const timeMin = new Date(new Date().setDate(new Date().getDate() - 60)).toISOString();
+    const timeMax = new Date(new Date().setDate(new Date().getDate() + 300)).toISOString();
 
     const fetchEvents = async (token: string) => {
       const url = `${GOOGLE_CALENDAR_API_URL}?timeMin=${encodeURIComponent(timeMin)}&maxResults=250&singleEvents=true&orderBy=startTime`;
@@ -66,14 +65,14 @@ export async function syncGoogleEvents(userId: string) {
     }
 
     if (!response.ok) {
-      return { success: false, message: 'O Google não retornou eventos. Verifique suas permissões.' };
+      return { success: false, message: 'O Google nÃ£o retornou eventos. Verifique suas permissÃµes.' };
     }
 
     const data = await response.json();
     const googleEvents = data.items || [];
 
     if (googleEvents.length === 0) {
-      return { success: true, count: 0, message: 'Nenhum evento encontrado no seu Google Agenda (últimos 7 dias).' };
+      return { success: true, count: 0, message: 'Nenhum evento encontrado no seu Google Agenda (Ãºltimos 7 dias).' };
     }
 
     const syncResults = await Promise.all(googleEvents.map(async (gevent: any) => {
@@ -114,12 +113,12 @@ export async function syncGoogleEvents(userId: string) {
       count: successfulSyncs.length,
       message: successfulSyncs.length > 0 
         ? `Sucesso! Sincronizados: ${titles}${more}` 
-        : 'Sincronizado, mas os eventos não puderam ser salvos.' 
+        : 'Sincronizado, mas os eventos nÃ£o puderam ser salvos.' 
     };
 
   } catch (error) {
-    console.error('Erro técnico:', error);
-    return { success: false, message: 'Erro técnico na sincronização.' };
+    console.error('Erro tÃ©cnico:', error);
+    return { success: false, message: 'Erro tÃ©cnico na sincronizaÃ§Ã£o.' };
   }
 }
 
@@ -222,3 +221,4 @@ export async function deleteEventFromGoogle(userId: string, googleEventId: strin
     return { success: false };
   }
 }
+

@@ -1,5 +1,17 @@
 ﻿import { supabase } from './supabase';
 
+const MANUAL_HOLIDAYS_BY_CITY: Record<string, { month: number, day: number, name: string }[]> = {
+  "porto feliz": [
+    { month: 8, day: 15, name: "Padroeira - Porto Feliz" },
+    { month: 10, day: 13, name: "Aniversário de Porto Feliz" }
+  ],
+  "cerquilho": [
+    { month: 3, day: 19, name: "São José - Cerquilho" },
+    { month: 4, day: 3, name: "Aniversário de Cerquilho" }
+  ]
+};
+
+
 export type Holiday = {
   id: string;
   name: string;
@@ -157,7 +169,31 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
       citiesMatched: targetIbgeCodes.size
     });
 
-    return finalHolidays;
+    
+    // 6. Apply Manual Overrides for accuracy
+    locations.forEach(loc => {
+      const cityKey = normalize(loc.city);
+      const overrides = MANUAL_HOLIDAYS_BY_CITY[cityKey];
+      if (overrides) {
+        overrides.forEach(ov => {
+          const isoDate = `${year}-${String(ov.month).padStart(2, "0")}-${String(ov.day).padStart(2, "0")}`;
+          // Add if not already there with same name
+          const exists = finalHolidays.some(h => h.date === isoDate && h.city === loc.city);
+          if (!exists) {
+            finalHolidays.push({
+              id: `manual-${isoDate}-${ov.name}`,
+              name: ov.name,
+              date: isoDate,
+              type: "municipal",
+              city: loc.city,
+              state: loc.state
+            });
+          }
+        });
+      }
+    });
+
+    return finalHolidays.sort((a, b) => a.date.localeCompare(b.date));
 
   } catch (error) {
     console.error('Error in fetchHolidays:', error);
@@ -202,4 +238,5 @@ export async function getClientLocations(userId: string): Promise<{ city: string
       return true;
     });
 }
+
 
