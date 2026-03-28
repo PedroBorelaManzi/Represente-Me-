@@ -66,7 +66,16 @@ export default function CRMPage() {
     success: number;
     failed: number;
     skipped: number;
-    failedList: { cnpj: string; name?: string; reason: string }[];
+    failedList: { 
+      cnpj: string; 
+      name?: string; 
+      address?: string; 
+      city?: string; 
+      state?: string; 
+      phone?: string;
+      email?: string;
+      reason: string;
+    }[];
   } | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -106,10 +115,11 @@ export default function CRMPage() {
            continue;
         }
 
+        let data: any = null;
         try {
           const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
           if (!response.ok) throw new Error("CNPJ não encontrado");
-          const data = await response.json();
+          data = await response.json();
           
           const name = data.razao_social || data.nome_fantasia || "Cliente Importado";
           const address = `${data.logradouro || ""}, ${data.numero || "S/N"} - ${data.bairro || ""}`.trim();
@@ -132,9 +142,20 @@ export default function CRMPage() {
                if (geoData?.[0]) {
                  lat = parseFloat(geoData[0].lat);
                  lng = parseFloat(geoData[0].lon);
+               } else {
+                 // Hard failure: City center not found either
+                 const error: any = new Error("Cidade não encontrada no mapa");
+                 error.partialData = data;
+                 throw error;
                }
              }
-          } catch(e) {}
+          } catch(e: any) {
+             if (e.partialData) throw e;
+             // Generic Geocoding error but we have data
+             const error: any = new Error("Erro de geolocalização");
+             error.partialData = data;
+             throw error;
+          }
 
           const { error } = await supabase.from("clients").insert([{
             user_id: user.id,
@@ -152,11 +173,21 @@ export default function CRMPage() {
           if (error) throw error;
           setImportResults(prev => prev ? { ...prev, processed: prev.processed + 1, success: prev.success + 1 } : null);
         } catch (err: any) {
+          const partial = err.partialData || data || {};
           setImportResults(prev => prev ? { 
             ...prev, 
             processed: prev.processed + 1, 
             failed: prev.failed + 1,
-            failedList: [...prev.failedList, { cnpj, reason: err.message || "Falha no processamento" }] 
+            failedList: [...prev.failedList, { 
+               cnpj, 
+               reason: err.message || "Falha no processamento",
+               name: partial.razao_social || partial.nome_fantasia,
+               address: `${partial.logradouro || ""}, ${partial.numero || "S/N"} - ${partial.bairro || ""}`.trim(),
+               city: partial.municipio,
+               state: partial.uf,
+               phone: partial.ddd && partial.telefone ? `(${partial.ddd}) ${partial.telefone}` : undefined,
+               email: partial.email
+            }] 
           } : null);
         }
         
@@ -576,11 +607,11 @@ export default function CRMPage() {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-2xl border dark:border-zinc-800 shadow-xl"
+            className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-2xl border dark:border-zinc-800 shadow-xl relative"
           >
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Cadastrar Novo Cliente</h2>
@@ -680,7 +711,7 @@ export default function CRMPage() {
       )}
 
       {showImportModal && importResults && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
            <motion.div 
              initial={{ opacity: 0, scale: 0.9 }}
              animate={{ opacity: 1, scale: 1 }}
@@ -725,14 +756,35 @@ export default function CRMPage() {
                 </div>
 
                 {importResults.failedList.length > 0 && !importing && (
-                   <div className="bg-red-50 dark:bg-red-950/20 rounded-2xl p-4 border border-red-100 dark:border-red-900/40 max-h-40 overflow-y-auto scroller-hidden">
-                      <h4 className="text-red-800 dark:text-red-400 text-xs font-black uppercase mb-2 flex items-center gap-2">
-                         <X className="w-3 h-3" /> Falhas no Cadastro
+                   <div className="bg-red-50 dark:bg-red-950/20 rounded-2xl p-4 border border-red-100 dark:border-red-900/40 max-h-56 overflow-y-auto scroller-hidden">
+                      <h4 className="text-red-800 dark:text-red-400 text-xs font-black uppercase mb-3 flex items-center gap-2">
+                         <AlertCircle className="w-3 h-3" /> Falhas no Cadastro
                       </h4>
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                          {importResults.failedList.map((f, i) => (
-                            <div key={i} className="text-[10px] text-red-600/80 dark:text-red-400/60 font-medium">
-                               O cliente <span className="font-bold">{f.cnpj}</span> não foi possível concluir o cadastro. Faça manualmente.
+                            <div key={i} className="flex items-center justify-between gap-3 p-3 bg-white dark:bg-zinc-900 rounded-xl border border-red-100 dark:border-red-900/20 shadow-sm">
+                               <div className="flex-1">
+                                  <div className="text-[10px] font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter truncate w-32">{f.name || f.cnpj}</div>
+                                  <div className="text-[9px] text-red-500 font-bold uppercase mt-0.5">{f.reason}</div>
+                               </div>
+                               <button 
+                                 onClick={() => {
+                                    setNewClient({
+                                       name: f.name || "",
+                                       cnpj: f.cnpj || "",
+                                       address: f.address || "",
+                                       city: f.city || "",
+                                       state: f.state || "",
+                                       phone: f.phone || "",
+                                       email: f.email || "",
+                                       last_contact: new Date().toISOString().split('T')[0]
+                                    });
+                                    setIsModalOpen(true);
+                                 }}
+                                 className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-700 transition-colors shadow-sm"
+                               >
+                                  Corrigir
+                               </button>
                             </div>
                          ))}
                       </div>
