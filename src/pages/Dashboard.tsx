@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Plus, ChevronLeft, ChevronRight, Clock, X, LayoutDashboard, Loader2, Users, Globe, RefreshCw } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -6,6 +6,7 @@ import { cn } from "../lib/utils";
 import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../lib/googleSync";
 import { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
 import AppointmentForm from "../components/AppointmentForm";
+import RevenueChart from "../components/RevenueChart";
 
 type EventType = { 
   id: string; 
@@ -13,6 +14,7 @@ type EventType = {
   time: string; 
   date: string; 
   client_id?: string;
+  google_event_id?: string;
 };
 
 // Extended to 22:00 (16 hours total from 07:00)
@@ -37,6 +39,7 @@ export default function Dashboard() {
   const [googleConnected, setGoogleConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [userCategories, setUserCategories] = useState<string[]>([]);
 
   const startOfWeek = new Date(currentDate);
   const day = startOfWeek.getDay();
@@ -56,27 +59,71 @@ export default function Dashboard() {
     if (!user) return;
     setLoading(true);
 
-    // Check Google Connection
-    const { data: tokenData } = await supabase
-      .from("user_google_tokens")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    setGoogleConnected(!!tokenData);
+    try {
+      // Check Google Connection
+      const { data: tokenData } = await supabase
+        .from("user_google_tokens")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setGoogleConnected(!!tokenData);
 
-    const { data: clientsData } = await supabase.from("clients").select("id, name, city, state").order("name");
-    setClients(clientsData || []);
-    const { data: appData } = await supabase.from("appointments").select("*").eq("user_id", user.id);
+      // Fetch categories from user settings
+      const { data: settingsData } = await supabase
+        .from("user_settings")
+        .select("categories")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setUserCategories(settingsData?.categories || []);
 
-    // Fetch Holidays
-    const locations = await getClientLocations(user.id);
-    const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
-    setHolidays(fetchedHolidays);
-    setEvents(appData || []);
-    setLoading(false);
+      const { data: clientsData } = await supabase
+        .from("clients")
+        .select("id, name, city, state, faturamento")
+        .eq("user_id", user.id)
+        .order("name");
+      setClients(clientsData || []);
+
+      const { data: appData } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("user_id", user.id);
+      setEvents(appData || []);
+
+      // Fetch Holidays
+      const locations = await getClientLocations(user.id);
+      const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
+      setHolidays(fetchedHolidays);
+
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadData(); }, [user, currentDate.getFullYear()]);
+
+  // Aggregate revenue data for the chart
+  const revenueChartData = useMemo(() => {
+    if (!userCategories.length || !clients.length) return [];
+    
+    const totals: Record<string, number> = {};
+    userCategories.forEach(cat => totals[cat] = 0);
+
+    clients.forEach(client => {
+      const faturamento = client.faturamento || {};
+      Object.entries(faturamento).forEach(([cat, val]) => {
+        if (totals[cat] !== undefined) {
+          totals[cat] += Number(val) || 0;
+        }
+      });
+    });
+
+    return userCategories.map(cat => ({
+      name: cat,
+      value: totals[cat]
+    }));
+  }, [userCategories, clients]);
 
   const handleSync = async () => {
     if (!user) return;
@@ -120,13 +167,21 @@ export default function Dashboard() {
     if (!id) return;
     const isoDate = formatDateLocal(targetDate);
     const newTime = `${String(targetHour).padStart(2, '0')}:00 - ${String(targetHour + 1).padStart(2, '0')}:00`;
+    
+    // Optimistic update
+    const movedEvent = events.find(ev => ev.id === id);
+    if (!movedEvent) return;
+    
     setEvents(events.map(ev => ev.id === id ? { ...ev, date: isoDate, time: newTime } : ev));
-    await supabase.from("appointments").update({ date: isoDate, time: newTime }).eq("id", id);
-    // Push updated event to Google
-    const updatedEvent = events.find(ev => ev.id === id);
-    if (updatedEvent) {
-      await pushEventToGoogle(user.id, { ...updatedEvent, date: isoDate, time: newTime });
+    
+    const { error } = await supabase.from("appointments").update({ date: isoDate, time: newTime }).eq("id", id);
+    if (error) {
+       await loadData(); // Rollback on error
+       return;
     }
+
+    // Push updated event to Google
+    await pushEventToGoogle(user.id, { ...movedEvent, date: isoDate, time: newTime });
   };
 
   const handleSave = async (payload: any) => {
@@ -150,7 +205,6 @@ export default function Dashboard() {
     }
 
     if (savedEvent) {
-      // Push to Google if connected
       await pushEventToGoogle(user.id, savedEvent);
     }
 
@@ -195,7 +249,7 @@ export default function Dashboard() {
             <LayoutDashboard className="w-6 h-6 text-indigo-600" />
             Início
           </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Sua agenda semanal sincronizada.</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Sua agenda semanal sincronizada e faturamento.</p>
         </div>
       </div>
       
@@ -203,10 +257,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1 min-h-0">
         
         {/* Left Column: Agenda (Occupying ~50%) */}
-        <div className="bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden flex flex-col h-full min-h-[500px]">
+        <div className="bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden flex flex-col h-full min-h-[500px]">
           <div className="p-4 border-b border-slate-300 dark:border-zinc-700/50 flex flex-col sm:flex-row sm:items-center justify-between bg-slate-100 dark:bg-zinc-800/40 z-40 gap-4">
             <div className="flex items-center gap-4">
-              <h2 className="text-base font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest leading-none">
+              <h2 className="text-sm font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest leading-none">
                 {weekDays[0].toLocaleDateString('pt-BR', { month: 'long' })} {weekDays[0].getFullYear()}
               </h2>
               <div className="flex items-center gap-2">
@@ -249,7 +303,7 @@ export default function Dashboard() {
 
           <div className="flex-1 flex flex-col overflow-auto custom-scrollbar relative">
             <div className="flex flex-1 min-h-[960px] overflow-x-auto custom-scrollbar">
-              <div className="flex flex-col flex-1 min-w-[700px]">
+              <div className="flex flex-col flex-1 min-w-[500px]">
                 <div className="flex bg-slate-100/30 dark:bg-zinc-950/40 border-b border-slate-300 dark:border-zinc-700/50 sticky top-0 z-30 backdrop-blur-md">
                   <div className="w-12 flex-shrink-0 sticky left-0 bg-slate-100 dark:bg-zinc-950/40 z-40 border-r border-slate-200 dark:border-zinc-800" />
                   <div className="flex-1 grid grid-cols-7 divide-x divide-slate-300 dark:divide-zinc-700/50">
@@ -257,13 +311,13 @@ export default function Dashboard() {
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
                       return (
                         <div key={i} className={cn("py-2 text-center", isToday ? "bg-indigo-50/50 dark:bg-indigo-500/10" : "")}>
-                          <div className={cn("text-[8px] font-black uppercase tracking-widest", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-zinc-500")}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
-                          <div className={cn("text-xs font-black", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-zinc-100")}>{date.getDate()}</div>
+                          <div className={cn("text-[6px] font-black uppercase tracking-widest", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-zinc-500")}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
+                          <div className={cn("text-[10px] font-black", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-zinc-100")}>{date.getDate()}</div>
 
                           {/* Holidays for this day */}
                           {holidays.filter(h => h.date === formatDateLocal(date)).map((h, idx) => (
-                            <div key={idx} className="mt-1 px-1 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-[7px] font-black text-amber-700 dark:text-amber-400 rounded-md border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm" title={h.name}>
-                              <span className="w-1 h-1 rounded-full bg-amber-500 flex-shrink-0" />
+                            <div key={idx} className="mt-1 px-1 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-[6px] font-black text-amber-700 dark:text-amber-400 rounded-md border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm" title={h.name}>
+                              <span className="w-0.5 h-0.5 rounded-full bg-amber-500 flex-shrink-0" />
                               <span className="truncate flex-1 min-w-0">{h.name}</span>
                             </div>
                           ))}
@@ -276,7 +330,7 @@ export default function Dashboard() {
                 <div className="flex flex-1">
                   <div className="w-12 flex flex-col bg-slate-100/20 dark:bg-zinc-950/20 border-r border-slate-300 dark:border-zinc-700/50 text-slate-400 flex-shrink-0 sticky left-0 z-30 shadow-sm">
                     {HOURS.map(hour => (
-                      <div key={hour} className="h-[60px] text-[9px] font-black text-center py-2 -mt-2.5 tracking-tight flex items-center justify-center">{String(hour).padStart(2, '0')}:00</div>
+                      <div key={hour} className="h-[60px] text-[8px] font-black text-center py-2 -mt-2 tracking-tight flex items-center justify-center">{String(hour).padStart(2, '0')}:00</div>
                     ))}
                   </div>
                   <div className="flex-1 grid grid-cols-7 divide-x divide-slate-300 dark:divide-zinc-700/50 relative">
@@ -288,15 +342,15 @@ export default function Dashboard() {
                           {HOURS.map(hour => (
                             <div key={hour} className={cn("h-[60px] border-b border-slate-300 dark:border-zinc-700/50 cursor-pointer transition-colors", dragOverInfo?.dayIndex === dayIdx && dragOverInfo?.hour === hour ? "bg-indigo-500/10" : "hover:bg-slate-50/30")} onDragOver={(e) => onDragOver(e, dayIdx, hour)} onDrop={(e) => onDrop(e, date, hour)} onClick={() => openNewEventModal(date, hour)} />
                           ))}
-                          <div className="absolute inset-0 pointer-events-none p-1">
+                          <div className="absolute inset-0 pointer-events-none p-0.5">
                             {dayEvents.map(event => {
                               const top = getEventPosition(event.time);
                               if (top === null) return null;
                               const clientName = clients.find(c => c.id === event.client_id)?.name;
                               return (
-                                <div key={event.id} draggable onDragStart={(e) => onDragStart(e, event.id)} onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }} className="absolute left-1 right-1 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm rounded-xl p-2 transition-all cursor-grab active:cursor-grabbing z-10 overflow-hidden ring-1 ring-slate-900/5" style={{ top: `${top}px`, minHeight: '52px' }}>
-                                  <div className="text-[10px] font-black text-slate-900 dark:text-zinc-100 mb-0.5 truncate">{event.title}</div>
-                                  {clientName && <div className="text-[8px] font-black text-indigo-600 dark:text-indigo-400 uppercase truncate">@{clientName}</div>}
+                                <div key={event.id} draggable onDragStart={(e) => onDragStart(e, event.id)} onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }} className="absolute left-0.5 right-0.5 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm rounded-lg p-1 transition-all cursor-grab active:cursor-grabbing z-10 overflow-hidden ring-1 ring-slate-900/5" style={{ top: `${top}px`, minHeight: '48px' }}>
+                                  <div className="text-[8px] font-black text-slate-900 dark:text-zinc-100 mb-0.5 truncate leading-tight">{event.title}</div>
+                                  {clientName && <div className="text-[6px] font-black text-indigo-600 dark:text-indigo-400 uppercase truncate">@{clientName}</div>}
                                 </div>
                               );
                             })}
@@ -311,9 +365,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right Column: Empty (As requested, widgets removed to clear space) */}
-        <div className="hidden lg:block h-full">
-           {/* Space reserved for future updates */}
+        {/* Right Column: Revenue Chart */}
+        <div className="h-full flex flex-col">
+           <RevenueChart data={revenueChartData} loading={loading} />
         </div>
 
       </div>
@@ -332,13 +386,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
