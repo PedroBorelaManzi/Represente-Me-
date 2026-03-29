@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, LogIn, UserPlus, Heart, Boxes, ShieldCheck } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { toast } from "sonner";
+import logo from "../assets/logo.png";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -78,9 +79,7 @@ const Login = () => {
         
         <div className="relative z-10">
           <div className="flex items-center gap-3 text-white mb-12">
-            <div className="p-2 bg-white/10 backdrop-blur-md rounded-xl">
-              <Boxes className="h-6 w-6" />
-            </div>
+            <img src={logo} alt="Represente-Me!" className="h-16 w-auto object-contain brightness-0 invert" />
             <span className="text-xl font-bold">Represente-Me!</span>
           </div>
           
@@ -246,4 +245,3 @@ const Login = () => {
 };
 
 export default Login;
-

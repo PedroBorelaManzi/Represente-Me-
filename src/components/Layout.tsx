@@ -13,11 +13,11 @@ import {
   Bell,
   Search,
   ChevronRight,
-  Zap,
   ShoppingBag
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import logo from '../assets/logo.png';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { signOut, user } = useAuth();
@@ -26,7 +26,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigation = [
-    { name: 'Início', href: '/', icon: LayoutDashboard },
+    { name: 'Início', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Pedidos', href: '/pedidos', icon: ShoppingBag },
     { name: 'Clientes', href: '/clientes', icon: Users },
     { name: 'Empresas', href: '/empresas', icon: Building2 },
@@ -45,12 +45,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex flex-col w-72 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 fixed h-full z-40 transition-all duration-300">
         <div className="p-8 pb-4 flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100 dark:shadow-none animate-float">
-            <Zap className="w-6 h-6 text-white" />
-          </div>
-          <div>
+          <img src={logo} alt="Represente-Me!" className="h-12 w-auto object-contain" />
+          <div className="hidden">
             <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter italic">REPRESENTE-ME</h1>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mt-[-2px]">SaaS Solutions</p>
           </div>
         </div>
 
@@ -162,10 +159,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             >
               <div className="flex items-center justify-between mb-10">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center">
-                    <Zap className="w-6 h-6 text-white" />
-                  </div>
-                  <h1 className="text-xl font-black text-slate-900 dark:text-white italic tracking-tighter">REPRESENTE-ME</h1>
+                  <img src={logo} alt="Represente-Me!" className="h-12 w-auto object-contain" />
                 </div>
                 <button 
                   onClick={() => setIsMobileMenuOpen(false)}

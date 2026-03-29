@@ -1,121 +1,116 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { supabase } from "../lib/supabase";
-import { useAuth } from "./AuthContext";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
-export interface Settings {
-  alerta_days: number;
-  critico_days: number;
-  perda_days: number;
-  inativo_days: number;
-  theme?: 'light' | 'dark';
-  has_completed_onboarding?: boolean;
-  categories?: string[];
+interface Settings {
+  theme: 'light' | 'dark';
+  language: string;
+  notifications: boolean;
 }
 
 interface SettingsContextType {
   settings: Settings;
-  loading: boolean;
   updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
+  loading: boolean;
 }
-
-const defaultSettings: Settings = {
-  alerta_days: 30,
-  critico_days: 45,
-  perda_days: 60,
-  inativo_days: 90,
-  theme: 'light',
-  has_completed_onboarding: false,
-  categories: [],
-};
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-export const useSettings = () => {
-  const context = useContext(SettingsContext);
-  if (!context) {
-    throw new Error("useSettings must be used within a SettingsProvider");
-  }
-  return context;
+const defaultSettings: Settings = {
+  theme: 'light',
+  language: 'pt-BR',
+  notifications: true,
 };
 
-export const SettingsProvider = ({ children }: { children: ReactNode }) => {
+export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
 
   useEffect(() => {
-    async function loadSettings() {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setLoading(false);
         return;
       }
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("user_settings")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
 
-      if (!error && data) {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data) {
         setSettings({
-          alerta_days: data.alerta_days ?? defaultSettings.alerta_days,
-          critico_days: data.critico_days ?? defaultSettings.critico_days,
-          perda_days: data.perda_days ?? defaultSettings.perda_days,
-          inativo_days: data.inativo_days ?? defaultSettings.inativo_days,
-          theme: data.theme ?? defaultSettings.theme,
-          has_completed_onboarding: data.has_completed_onboarding ?? defaultSettings.has_completed_onboarding,
-          categories: data.categories || [], // Explicitly empty for new users
+          theme: data.theme || 'light',
+          language: data.language || 'pt-BR',
+          notifications: data.notifications ?? true,
         });
-      } else if (error) {
-         console.error("Error loading settings:", error);
-         setSettings(defaultSettings);
+        
+        // Apply theme to document
+        if (data.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
       } else {
-        // No error but no data (brand new user)
-        setSettings(defaultSettings);
+        // Apply default light theme
+        document.documentElement.classList.remove('dark');
       }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    } finally {
       setLoading(false);
     }
-
-    loadSettings();
-  }, [user]);
+  };
 
   const updateSettings = async (newSettings: Partial<Settings>) => {
-    if (!user) return;
-    
-    const updated = { ...settings, ...newSettings };
-    
-    const { error } = await supabase
-      .from("user_settings")
-      .upsert({
-        user_id: user.id,
-        ...updated,
-        updated_at: new Date().toISOString(),
-      });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    if (!error) {
-      setSettings(updated);
-    } else {
+      const updatedSettings = { ...settings, ...newSettings };
+      
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          ...updatedSettings,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      setSettings(updatedSettings);
+
+      // Apply theme to document
+      if (updatedSettings.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch (error) {
+      console.error('Error updating settings:', error);
       throw error;
     }
   };
 
-  useEffect(() => {
-    const root = document.documentElement;
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    
-    if (settings.theme === 'dark') {
-      root.classList.add('dark');
-      if (metaThemeColor) metaThemeColor.setAttribute('content', '#09090b');
-    } else {
-      root.classList.remove('dark');
-      if (metaThemeColor) metaThemeColor.setAttribute('content', '#f8fafc');
-    }
-  }, [settings.theme]);
-
   return (
-    <SettingsContext.Provider value={{ settings, loading, updateSettings }}>
+    <SettingsContext.Provider value={{ settings, updateSettings, loading }}>
       {children}
     </SettingsContext.Provider>
   );
 };
 
+export const useSettings = () => {
+  const context = useContext(SettingsContext);
+  if (context === undefined) {
+    throw new Error('useSettings must be used within a SettingsProvider');
+  }
+  return context;
+};
