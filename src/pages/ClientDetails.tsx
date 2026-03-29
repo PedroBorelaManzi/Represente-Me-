@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { GoogleGenAI } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -51,7 +51,7 @@ export default function ClientDetailsPage() {
     if (!selectedFile) return;
     setIsAnalyzing(true);
     try {
-      const genAI = new GoogleGenAI(import.meta.env.VITE_GEMINI_API_KEY);
+      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       
       const reader = new FileReader();
@@ -510,7 +510,7 @@ export default function ClientDetailsPage() {
             >
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Subir Arquivo</h2>
-                <button onClick={() => { setIsUploadModalOpen(false); setSelectedFile(null); }} className="p-2 text-slate-400 dark:text-zinc-500 hover:bg-slate-100 rounded-xl transition-colors"><X className="w-5 h-5"/></button>
+                <button onClick={() => { setIsUploadModalOpen(false); setSelectedFile(null); setIsCreatingCategory(false); }} className="p-2 text-slate-400 dark:text-zinc-500 hover:bg-slate-100 rounded-xl transition-colors"><X className="w-5 h-5"/></button>
               </div>
 
               <div className="space-y-5">
