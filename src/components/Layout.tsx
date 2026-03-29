@@ -13,7 +13,9 @@ import {
   Bell,
   Search,
   ChevronRight,
-  ShoppingBag
+  Zap,
+  ShoppingBag,
+  ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,11 +29,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const navigation = [
     { name: 'Início', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Pedidos', href: '/pedidos', icon: ShoppingBag },
-    { name: 'Clientes', href: '/clientes', icon: Users },
-    { name: 'Empresas', href: '/empresas', icon: Building2 },
-    { name: 'Agenda', href: '/agenda', icon: Calendar },
-    { name: 'Mapa', href: '/mapa', icon: MapIcon },
+    { name: 'Pedidos', href: '/dashboard/pedidos', icon: ShoppingBag },
+    { name: 'Clientes', href: '/dashboard/clientes', icon: Users },
+    { name: 'Empresas', href: '/dashboard/empresas', icon: Building2 },
+    { name: 'Agenda', href: '/dashboard/agenda', icon: Calendar },
+    { name: 'Mapa', href: '/dashboard/map', icon: MapIcon },
+    { name: 'Atalhos', href: '/dashboard/links', icon: ExternalLink },
     { name: 'Integrações', href: '/settings', icon: Settings },
   ];
 
@@ -48,6 +51,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <img src={logo} alt="Represente-Me!" className="h-12 w-auto object-contain" />
           <div className="hidden">
             <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter italic">REPRESENTE-ME</h1>
+            <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mt-[-2px]">SaaS Solutions</p>
           </div>
         </div>
 
