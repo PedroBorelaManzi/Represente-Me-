@@ -1,5 +1,5 @@
-﻿import { useState, useEffect } from "react";
-import { GoogleGenAI } from "@google/genai";
+import { useState, useEffect } from "react";
+import { GoogleGenAI } from "@google/generative-ai";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -51,7 +51,8 @@ export default function ClientDetailsPage() {
     if (!selectedFile) return;
     setIsAnalyzing(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+      const genAI = new GoogleGenAI(import.meta.env.VITE_GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       
       const reader = new FileReader();
       const base64Promise = new Promise((resolve) => {
@@ -60,32 +61,29 @@ export default function ClientDetailsPage() {
       });
       const base64 = await base64Promise;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [
-           {
-             inlineData: {
-               mimeType: selectedFile.type,
-               data: base64 as string
-             }
-           },
-           "Extraia o valor total final deste pedido ou orçamento. Retorne APENAS o nÃºmero sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50"
-        ]
-      });
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: selectedFile.type,
+            data: base64 as string
+          }
+        },
+        "Extraia o valor total final deste pedido ou orçamento. Retorne APENAS o número sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50"
+      ]);
 
-      const text = response.text ? response.text.trim() : "";
+      const text = result.response.text().trim();
       if (text) {
-         let value = text.replace(/[R$\s]/g, '');
-         if (value.includes(',') && value.includes('.')) {
-             value = value.replace(/\./g, '').replace(',', '.');
-         } else if (value.includes(',')) {
-             value = value.replace(',', '.');
-         }
-         value = value.replace(/[^0-9.]/g, '');
-         setOrderValue(value);
+          let value = text.replace(/[R$\s]/g, '');
+          if (value.includes(',') && value.includes('.')) {
+              value = value.replace(/\./g, '').replace(',', '.');
+          } else if (value.includes(',')) {
+              value = value.replace(',', '.');
+          }
+          value = value.replace(/[^0-9.]/g, '');
+          setOrderValue(value);
       }
     } catch (err) {
-        alert("Erro na IA: " + (err instanceof Error ? err.message : String(err)) + "\n\nVerifique se rodou um Redeploy no Vercel.");
+        alert("Erro na IA: " + (err instanceof Error ? err.message : String(err)) + "\n\nVerifique as configurações da API do Gemini.");
     }
     setIsAnalyzing(false);
   };
@@ -382,16 +380,16 @@ export default function ClientDetailsPage() {
             </div>
           </div>
 
-          {/* Nova Seção: Compromissos e ObservaçÃµes */}
+          {/* Nova Seção: Compromissos e Observações */}
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 shadow-sm dark:shadow-none space-y-6">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 mb-3">
-                <FileText className="w-4 h-4 text-indigo-500" /> ObservaçÃµes Gerais
+                <FileText className="w-4 h-4 text-indigo-500" /> Observações Gerais
               </h3>
               <textarea 
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Digite aqui observaçÃµes sobre este cliente, pontos a melhorar, etc..."
+                placeholder="Digite aqui observações sobre este cliente, pontos a melhorar, etc..."
                 className="w-full h-32 px-3 py-2 text-sm border border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
               />
               <button 
@@ -399,7 +397,7 @@ export default function ClientDetailsPage() {
                 disabled={isSavingNotes}
                 className="mt-2 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
               >
-                {isSavingNotes ? "Salvando..." : "Salvar ObservaçÃµes"}
+                {isSavingNotes ? "Salvando..." : "Salvar Observações"}
               </button>
             </div>
 
@@ -476,7 +474,7 @@ export default function ClientDetailsPage() {
                         <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate max-w-xs">{actualName}</h4>
                         <div className="flex items-center gap-3 mt-1.5">
                           <p className="text-xs text-slate-500 dark:text-zinc-400 border-r border-slate-200 dark:border-zinc-800 pr-3">{formatSize(file.metadata?.size)}</p>
-                          <p className="text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-1"><Calendar className="w-3 h-3 text-slate-400 dark:text-zinc-500"/> {uploadDate} Ã s {uploadTime}</p>
+                          <p className="text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-1"><Calendar className="w-3 h-3 text-slate-400 dark:text-zinc-500"/> {uploadDate} às {uploadTime}</p>
                         </div>
                       </div>
                     </div>
@@ -632,6 +630,3 @@ export default function ClientDetailsPage() {
     </div>
   );
 }
-
-
-
