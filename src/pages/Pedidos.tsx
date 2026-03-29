@@ -4,8 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../contexts/SettingsContext";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { GoogleGenAI } from "@google/genai";
 
 export default function PedidosPage() {
@@ -145,7 +143,7 @@ export default function PedidosPage() {
     setIsProcessingBatch(true);
     const api_key = import.meta.env.VITE_GEMINI_API_KEY;
     const ai = new GoogleGenAI({ apiKey: api_key });
-    const model = ai.models.get("gemini-1.5-flash");
+    
 
     const results = [];
 
@@ -166,12 +164,15 @@ export default function PedidosPage() {
             Retorne APENAS um JSON no formato: {"cnpj": "string", "cliente": "string", "valor": number, "empresa": "string"}.
             Se não encontrar algum dado, retorne null no campo.`;
 
-            const response = await model.generateContent([
-                { inlineData: { mimeType: file.type, data: base64 as string } },
-                prompt
-            ]);
+            const response = await ai.models.generateContent({
+                model: "gemini-1.5-flash",
+                contents: [
+                    { inlineData: { mimeType: file.type, data: base64 as string } },
+                    prompt
+                ]
+            });
 
-            const text = response.response.text();
+            const text = response.text ? response.text.trim() : "";
             const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
             const data = JSON.parse(cleanedText);
 
@@ -325,7 +326,7 @@ export default function PedidosPage() {
                 filteredOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/20 transition-colors">
                     <td className="px-6 py-4 text-sm text-slate-600 dark:text-zinc-400">
-                      {format(new Date(order.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      {new Date(order.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
