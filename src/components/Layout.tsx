@@ -1,397 +1,214 @@
-import { Outlet, Link, useLocation } from "react-router-dom";
-import logo from "../assets/logo.png";
-import { MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar, ShoppingCart } from "lucide-react";
-import { useState, useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { cn } from "../lib/utils";
-import { useAuth } from "../contexts/AuthContext";
-import { useSettings } from "../contexts/SettingsContext";
-import OnboardingModal from "./OnboardingModal";
-import { supabase } from "../lib/supabase";
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Building2, 
+  Calendar, 
+  Map as MapIcon, 
+  Settings, 
+  LogOut,
+  Menu,
+  X,
+  Bell,
+  Search,
+  ChevronRight,
+  Zap,
+  ShoppingBag
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const location = useLocation();
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { signOut, user } = useAuth();
-  const { settings, updateSettings } = useSettings();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'menu' | 'alerta' | 'tema'>('menu');
-  const [integracoesOpen, setIntegracoesOpen] = useState(false);
-  const [shortcutLinks, setShortcutLinks] = useState<any[]>([]);
-    type AlertItem = { clientName: string, category: string, days: number };
-  const [stats, setStats] = useState<{alerta: AlertItem[], critico: AlertItem[], perda: AlertItem[]}>({ alerta: [], critico: [], perda: [] });
-
-  useEffect(() => {
-    const loadLinks = () => {
-      const saved = localStorage.getItem("crm_shortcut_links");
-      if (saved) setShortcutLinks(JSON.parse(saved));
-    };
-    
-    loadLinks();
-    window.addEventListener('crm_shortcut_links_updated', loadLinks);
-    
-    async function loadStats() {
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from("clients")
-        .select("name, category_last_contact")
-        .eq("user_id", user.id);
-
-      if (error) {
-        return;
-      }
-
-      const alertas: AlertItem[] = [];
-      const criticos: AlertItem[] = [];
-      const perdas: AlertItem[] = [];
-
-      const today = new Date().getTime();
-
-      data.forEach((client: any) => {
-        if (!client.category_last_contact) return;
-        Object.entries(client.category_last_contact).forEach(([category, dateStr]) => {
-            const lastContact = new Date(dateStr as string).getTime();
-            const diffDays = Math.floor((today - lastContact) / (1000 * 60 * 60 * 24));
-            if (diffDays >= settings.perda_days) {
-                perdas.push({ clientName: client.name, category, days: diffDays });
-            } else if (diffDays >= settings.critico_days) {
-                criticos.push({ clientName: client.name, category, days: diffDays });
-            } else if (diffDays >= settings.alerta_days) {
-                alertas.push({ clientName: client.name, category, days: diffDays });
-            }
-        });
-      });
-
-      perdas.sort((a,b) => b.days - a.days);
-      criticos.sort((a,b) => b.days - a.days);
-      alertas.sort((a,b) => b.days - a.days);
-
-      setStats({ alerta: alertas, critico: criticos, perda: perdas });
-    }
-    loadStats();
-
-    return () => {
-      window.removeEventListener('crm_shortcut_links_updated', loadLinks);
-    };
-  }, [user, settings]);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigation = [
-    { name: "Início", href: "/dashboard", icon: Home },
-    { name: "Mapa", href: "/dashboard/map", icon: MapPin },
-    { name: "Integrações", href: "/dashboard/links", icon: LinkIcon },
-    { name: "Clientes", href: "/dashboard/clientes", icon: Users },
-    { name: "Empresas", href: "/dashboard/empresas", icon: Building2 },
-    { name: "Agenda", href: "/dashboard/agenda", icon: Calendar },
-    { name: "Pedidos", href: "/dashboard/pedidos", icon: ShoppingCart },
+    { name: 'Início', href: '/', icon: LayoutDashboard },
+    { name: 'Pedidos', href: '/pedidos', icon: ShoppingBag },
+    { name: 'Clientes', href: '/clientes', icon: Users },
+    { name: 'Empresas', href: '/empresas', icon: Building2 },
+    { name: 'Agenda', href: '/agenda', icon: Calendar },
+    { name: 'Mapa', href: '/mapa', icon: MapIcon },
+    { name: 'Integrações', href: '/settings', icon: Settings },
   ];
 
-  const isIntegrationView = location.pathname.includes('/links') && location.search.includes('id=');
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 font-sans flex">
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static flex flex-col h-screen overflow-y-auto overscroll-contain shadow-2xl md:shadow-none",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="flex-shrink-0 flex items-center justify-between pt-8 px-6 border-b border-slate-100 dark:border-zinc-900">
-          <Link to="/" className="flex items-center justify-center p-2 mb-6">
-            <img src={logo} alt="Represente-Me!" className="h-32 w-auto mx-auto object-contain" />
-          </Link>
-          <button onClick={() => setSidebarOpen(false)} className="md:hidden text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
-            <X className="w-6 h-6" />
-          </button>
+    <div className=\"min-h-screen bg-slate-50 dark:bg-zinc-950 flex font-inter tracking-tight\">
+      {/* Sidebar - Desktop */}
+      <aside className=\"hidden lg:flex flex-col w-72 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 fixed h-full z-40 transition-all duration-300\">
+        <div className=\"p-8 pb-4 flex items-center gap-3\">
+          <div className=\"w-10 h-10 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-100 dark:shadow-none animate-float\">
+            <Zap className=\"w-6 h-6 text-white\" />
+          </div>
+          <div>
+            <h1 className=\"text-xl font-black text-slate-900 dark:text-white tracking-tighter italic\">REPRESENTE-ME</h1>
+            <p className=\"text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mt-[-2px]\">SaaS Solutions</p>
+          </div>
         </div>
 
-        <div className="flex-1 py-6 px-4">
-          <nav className="space-y-1">
-{navigation.map((item) => {
-              const isActive = location.pathname === item.href;
-              const isIntegracoes = item.name === "Integrações";
-
-              if (isIntegracoes) {
-                return (
-                  <div key={item.name} className="space-y-1">
-                    <button
-                      onClick={() => setIntegracoesOpen(!integracoesOpen)}
-                      className={cn(
-                        "group flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-xl transition-all",
-                        isActive || integracoesOpen
-                          ? "bg-indigo-50 text-indigo-700"
-                          : "text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 hover:text-slate-900 dark:text-zinc-100"
-                      )}
-                    >
-                      <div className="flex items-center">
-                        <item.icon
-                          className={cn(
-                            "mr-3 flex-shrink-0 h-5 w-5 transition-colors",
-                            isActive || integracoesOpen ? "text-indigo-600" : "text-slate-400 dark:text-zinc-500 group-hover:text-slate-500 dark:text-zinc-400"
-                          )}
-                        />
-                        {item.name}
-                      </div>
-                      {integracoesOpen ? <ChevronUp className="w-4 h-4 text-slate-400 dark:text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-slate-400 dark:text-zinc-500" />}
-                    </button>
-
-                    <AnimatePresence>
-                      {integracoesOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="overflow-hidden pl-8 space-y-1"
-                        >
-                          <Link
-                            to="/dashboard/links"
-                            className="flex items-center px-3 py-1.5 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-indigo-600 rounded-lg hover:bg-slate-50 dark:bg-zinc-950 transition-colors"
-                          >
-                             Ver Todos
-                          </Link>
-                          {shortcutLinks.map((link) => (
-                            <Link
-                              key={link.id}
-                              to={`/dashboard/links?id=${link.id}`}
-                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 dark:text-zinc-400 hover:text-indigo-600 rounded-lg hover:bg-slate-50 dark:bg-zinc-950 transition-colors"
-                            >
-                              <div className={`w-1.5 h-1.5 rounded-full ${link.color || 'bg-slate-400'}`} />
-                              <span className="truncate">{link.title}</span>
-                            </Link>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                );
-              }
-
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    "group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all",
-                    isActive
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 hover:text-slate-900 dark:text-zinc-100"
-                  )}
-                >
-                  <item.icon
-                    className={cn(
-                      "mr-3 flex-shrink-0 h-5 w-5 transition-colors",
-                      isActive ? "text-indigo-600" : "text-slate-400 dark:text-zinc-500 group-hover:text-slate-500 dark:text-zinc-400"
-                    )}
+        <nav className=\"flex-1 px-4 mt-8 space-y-1 overflow-y-auto custom-scrollbar\">
+          {navigation.map((item) => {
+            const isActive = location.pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={`group flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 relative ${
+                  isActive 
+                    ? 'bg-slate-50 dark:bg-zinc-800/50 text-indigo-600 dark:text-indigo-400' 
+                    : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800/30'
+                }`}
+              >
+                <item.icon className={`w-5 h-5 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                <span className={`text-sm font-bold ${isActive ? 'font-black' : ''}`}>{item.name}</span>
+                {isActive && (
+                  <motion.div 
+                    layoutId=\"activeNav\"
+                    className=\"absolute left-0 w-1 h-6 bg-indigo-600 rounded-r-full\"
+                    transition={{ type: \"spring\", stiffness: 300, damping: 30 }}
                   />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
+                )}
+                <ChevronRight className={`w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-all duration-300 ${isActive ? 'text-indigo-600' : ''}`} />
+              </Link>
+            );
+          })}
+        </nav>
 
-          <div className="mt-6 pt-6 border-t border-slate-100 dark:border-zinc-900">
-             <h3 className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-3 mb-3">
-               Acompanhamento
-             </h3>
-             <div className="space-y-3 px-1">
-                
-                <div className="rounded-xl border border-red-100 bg-red-50/50 overflow-hidden">
-                   <div className="flex items-center justify-between p-2.5 bg-red-50">
-                    <div className="flex items-center gap-2">
-                       <div className="w-2 h-2 rounded-full bg-red-500" />
-                       <span className="text-xs font-bold text-red-900">Perda ({settings.perda_days}D+)</span>
-                    </div>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-red-100 text-red-700 rounded-md">{stats.perda.length}</span>
-                  </div>
-                  {stats.perda.length > 0 && (
-                    <div className="p-2 space-y-1.5 border-t border-red-100/50">
-                      {stats.perda.map((item, idx) => (
-                        <div key={idx} className="text-[11px] leading-tight flex flex-col gap-0.5 p-1.5 hover:bg-red-100/50 rounded-lg transition-colors">
-                          <span className="font-bold text-red-900">{item.category} <span className="text-red-500 font-medium">({item.days}d)</span></span>
-                          <span className="text-red-700 truncate opacity-90">{item.clientName}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-xl border border-orange-100 bg-orange-50/50 overflow-hidden">
-                  <div className="flex items-center justify-between p-2.5 bg-orange-50">
-                    <div className="flex items-center gap-2">
-                       <div className="w-2 h-2 rounded-full bg-orange-500" />
-                       <span className="text-xs font-bold text-orange-900">Crítico ({settings.critico_days}D)</span>
-                    </div>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded-md">{stats.critico.length}</span>
-                  </div>
-                  {stats.critico.length > 0 && (
-                    <div className="p-2 space-y-1.5 border-t border-orange-100/50">
-                      {stats.critico.map((item, idx) => (
-                        <div key={idx} className="text-[11px] leading-tight flex flex-col gap-0.5 p-1.5 hover:bg-orange-100/50 rounded-lg transition-colors">
-                          <span className="font-bold text-red-900">{item.category} <span className="text-red-500 font-medium">({item.days}d)</span></span>
-                          <span className="text-red-700 truncate opacity-90">{item.clientName}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-xl border border-amber-100 bg-amber-50/50 overflow-hidden">
-                  <div className="flex items-center justify-between p-2.5 bg-amber-50">
-                    <div className="flex items-center gap-2">
-                       <div className="w-2 h-2 rounded-full bg-amber-500" />
-                       <span className="text-xs font-bold text-amber-900">Alerta ({settings.alerta_days}D)</span>
-                    </div>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-md">{stats.alerta.length}</span>
-                  </div>
-                  {stats.alerta.length > 0 && (
-                    <div className="p-2 space-y-1.5 border-t border-amber-100/50">
-                      {stats.alerta.map((item, idx) => (
-                         <div key={idx} className="text-[11px] leading-tight flex flex-col gap-0.5 p-1.5 hover:bg-amber-100/50 rounded-lg transition-colors">
-                           <span className="font-bold text-amber-900">{item.category} <span className="text-amber-500 font-medium">({item.days}d)</span></span>
-                           <span className="text-amber-700 truncate opacity-90">{item.clientName}</span>
-                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-              </div>
-          </div>
-        </div>
-
-        <div className="flex-shrink-0 p-4 border-t border-slate-100 dark:border-zinc-900 bg-white dark:bg-zinc-900">
-          <div className="flex items-center gap-3 px-3 py-2">
-            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-              {user?.email?.charAt(0).toUpperCase() || "U"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 dark:text-zinc-100 truncate">Usuário Ativo</p>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">{user?.email}</p>
-            </div>
-          </div>
-          <div className="mt-4 space-y-1">
-            <button onClick={() => setSettingsOpen(true)} className="w-full group flex items-center px-3 py-2 text-sm font-medium text-slate-600 dark:text-zinc-400 rounded-xl hover:bg-slate-50 dark:bg-zinc-950 transition-colors mb-1">
-              <Settings className="mr-3 flex-shrink-0 h-5 w-5 text-slate-400 dark:text-zinc-500 group-hover:text-slate-500 dark:text-zinc-400" />
-              Configurações
-            </button>
-            <button onClick={signOut} className="w-full group flex items-center px-3 py-2 text-sm font-medium text-red-600 rounded-xl hover:bg-red-50 transition-colors">
-              <LogOut className="mr-3 flex-shrink-0 h-5 w-5 text-red-500 group-hover:text-red-600" />
-              Sair
-            </button>
-          </div>
+        <div className=\"p-4 mb-4\">
+          <button
+            onClick={handleSignOut}
+            className=\"flex items-center gap-3 w-full px-4 py-3.5 text-slate-500 dark:text-zinc-400 hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-600 dark:hover:text-red-400 rounded-2xl transition-all duration-300 group\"
+          >
+            <LogOut className=\"w-5 h-5 group-hover:-translate-x-1 transition-transform\" />
+            <span className=\"text-sm font-bold tracking-tight\">Sair do Sistema</span>
+          </button>
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="md:hidden flex items-center justify-between h-16 px-4 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800">
-          <button onClick={() => setSidebarOpen(true)} className="text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
-            <Menu className="w-6 h-6" />
-          </button>
-          <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-zinc-100">Represente-Me!</span>
-          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm">
-             {user?.email?.charAt(0).toUpperCase() || "U"}
-          </div>
-        </div>
+      {/* Main Content */}
+      <main className=\"flex-1 lg:ml-72 min-h-screen relative flex flex-col\">
+        {/* Header */}
+        <header className=\"bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-zinc-800 h-20 sticky top-0 z-30 transition-all duration-300\">
+          <div className=\"h-full px-4 lg:px-8 flex items-center justify-between\">
+            <div className=\"flex items-center gap-4 lg:hidden\">
+              <button 
+                onClick={() => setIsMobileMenuOpen(true)}
+                className=\"p-2 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-colors\"
+              >
+                <Menu className=\"w-6 h-6\" />
+              </button>
+              <h1 className=\"text-lg font-black text-slate-900 dark:text-white italic tracking-tighter\">REPRESENTE-ME</h1>
+            </div>
 
-        <div className={cn(
-          "flex-1 overflow-y-auto",
-          isIntegrationView ? "p-0" : "p-4 sm:p-6 lg:p-8"
-        )}>
-          <Outlet />
+            <div className=\"hidden md:flex items-center bg-slate-100 dark:bg-zinc-800/80 rounded-2xl px-4 py-2.5 w-96 group focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all\">
+              <Search className=\"w-4 h-4 text-slate-400 dark:text-zinc-500\" />
+              <input 
+                type=\"text\" 
+                placeholder=\"Buscar no sistema...\" 
+                className=\"bg-transparent border-none focus:ring-0 text-sm ml-3 w-full text-slate-700 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 font-medium\"
+              />
+            </div>
+
+            <div className=\"flex items-center gap-3 lg:gap-4\">
+              <button className=\"p-2.5 text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-all relative group\">
+                <Bell className=\"w-5 h-5 group-hover:rotate-12 transition-transform\" />
+                <span className=\"absolute top-2.5 right-2.5 w-2 h-2 bg-indigo-600 rounded-full border-2 border-white dark:border-zinc-900 shadow-sm\"></span>
+              </button>
+              <div className=\"h-8 w-[1px] bg-slate-200 dark:bg-zinc-800\"></div>
+              <div className=\"flex items-center gap-3 pl-1\">
+                <div className=\"text-right hidden sm:block\">
+                  <p className=\"text-sm font-black text-slate-900 dark:text-zinc-100\">{user?.email?.split('@')[0]}</p>
+                  <p className=\"text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest\">Admin Master</p>
+                </div>
+                <div className=\"w-10 h-10 bg-slate-200 dark:bg-zinc-800 rounded-2xl flex items-center justify-center border-2 border-white dark:border-zinc-800 shadow-sm ring-1 ring-slate-200 dark:ring-zinc-800 overflow-hidden group cursor-pointer\">
+                  <div className=\"w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-zinc-800 dark:to-zinc-700 group-hover:scale-110 transition-transform\" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <div className=\"p-4 lg:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500 flex-1 bg-slate-50/50 dark:bg-zinc-950/50\">
+          {children}
         </div>
       </main>
 
+      {/* Mobile Menu Overlay */}
       <AnimatePresence>
-        {settingsOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-xl p-6 w-full max-w-sm space-y-4">
-              
-              {settingsTab === 'menu' && (
-                <>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Configurações</h2>
-                  <div className="space-y-2">
-                    <button onClick={() => setSettingsTab('alerta')} className="w-full p-3 text-left bg-slate-50 dark:bg-zinc-950 hover:bg-slate-100 rounded-xl font-medium text-slate-800 transition-colors">Configurar Alertas</button>
-                    <button onClick={() => setSettingsTab('tema')} className="w-full p-3 text-left bg-slate-50 dark:bg-zinc-950 hover:bg-slate-100 rounded-xl font-medium text-slate-800 transition-colors">Escolher Tema</button>
+        {isMobileMenuOpen && (
+          <div className=\"fixed inset-0 z-50 lg:hidden\">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className=\"absolute inset-0 bg-slate-900/60 backdrop-blur-sm\"
+            />
+            <motion.aside 
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className=\"absolute top-0 left-0 bottom-0 w-[85%] max-w-sm bg-white dark:bg-zinc-900 shadow-2xl flex flex-col p-6\"
+            >
+              <div className=\"flex items-center justify-between mb-10\">
+                <div className=\"flex items-center gap-3\">
+                  <div className=\"w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center\">
+                    <Zap className=\"w-6 h-6 text-white\" />
                   </div>
-                  <div className="pt-2">
-                    <button onClick={() => setSettingsOpen(false)} className="w-full px-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 font-medium text-sm">Fechar</button>
-                  </div>
-                </>
-              )}
+                  <h1 className=\"text-xl font-black text-slate-900 dark:text-white italic tracking-tighter\">REPRESENTE-ME</h1>
+                </div>
+                <button 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className=\"p-2 text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-colors\"
+                >
+                  <X className=\"w-6 h-6\" />
+                </button>
+              </div>
 
-              {settingsTab === 'alerta' && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setSettingsTab('menu')} className="text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300"><ChevronLeft className="w-5 h-5" /></button>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Configurar Alertas</h2>
-                  </div>
-                  <form onSubmit={async (e) => {
-                     e.preventDefault();
-                     const formData = new FormData(e.target as HTMLFormElement);
-                     try {
-                         await updateSettings({
-                            alerta_days: Number(formData.get('alerta')),
-                            critico_days: Number(formData.get('critico')),
-                            perda_days: Number(formData.get('perda'))
-                         });
-                         // Close the modal after successful save
-                         setSettingsTab('menu');
-                         setSettingsOpen(false);
-                     } catch (err) { alert("Erro ao salvar."); }
-                  }} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Alerta (dias)</label>
-                      <input name="alerta" type="number" step="5" min="0" defaultValue={settings.alerta_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Crítico (dias)</label>
-                      <input name="critico" type="number" step="5" min="0" defaultValue={settings.critico_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Perda (dias)</label>
-                      <input name="perda" type="number" step="5" min="0" defaultValue={settings.perda_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
-                    </div>
-                    <div className="flex items-center gap-3 pt-2">
-                      <button type="button" onClick={() => setSettingsTab('menu')} className="flex-1 px-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 font-medium text-sm">Voltar</button>
-                      <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-sm dark:shadow-none hover:bg-indigo-700 font-medium text-sm">Salvar</button>
-                    </div>
-                  </form>
-                </>
-              )}
+              <nav className=\"flex-1 space-y-2\">
+                {navigation.map((item) => {
+                  const isActive = location.pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`flex items-center gap-4 px-4 py-4 rounded-2xl text-base font-bold transition-all duration-300 ${
+                        isActive 
+                          ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 shadow-lg shadow-indigo-100/50 dark:shadow-none' 
+                          : 'text-slate-500 dark:text-zinc-400'
+                      }`}
+                    >
+                      <item.icon className=\"w-6 h-6\" />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </nav>
 
-              {settingsTab === 'tema' && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setSettingsTab('menu')} className="text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300"><ChevronLeft className="w-5 h-5" /></button>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Escolher Tema</h2>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button onClick={async () => { await updateSettings({ theme: 'light' }); setSettingsOpen(false); setSettingsTab('menu'); }} className={`p-4 border rounded-xl flex flex-col items-center gap-2 ${settings.theme === 'light' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 dark:border-zinc-800'}`}>
-                       <Sun className="w-6 h-6 text-slate-600 dark:text-zinc-400" />
-                       <span className="text-sm font-medium text-slate-800">Claro</span>
-                    </button>
-                    <button onClick={async () => { await updateSettings({ theme: 'dark' }); setSettingsOpen(false); setSettingsTab('menu'); }} className={`p-4 border rounded-xl flex flex-col items-center gap-2 ${settings.theme === 'dark' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 dark:border-zinc-800'}`}>
-                       <Moon className="w-6 h-6 text-slate-600 dark:text-zinc-400" />
-                       <span className="text-sm font-medium text-slate-800">Escuro</span>
-                    </button>
-                  </div>
-                  <div className="pt-2">
-                    <button onClick={() => setSettingsTab('menu')} className="w-full px-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 font-medium text-sm">Voltar</button>
-                  </div>
-                </>
-              )}
-
-            </div>
+              <button
+                onClick={handleSignOut}
+                className=\"mt-auto flex items-center gap-4 px-4 py-4 text-slate-500 dark:text-zinc-400 hover:bg-red-50 dark:hover:bg-red-900/10 hover:text-red-600 dark:hover:text-red-400 rounded-2xl transition-all duration-300 font-bold\"
+              >
+                <LogOut className=\"w-6 h-6\" />
+                Sair do Sistema
+              </button>
+            </motion.aside>
           </div>
         )}
       </AnimatePresence>
-      <OnboardingModal />
     </div>
   );
-}
+};
+
+export default Layout;
