@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useSettings } from "../contexts/SettingsContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export interface Client {
   id: string;
@@ -28,11 +29,10 @@ export interface Client {
 export default function CRMPage() {
   const { user } = useAuth();
   const { settings } = useSettings();
-  const [clients, setClients] = useState<Client[]>([]);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"Todos" | "Alerta" | "Critico" | "Perda">("Todos");
   const [isSearchingCnpj, setIsSearchingCnpj] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   
@@ -102,6 +102,9 @@ export default function CRMPage() {
     setImportResults({ total: 0, processed: 0, success: 0, failed: 0, skipped: 0, failedList: [] });
     
     try {
+      // Delay visual para não congelar o React e travar tudo em branco
+      await new Promise(r => setTimeout(r, 100));
+
       const cnpjs = await parseFileForCnpjs(file);
       
       if (cnpjs.length === 0) {
@@ -202,7 +205,7 @@ export default function CRMPage() {
       }
       
       toast.success("Importação concluída!");
-      loadClients();
+      refetch();
     } catch (error: any) {
       toast.error(error.message || "Erro na importação.");
       setShowImportModal(false);
@@ -211,74 +214,76 @@ export default function CRMPage() {
     }
   };
 
-  const loadClients = async () => {
-    if (!user) return;
-    setLoading(true);
+  const fetchClients = async () => {
+    if (!user) return [];
+    
     const { data: clientsData, error } = await supabase
       .from("clients")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (!error && clientsData) {
-      // 1. Fetch All files via RPC 
-      const { data: files } = await supabase.rpc("list_user_files", { u_id: user.id });
+    if (error || !clientsData) return [];
 
-      // Group in memory
-      const filesByClient: any = {};
-      if (files) {
-          files.forEach((f: any) => {
-              const cId = f.client_id;
-              if (!filesByClient[cId]) filesByClient[cId] = [];
-              filesByClient[cId].push({ file_name: f.file_name, created_at: f.created_at });
-          });
-      }
+    // 1. Fetch All files via RPC 
+    const { data: files } = await supabase.rpc("list_user_files", { u_id: user.id });
 
-      const clientsWithAlerts = clientsData.map((client: any) => {
-         const clientFiles = filesByClient[client.id] || [];
-         const lastDates: any = {};
-         
-         clientFiles.forEach((f: any) => {
-             const parts = f.file_name.split("___");
-             if (parts.length > 1) {
-                 const rawCat = parts[0];
-                 const matchedCat = settings.categories?.find(c => c.toLowerCase() === rawCat.toLowerCase());
-                 const cat = matchedCat || rawCat;
-
-                 const date = new Date(f.created_at).getTime();
-                 if (!lastDates[cat] || date > lastDates[cat]) {
-                      lastDates[cat] = date;
-                 }
-             }
-         });
-         
-         const alerts: any[] = [];
-         const today = new Date().getTime();
-
-         for (const [cat, date] of Object.entries(lastDates)) {
-             const diffTime = today - (date as number);
-             const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-             
-             if (days >= settings.perda_days) {
-                  alerts.push({ company: cat, type: "Perda", days });
-             } else if (days >= settings.critico_days) {
-                  alerts.push({ company: cat, type: "Critico", days });
-             } else if (days >= settings.alerta_days) {
-                  alerts.push({ company: cat, type: "Alerta", days });
-             }
-         }
-
-         return { ...client, alerts: alerts.sort((a, b) => b.days - a.days) };
-      });
-      setClients(clientsWithAlerts);
+    // Group in memory
+    const filesByClient: any = {};
+    if (files) {
+        files.forEach((f: any) => {
+            const cId = f.client_id;
+            if (!filesByClient[cId]) filesByClient[cId] = [];
+            filesByClient[cId].push({ file_name: f.file_name, created_at: f.created_at });
+        });
     }
-    setLoading(false);
+
+    const clientsWithAlerts = clientsData.map((client: any) => {
+       const clientFiles = filesByClient[client.id] || [];
+       const lastDates: any = {};
+       
+       clientFiles.forEach((f: any) => {
+           const parts = f.file_name.split("___");
+           if (parts.length > 1) {
+               const rawCat = parts[0];
+               const matchedCat = settings.categories?.find(c => c.toLowerCase() === rawCat.toLowerCase());
+               const cat = matchedCat || rawCat;
+
+               const date = new Date(f.created_at).getTime();
+               if (!lastDates[cat] || date > lastDates[cat]) {
+                    lastDates[cat] = date;
+               }
+           }
+       });
+       
+       const alerts: any[] = [];
+       const today = new Date().getTime();
+
+       for (const [cat, date] of Object.entries(lastDates)) {
+           const diffTime = today - (date as number);
+           const days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+           
+           if (days >= settings.perda_days) {
+                alerts.push({ company: cat, type: "Perda", days });
+           } else if (days >= settings.critico_days) {
+                alerts.push({ company: cat, type: "Critico", days });
+           } else if (days >= settings.alerta_days) {
+                alerts.push({ company: cat, type: "Alerta", days });
+           }
+       }
+
+       return { ...client, alerts: alerts.sort((a, b) => b.days - a.days) };
+    });
+    
+    return clientsWithAlerts;
   };
 
-  useEffect(() => {
-    if (user) {
-      loadClients();
-    }
-  }, [user, settings.categories]);
+  const { data: clients = [], isLoading: isLoadingClients, refetch } = useQuery({
+    queryKey: ["clients", user?.id, settings.categories],
+    queryFn: fetchClients,
+    enabled: !!user,
+  });
+
+  const loading = isLoadingClients;
 
   const getInactivityDays = (lastContactStr: string) => {
     if (!lastContactStr) return 0;
@@ -292,7 +297,9 @@ export default function CRMPage() {
     if (window.confirm("Deseja realmente excluir este cliente? Ele também será removido do Mapa.")) {
       const { error } = await supabase.from("clients").delete().eq("id", id);
       if (!error) {
-        setClients(clients.filter(c => c.id !== id));
+        queryClient.setQueryData(["clients", user?.id, settings.categories], (old: any) => {
+          return old ? old.filter((c: any) => c.id !== id) : [];
+        });
       } else {
         alert("Erro ao excluir: " + error.message);
       }
@@ -346,7 +353,7 @@ export default function CRMPage() {
       .eq("id", editingClient.id);
 
     if (!error) {
-      loadClients();
+      refetch();
       setIsEditModalOpen(false);
     } else {
       alert("Erro ao editar: " + error.message);
@@ -385,7 +392,7 @@ export default function CRMPage() {
       .insert([{ ...newClient, state: newClient.state || null, lat, lng, status: "Ativo" }]);
 
     if (!error) {
-      loadClients();
+      refetch();
       setIsModalOpen(false);
       setNewClient({ name: "", cnpj: "", address: "", phone: "", email: "", city: "", state: "", last_contact: new Date().toISOString().split('T')[0] });
     } else {
@@ -782,37 +789,46 @@ export default function CRMPage() {
                 )}
               </div>
 
-              <div className="space-y-6">
-                <div className="flex items-center justify-between text-sm font-bold text-slate-500">
-                   <span>Progresso: {importResults.processed} de {importResults.total}</span>
-                   <span>{Math.round((importResults.processed / (importResults.total || 1)) * 100)}%</span>
+              {importResults.total === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 space-y-4">
+                  <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
+                  <p className="text-slate-600 dark:text-zinc-400 font-bold text-center">
+                    🕵️ Lendo documento fiscal e resgatando CNPJs...<br/>
+                    <span className="text-xs font-normal">Isso pode levar alguns segundos dependendo do tamanho.</span>
+                  </p>
                 </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between text-sm font-bold text-slate-500">
+                     <span>Progresso: {importResults.processed} de {importResults.total}</span>
+                     <span>{Math.round((importResults.processed / (importResults.total || 1)) * 100)}%</span>
+                  </div>
 
-                <div className="w-full h-3 bg-slate-100 dark:bg-zinc-850 rounded-full overflow-hidden">
-                   <motion.div 
-                     className="h-full bg-indigo-600" 
-                     initial={{ width: 0 }}
-                     animate={{ width: `${(importResults.processed / (importResults.total || 1)) * 100}%` }}
-                   />
-                </div>
+                  <div className="w-full h-3 bg-slate-100 dark:bg-zinc-850 rounded-full overflow-hidden">
+                     <motion.div 
+                       className="h-full bg-indigo-600" 
+                       initial={{ width: 0 }}
+                       animate={{ width: `${(importResults.processed / (importResults.total || 1)) * 100}%` }}
+                     />
+                  </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                   <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/40 text-center">
-                      <div className="text-xl font-black text-emerald-700 dark:text-emerald-400">{importResults.success}</div>
-                      <div className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest mt-1">Sucessos</div>
-                   </div>
-                   <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/40 text-center">
-                      <div className="text-xl font-black text-amber-700 dark:text-amber-400">{importResults.skipped}</div>
-                      <div className="text-[10px] font-bold text-amber-600/70 uppercase tracking-widest mt-1">Existentes</div>
-                   </div>
-                   <div className="p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/40 text-center">
-                      <div className="text-xl font-black text-red-700 dark:text-red-400">{importResults.failed}</div>
-                      <div className="text-[10px] font-bold text-red-600/70 uppercase tracking-widest mt-1">Falhas</div>
-                   </div>
-                </div>
+                  <div className="grid grid-cols-3 gap-4">
+                     <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/40 text-center">
+                        <div className="text-xl font-black text-emerald-700 dark:text-emerald-400">{importResults.success}</div>
+                        <div className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest mt-1">Sucessos</div>
+                     </div>
+                     <div className="p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-900/40 text-center">
+                        <div className="text-xl font-black text-amber-700 dark:text-amber-400">{importResults.skipped}</div>
+                        <div className="text-[10px] font-bold text-amber-600/70 uppercase tracking-widest mt-1">Existentes</div>
+                     </div>
+                     <div className="p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/40 text-center">
+                        <div className="text-xl font-black text-red-700 dark:text-red-400">{importResults.failed}</div>
+                        <div className="text-[10px] font-bold text-red-600/70 uppercase tracking-widest mt-1">Falhas</div>
+                     </div>
+                  </div>
 
-                {importResults.failedList.length > 0 && !importing && (
-                   <div className="bg-red-50 dark:bg-red-950/20 rounded-2xl p-4 border border-red-100 dark:border-red-900/40 max-h-56 overflow-y-auto scroller-hidden">
+                  {importResults.failedList.length > 0 && !importing && (
+                     <div className="bg-red-50 dark:bg-red-950/20 rounded-2xl p-4 border border-red-100 dark:border-red-900/40 max-h-56 overflow-y-auto scroller-hidden">
                       <h4 className="text-red-800 dark:text-red-400 text-xs font-black uppercase mb-3 flex items-center gap-2">
                          <AlertCircle className="w-3 h-3" /> Falhas no Cadastro
                       </h4>
@@ -861,6 +877,7 @@ export default function CRMPage() {
                   </button>
                 )}
               </div>
+            )}
            </motion.div>
         </div>
       )}
