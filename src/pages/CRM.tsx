@@ -9,6 +9,7 @@ import { supabase } from "../lib/supabase";
 import { useSettings } from "../contexts/SettingsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getHighPrecisionCoordinates } from "../lib/geminiGeocoding";
 
 export interface Client {
   id: string;
@@ -137,30 +138,35 @@ export default function CRMPage() {
           
           let lat = null, lng = null;
           try {
-             // 1. Full Address search
-             let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${address}, ${city}, ${state}, Brasil`)}`);
-             let geoData = await geoRes.json();
+             // 1. REFINAMENTO COM GEMINI (ALTA PRECISÃO)
+             const coords = await getHighPrecisionCoordinates(`${address}, ${city}, ${state}`, name, cnpj);
              
-             if (geoData?.[0]) {
-               lat = parseFloat(geoData[0].lat);
-               lng = parseFloat(geoData[0].lon);
+             if (coords) {
+                lat = coords.lat;
+                lng = coords.lng;
              } else {
-               // 2. Fallback to City/State center
-               geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${city}, ${state}, Brasil`)}`);
-               geoData = await geoRes.json();
-               if (geoData?.[0]) {
-                 lat = parseFloat(geoData[0].lat);
-                 lng = parseFloat(geoData[0].lon);
-               } else {
-                 // Hard failure: City center not found either
-                 const error: any = new Error("Cidade não encontrada no mapa");
-                 error.partialData = data;
-                 throw error;
-               }
+                // FALLBACK: Nominatim
+                let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${address}, ${city}, ${state}, Brasil`)}`);
+                let geoData = await geoRes.json();
+                
+                if (geoData?.[0]) {
+                  lat = parseFloat(geoData[0].lat);
+                  lng = parseFloat(geoData[0].lon);
+                } else {
+                  geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${city}, ${state}, Brasil`)}`);
+                  geoData = await geoRes.json();
+                  if (geoData?.[0]) {
+                    lat = parseFloat(geoData[0].lat);
+                    lng = parseFloat(geoData[0].lon);
+                  } else {
+                    const error: any = new Error("Cidade não encontrada no mapa");
+                    error.partialData = data;
+                    throw error;
+                  }
+                }
              }
           } catch(e: any) {
              if (e.partialData) throw e;
-             // Generic Geocoding error but we have data
              const error: any = new Error("Erro de geolocalização");
              error.partialData = data;
              throw error;
@@ -200,7 +206,7 @@ export default function CRMPage() {
           } : null);
         }
         
-        // Pequeno delay para evitar rate limiting
+        // Pequeno delay para evitar rate limiting do Gemini/BrasilAPI
         if (cnpjs.length > 3) await new Promise(r => setTimeout(r, 600));
       }
       
@@ -224,10 +230,8 @@ export default function CRMPage() {
 
     if (error || !clientsData) return [];
 
-    // 1. Fetch All files via RPC 
     const { data: files } = await supabase.rpc("list_user_files", { u_id: user.id });
 
-    // Group in memory
     const filesByClient: any = {};
     if (files) {
         files.forEach((f: any) => {
@@ -370,19 +374,29 @@ export default function CRMPage() {
     let lng = null;
     try {
       const addressQuery = `${newClient.address || ""}, ${newClient.city || ""}, ${newClient.state || ""}, Brasil`.replace(/^,\s*/, '');
-      let geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}`);
-      let geoData = await geoResponse.json();
       
-      if (geoData && geoData.length > 0) {
-        lat = parseFloat(geoData[0].lat);
-        lng = parseFloat(geoData[0].lon);
-      } else if (newClient.city) {
-        const cityQuery = `${newClient.city}, Brasil`;
-        const cityRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityQuery)}`);
-        const cityData = await cityRes.json();
-        if (cityData && cityData.length > 0) {
-          lat = parseFloat(cityData[0].lat);
-          lng = parseFloat(cityData[0].lon);
+      // ALTA PRECISÃO GEMINI
+      const coords = await getHighPrecisionCoordinates(addressQuery, newClient.name, newClient.cnpj);
+      
+      if (coords) {
+        lat = coords.lat;
+        lng = coords.lng;
+      } else {
+        // Fallback
+        let geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}`);
+        let geoData = await geoResponse.json();
+        
+        if (geoData && geoData.length > 0) {
+          lat = parseFloat(geoData[0].lat);
+          lng = parseFloat(geoData[0].lon);
+        } else if (newClient.city) {
+          const cityQuery = `${newClient.city}, Brasil`;
+          const cityRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityQuery)}`);
+          const cityData = await cityRes.json();
+          if (cityData && cityData.length > 0) {
+            lat = parseFloat(cityData[0].lat);
+            lng = parseFloat(cityData[0].lon);
+          }
         }
       }
     } catch (err) { }
@@ -462,7 +476,6 @@ export default function CRMPage() {
             ref={fileInputRef} 
             onChange={handleFileChange} 
             className="hidden" 
-            
           />
           <button 
             onClick={handleImportClick}
