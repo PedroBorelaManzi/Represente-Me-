@@ -547,15 +547,89 @@ export default function CRMPage() {
             })}
           </div>
 
+          {/* Mobile View - Cards */}
+          <div className="md:hidden space-y-4">
+            {filteredClients.map((client, i) => (
+              <motion.div
+                key={client.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.3 }}
+                className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <Link to={`/dashboard/clientes/${client.id}`} className="flex items-center gap-3">
+                    <div className="h-10 w-10 flex-shrink-0 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center text-indigo-700 dark:text-indigo-400 font-bold text-base border border-indigo-100 dark:border-indigo-900/40">
+                      {client.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-sm font-black text-slate-900 dark:text-zinc-100 line-clamp-1">{client.name}</div>
+                      <div className="text-[10px] text-slate-400 dark:text-zinc-500">{client.cnpj}</div>
+                    </div>
+                  </Link>
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={() => {
+                        setEditingClient(client);
+                        setEditFormData({ ...client });
+                        setIsEditModalOpen(true);
+                      }}
+                      className="p-1.5 text-slate-400 dark:text-zinc-500 hover:text-indigo-600 rounded-lg hover:bg-slate-100 transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(client.id)}
+                      className="p-1.5 text-slate-400 dark:text-zinc-500 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <Link 
+                      to={`/dashboard/clientes/${client.id}`}
+                      className="p-1.5 text-slate-400 dark:text-zinc-500 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-zinc-400">
+                    <Phone className="w-3 h-3 text-slate-400" />
+                    <span className="truncate">{client.phone || "N/A"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-zinc-400">
+                    <Building2 className="w-3 h-3 text-slate-400" />
+                    <span className="truncate">{client.city || "N/A"}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {((client as any).alerts || []).map((a: any, idx: number) => (
+                    <span key={idx} className={`px-2 py-0.5 rounded-lg text-[9px] font-black border uppercase tracking-tighter ${a.type === "Perda" ? "bg-red-50 text-red-700 border-red-100" : a.type === "Critico" ? "bg-orange-50 text-orange-700 border-orange-100" : "bg-amber-50 text-amber-700 border-amber-100"}`}>
+                      {a.company} • {a.days}D
+                    </span>
+                  ))}
+                  {((client as any).alerts || []).length === 0 && (
+                    <span className="text-emerald-600 dark:text-emerald-500 text-[10px] font-black flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3"/> Em dia
+                    </span>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Desktop View - Table */}
           <div className="hidden md:block bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 dark:divide-zinc-800">
+              <table className="min-w-full divide-y divide-slate-200 dark:divide-zinc-800 border-separate border-spacing-0">
                 <thead className="bg-slate-50 dark:bg-zinc-950">
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Cliente</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Contato</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Status/Alertas</th>
-                    <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Ações</th>
+                    <th className="sticky right-0 z-20 bg-slate-50 dark:bg-zinc-950 px-6 py-4 text-right text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider border-l border-slate-200/50 dark:border-zinc-800/50 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.05)] shadow-slate-200/50 dark:shadow-black/20">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-zinc-900 divide-y divide-slate-100 dark:divide-zinc-850">
@@ -593,7 +667,7 @@ export default function CRMPage() {
                             {((client as any).alerts || []).length === 0 && <span className="text-emerald-600 dark:text-emerald-500 text-xs font-black flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5"/> Em dia</span>}
                           </div>
                         </td>
-                        <td className="px-6 py-5 whitespace-nowrap text-right">
+                        <td className="sticky right-0 z-10 bg-white dark:bg-zinc-900 group-hover:bg-slate-50 dark:group-hover:bg-zinc-950 px-6 py-5 whitespace-nowrap text-right border-l border-slate-200/50 dark:border-zinc-800/50 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.05)] shadow-slate-200/50 dark:shadow-black/20 transition-colors">
                           <div className="flex items-center justify-end gap-1.5">
                             <Link 
                               to={`/dashboard/clientes/${client.id}`}
