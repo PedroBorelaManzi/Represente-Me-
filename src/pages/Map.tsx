@@ -205,27 +205,32 @@ export default function MapPage() {
 
   const getOffsetPositions = (list: any[]) => {
     const locCounts: Record<string, number> = {};
-    const OFFSET_LAT = 0.0002;
-    const OFFSET_LNG = 0.0002;
+    const OFFSET_LAT = 0.0008; // Maior distanciamento (aprox 90m)
+    const OFFSET_LNG = 0.0008;
     
     return list.map(c => {
       const lat = c.lat || center[0];
       const lng = c.lng || center[1];
-      const key = `${Math.round(lat*10000)},${Math.round(lng*10000)}`;
+      
+      // Agrupamos clientes num raio de aprox 250m com a chave de arredondamento
+      const keyLat = Math.round(lat * 400); 
+      const keyLng = Math.round(lng * 400);
+      const key = `${keyLat},${keyLng}`;
       
       const count = locCounts[key] || 0;
       locCounts[key] = count + 1;
       
       if (count === 0) return { ...c, displayLat: lat, displayLng: lng };
       
-      const angle = count * (Math.PI / 4);
-      const radiusLat = OFFSET_LAT * Math.ceil(count / 3);
-      const radiusLng = OFFSET_LNG * Math.ceil(count / 3);
+      // Espiral circular (espalha para os lados antes de ir mais longe)
+      const angle = count * (Math.PI / 3); 
+      const radiusLat = OFFSET_LAT * Math.ceil(count / 6);
+      const radiusLng = OFFSET_LNG * Math.ceil(count / 6);
       
       return {
         ...c,
-        displayLat: lat + Math.cos(angle) * radiusLat,
-        displayLng: lng + Math.sin(angle) * radiusLng
+        displayLat: lat + (Math.cos(angle) * radiusLat),
+        displayLng: lng + (Math.sin(angle) * radiusLng)
       };
     });
   };
@@ -348,6 +353,7 @@ export default function MapPage() {
     </div>
   );
 }
+
 
 
 
