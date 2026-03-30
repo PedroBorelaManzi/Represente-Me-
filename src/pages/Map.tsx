@@ -274,7 +274,7 @@ export default function MapPage() {
           {mapCompanies.map((company) => (
             <Marker 
               key={company.id} 
-              position={[company.lat || center[0], company.lng || center[1]]}
+              position={[company.displayLat, company.displayLng]}
               draggable={true}
               eventHandlers={{
                 dragend: (e: any) => handleMarkerDrag(company.id, e.target.getLatLng())
@@ -353,6 +353,7 @@ export default function MapPage() {
     </div>
   );
 }
+
 
 
 
