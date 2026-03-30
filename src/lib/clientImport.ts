@@ -202,26 +202,35 @@ function parseGeminiJsonResponse(text: string, fallbackText: string): string[] {
    return extractCnpjs(fallbackText);
 }
 
-// Fallback hiper confiável para Pdfs do Adobe caso haja quebras visuais e o OCR derreta os CNPJs
 async function extractCnpjsFallbackFromPDF(file: File): Promise<string[]> {
+  const arrayBuffer = await file.arrayBuffer();
+  const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+  
+  // Tratamento explícito de erros se o PDFJS falhar (ex: Arquivo protegido com senha, worker quebrado, ou PDF gigante corrompido)
+  let pdf;
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
-    const pdf = await loadingTask.promise;
-    let fullText = '';
-    
-    // Lendo as várias páginas sem estourar memoria
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item: any) => item.str).join(' ');
-      fullText += pageText + '\n';
-    }
-    return extractCnpjs(fullText); // Passa no regex que agora aguenta distanciamento irreal
-  } catch (e) {
-    console.error("Falha drástica ao invocar PDFJS local para contingência", e);
-    return [];
+    pdf = await loadingTask.promise;
+  } catch (e: any) {
+    throw new Error(`Falha ao ler o interno PDF (Pode estar protegido ou ilegível): ${e.message}`);
   }
+
+  let fullText = '';
+  
+  // Lendo as várias páginas sem estourar memoria
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map((item: any) => item.str).join(' ');
+    fullText += pageText + '\n';
+  }
+  
+  const results = extractCnpjs(fullText); // Passa no regex que agora aguenta distanciamento irreal
+  
+  if (results.length === 0) {
+      throw new Error(`A leitura do PDF (com ${pdf.numPages} pgs) extraiu os textos corretamente, mas 0 CNPJs reais foram detectados/achados nas tabelas impressas.`);
+  }
+
+  return results;
 }
 
 /**
