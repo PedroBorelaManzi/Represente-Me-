@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, ExternalLink } from "lucide-react";
@@ -275,6 +275,9 @@ export default function MapPage() {
                 dragend: (e: any) => handleMarkerDrag(company.id, e.target.getLatLng())
               }}
             >
+              <Tooltip direction="top" offset={[0, -25]} opacity={1}>
+                <span className="font-bold text-slate-900 text-xs">{company.name}</span>
+              </Tooltip>
               <Popup className="rounded-xl overflow-hidden">
                 <div className="p-1 min-w-[210px]">
                   <h3 className="font-bold text-slate-900 text-base mb-0">{company.name}</h3>
@@ -345,6 +348,7 @@ export default function MapPage() {
     </div>
   );
 }
+
 
 
 
