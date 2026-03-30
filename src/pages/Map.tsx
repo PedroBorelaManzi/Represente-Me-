@@ -203,6 +203,35 @@ export default function MapPage() {
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) || (c.cnpj && c.cnpj.includes(searchQuery))
   );
 
+  const getOffsetPositions = (list: any[]) => {
+    const locCounts: Record<string, number> = {};
+    const OFFSET_LAT = 0.0002;
+    const OFFSET_LNG = 0.0002;
+    
+    return list.map(c => {
+      const lat = c.lat || center[0];
+      const lng = c.lng || center[1];
+      const key = `${Math.round(lat*10000)},${Math.round(lng*10000)}`;
+      
+      const count = locCounts[key] || 0;
+      locCounts[key] = count + 1;
+      
+      if (count === 0) return { ...c, displayLat: lat, displayLng: lng };
+      
+      const angle = count * (Math.PI / 4);
+      const radiusLat = OFFSET_LAT * Math.ceil(count / 3);
+      const radiusLng = OFFSET_LNG * Math.ceil(count / 3);
+      
+      return {
+        ...c,
+        displayLat: lat + Math.cos(angle) * radiusLat,
+        displayLng: lng + Math.sin(angle) * radiusLng
+      };
+    });
+  };
+
+  const mapCompanies = getOffsetPositions(filteredCompanies);
+
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -237,7 +266,7 @@ export default function MapPage() {
         <MapContainer center={center} zoom={zoom} style={{ height: "100%", width: "100%" }}>
           <ChangeView center={center} zoom={zoom} />
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
-          {filteredCompanies.map((company) => (
+          {mapCompanies.map((company) => (
             <Marker 
               key={company.id} 
               position={[company.lat || center[0], company.lng || center[1]]}
@@ -316,5 +345,6 @@ export default function MapPage() {
     </div>
   );
 }
+
 
 
