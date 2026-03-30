@@ -449,7 +449,7 @@ export default function CRMPage() {
             ref={fileInputRef} 
             onChange={handleFileChange} 
             className="hidden" 
-            accept=".xlsx,.xls,.csv,.pdf,.txt"
+            accept=".xlsx,.xls,.csv,.pdf,.txt,image/*"
           />
           <button 
             onClick={handleImportClick}
