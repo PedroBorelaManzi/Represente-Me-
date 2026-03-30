@@ -6,10 +6,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
 
 /**
- * Extrai CNPJs únicos de uma string de texto internamente usando Regex (fallback)
+ * Extrai CNPJs únicos de uma string de texto internamente usando Regex (fallback blindado a espaços irregulares)
  */
 export function extractCnpjs(text: string): string[] {
-  const cnpjRegex = /\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g;
+  // Esse regex robusto ignora buracos entre os digitos e simbolos errôneos originados por conversores de arquivos da Adobe ou Planilhas
+  const cnpjRegex = /\d{2}[\.\s]*\d{3}[\.\s]*\d{3}[\/\s]*\d{4}[\-\s]*\d{2}/g;
   const matches = text.match(cnpjRegex) || [];
   const uniqueCnpjs = Array.from(new Set(matches.map(cnpj => cnpj.replace(/\D/g, ''))));
   return uniqueCnpjs.filter(cnpj => cnpj.length === 14);
@@ -53,7 +54,6 @@ async function detectFileType(file: File): Promise<{ type: 'pdf' | 'excel' | 'im
       return { type: 'image', mimeType: 'image/webp' };
     }
     
-    // Caso de extensões csv ou txt
     const name = file.name.toLowerCase();
     if (name.endsWith('.csv')) return { type: 'excel' };
     if (name.endsWith('.txt')) return { type: 'text' };
@@ -64,9 +64,6 @@ async function detectFileType(file: File): Promise<{ type: 'pdf' | 'excel' | 'im
   }
 }
 
-/**
- * Converte um arquivo para Base64
- */
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -84,7 +81,7 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 /**
- * Processa a inteligência artificial para o formato de array de CNPJs
+ * Processa a IA usando gemini-1.5-flash e Regex Fundido
  */
 async function processWithGemini(file: File): Promise<string[]> {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -95,19 +92,19 @@ async function processWithGemini(file: File): Promise<string[]> {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-  const prompt = `ATENÇÃO: Este é um documento/arquivo contendo informações sobre empresas ou clientes.
-Lembre-se que você funciona como uma ferramenta de OCR analítico altamente capacitada. 
-Eu preciso que você extraia rigorosamente TODOS e QUALQUER número de CNPJ (14 dígitos, formato: XX.XXX.XXX/YYYY-ZZ) contidos nas tabelas, textos, recibos, fotos ou formulários deste documento.
-Se houver CPFs (11 dígitos) ou IEs, ignore-os. Concentre-se no escopo estrito de localizar CNPJs válidos de empresas. 
+  const prompt = `ATENÇÃO: Este é um documento contendo informações fiscais/corporativas.
+Você é uma ferramenta de OCR analítico altamente capacitada. 
+Eu preciso que você avalie CADA página ou linha e extraia TODOS os números de CNPJ (14 dígitos, formato: XX.XXX.XXX/YYYY-ZZ) contidos.
+Se houver CPFs (11 dígitos), IEs ou RGs, ignore-os completamente. O foco é identificar os CNPJs válidos de empresas descritas no texto. 
 
-Você DEVE retornar APENAS um Array JSON perfeitamente válido contendo os CNPJs como strings de 14 dígitos (apenas os números, omitindo as pontuações e quebras).
-Não retorne NENHUM outro texto extra, nem explicações. Nenhum markdown como \`\`\`json. Apenas o array de strings em uma única linha.
+Você DEVE retornar APENAS um Array JSON perfeitamente válido contendo todos os CNPJs localizados. Só as strings com os 14 dígitos formatadas sem os numerais (exatamente os números omitindo pontuações, traços, etc).
+Não adicione explicações, nem avisos ou formatações markdown. Apenas o array, numa única linha.
 Exemplo do retorno esperado exato: ["12345678000199", "98765432000111", "12312312000112"]`;
 
   const detected = await detectFileType(file);
-  console.log("Detectado:", detected, file.name);
+  console.log("Detectado FileType:", detected.type, "Mime:", detected.mimeType);
   
-  // Excel/CSV
+  // Tratamento Inteligente (Híbrido IA + Regex Local para dados textuais massivos)
   if (detected.type === 'excel') {
     const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer);
@@ -117,32 +114,35 @@ Exemplo do retorno esperado exato: ["12345678000199", "98765432000111", "1231231
       fullText += XLSX.utils.sheet_to_csv(sheet) + '\n';
     });
     
+    // Varredura de Segurança
+    const regexLocal = extractCnpjs(fullText);
+    
     const result = await model.generateContent([prompt, fullText]);
     const response = await result.response;
     const textRes = response.text();
-    return parseGeminiJsonResponse(textRes, fullText);
+    const cnpjsAPI = parseGeminiJsonResponse(textRes, fullText);
+
+    // Funde resultados em listas extensas (API pode ter truncado)
+    const setFinal = Array.from(new Set([...cnpjsAPI, ...regexLocal]));
+    return setFinal;
   }
   
-  // Texto plano
   if (detected.type === 'text' || (detected.type === 'unknown' && file.size < 1024 * 500)) {
-    // Se não sabe o que é e é pequeno, tenta ler como texto
     try {
        const textRaw = await file.text();
+       const regexLocal = extractCnpjs(textRaw);
+
        const result = await model.generateContent([prompt, textRaw]);
        const response = await result.response;
        const textRes = response.text();
-       return parseGeminiJsonResponse(textRes, textRaw);
-    } catch(e) { /* Ignora e passa pro fallback binário */ }
+       const cnpjsAPI = parseGeminiJsonResponse(textRes, textRaw);
+       
+       return Array.from(new Set([...cnpjsAPI, ...regexLocal]));
+    } catch(e) { /* Ignora se for lixo binário em tipo text/unknown e deixa cair p upload */ }
   }
 
-  // Se for Imagem ou PDF, envia pelo mimeType confiável detectado através de Magic Bytes
-  // Em vez de usar file.type que pode vir em branco no Windows
-  let mimeToUse = detected.mimeType;
-  if (!mimeToUse) {
-     // Se cair aqui e não tiver mimeType (e.g. tipo unknown caindo no fallback), forçamos uma tentativa de PDF (cenário Adobe sem extensão)
-     mimeToUse = 'application/pdf';
-  }
-
+  // Tratamento Binário (Imagens OCR ou PDFs Nativos/Grandes)
+  let mimeToUse = detected.mimeType || 'application/pdf'; // fallback cego comum no windows
   const base64Data = await fileToBase64(file);
   const fileParts = [
     {
@@ -153,24 +153,40 @@ Exemplo do retorno esperado exato: ["12345678000199", "98765432000111", "1231231
     }
   ];
 
+  let cnpjsRecuperados: string[] = [];
   try {
     const result = await model.generateContent([prompt, ...fileParts]);
     const response = await result.response;
     const textRes = response.text();
-    return parseGeminiJsonResponse(textRes, textRes); 
+    cnpjsRecuperados = parseGeminiJsonResponse(textRes, textRes); 
   } catch (error: any) {
-    console.error("Erro no Gemini (Mime:", mimeToUse, "):", error);
-    // Em caso de falha da IA ou PDF pesado, fallback para OCR tradicional (pdfjs/regex)
+    console.error("Erro na Requisição Gemini (Binário MIME:", mimeToUse, ")", error);
+    // Erro crítico de Token ou Formato de Documento Recusado do Servidor
     if (mimeToUse === 'application/pdf') {
        return extractCnpjsFallbackFromPDF(file);
     }
-    throw new Error("Erro na Leitura Dinâmica (IA): " + error.message);
+    throw new Error("Erro Crítico na IA da Ferramenta de Importar (OCR): " + error.message);
   }
+
+  // ================= FALLBACK PROFUNDO PARA DOCUMENTOS ADOBE =================
+  // Se a IA devolver um Array vazio (0 encontrados) e era pra ser PDF, significa
+  // que o arquivo possui dezenas de páginas com listas pequenas (Ex: Relatórios 404 clientes)
+  // que o modelo vision trunca no output JSON porque não foca página a página.
+  // Varremos textualmente o local:
+  if (cnpjsRecuperados.length === 0 && mimeToUse === 'application/pdf') {
+     console.warn("ALERTA: Gemini retornou 0 CNPJs em um PDF volumoso! Ativando varredor de contingência interno!");
+     const profundoCnpjs = await extractCnpjsFallbackFromPDF(file);
+     if (profundoCnpjs.length > 0) {
+         console.log(`Sucesso: Contingência salvou ${profundoCnpjs.length} CNPJs do PDF ignorado.`);
+         return profundoCnpjs;
+     }
+  }
+
+  return cnpjsRecuperados;
 }
 
 function parseGeminiJsonResponse(text: string, fallbackText: string): string[] {
    let cleaned = text.trim();
-   // Remove possíveis marcadores markdown do modelo
    cleaned = cleaned.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
    
    try {
@@ -178,19 +194,15 @@ function parseGeminiJsonResponse(text: string, fallbackText: string): string[] {
       if (Array.isArray(parsed)) {
          return parsed.map(String).map(s => s.replace(/\D/g, '')).filter(s => s.length === 14);
       }
-   } catch(e) {
-      console.warn("A IA não retornou um JSON perfeito. Tentando extrair os CNPJs usando RegExp.");
-   }
+   } catch(e) { }
    
-   // Se falhou o parse ou não é array, roda o regex na resposta (caso o modelo tenha simplesmente listado texto)
    const regexFound = extractCnpjs(cleaned);
    if (regexFound.length > 0) return regexFound;
    
-   // Se não encontrou nada na resposta, tenta fazer o parse direto do texto do fallback
    return extractCnpjs(fallbackText);
 }
 
-// Fallback convencional para PDFs normais em caso da falha da requisição do Gemini
+// Fallback hiper confiável para Pdfs do Adobe caso haja quebras visuais e o OCR derreta os CNPJs
 async function extractCnpjsFallbackFromPDF(file: File): Promise<string[]> {
   try {
     const arrayBuffer = await file.arrayBuffer();
@@ -198,21 +210,22 @@ async function extractCnpjsFallbackFromPDF(file: File): Promise<string[]> {
     const pdf = await loadingTask.promise;
     let fullText = '';
     
+    // Lendo as várias páginas sem estourar memoria
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       const pageText = textContent.items.map((item: any) => item.str).join(' ');
       fullText += pageText + '\n';
     }
-    return extractCnpjs(fullText);
+    return extractCnpjs(fullText); // Passa no regex que agora aguenta distanciamento irreal
   } catch (e) {
-    console.error("Falha ao usar PDFJS de fallback", e);
+    console.error("Falha drástica ao invocar PDFJS local para contingência", e);
     return [];
   }
 }
 
 /**
- * Coordena a extração inteligente de CNPJs
+ * Interface Externa
  */
 export async function parseFileForCnpjs(file: File): Promise<string[]> {
   try {
@@ -220,7 +233,7 @@ export async function parseFileForCnpjs(file: File): Promise<string[]> {
     const unique = Array.from(new Set(cnpjs));
     return unique;
   } catch (error: any) {
-    console.error('Erro na extração de CNPJs:', error);
-    throw new Error(error.message || 'Não foi possível ler o arquivo. Tem certeza que o arquivo não está corrompido?');
+    console.error('Erro geral no parse do CNPJ:', error);
+    throw new Error(error.message || 'O arquivo falhou leitura. Garanta que ele não está bloqueado com senha!');
   }
 }

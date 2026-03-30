@@ -60,6 +60,8 @@ export default function CRMPage() {
   });
 
   const [importing, setImporting] = useState(false);
+  const [showDropzoneModal, setShowDropzoneModal] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [importResults, setImportResults] = useState<{
     total: number;
     processed: number;
@@ -81,7 +83,7 @@ export default function CRMPage() {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleImportClick = () => {
-    fileInputRef.current?.click();
+    setShowDropzoneModal(true);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,7 +92,11 @@ export default function CRMPage() {
 
     // Reset input
     e.target.value = "";
+    setShowDropzoneModal(false);
+    await processSelectedFile(file);
+  };
 
+  const processSelectedFile = async (file: File) => {
     setImporting(true);
     setShowImportModal(true);
     setImportResults({ total: 0, processed: 0, success: 0, failed: 0, skipped: 0, failedList: [] });
@@ -707,6 +713,56 @@ export default function CRMPage() {
               </div>
             </form>
           </motion.div>
+        </div>
+      )}
+
+      {showDropzoneModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+           <motion.div 
+             initial={{ opacity: 0, scale: 0.9 }}
+             animate={{ opacity: 1, scale: 1 }}
+             className="bg-white dark:bg-zinc-900 rounded-3xl p-8 w-full max-w-lg border dark:border-zinc-800 shadow-2xl space-y-6"
+           >
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Importar Arquivo</h2>
+                <button onClick={() => setShowDropzoneModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-slate-400">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div 
+                className={`relative border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center text-center transition-all ${
+                  isDragging 
+                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-inner' 
+                    : 'border-slate-300 dark:border-zinc-700 hover:border-indigo-400 hover:bg-slate-50 dark:hover:bg-zinc-800/50'
+                }`}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) {
+                    setShowDropzoneModal(false);
+                    processSelectedFile(file);
+                  }
+                }}
+              >
+                 <Upload className={`w-12 h-12 mb-4 transition-colors duration-300 ${isDragging ? 'text-indigo-600 scale-110' : 'text-slate-400'}`} />
+                 <h3 className="text-lg font-bold text-slate-800 dark:text-zinc-200 mb-2">
+                    {isDragging ? 'Pode soltar o arquivo!' : 'Solte seu arquivo aqui'}
+                 </h3>
+                 <p className="text-sm text-slate-500 dark:text-zinc-400 mb-6 max-w-xs mx-auto">
+                    Arraste planilhas, notas fiscais, Adobe Reader Docs ou fotos contendo a listagem de CNPJs.
+                 </p>
+                 <button 
+                   onClick={() => fileInputRef.current?.click()}
+                   className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold shadow-sm hover:bg-indigo-700 transition"
+                 >
+                    Procurar no Computador
+                 </button>
+              </div>
+           </motion.div>
         </div>
       )}
 
