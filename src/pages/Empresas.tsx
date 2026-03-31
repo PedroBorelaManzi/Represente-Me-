@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
@@ -13,18 +13,38 @@ export default function EmpresasPage() {
   const [allOrders, setAllOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newCat, setNewCat] = useState("");
+  const [itemsLimit, setItemsLimit] = useState(15);
+  const scrollSentinelRef = React.useRef(null);
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<string>("");
   const [editNameInput, setEditNameInput] = useState<string>("");
 
+  const filteredOrders = (allOrders || []).filter(o => {
+    const matchesCategory = !selectedCategory || o.category.toLowerCase() === selectedCategory.toLowerCase();
+    return matchesCategory;
+  });
+
+  const totalCategory = filteredOrders.reduce((sum, o) => sum + o.value, 0);
+
   // Load select initial category
   useEffect(() => {
-    if (settings.categories && settings.categories.length > 0 && !selectedCategory) {
+    if (settings?.categories && settings.categories.length > 0 && !selectedCategory) {
       setSelectedCategory(settings.categories[0]);
     }
   }, [settings.categories]);
+
+  useEffect(() => {
+    if (!scrollSentinelRef.current) return;
+    const obs = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && filteredOrders.length > itemsLimit) {
+        setItemsLimit(prev => prev + 15);
+      }
+    }, { threshold: 0.1 });
+    obs.observe(scrollSentinelRef.current);
+    return () => obs.disconnect();
+  }, [filteredOrders.length, itemsLimit]);
 
   const loadOrders = async () => {
     if (!user) return;
@@ -36,7 +56,7 @@ export default function EmpresasPage() {
     if (!error && clients) {
       const orders: any[] = [];
       const discoveredCategories = new Set<string>();
-      const currentGlobal = settings.categories || [];
+      const currentGlobal = settings?.categories || [];
       
       const filesPromises = clients.map(async (client: any) => {
          const { data: files } = await supabase.storage
@@ -49,7 +69,6 @@ export default function EmpresasPage() {
                  const hasCategory = parts.length > 1;
                  const rawCategory = hasCategory ? parts[0] : "Documento";
                  
-                 // Normalizar o nome da categoria usando as configurações globais (ignora case)
                  const matchedCat = currentGlobal.find(c => c.toLowerCase() === rawCategory.toLowerCase());
                  const categoryName = matchedCat || rawCategory;
                  
@@ -74,7 +93,6 @@ export default function EmpresasPage() {
 
       await Promise.all(filesPromises);
       
-      // Sincronizar categorias descobertas (ignora case para evitar duplicatas)
       const newCats = [...discoveredCategories].filter(c => 
           !currentGlobal.some(gc => gc.toLowerCase() === c.toLowerCase())
       );
@@ -97,7 +115,7 @@ export default function EmpresasPage() {
 
   const addCategory = async () => {
     if (newCat.trim() && !settings.categories?.some(c => c.toLowerCase() === newCat.trim().toLowerCase())) {
-      const updated = [...(settings.categories || []), newCat.trim()];
+      const updated = [...(settings?.categories || []), newCat.trim()];
       await updateSettings({ categories: updated });
       setNewCat("");
       if (!selectedCategory) setSelectedCategory(newCat.trim());
@@ -121,14 +139,12 @@ export default function EmpresasPage() {
       
       const oldCat = editingCategory;
       const newCatName = editNameInput.trim();
-
       setLoading(true);
 
       try {
           const { data: clients } = await supabase.from("clients").select("id, faturamento, category_last_contact");
           if (clients) {
               for (const client of clients) {
-                  // 1. Rename files in storage (case-insensitive search)
                   const { data: files } = await supabase.storage
                     .from("client_vault")
                     .list(`${user?.id}/${client.id}`);
@@ -146,12 +162,10 @@ export default function EmpresasPage() {
                       }
                   }
 
-                  // 2. Update faturamento and categories table row (with case correction)
                   let needsUpdate = false;
                   const fat = client.faturamento || {};
                   const lastContact = client.category_last_contact || {};
 
-                  // Verificar faturamento (procurar por qualquer case do nome antigo)
                   Object.keys(fat).forEach(key => {
                       if (key.toLowerCase() === oldCat.toLowerCase()) {
                           const val = fat[key];
@@ -161,7 +175,6 @@ export default function EmpresasPage() {
                       }
                   });
 
-                  // Verificar last contact
                   Object.keys(lastContact).forEach(key => {
                       if (key.toLowerCase() === oldCat.toLowerCase()) {
                           const val = lastContact[key];
@@ -180,8 +193,7 @@ export default function EmpresasPage() {
               }
           }
 
-          // 3. Save core settings (remove duplicates, use new name)
-          const updated = (settings.categories || [])
+          const updated = (settings?.categories || [])
              .filter(c => c.toLowerCase() !== oldCat.toLowerCase())
              .concat(newCatName);
           
@@ -202,7 +214,7 @@ export default function EmpresasPage() {
 
   const handleDeleteSub = async () => {
       if (window.confirm(`Deseja realmente excluir a empresa/categoria "${editingCategory}"? TODOS os arquivos e dados vinculados serão mantidos, mas a categoria não aparecerá mais nos filtros.`)) {
-          const updated = (settings.categories || []).filter(c => c.toLowerCase() !== editingCategory.toLowerCase());
+          const updated = (settings?.categories || []).filter(c => c.toLowerCase() !== editingCategory.toLowerCase());
           await updateSettings({ categories: updated });
           if (selectedCategory.toLowerCase() === editingCategory.toLowerCase()) {
              setSelectedCategory(updated.length > 0 ? updated[0] : "");
@@ -215,8 +227,7 @@ export default function EmpresasPage() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
 
-  // Compute Totals (Case-Insensitive)
-  const catTotals = (settings.categories || []).reduce((acc: any, cat: string) => {
+  const catTotals = (settings?.categories || []).reduce((acc: any, cat: string) => {
       acc[cat] = allOrders
           .filter(o => o.category.toLowerCase() === cat.toLowerCase())
           .reduce((s, o) => s + o.value, 0);
@@ -224,9 +235,6 @@ export default function EmpresasPage() {
   }, {});
 
   const totalGeral = Object.values(catTotals).reduce((sum: number, val: any) => sum + Number(val), 0) as number;
-
-  const filteredOrders = allOrders.filter(o => o.category.toLowerCase() === selectedCategory.toLowerCase());
-  const totalCategory = filteredOrders.reduce((sum, o) => sum + o.value, 0);
 
   return (
     <div className="space-y-8">
@@ -246,7 +254,7 @@ export default function EmpresasPage() {
         </button>
       </div>
 
-      {/* 🟢 Consolidated Total Revenue Card */}
+      {/* Total Revenue Card */}
       <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm dark:shadow-none flex items-center justify-between">
          <div className="flex items-center gap-4">
             <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl border border-indigo-100 dark:border-indigo-900/40">
@@ -267,7 +275,7 @@ export default function EmpresasPage() {
              <h3 className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Suas Empresas</h3>
              
              <div className="space-y-2 max-h-[calc(100vh-24rem)] overflow-y-auto pr-1">
-                {(settings.categories || []).map((cat) => (
+                {(settings?.categories || []).map((cat) => (
                    <div 
                      key={cat}
                      onClick={() => setSelectedCategory(cat)}
@@ -295,9 +303,6 @@ export default function EmpresasPage() {
                      </button>
                    </div>
                 ))}
-                {(settings.categories || []).length === 0 && (
-                   <p className="text-xs text-slate-400 text-center py-4">Nenhuma empresa cadastrada.</p>
-                )}
              </div>
 
              <div className="pt-4 border-t border-slate-100 dark:border-zinc-850 flex gap-2">
@@ -339,7 +344,7 @@ export default function EmpresasPage() {
                    <div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>
                 ) : (
                    <AnimatePresence>
-                      {filteredOrders.map((order) => (
+                      {filteredOrders.slice(0, itemsLimit).map((order) => (
                          <motion.div
                            key={order.id}
                            initial={{ opacity: 0, y: 10 }}
@@ -363,21 +368,16 @@ export default function EmpresasPage() {
                            </div>
                          </motion.div>
                       ))}
-                      {filteredOrders.length === 0 && (
-                         <div className="h-full flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500 py-12">
-                           <FileText className="w-12 h-12 stroke-[1.5] mb-3 text-slate-300" />
-                           <p className="text-sm font-medium">Nenhum pedido listado para esta empresa.</p>
-                         </div>
-                      )}
                    </AnimatePresence>
                 )}
              </div>
+             <div ref={scrollSentinelRef} className="h-4 w-full" />
           </div>
         </div>
 
       </div>
 
-      {/* 🟡 Edit/Delete Modal */}
+      {/* Edit/Delete Modal */}
       <AnimatePresence>
         {isEditModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -391,7 +391,6 @@ export default function EmpresasPage() {
                    <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Editar Empresa</h3>
                    <button onClick={() => setIsEditModalOpen(false)} className="p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-850 rounded-xl"><X className="w-5 h-5"/></button>
                 </div>
-
                 <div className="space-y-4">
                    <div>
                       <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">Nome da Empresa</label>
@@ -400,26 +399,13 @@ export default function EmpresasPage() {
                         value={editNameInput}
                         onChange={(e) => setEditNameInput(e.target.value)}
                         className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100"
-                        placeholder="Nome..."
                       />
                    </div>
-                      <p className="text-xs text-emerald-600 dark:text-emerald-500 font-medium">Nota: A alteração renomeará todos os registros e arquivos vinculados a esta empresa.</p>
+                   <p className="text-xs text-emerald-600 dark:text-emerald-500 font-medium">Nota: A alteração renomeará todos os registros e arquivos vinculados a esta empresa.</p>
                 </div>
-
                 <div className="flex flex-col gap-2 pt-4 border-t border-slate-100 dark:border-zinc-850">
-                    <button 
-                      onClick={handleSaveEdit}
-                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1"
-                    >
-                      <Check className="w-4 h-4" /> Salvar Alterações
-                    </button>
-                    
-                    <button 
-                      onClick={handleDeleteSub}
-                      className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-sm flex items-center justify-center gap-1 border border-red-100"
-                    >
-                      <Trash2 className="w-4 h-4" /> Excluir Empresa
-                    </button>
+                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Salvar Alterações</button>
+                    <button onClick={handleDeleteSub} className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-sm flex items-center justify-center gap-1 border border-red-100"><Trash2 className="w-4 h-4" /> Excluir Empresa</button>
                 </div>
              </motion.div>
           </div>

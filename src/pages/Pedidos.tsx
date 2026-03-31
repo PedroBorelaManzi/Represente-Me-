@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, 
   Search, 
@@ -40,6 +40,21 @@ export default function PedidosPage() {
 
   // Manual Upload Modal
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [itemsLimit, setItemsLimit] = useState(15);
+  const scrollSentinelRef = React.useRef<HTMLDivElement>(null);
+  
+  const filteredOrders = (orders || []).filter(order => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = 
+      order.client?.name?.toLowerCase().includes(term) ||
+      order.category?.toLowerCase().includes(term) ||
+      order.status?.toLowerCase().includes(term);
+    
+    const matchesCategory = !filterCategory || order.category === filterCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
+
   const [selectedClient, setSelectedClient] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [orderValue, setOrderValue] = useState("");
@@ -58,16 +73,27 @@ export default function PedidosPage() {
     loadSettings();
   }, [user]);
 
+  useEffect(() => {
+    if (!scrollSentinelRef.current) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && filteredOrders.length > itemsLimit) {
+        setItemsLimit(prev => prev + 15);
+      }
+    }, { threshold: 0.1 });
+    observer.observe(scrollSentinelRef.current);
+    return () => observer.disconnect();
+  }, [filteredOrders.length, itemsLimit]);
+
   const loadSettings = async () => {
     if (!user) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (authUser) {
       const { data } = await supabase
         .from('user_settings')
-        .select('settings')
+        .select('*')
         .eq('user_id', authUser.id)
         .maybeSingle();
-      if (data) setSettings(data.settings || {});
+      if (data) setSettings(data || {});
     }
   };
 
@@ -284,11 +310,6 @@ export default function PedidosPage() {
     }
   };
 
-  const filteredOrders = orders.filter(order => 
-    order.client?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.category?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const totalRevenue = orders.reduce((acc, order) => acc + (order.value || 0), 0);
   const totalOrders = orders.length;
 
@@ -375,20 +396,79 @@ export default function PedidosPage() {
       </div>
 
       {/* Orders Table */}
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+      {/* Orders View - Responsive Table & Cards */}
+      <div className="md:hidden space-y-4">
+        {loading ? (
+          <div className="flex items-center justify-center p-12 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <div className="text-center p-12 bg-white dark:bg-zinc-900 rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 shadow-sm text-slate-400 font-medium italic">
+            Nenhum pedido encontrado.
+          </div>
+        ) : (
+          filteredOrders.slice(0, itemsLimit).map((order, i) => (
+            <motion.div
+              key={order.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(i * 0.05, 0.4) }}
+              className="bg-white dark:bg-zinc-900 p-5 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-base font-black text-slate-900 dark:text-zinc-100 truncate">{order.client?.name}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{order.client?.cnpj}</p>
+                </div>
+                <button className="p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-950 rounded-xl transition-all">
+                  <MoreHorizontal className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-3 mb-4 mt-2">
+                <span className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100/50 dark:border-indigo-900/30">
+                  {order.category}
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-100/50 dark:border-emerald-800/30">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Concluído
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-zinc-850">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Valor</span>
+                  <span className="text-base font-black text-slate-900 dark:text-zinc-100 tabular-nums">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.value)}
+                  </span>
+                </div>
+                <div className="flex flex-col items-end">
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Data</span>
+                   <div className="flex items-center gap-1.5 text-slate-600 dark:text-zinc-300">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-xs font-bold">{new Date(order.created_at).toLocaleDateString('pt-BR')}</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-separate border-spacing-0">
             <thead>
-              <tr className="bg-slate-50 dark:bg-zinc-950/50 border-b border-slate-200 dark:border-zinc-800">
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Cliente</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Representada</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ações</th>
+              <tr className="bg-slate-50 dark:bg-zinc-950/50">
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-zinc-800">Cliente</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-zinc-800">Representada</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-zinc-800">Valor</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-zinc-800">Data</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-zinc-800">Status</th>
+                <th className="sticky right-0 z-20 bg-slate-50 dark:bg-zinc-950/50 px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-l border-slate-200 dark:border-zinc-800 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.05)]">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
+            <tbody className="divide-y divide-slate-100 dark:divide-zinc-850">
               {loading ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium italic">
@@ -401,37 +481,37 @@ export default function PedidosPage() {
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium italic">Nenhum pedido encontrado.</td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-800/20 transition-colors group">
+                filteredOrders.slice(0, itemsLimit).map((order) => (
+                  <tr key={order.id} className="hover:bg-slate-50/50 dark:hover:bg-zinc-950/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div>
                         <p className="text-sm font-bold text-slate-900 dark:text-zinc-100">{order.client?.name}</p>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{order.client?.cnpj}</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-2.5 py-1 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 rounded-lg text-xs font-black uppercase tracking-wider">
                         {order.category}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-black text-slate-900 dark:text-zinc-100 tabular-nums">
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.value)}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2 text-slate-500 dark:text-zinc-400">
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         <span className="text-xs font-bold leading-none">{new Date(order.created_at).toLocaleDateString('pt-BR')}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-100/50 dark:border-emerald-800/30">
                         <CheckCircle2 className="w-3 h-3" /> Concluído
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-all">
+                    <td className="sticky right-0 z-10 bg-white dark:bg-zinc-900 group-hover:bg-slate-50 dark:group-hover:bg-zinc-950 px-6 py-4 text-right border-l border-slate-200 dark:border-zinc-800 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.05)] transition-colors">
+                      <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-all">
                         <MoreHorizontal className="w-5 h-5" />
                       </button>
                     </td>
@@ -442,6 +522,8 @@ export default function PedidosPage() {
           </table>
         </div>
       </div>
+
+      <div ref={scrollSentinelRef} className="h-4 w-full" />
 
       {/* Manual Modal */}
       <AnimatePresence>
