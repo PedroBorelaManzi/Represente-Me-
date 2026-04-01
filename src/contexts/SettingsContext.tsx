@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+﻿import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
 
@@ -10,6 +10,7 @@ export interface Settings {
   theme?: 'light' | 'dark';
   has_completed_onboarding?: boolean;
   categories?: string[];
+  revenue_ceiling?: number;
 }
 
 interface SettingsContextType {
@@ -26,6 +27,7 @@ const defaultSettings: Settings = {
   theme: 'light',
   has_completed_onboarding: false,
   categories: [],
+  revenue_ceiling: 1000000,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -64,13 +66,13 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           inativo_days: data.inativo_days ?? defaultSettings.inativo_days,
           theme: data.theme ?? defaultSettings.theme,
           has_completed_onboarding: data.has_completed_onboarding ?? defaultSettings.has_completed_onboarding,
-          categories: data.categories || [], // Explicitly empty for new users
+          categories: data.categories || [],
+          revenue_ceiling: data.revenue_ceiling ?? defaultSettings.revenue_ceiling,
         });
       } else if (error) {
-         console.error("Error loading settings:", error);
-         setSettings(defaultSettings);
+        console.error("Error loading settings:", error);
+        setSettings(defaultSettings);
       } else {
-        // No error but no data (brand new user)
         setSettings(defaultSettings);
       }
       setLoading(false);
@@ -81,9 +83,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
   const updateSettings = async (newSettings: Partial<Settings>) => {
     if (!user) return;
-    
+
     const updated = { ...settings, ...newSettings };
-    
+
     const { error } = await supabase
       .from("user_settings")
       .upsert({
@@ -102,7 +104,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const root = document.documentElement;
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    
+
     if (settings.theme === 'dark') {
       root.classList.add('dark');
       if (metaThemeColor) metaThemeColor.setAttribute('content', '#09090b');
@@ -118,4 +120,3 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     </SettingsContext.Provider>
   );
 };
-
