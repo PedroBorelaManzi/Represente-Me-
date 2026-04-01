@@ -39,7 +39,7 @@ export default function OnboardingModal() {
     });
   };
 
-  if (loading || settings.has_completed_onboarding) return null;
+  if (loading || settings.has_completed_onboarding || (settings.categories && settings.categories.length > 0)) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
