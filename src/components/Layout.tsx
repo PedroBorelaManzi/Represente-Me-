@@ -82,9 +82,8 @@ export default function Layout() {
     { name: "Mapa", href: "/dashboard/map", icon: MapPin },
     { name: "Integrações", href: "/dashboard/links", icon: LinkIcon },
     { name: "Clientes", href: "/dashboard/clientes", icon: Users },
-    { name: "Empresas", href: "/dashboard/empresas", icon: Building2 },
+    { name: "Pedidos e Empresas", href: "/dashboard/empresas", icon: Building2 },
     { name: "Agenda", href: "/dashboard/agenda", icon: Calendar },
-    { name: "Pedidos", href: "/dashboard/pedidos", icon: ShoppingCart },
   ];
 
   const isIntegrationView = location.pathname.includes('/links') && location.search.includes('id=');

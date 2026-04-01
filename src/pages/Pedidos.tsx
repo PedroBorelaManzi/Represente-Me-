@@ -303,6 +303,22 @@ export default function PedidosPage() {
         status: 'concluido'
       }]);
 
+      // Update Client Analytics for Batch
+      const currentFat = matchedClient.faturamento || {};
+      const updatedFat = { ...currentFat, [result.category]: (Number(currentFat[result.category] || 0) + Number(result.value)) };
+      
+      const currentLastContact = matchedClient.category_last_contact || {};
+      const updatedLastContact = { ...currentLastContact, [result.category]: new Date().toISOString() };
+
+      await supabase
+        .from("clients")
+        .update({ 
+          faturamento: updatedFat, 
+          category_last_contact: updatedLastContact,
+          last_contact: new Date().toISOString()
+        })
+        .eq("id", matchedClient.id);
+
       setBatchResults(prev => prev.filter(r => r.file !== result.file));
       loadData();
     } catch (err: any) {

@@ -9,7 +9,7 @@ import { Link } from "react-router-dom";
 export default function EmpresasPage() {
   const { user } = useAuth();
   const { settings, updateSettings, loading: settingsLoading } = useSettings();
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [allOrders, setAllOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newCat, setNewCat] = useState("");
@@ -22,7 +22,7 @@ export default function EmpresasPage() {
   const [editNameInput, setEditNameInput] = useState<string>("");
 
   const filteredOrders = (allOrders || []).filter(o => {
-    const matchesCategory = !selectedCategory || o.category.toLowerCase() === selectedCategory.toLowerCase();
+    const matchesCategory = selectedCategory === "all" || o.category.toLowerCase() === selectedCategory.toLowerCase();
     return matchesCategory;
   });
 
@@ -30,8 +30,9 @@ export default function EmpresasPage() {
 
   // Load select initial category
   useEffect(() => {
-    if (settings?.categories && settings.categories.length > 0 && !selectedCategory) {
-      setSelectedCategory(settings.categories[0]);
+    if (settings?.categories && settings.categories.length > 0 && selectedCategory === "all") {
+      // Keep it as "all" initially or based on preference. 
+      // User said "Todos os pedidos" should show by default.
     }
   }, [settings.categories]);
 
@@ -105,6 +106,48 @@ export default function EmpresasPage() {
       setAllOrders(orders);
     }
     setLoading(false);
+  };
+
+  const performDeepSync = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data: clients, error: clientsError } = await supabase
+        .from("clients")
+        .select("id, name, faturamento");
+
+      if (clientsError) throw clientsError;
+
+      for (const client of clients) {
+        const { data: files } = await supabase.storage
+          .from("client_vault")
+          .list(`${user.id}/${client.id}`);
+
+        if (files) {
+          const newFaturamento = {};
+          files.forEach(file => {
+             const parts = file.name.split("___");
+             if (parts.length > 2 && parts[1].startsWith("VALOR_")) {
+                const cat = parts[0];
+                const val = parseFloat(parts[1].replace("VALOR_", "")) || 0;
+                newFaturamento[cat] = (newFaturamento[cat] || 0) + val;
+             }
+          });
+
+          await supabase
+            .from("clients")
+            .update({ faturamento: newFaturamento })
+            .eq("id", client.id);
+        }
+      }
+      alert("Sincronização do faturamento concluída com sucesso!");
+      await loadOrders();
+    } catch (err) {
+      console.error("Deep Sync Error:", err);
+      alert("Erro na sincronização: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -242,15 +285,15 @@ export default function EmpresasPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-            <Building2 className="w-7 h-7 text-indigo-600" /> Empresas e Representações
+            <Building2 className="w-7 h-7 text-indigo-600" /> Pedidos e Empresas
           </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Gerencie suas representações e visualize todos os pedidos vinculados.</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Gerencie seus pedidos e empresas em uma visão unificada.</p>
         </div>
         <button 
-          onClick={() => loadOrders()} 
+          onClick={performDeepSync} 
           className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold px-3 py-1.5 bg-indigo-50 dark:bg-zinc-900 rounded-lg border border-indigo-100 dark:border-zinc-800 transition-colors"
         >
-          Sincronizar Agora
+          Sincronizar Banco
         </button>
       </div>
 
@@ -275,6 +318,24 @@ export default function EmpresasPage() {
              <h3 className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Suas Empresas</h3>
              
              <div className="space-y-2 max-h-[calc(100vh-24rem)] overflow-y-auto pr-1">
+                <div 
+                  onClick={() => setSelectedCategory("all")}
+                  className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    selectedCategory === "all" 
+                      ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-200" 
+                      : "border-slate-100 dark:border-zinc-850 hover:bg-slate-50 dark:hover:bg-zinc-950 text-slate-700 dark:text-zinc-300"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 font-bold text-sm">
+                    <FileText className={`w-4 h-4 ${selectedCategory === "all" ? "text-indigo-600" : "text-slate-400"}`} />
+                    <span>Todos os Pedidos</span>
+                  </div>
+                  <span className="text-xs font-black px-2 py-0.5 bg-slate-100 dark:bg-zinc-800 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                    {allOrders.length}
+                  </span>
+                </div>
+                <div className="h-px bg-slate-100 dark:bg-zinc-800 my-2 mx-2" />
+
                 {(settings?.categories || []).map((cat) => (
                    <div 
                      key={cat}

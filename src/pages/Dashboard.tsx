@@ -114,8 +114,10 @@ export default function Dashboard() {
     clients.forEach(client => {
       const faturamento = client.faturamento || {};
       Object.entries(faturamento).forEach(([cat, val]) => {
-        if (totals[cat] !== undefined) {
-          totals[cat] += Number(val) || 0;
+        // Case-insensitive match against registered user categories
+        const matchedCat = userCategories.find(c => c.toLowerCase() === cat.toLowerCase());
+        if (matchedCat && totals[matchedCat] !== undefined) {
+          totals[matchedCat] += Number(val) || 0;
         }
       });
     });
