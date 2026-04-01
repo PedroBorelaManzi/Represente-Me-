@@ -47,54 +47,40 @@ export default function EmpresasPage() {
     return () => obs.disconnect();
   }, [filteredOrders.length, itemsLimit]);
 
+  
   const loadOrders = async () => {
     if (!user) return;
     setLoading(true);
-    const { data: clients, error } = await supabase
-      .from("clients")
-      .select("id, name");
+    
+    // FAST SQL QUERY instead of Storage scan
+    const { data: dbOrders, error } = await supabase
+      .from("orders")
+      .select(`
+        id,
+        category,
+        value,
+        file_name,
+        created_at,
+        client_id,
+        clients (name)
+      `)
+      .order("created_at", { ascending: false });
 
-    if (!error && clients) {
-      const orders: any[] = [];
-      const discoveredCategories = new Set<string>();
+    if (!error && dbOrders) {
+      const orders = dbOrders.map(o => ({
+        id: o.id,
+        name: o.file_name,
+        category: o.category,
+        value: o.value,
+        clientName: o.clients?.name || "Cliente Desconhecido",
+        clientId: o.client_id,
+        created_at: o.created_at
+      }));
+
+      // Update global categories if any are new
+      const discoveredCategories = [...new Set(orders.map(o => o.category))];
       const currentGlobal = settings?.categories || [];
-      
-      const filesPromises = clients.map(async (client: any) => {
-         const { data: files } = await supabase.storage
-           .from("client_vault")
-           .list(`${user.id}/${client.id}`);
-
-         if (files) {
-             files.forEach((file: any) => {
-                 const parts = file.name.split("___");
-                 const hasCategory = parts.length > 1;
-                 const rawCategory = hasCategory ? parts[0] : "Documento";
-                 
-                 const matchedCat = currentGlobal.find(c => c.toLowerCase() === rawCategory.toLowerCase());
-                 const categoryName = matchedCat || rawCategory;
-                 
-                 if (hasCategory) discoveredCategories.add(categoryName);
-                 
-                 const hasValue = parts.length > 2 && parts[1].startsWith("VALOR_");
-                 const valueString = hasValue ? parts[1].replace("VALOR_", "") : "0";
-                 const orderValue = parseFloat(valueString) || 0;
-
-                 orders.push({
-                     id: file.id || file.name,
-                     name: file.name,
-                     category: categoryName,
-                     value: orderValue,
-                     clientName: client.name,
-                     clientId: client.id,
-                     created_at: file.created_at
-                 });
-             });
-         }
-      });
-
-      await Promise.all(filesPromises);
-      
-      const newCats = [...discoveredCategories].filter(c => 
+      const newCats = discoveredCategories.filter(c => 
           !currentGlobal.some(gc => gc.toLowerCase() === c.toLowerCase())
       );
       
@@ -102,37 +88,48 @@ export default function EmpresasPage() {
           await updateSettings({ categories: [...currentGlobal, ...newCats] });
       }
 
-      orders.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setAllOrders(orders);
     }
     setLoading(false);
   };
 
+  
   const performDeepSync = async () => {
     if (!user) return;
     setLoading(true);
     try {
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
-        .select("id, name, faturamento");
+        .select("id, name, user_id, faturamento");
 
       if (clientsError) throw clientsError;
 
       for (const client of clients) {
         const { data: files } = await supabase.storage
           .from("client_vault")
-          .list(`${user.id}/${client.id}`);
+          .list(`${client.user_id}/${client.id}`);
 
         if (files) {
           const newFaturamento = {};
-          files.forEach(file => {
+          for (const file of files) {
              const parts = file.name.split("___");
-             if (parts.length > 2 && parts[1].startsWith("VALOR_")) {
+             if (parts.length > 2) {
                 const cat = parts[0];
-                const val = parseFloat(parts[1].replace("VALOR_", "")) || 0;
+                const hasValue = parts[1].startsWith("VALOR_");
+                const val = hasValue ? parseFloat(parts[1].replace("VALOR_", "")) || 0 : 0;
+                
                 newFaturamento[cat] = (newFaturamento[cat] || 0) + val;
+
+                // Sync to orders table
+                await supabase.from("orders").upsert({
+                    client_id: client.id,
+                    category: cat,
+                    value: val,
+                    file_name: file.name,
+                    created_at: file.created_at
+                }, { onConflict: 'client_id, file_name' });
              }
-          });
+          }
 
           await supabase
             .from("clients")
@@ -140,7 +137,7 @@ export default function EmpresasPage() {
             .eq("id", client.id);
         }
       }
-      alert("Sincronização do faturamento concluída com sucesso!");
+      alert("Sincronização profunda concluída! O faturamento e o histórico de pedidos foram atualizados.");
       await loadOrders();
     } catch (err) {
       console.error("Deep Sync Error:", err);

@@ -144,6 +144,172 @@ export default function ClientDetailsPage() {
     setIsSavingNotes(false);
   };
 
+  
+  const loadCategories = async () => {
+    if (!id) return;
+    
+    // FAST SQL QUERY for unique categories of THIS client
+    const { data: catData, error } = await supabase
+      .from("orders")
+      .select("category")
+      .eq("client_id", id);
+    
+    if (!error && catData) {
+      const uniqueCats = new Set<string>();
+      catData.forEach(o => uniqueCats.add(o.category));
+      
+      const normalizedCats = [...uniqueCats].map(cat => {
+          const matched = settings.categories?.find(c => c.toLowerCase() === cat.toLowerCase());
+          return matched || cat;
+      });
+      
+      setCategories([...new Set(normalizedCats)]);
+    }
+  }; GoogleGenerativeAI } from "@google/generative-ai";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
+import { useSettings } from "../contexts/SettingsContext";
+
+export default function ClientDetailsPage() {
+  const { id } = useParams<{ id: string }>();
+  const getInactivityDays = (lastContactStr: string) => {
+    if (!lastContactStr) return 0;
+    const lastContact = new Date(lastContactStr).getTime();
+    const today = new Date().getTime();
+    return Math.floor((today - lastContact) / (1000 * 60 * 60 * 24));
+  };
+
+
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { settings, updateSettings } = useSettings();
+  const [client, setClient] = useState<any>(null);
+  const [files, setFiles] = useState<any[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  
+  const [notes, setNotes] = useState("");
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [clientAppointments, setClientAppointments] = useState<any[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Upload Modal State
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCategory) {
+      setSelectedCategory(categories[0]);
+    }
+  }, [categories]);
+
+    const [orderValue, setOrderValue] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const handleAnalyzePDF = async () => {
+    if (!selectedFile) return;
+    setIsAnalyzing(true);
+    try {
+      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      
+      const reader = new FileReader();
+      const base64Promise = new Promise((resolve) => {
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.readAsDataURL(selectedFile);
+      });
+      const base64 = await base64Promise;
+
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: selectedFile.type,
+            data: base64 as string
+          }
+        },
+        "Extraia o valor total final deste pedido ou orçamento. Retorne APENAS o número sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50"
+      ]);
+
+      const text = result.response.text().trim();
+      if (text) {
+          let value = text.replace(/[R$\s]/g, '');
+          if (value.includes(',') && value.includes('.')) {
+              value = value.replace(/\./g, '').replace(',', '.');
+          } else if (value.includes(',')) {
+              value = value.replace(',', '.');
+          }
+          value = value.replace(/[^0-9.]/g, '');
+          setOrderValue(value);
+      }
+    } catch (err) {
+        alert("Erro na IA: " + (err instanceof Error ? err.message : String(err)) + "\n\nVerifique as configurações da API do Gemini.");
+    }
+    setIsAnalyzing(false);
+  };
+
+  const loadClient = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("clients")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (error || !data) {
+      navigate("/dashboard/clientes");
+    } else {
+      setClient(data);
+      setNotes(data.notes || "");
+    }
+    setLoading(false);
+  };
+
+  const loadFiles = async () => {
+    if (!user) return;
+    const { data, error } = await supabase.storage
+      .from("client_vault")
+      .list(`${user.id}/${id}`);
+
+    if (!error && data) {
+      // Sort files by newest first
+      const sorted = data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setFiles(sorted);
+    }
+  };
+
+  const loadAppointments = async () => {
+    if (!id) return;
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("client_id", id)
+      .order("date", { ascending: true });
+    
+    if (!error && data) {
+      setClientAppointments(data);
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    setIsSavingNotes(true);
+    const { error } = await supabase
+      .from("clients")
+      .update({ notes })
+      .eq("id", id);
+    
+    if (error) {
+      alert("Erro ao salvar notas: " + error.message);
+    }
+    setIsSavingNotes(false);
+  };
+
   const loadCategories = async () => {
     if (!user) return;
     const { data: clients, error } = await supabase
