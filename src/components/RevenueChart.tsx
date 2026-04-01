@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { TrendingUp, Settings } from 'lucide-react';
@@ -18,14 +18,20 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [ceilingInput, setCeilingInput] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [localCeiling, setLocalCeiling] = useState<number>(1000000);
+
   const { settings, updateSettings } = useSettings();
 
-  const ceiling = settings.revenue_ceiling ?? 1000000;
+  // Sync local ceiling from settings
+  useEffect(() => {
+    setLocalCeiling(settings.revenue_ceiling ?? 1000000);
+  }, [settings.revenue_ceiling]);
 
   const MAX_REVENUE = useMemo(() => {
     const highest = Math.max(...data.map(d => d.value), 0);
-    return Math.max(highest, ceiling);
-  }, [data, ceiling]);
+    return Math.max(highest, localCeiling);
+  }, [data, localCeiling]);
 
   const scaleMarks = useMemo(() => {
     const step = MAX_REVENUE / 5;
@@ -46,12 +52,35 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
   };
 
   const handleSaveCeiling = async () => {
-    const parsed = parseFloat(ceilingInput.replace(/\./g, '').replace(',', '.'));
-    if (!isNaN(parsed) && parsed > 0) {
-      await updateSettings({ revenue_ceiling: parsed });
+    // Remove any non-numeric characters except dot/comma
+    const cleaned = ceilingInput.replace(/[^\d.,]/g, '').replace(',', '.');
+    // Remove thousand separators (dots before another digit group)
+    const normalized = cleaned.replace(/\.(?=\d{3})/g, '');
+    const parsed = parseFloat(normalized);
+    
+    if (isNaN(parsed) || parsed <= 0) {
+      alert('Por favor insira um valor numérico válido (ex: 5000000 ou 5.000.000)');
+      return;
     }
+
+    setSaving(true);
+    // Apply immediately to local state so chart rescales instantly
+    setLocalCeiling(parsed);
     setShowSettings(false);
     setCeilingInput('');
+
+    try {
+      await updateSettings({ revenue_ceiling: parsed });
+    } catch (err) {
+      console.error('Erro ao salvar teto:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSaveCeiling();
+    if (e.key === 'Escape') setShowSettings(false);
   };
 
   return (
@@ -65,25 +94,31 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
             exit={{ opacity: 0, scale: 0.95, y: -10 }}
             className="absolute inset-x-6 top-16 z-50 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-2xl p-4 shadow-2xl ring-1 ring-black/5"
           >
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500 mb-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500 mb-1">
               Teto de Faturamento
+            </p>
+            <p className="text-[9px] text-slate-400 dark:text-zinc-600 mb-3">
+              Atual: <strong>{formatShortCurrency(localCeiling)}</strong> — insira o novo valor máximo do eixo Y
             </p>
             <div className="flex gap-2 items-center">
               <input
                 type="text"
                 value={ceilingInput}
                 onChange={e => setCeilingInput(e.target.value)}
-                placeholder={`Atual: ${formatShortCurrency(ceiling)}`}
-                className="flex-1 text-sm border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 rounded-xl px-3 py-2 text-slate-800 dark:text-zinc-100 outline-none focus:ring-2 ring-indigo-500/30"
+                onKeyDown={handleKeyDown}
+                placeholder={`ex: ${localCeiling.toLocaleString('pt-BR')}`}
+                autoFocus
+                className="flex-1 text-sm border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 rounded-xl px-3 py-2 text-slate-800 dark:text-zinc-100 outline-none focus:ring-2 ring-indigo-500/30 transition-shadow"
               />
               <button
                 onClick={handleSaveCeiling}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl px-4 py-2 transition-colors"
+                disabled={saving || !ceilingInput.trim()}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black rounded-xl px-4 py-2 transition-all"
               >
-                Salvar
+                {saving ? '...' : 'Salvar'}
               </button>
               <button
-                onClick={() => setShowSettings(false)}
+                onClick={() => { setShowSettings(false); setCeilingInput(''); }}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 text-xs font-black px-2 py-2 transition-colors"
               >
                 ✕
@@ -104,11 +139,11 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
           </p>
         </div>
         <button
-          onClick={() => setShowSettings(v => !v)}
-          className="p-1.5 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-xl transition-colors group"
+          onClick={() => { setShowSettings(v => !v); setCeilingInput(''); }}
+          className="p-1.5 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 rounded-xl transition-all group"
           title="Configurar teto de faturamento"
         >
-          <Settings className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 group-hover:rotate-45 transition-transform duration-300" />
+          <Settings className={cn("w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 transition-transform duration-300", showSettings && "rotate-45")} />
         </button>
       </div>
 
@@ -141,7 +176,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
 
               {/* Bars */}
               {data.map((item, idx) => {
-                const heightPercent = (item.value / MAX_REVENUE) * 100;
+                const heightPercent = Math.min((item.value / MAX_REVENUE) * 100, 100);
                 const isSelected = selectedIdx === idx;
 
                 return (
@@ -155,7 +190,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: `${heightPercent}%`, opacity: 1 }}
-                      transition={{ delay: idx * 0.05, duration: 0.8, ease: "circOut" }}
+                      transition={{ delay: idx * 0.05, duration: 0.6, ease: "circOut" }}
                       className={cn(
                         "w-full max-w-[64px] min-w-[16px] rounded-t-xl bg-indigo-600/80 hover:bg-indigo-600 transition-all cursor-pointer relative",
                         "dark:bg-indigo-500/80 dark:hover:bg-indigo-50",
@@ -189,12 +224,11 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
 
                       {!isSelected && (
                         <div className="absolute bottom-1.5 left-0 right-0 text-center text-[7px] font-black text-white/40 group-hover:text-white transition-colors">
-                          {(heightPercent).toFixed(0)}%
+                          {heightPercent.toFixed(0)}%
                         </div>
                       )}
                     </motion.div>
 
-                    {/* Label */}
                     <div className="mt-3 w-full text-center">
                       <p className={cn(
                         "text-[9px] font-black uppercase truncate px-1 transition-colors",
