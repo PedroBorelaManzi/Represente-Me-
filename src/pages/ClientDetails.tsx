@@ -28,6 +28,7 @@ export default function ClientDetailsPage() {
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [clientAppointments, setClientAppointments] = useState<any[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Upload Modal State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -305,6 +306,42 @@ export default function ClientDetailsPage() {
       if (!error) loadFiles();
     }
   };
+
+  
+  const handleDeleteClient = async () => {
+    if (!window.confirm("Deseja realmente excluir este cliente?\n\nATENO: Todos os pedidos, arquivos e compromissos vinculados a este cliente sero perdidos permanentemente.")) return;
+    
+    setIsDeleting(true);
+    try {
+      if (user) {
+        // 1. Limpar arquivos do Storage
+        const { data: storageFiles } = await supabase.storage
+          .from("client_vault")
+          .list(`${user.id}/${id}`);
+        
+        if (storageFiles && storageFiles.length > 0) {
+          const filePaths = storageFiles.map(f => `${user.id}/${id}/${f.name}`);
+          await supabase.storage.from("client_vault").remove(filePaths);
+        }
+
+        // 2. Deletar do Banco (Cascading cuida de Compromissos e Pedidos)
+        const { error: dbError } = await supabase
+          .from("clients")
+          .delete()
+          .eq("id", id);
+        
+        if (dbError) throw dbError;
+
+        // 3. Redirecionar
+        navigate("/dashboard/clientes");
+      }
+    } catch (err) {
+      alert("Erro ao excluir cliente: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
 
   const handleDownload = async (name: string) => {
     if (!user) return;
