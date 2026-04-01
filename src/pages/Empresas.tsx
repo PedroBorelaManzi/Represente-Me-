@@ -391,8 +391,8 @@ export default function EmpresasPage() {
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-6 flex flex-col h-[calc(100vh-16rem)]">
              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-zinc-850">
                 <div>
-                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory || "Detalhes"}</h2>
-                   <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Listagem de pedidos vinculados a esta empresa.</p>
+                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "" : selectedCategory}</h2>
+                   <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">{selectedCategory === "all" ? "TODOS OS PEDIDOS:" : "Listagem de pedidos vinculados a esta empresa."}</p>
                 </div>
                 <div className="text-right">
                    <span className="text-xs text-slate-500 dark:text-zinc-400">Faturamento</span>
