@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, 
   Search, 
@@ -142,7 +142,7 @@ export default function PedidosPage() {
 
         const result = await model.generateContent([
             { inlineData: { mimeType: file.type, data: base64 as string } },
-            "Extraia o valor total final deste pedido. Retorne APENAS o número com ponto decimal. Exemplo: 1250.50"
+            "Extraia o valor total final deste pedido. Retorne APENAS o nÃºmero com ponto decimal. Exemplo: 1250.50"
         ]);
 
         const text = result.response.text().trim();
@@ -153,7 +153,7 @@ export default function PedidosPage() {
             }
         }
     } catch (err) {
-        console.error("Erro na análise:", err);
+        console.error("Erro na anÃ¡lise:", err);
     } finally {
         setIsAnalyzingManual(false);
     }
@@ -184,14 +184,15 @@ export default function PedidosPage() {
       const val = parseFloat(orderValue);
       const { error: orderError } = await supabase
         .from("orders")
-        .insert([{
+        .upsert([{
           user_id: user.id,
           client_id: selectedClient,
           category: selectedCategory,
           value: val,
+          file_name: formattedName,
           file_path: file_path,
           status: 'concluido'
-        }]);
+        }], { onConflict: 'client_id,file_path' });
 
       if (orderError) throw orderError;
 
@@ -251,7 +252,7 @@ export default function PedidosPage() {
         const result = await model.generateContent([
           { inlineData: { mimeType: file.type, data: base64 as string } },
           `Analise este pedido e extraia:
-          1. Nome da Empresa/Cliente (tente encontrar o mais próximo na lista fornecida)
+          1. Nome da Empresa/Cliente (tente encontrar o mais prÃ³ximo na lista fornecida)
           2. Categoria/Representada
           3. Valor Total
           
@@ -278,7 +279,7 @@ export default function PedidosPage() {
   const confirmBatchOrder = async (result: any) => {
     const matchedClient = clients.find(c => c.name.toLowerCase().includes(result.client.toLowerCase()));
     if (!matchedClient) {
-      alert(`Não foi possível encontrar o cliente: ${result.client}`);
+      alert(`NÃ£o foi possÃ­vel encontrar o cliente: ${result.client}`);
       return;
     }
 
@@ -294,14 +295,15 @@ export default function PedidosPage() {
 
       if (uploadError) throw uploadError;
 
-      await supabase.from("orders").insert([{
+      await supabase.from("orders").upsert([{
         user_id: user.id,
         client_id: matchedClient.id,
         category: result.category,
         value: result.value,
+        file_name: formattedName,
         file_path: path,
         status: 'concluido'
-      }]);
+      }], { onConflict: 'client_id,file_path' });
 
       // Update Client Analytics for Batch
       const currentFat = matchedClient.faturamento || {};
@@ -336,9 +338,9 @@ export default function PedidosPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
             <ShoppingBag className="w-7 h-7 text-indigo-600" />
-            Gestão de Pedidos
+            GestÃ£o de Pedidos
           </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Acompanhe e registre suas representações.</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Acompanhe e registre suas representaÃ§Ãµes.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button 
@@ -384,7 +386,7 @@ export default function PedidosPage() {
             <div className="p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
               <TrendingUp className="w-5 h-5 text-amber-600 shadow-sm shadow-amber-200/50" />
             </div>
-            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Ticket Médio</span>
+            <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Ticket MÃ©dio</span>
           </div>
           <p className="text-2xl font-black text-slate-900 dark:text-zinc-100 tabular-nums">
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalOrders > 0 ? totalRevenue / totalOrders : 0)}
@@ -446,7 +448,7 @@ export default function PedidosPage() {
                   {order.category}
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-100/50 dark:border-emerald-800/30">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Concluído
+                  <CheckCircle2 className="w-3.5 h-3.5" /> ConcluÃ­do
                 </span>
               </div>
 
@@ -481,7 +483,7 @@ export default function PedidosPage() {
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-zinc-800">Valor</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-zinc-800">Data</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-zinc-800">Status</th>
-                <th className="sticky right-0 z-20 bg-slate-50 dark:bg-zinc-950/50 px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-l border-slate-200 dark:border-zinc-800 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.05)]">Ações</th>
+                <th className="sticky right-0 z-20 bg-slate-50 dark:bg-zinc-950/50 px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-l border-slate-200 dark:border-zinc-800 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.05)]">AÃ§Ãµes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-zinc-850">
@@ -523,7 +525,7 @@ export default function PedidosPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-100/50 dark:border-emerald-800/30">
-                        <CheckCircle2 className="w-3 h-3" /> Concluído
+                        <CheckCircle2 className="w-3 h-3" /> ConcluÃ­do
                       </span>
                     </td>
                     <td className="sticky right-0 z-10 bg-white dark:bg-zinc-900 group-hover:bg-slate-50 dark:group-hover:bg-zinc-950 px-6 py-4 text-right border-l border-slate-200 dark:border-zinc-800 shadow-[-8px_0_12px_-4px_rgba(0,0,0,0.05)] transition-colors">
@@ -670,8 +672,8 @@ export default function PedidosPage() {
                     <FileSpreadsheet className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Sincronização em Lote</h2>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Suba múltiplos pedidos para inteligência artificial processar</p>
+                    <h2 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">SincronizaÃ§Ã£o em Lote</h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Suba mÃºltiplos pedidos para inteligÃªncia artificial processar</p>
                   </div>
                 </div>
                 <button onClick={() => setIsBatchModalOpen(false)} className="p-3 text-slate-400 hover:bg-slate-100 rounded-2xl transition-all">
@@ -703,7 +705,7 @@ export default function PedidosPage() {
                           <div>
                             <div className="flex items-center gap-2 mb-1">
                                 <span className="text-[10px] font-black px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-lg uppercase tracking-wider">{result.category}</span>
-                                <span className="text-[10px] font-black text-slate-400">•</span>
+                                <span className="text-[10px] font-black text-slate-400">â€¢</span>
                                 <span className="text-xs font-black text-slate-900 dark:text-zinc-100 truncate max-w-[200px]">{result.client}</span>
                             </div>
                             <p className="text-xs font-bold text-slate-400">{result.file.name}</p>
@@ -753,3 +755,4 @@ export default function PedidosPage() {
     </div>
   );
 }
+

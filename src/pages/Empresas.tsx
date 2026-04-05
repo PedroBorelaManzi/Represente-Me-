@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
-import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check } from "lucide-react";
+import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -14,6 +14,7 @@ export default function EmpresasPage() {
   const [loading, setLoading] = useState(true);
   const [newCat, setNewCat] = useState("");
   const [itemsLimit, setItemsLimit] = useState(15);
+  const [syncStatus, setSyncStatus] = useState<{current: number, total: number} | null>(null);
   const scrollSentinelRef = React.useRef(null);
 
   // Edit Modal State
@@ -27,13 +28,6 @@ export default function EmpresasPage() {
   });
 
   const totalCategory = filteredOrders.reduce((sum, o) => sum + o.value, 0);
-
-  // Load select initial category
-  useEffect(() => {
-    if (settings?.categories && settings.categories.length > 0 && selectedCategory === "all") {
-      // Keep it as "all" initially or based on preference. 
-    }
-  }, [settings.categories]);
 
   useEffect(() => {
     if (!scrollSentinelRef.current) return;
@@ -51,6 +45,7 @@ export default function EmpresasPage() {
     if (!user) return;
     setLoading(true);
     
+    // Updated to include file_name if present, otherwise fallback
     const { data: dbOrders, error } = await supabase
       .from("orders")
       .select(`
@@ -58,6 +53,7 @@ export default function EmpresasPage() {
         category,
         value,
         file_name,
+        file_path,
         created_at,
         client_id,
         clients (name)
@@ -67,7 +63,7 @@ export default function EmpresasPage() {
     if (!error && dbOrders) {
       const orders = dbOrders.map(o => ({
         id: o.id,
-        name: o.file_name,
+        name: o.file_name || o.file_path?.split("/").pop() || "Pedido sem nome",
         category: o.category,
         value: o.value,
         clientName: o.clients?.name || "Cliente Desconhecido",
@@ -83,7 +79,7 @@ export default function EmpresasPage() {
       );
       
       if (newCats.length > 0) {
-          await updateSettings({ categories: [...currentGlobal, ...newCats] });
+          await updateSettings({ categories: Array.from(new Set([...currentGlobal, ...newCats])) });
       }
 
       setAllOrders(orders);
@@ -91,64 +87,86 @@ export default function EmpresasPage() {
     setLoading(false);
   };
 
-  
   const performDeepSync = async (isSilent = false) => {
     if (!user) return;
     if (!isSilent) setLoading(true);
+    
     try {
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
         .select("id, name, user_id, faturamento");
 
       if (clientsError) throw clientsError;
+      if (!clients) return;
 
-      for (const client of clients) {
-        const { data: files } = await supabase.storage
-          .from("client_vault")
-          .list(`${client.user_id}/${client.id}`);
+      if (!isSilent) setSyncStatus({ current: 0, total: clients.length });
 
-        if (files) {
-          const newFaturamento = {};
-          for (const file of files) {
-             const parts = file.name.split("___");
-             if (parts.length >= 2) {
-                const cat = parts[0];
-                const hasValue = parts[1].startsWith("VALOR_");
-                const val = hasValue ? parseFloat(parts[1].replace("VALOR_", "")) || 0 : 0;
-                
-                newFaturamento[cat] = (newFaturamento[cat] || 0) + val;
+      // Parallel processing with batching (Max 10 parallel clients)
+      const batchSize = 10;
+      for (let i = 0; i < clients.length; i += batchSize) {
+        const clientBatch = clients.slice(i, i + batchSize);
+        
+        await Promise.all(clientBatch.map(async (client) => {
+          const { data: files } = await supabase.storage
+            .from("client_vault")
+            .list(`${client.user_id}/${client.id}`);
 
-                // Sync to orders table
-                await supabase.from("orders").upsert({
-                    client_id: client.id,
-                    category: cat,
-                    value: val,
-                    file_name: file.name,
-                    created_at: file.created_at
-                }, { onConflict: ['client_id', 'file_name'] });
-             }
+          if (files && files.length > 0) {
+            const clientOrders = [];
+            const newFaturamento = {};
+            
+            for (const file of files) {
+               const parts = file.name.split("___");
+               if (parts.length >= 2) {
+                  const cat = parts[0];
+                  const hasValue = parts[1].startsWith("VALOR_");
+                  const val = hasValue ? parseFloat(parts[1].replace("VALOR_", "")) || 0 : 0;
+                  
+                  newFaturamento[cat] = (newFaturamento[cat] || 0) + val;
+                  
+                  clientOrders.push({
+                      user_id: user.id,
+                      client_id: client.id,
+                      category: cat,
+                      value: val,
+                      file_name: file.name,
+                      file_path: `${client.user_id}/${client.id}/${file.name}`,
+                      created_at: file.created_at
+                  });
+               }
+            }
+
+            // High-speed batch upsert for orders of this client
+            if (clientOrders.length > 0) {
+              await supabase.from("orders").upsert(clientOrders, { onConflict: "client_id,file_path" });
+            }
+
+            // Single update for faturamento
+            await supabase
+              .from("clients")
+              .update({ faturamento: newFaturamento })
+              .eq("id", client.id);
           }
+        }));
 
-          await supabase
-            .from("clients")
-            .update({ faturamento: newFaturamento })
-            .eq("id", client.id);
-        }
+        if (!isSilent) setSyncStatus(prev => prev ? { ...prev, current: i + clientBatch.length } : null);
       }
+      
       await loadOrders();
     } catch (err) {
-      console.error("Deep Sync Error:", err);
-      if (!isSilent) alert("Erro na sincronização: " + (err instanceof Error ? err.message : String(err)));
+      console.error("Fast Sync Error:", err);
+      if (!isSilent) alert("Erro na sincronização rápida: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       if (!isSilent) setLoading(false);
+      setSyncStatus(null);
     }
   };
 
   useEffect(() => {
     if (!settingsLoading && user) {
-       performDeepSync(true); // Auto sync on mount
+       performDeepSync(true); 
        return () => {
-          performDeepSync(true); // Auto sync on unmount
+          performDeepSync(true); 
        };
     }
   }, [user, settingsLoading]);
@@ -264,7 +282,7 @@ export default function EmpresasPage() {
   };
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
   };
 
   const catTotals = (settings?.categories || []).reduce((acc: any, cat: string) => {
@@ -286,7 +304,14 @@ export default function EmpresasPage() {
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Gerencie seus pedidos e empresas em uma visão unificada.</p>
         </div>
-        {/* Sincronização agora automática */}
+        {syncStatus && (
+           <div className="flex items-center gap-3 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl animate-pulse">
+              <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-400">
+                Sincronizando: {Math.round((syncStatus.current / syncStatus.total) * 100)}%
+              </span>
+           </div>
+        )}
       </div>
 
       {/* Total Revenue Card */}
@@ -365,7 +390,7 @@ export default function EmpresasPage() {
                   onChange={(e) => setNewCat(e.target.value)}
                   placeholder="Nova empresa..."
                   className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100"
-                  onKeyDown={(e) => e.key === 'Enter' && addCategory()}
+                  onKeyDown={(e) => e.key === "Enter" && addCategory()}
                 />
                 <button 
                   onClick={addCategory}
@@ -409,13 +434,13 @@ export default function EmpresasPage() {
                                 <FileText className="w-5 h-5 text-indigo-600" />
                              </div>
                              <div className="truncate max-w-sm">
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">{order.name.split("___")[order.name.split("___").length - 1]}</h4>
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">{order.name}</h4>
                                 <Link to={`/dashboard/clientes/${order.clientId}`} className="text-xs text-indigo-600 hover:underline flex items-center gap-0.5 mt-0.5">{order.clientName}</Link>
                              </div>
                            </div>
                            <div className="flex items-center gap-4">
                              <div className="text-right">
-                                <span className="text-[10px] text-slate-400 dark:text-zinc-500">{new Date(order.created_at).toLocaleDateString('pt-BR')}</span>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500">{new Date(order.created_at).toLocaleDateString("pt-BR")}</span>
                                 <p className="text-sm font-black text-slate-800 dark:text-zinc-200">{formatCurrency(order.value)}</p>
                              </div>
                            </div>
