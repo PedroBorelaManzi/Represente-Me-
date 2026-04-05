@@ -32,7 +32,6 @@ export default function EmpresasPage() {
   useEffect(() => {
     if (settings?.categories && settings.categories.length > 0 && selectedCategory === "all") {
       // Keep it as "all" initially or based on preference. 
-      // User said "Todos os pedidos" should show by default.
     }
   }, [settings.categories]);
 
@@ -52,7 +51,6 @@ export default function EmpresasPage() {
     if (!user) return;
     setLoading(true);
     
-    // FAST SQL QUERY instead of Storage scan
     const { data: dbOrders, error } = await supabase
       .from("orders")
       .select(`
@@ -94,9 +92,9 @@ export default function EmpresasPage() {
   };
 
   
-  const performDeepSync = async () => {
+  const performDeepSync = async (isSilent = false) => {
     if (!user) return;
-    setLoading(true);
+    if (!isSilent) setLoading(true);
     try {
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
@@ -127,7 +125,7 @@ export default function EmpresasPage() {
                     value: val,
                     file_name: file.name,
                     created_at: file.created_at
-                }, { onConflict: 'client_id, file_name' });
+                }, { onConflict: ['client_id', 'file_name'] });
              }
           }
 
@@ -137,19 +135,21 @@ export default function EmpresasPage() {
             .eq("id", client.id);
         }
       }
-      alert("SincronizaÃ§Ã£o profunda concluÃ­da! O faturamento e o histÃ³rico de pedidos foram atualizados.");
       await loadOrders();
     } catch (err) {
       console.error("Deep Sync Error:", err);
-      alert("Erro na sincronizaÃ§Ã£o: " + err.message);
+      if (!isSilent) alert("Erro na sincronização: " + (err instanceof Error ? err.message : String(err)));
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!settingsLoading) {
-       loadOrders();
+    if (!settingsLoading && user) {
+       performDeepSync(true); // Auto sync on mount
+       return () => {
+          performDeepSync(true); // Auto sync on unmount
+       };
     }
   }, [user, settingsLoading]);
 
@@ -160,7 +160,7 @@ export default function EmpresasPage() {
       setNewCat("");
       if (!selectedCategory) setSelectedCategory(newCat.trim());
     } else if (newCat.trim()) {
-        alert("Esta empresa jÃ¡ existe!");
+        alert("Esta empresa já existe!");
         setNewCat("");
     }
   };
@@ -253,7 +253,7 @@ export default function EmpresasPage() {
   };
 
   const handleDeleteSub = async () => {
-      if (window.confirm(`Deseja realmente excluir a empresa/categoria "${editingCategory}"? TODOS os arquivos e dados vinculados serÃ£o mantidos, mas a categoria nÃ£o aparecerÃ¡ mais nos filtros.`)) {
+      if (window.confirm(`Deseja realmente excluir a empresa/categoria "${editingCategory}"? TODOS os arquivos e dados vinculados serão mantidos, mas a categoria não aparecerá mais nos filtros.`)) {
           const updated = (settings?.categories || []).filter(c => c.toLowerCase() !== editingCategory.toLowerCase());
           await updateSettings({ categories: updated });
           if (selectedCategory.toLowerCase() === editingCategory.toLowerCase()) {
@@ -284,14 +284,9 @@ export default function EmpresasPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
             <Building2 className="w-7 h-7 text-indigo-600" /> Pedidos e Empresas
           </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Gerencie seus pedidos e empresas em uma visÃ£o unificada.</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Gerencie seus pedidos e empresas em uma visão unificada.</p>
         </div>
-        <button 
-          onClick={performDeepSync} 
-          className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold px-3 py-1.5 bg-indigo-50 dark:bg-zinc-900 rounded-lg border border-indigo-100 dark:border-zinc-800 transition-colors"
-        >
-          Sincronizar Banco
-        </button>
+        {/* Sincronização agora automática */}
       </div>
 
       {/* Total Revenue Card */}
@@ -459,10 +454,10 @@ export default function EmpresasPage() {
                         className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100"
                       />
                    </div>
-                   <p className="text-xs text-emerald-600 dark:text-emerald-500 font-medium">Nota: A alteraÃ§Ã£o renomearÃ¡ todos os registros e arquivos vinculados a esta empresa.</p>
+                   <p className="text-xs text-emerald-600 dark:text-emerald-500 font-medium">Nota: A alteração renomeará todos os registros e arquivos vinculados a esta empresa.</p>
                 </div>
                 <div className="flex flex-col gap-2 pt-4 border-t border-slate-100 dark:border-zinc-850">
-                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Salvar AlteraÃ§Ãµes</button>
+                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Salvar Alterações</button>
                     <button onClick={handleDeleteSub} className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-sm flex items-center justify-center gap-1 border border-red-100"><Trash2 className="w-4 h-4" /> Excluir Empresa</button>
                 </div>
              </motion.div>
@@ -473,4 +468,3 @@ export default function EmpresasPage() {
     </div>
   );
 }
-
