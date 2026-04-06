@@ -198,18 +198,20 @@ export default function CRMPage() {
        // Verificação de Duplicidade por CNPJ
        if (newClient.cnpj) {
          const cleanedCnpj = newClient.cnpj.replace(/\D/g, "");
+         
+         // Consulta no banco de dados (já limpo via script)
          const { data: existingClient, error: checkError } = await supabase
            .from("clients")
            .select("id, name")
-           .eq("cnpj", cleanedCnpj)
+           .eq("cnpj", cleanedCnpj) // Comparação numérica
            .eq("user_id", user.id)
            .maybeSingle();
 
          if (checkError) console.error("Error checking duplication:", checkError);
          
          if (existingClient) {
-           toast.error(`Cliente já cadastrado: ${existingClient.name}`, {
-             description: "Não é possível cadastrar o mesmo CNPJ duas vezes.",
+           toast.error(`Cadastro Bloqueado: ${existingClient.name}`, {
+             description: "Já existe um cliente com este CNPJ. Verifique sua lista.",
              icon: <AlertCircle className="w-5 h-5 text-red-500" />
            });
            setSubmitting(false);
@@ -263,16 +265,58 @@ export default function CRMPage() {
     setShowImportModal(true);
     setShowDropzoneModal(false);
     setImportResults({ total: 0, processed: 0, success: 0, failed: 0, skipped: 0, failedList: [] });
+    
     try {
       const cnpjs = await parseFileForCnpjs(file);
-      setImportResults(prev => ({ ...prev, total: cnpjs.length }));
+      const total = cnpjs.length;
+      setImportResults(prev => ({ ...prev, total }));
+
+      // Buscar todos os CNPJs existentes do usuário para checagem rápida em memória
+      const { data: existingClients } = await supabase
+        .from("clients")
+        .select("cnpj")
+        .eq("user_id", user.id);
+      
+      const existingCnpjs = new Set((existingClients || []).map(c => c.cnpj));
+
       for (const cnpj of cnpjs) {
-         setImportResults(prev => ({ ...prev, processed: prev.processed + 1, success: prev.success + 1 }));
-         // Wait a bit to show progress
-         await new Promise(r => setTimeout(r, 200));
+         const cleanCnpj = cnpj.replace(/\D/g, "");
+         
+         if (existingCnpjs.has(cleanCnpj)) {
+            setImportResults(prev => ({ 
+              ...prev, 
+              processed: prev.processed + 1, 
+              skipped: prev.skipped + 1 
+            }));
+            continue;
+         }
+
+         // Aqui poderíamos buscar o nome via Gemini ou API, mas para velocidade criaremos o registro basico
+         const { error: insertError } = await supabase.from("clients").insert([{
+           name: `Novo Cliente (${cleanCnpj.substring(0, 8)})`, // Nome provisório
+           cnpj: cleanCnpj,
+           status: "Ativo",
+           user_id: user.id,
+           last_contact: new Date().toISOString().split('T')[0]
+         }]);
+
+         if (!insertError) {
+           setImportResults(prev => ({ ...prev, processed: prev.processed + 1, success: prev.success + 1 }));
+           existingCnpjs.add(cleanCnpj); // Evitar duplicatas no mesmo lote
+         } else {
+           setImportResults(prev => ({ ...prev, processed: prev.processed + 1, failed: prev.failed + 1 }));
+         }
+         
+         await new Promise(r => setTimeout(r, 50)); // Feedback visual
       }
+      
       refetch();
-    } catch (err) { toast.error("Erro na importação."); } finally { setImporting(false); }
+      toast.success("Importação concluída!", { description: `${cnpjs.length} processados.` });
+    } catch (err: any) { 
+      toast.error("Erro na importação: " + err.message); 
+    } finally { 
+      setImporting(false); 
+    }
   };
 
   if (isLoading) return <div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin text-indigo-600 w-12 h-12" /></div>;

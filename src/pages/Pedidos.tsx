@@ -41,9 +41,17 @@ export default function PedidosPage() {
   };
 
   const registerNewClient = async (name, cnpj, address) => {
+    const cleanCnpj = cnpj ? cnpj.replace(/\D/g, "") : "";
+    
+    // Verificação de última hora para evitar duplicatas em processos paralelos
+    if (cleanCnpj) {
+      const { data: existing } = await supabase.from("clients").select("id").eq("cnpj", cleanCnpj).eq("user_id", user.id).maybeSingle();
+      if (existing) return existing;
+    }
+
     let lat = -23.5505, lng = -46.6333;
     if (address) { try { const coords = await getHighPrecisionCoordinates(address); if (coords) { lat = coords.lat; lng = coords.lng; } } catch (e) {} }
-    const { data, error } = await supabase.from("clients").insert([{ user_id: user.id, name, cnpj: cnpj || "", address: address || "", latitude: lat, longitude: lng, status: "Ativo" }]).select().single();
+    const { data, error } = await supabase.from("clients").insert([{ user_id: user.id, name, cnpj: cleanCnpj, address: address || "", latitude: lat, longitude: lng, status: "Ativo" }]).select().single();
     if (error) throw error; loadData(); return data;
   };
 
@@ -54,7 +62,11 @@ export default function PedidosPage() {
       const result = await processOrderFile(file, clients.map(c => c.name), settings.categories || []);
       if (result.status === "ready") {
         setAnalysisResult(result); setOrderValue(result.value?.toString() || "");
-        const match = clients.find(c => (result.cnpj && c.cnpj === result.cnpj) || c.name?.toLowerCase().includes(result.client?.toLowerCase()));
+        const cleanResultCnpj = result.cnpj?.replace(/\D/g, "");
+        const match = clients.find(c => {
+          const clientCnpj = c.cnpj?.replace(/\D/g, "");
+          return (cleanResultCnpj && clientCnpj === cleanResultCnpj) || c.name?.toLowerCase().includes(result.client?.toLowerCase());
+        });
         if (match) { setSelectedClient(match.id); setShowNewClientForm(false); } else { setShowNewClientForm(true); setSelectedClient(""); }
         if (result.category) {
           const catMatch = (settings.categories || []).find(cat => cat.toLowerCase().includes(result.category.toLowerCase()));
@@ -73,7 +85,7 @@ export default function PedidosPage() {
         const n = await registerNewClient(analysisResult.client, analysisResult.cnpj, analysisResult.address);
         if (n) cid = n.id;
       }
-      const cleanName = selectedFile.name.replace(/[^\\w.-]/g, "_");
+      const cleanName = selectedFile.name.replace(/[^\w.-]/g, "_");
       const path = `${user.id}/${cid}/${selectedCategory}___VALOR_${orderValue}___${cleanName}`;
       await supabase.storage.from("client_vault").upload(path, selectedFile, { upsert: true });
       await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: selectedCategory, value: parseFloat(orderValue), file_name: cleanName, file_path: path, status: "concluido" }]);
@@ -86,7 +98,11 @@ export default function PedidosPage() {
     for (const file of files) {
       try {
         const res = await processOrderFile(file, clients.map(c => c.name), settings.categories || []);
-        const match = clients.find(c => (res.cnpj && c.cnpj === res.cnpj) || c.name?.toLowerCase().includes(res.client?.toLowerCase()));
+        const cleanResCnpj = res.cnpj?.replace(/\D/g, "");
+        const match = clients.find(c => {
+          const clientCnpj = c.cnpj?.replace(/\D/g, "");
+          return (cleanResCnpj && clientCnpj === cleanResCnpj) || c.name?.toLowerCase().includes(res.client?.toLowerCase());
+        });
         setBatchResults(prev => [...prev, { file, client: res.client, category: res.category, value: res.value, needsNewClient: !match, clientId: match?.id, address: res.address, cnpj: res.cnpj }]);
       } catch (err) {} 
     }
@@ -109,35 +125,49 @@ export default function PedidosPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-black flex items-center gap-3"><ShoppingBag className="w-10 h-10 text-indigo-600"/> PEDIDOS</h1>
         <div className="flex gap-3">
-          <button onClick={() => setIsBatchModalOpen(true)} className="px-6 py-3 bg-white dark:bg-zinc-900 border rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm">Lote IA</button>
-          <button onClick={() => setIsManualModalOpen(true)} className="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg">Novo Pedido</button>
+          <button onClick={() => setIsBatchModalOpen(true)} className="px-6 py-3 bg-white dark:bg-zinc-900 border rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm hover:bg-slate-50 transition-colors">Lote IA</button>
+          <button onClick={() => setIsManualModalOpen(true)} className="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg hover:bg-indigo-700 transition-colors">Novo Pedido</button>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border shadow-sm">
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border dark:border-zinc-800 shadow-sm">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Faturamento Total</span>
-          <p className="text-4xl font-black mt-1">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(orders.reduce((a,b)=>a+(b.value||0),0))}</p>
+          <p className="text-4xl font-black mt-1 tabular-nums">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(orders.reduce((a,b)=>a+(b.value||0),0))}</p>
         </div>
-        <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border shadow-sm">
+        <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border dark:border-zinc-800 shadow-sm">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Pedidos</span>
-          <p className="text-4xl font-black mt-1">{orders.length}</p>
+          <p className="text-4xl font-black mt-1 tabular-nums">{orders.length}</p>
         </div>
       </div>
-      <div className="bg-white dark:bg-zinc-900 rounded-[32px] border shadow-sm overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 dark:bg-zinc-950/50 text-[10px] font-black text-slate-400 uppercase"><tr> <th className="p-6">Cliente</th> <th className="p-6">Categoria</th> <th className="p-6 text-right">Valor</th> <th className="p-6 text-center">Data</th> </tr></thead>
-          <tbody className="divide-y">
-            {orders.filter(o=>o.client?.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(order => (
-              <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                <td className="p-6 font-bold">{order.client?.name}</td>
-                <td className="p-6"><span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase">{order.category}</span></td>
-                <td className="p-6 text-right font-black">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(order.value)}</td>
-                <td className="p-6 text-center text-xs font-bold text-slate-500">{new Date(order.created_at).toLocaleDateString("pt-BR")}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      <div className="bg-white dark:bg-zinc-900 rounded-[32px] border dark:border-zinc-800 shadow-sm overflow-hidden">
+        <div className="p-6 border-b dark:border-zinc-800 flex justify-between items-center bg-slate-50/50 dark:bg-zinc-950/30">
+           <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">Histórico Recente</h2>
+           <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <input value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} placeholder="Pesquisar..." className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-950 border dark:border-zinc-850 rounded-xl text-xs outline-none focus:border-indigo-500 transition-all" />
+           </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50/50 dark:bg-zinc-950/50 text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+              <tr> <th className="p-6">Cliente</th> <th className="p-6">Categoria</th> <th className="p-6 text-right">Valor</th> <th className="p-6 text-center">Data</th> </tr>
+            </thead>
+            <tbody className="divide-y dark:divide-zinc-800">
+              {orders.filter(o=>o.client?.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(order => (
+                <tr key={order.id} className="hover:bg-slate-50 dark:hover:bg-zinc-950/50 transition-colors">
+                  <td className="p-6 font-bold text-sm">{order.client?.name}</td>
+                  <td className="p-6"><span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest">{order.category}</span></td>
+                  <td className="p-6 text-right font-black tabular-nums">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(order.value)}</td>
+                  <td className="p-6 text-center text-xs font-bold text-slate-500">{new Date(order.created_at).toLocaleDateString("pt-BR")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+
       <AnimatePresence>
         {isManualModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
@@ -177,7 +207,7 @@ export default function PedidosPage() {
                   {analysisResult && (
                     <div className="p-6 bg-emerald-50/50 dark:bg-emerald-950/10 rounded-3xl border border-emerald-100 dark:border-emerald-900/20">
                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Empresa Detectada:</span>
-                       <p className="font-black text-slate-900 dark:text-zinc-100 mt-1">{analysisResult.client}</p>
+                       <p className="font-black text-slate-900 dark:text-zinc-100 mt-1 uppercase italic">{analysisResult.client}</p>
                     </div>
                   )}
 
@@ -270,24 +300,13 @@ export default function PedidosPage() {
               {isProcessingBatch && (
                 <div className="flex items-center justify-center p-6 bg-indigo-600 rounded-3xl gap-4">
                   <Loader2 className="w-6 h-6 text-white animate-spin" />
-                  <p className="text-white font-black uppercase tracking-widest text-sm">IA extraindo dados de múltiplos pedidos...</p>
+                  <p className="text-white font-black uppercase tracking-widest text-sm text-center">IA extraindo dados de múltiplos pedidos...</p>
                 </div>
               )}
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-      {isBatchModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xl">
-          <div className="bg-white dark:bg-zinc-900 w-full max-w-6xl max-h-[90vh] rounded-[48px] p-12 overflow-hidden flex flex-col shadow-2xl border">
-            <div className="flex justify-between items-center mb-10"><h2 className="text-3xl font-black uppercase">Lote IA</h2><X onClick={()=>setIsBatchModalOpen(false)} className="cursor-pointer"/></div>
-            <div className="flex-1 overflow-y-auto mb-10">
-              {batchResults.length === 0 ? (<div className="h-64 border-4 border-dashed rounded-[40px] flex items-center justify-center relative"><input type="file" multiple onChange={handleBatchUpload} className="absolute inset-0 opacity-0 cursor-pointer"/><p className="font-black text-slate-400 uppercase tracking-widest text-sm">Arraste seus pedidos aqui</p></div>) : (<div className="grid grid-cols-2 gap-6">{batchResults.map((r,i)=>(<div key={i} className="p-6 bg-slate-50 border rounded-3xl flex justify-between items-center"><div><p className="font-black truncate max-w-[200px]">{r.client}</p><span className="text-[10px] font-black text-indigo-600 uppercase">{r.category}</span></div><div className="text-right"><p className="font-black text-xl tabular-nums">{new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(r.value)}</p><button onClick={()=>confirmBatchOrder(r)} className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase">CONFIRMAR</button></div></div>))}</div>)}
-            </div>
-            {isProcessingBatch && <p className="animate-pulse text-indigo-600 font-black uppercase text-xs">PROCESSANDO LOTE...</p>}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
