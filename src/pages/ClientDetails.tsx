@@ -148,7 +148,7 @@ export default function ClientDetailsPage() {
     }
   };
 
-    const handleAnalyzePDF = async () => {
+      const handleAnalyzePDF = async () => {
     if (!selectedFile) return;
     setIsAnalyzing(true);
     try {
@@ -571,4 +571,5 @@ export default function ClientDetailsPage() {
     </div>
   );
 }
+
 
