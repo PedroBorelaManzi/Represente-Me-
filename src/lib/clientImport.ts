@@ -42,9 +42,8 @@ function fileToBase64(file: File): Promise<string> {
 async function processWithGemini(file: File): Promise<string[]> {
   if (!apiKey || !genAI) throw new Error("VITE_GEMINI_API_KEY no configurada.");
   
-  const prompt = `ATENÇÃO: Este é um documento contendo informações fiscais/corporativas.
-Extraia TODOS os números de CNPJ (14 dígitos) contidos. Ignore CPFs, IEs ou RGs.
-Retorne APENAS um Array JSON: ["12345678000199", "98765432000111"]`;
+    const prompt = `ATENÇÃO: Extraia os números de CNPJ (14 dígitos) apenas dos CLIENTES/COMPRADORES contidos neste documento. Ignore o CNPJ da Fábrica/Emissor.
+  Retorne APENAS um Array JSON: ["12345678000199", "98765432000111"]`;
 
   const detected = await detectFileType(file);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });

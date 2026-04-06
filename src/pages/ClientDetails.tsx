@@ -165,7 +165,7 @@ export default function ClientDetailsPage() {
       });
       const base64 = await base64Promise;
 
-      const prompt = "Extraia o valor total final deste pedido ou oramento. Retorne APENAS o nmero sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50";
+            const prompt = "Extraia o VALOR TOTAL FINAL deste pedido ou orçamento. Ignore impostos parciais ou descontos. Retorne APENAS o número sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50";
       
       const result = await model.generateContent([
         prompt,

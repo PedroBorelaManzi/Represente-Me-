@@ -219,6 +219,7 @@ export default function EmpresasPage() {
                 
                 // Check if client exists by CNPJ
                 let matchedClient = null;
+                
                 if (cleanCnpj) {
                     const { data: clientByCnpj } = await supabase
                         .from("clients")
@@ -226,6 +227,18 @@ export default function EmpresasPage() {
                         .eq("cnpj", cleanCnpj)
                         .maybeSingle();
                     matchedClient = clientByCnpj;
+                    if (matchedClient) console.log("Matched by CNPJ:", matchedClient.name);
+                }
+
+                // Fallback: Check by Name if CNPJ check failed or returned nothing
+                if (!matchedClient && result.client) {
+                   const { data: clientByName } = await supabase
+                       .from("clients")
+                       .select("id, name")
+                       .ilike("name", `%${result.client}%`)
+                       .maybeSingle();
+                   matchedClient = clientByName;
+                   if (matchedClient) console.log("Matched by Name Fallback:", matchedClient.name);
                 }
 
                 setUploadFiles(prev => {

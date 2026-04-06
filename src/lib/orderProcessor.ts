@@ -44,16 +44,25 @@ function fileToBase64(file) {
 }
 
 function extractCNPJLocally(text: string): string {
-  const cnpjRegex = /\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g;
+  const cnpjRegex = /\d{2}\.?\d{3}\.?\d{3}\/\d{4}-?\d{2}/g;
   const matches = text.match(cnpjRegex);
   if (matches && matches.length > 0) {
+    if (matches.length > 1) {
+      const lowerText = text.toLowerCase();
+      const clientKeywords = ["destinatário", "cliente", "comprador", "entregar", "razão social"];
+      for (const match of matches) {
+        const index = text.indexOf(match);
+        const context = lowerText.substring(Math.max(0, index - 100), index);
+        if (clientKeywords.some(kw => context.includes(kw))) return match.replace(/\D/g, "");
+      }
+    }
     return matches[0].replace(/\D/g, "");
   }
   return "";
 }
 
 function extractValueLocally(text: string): number {
-  const valueRegex = /(?:total|valor|vlr|pago|lqd|lquido|receber).*?(\d{1,3}(?:\.\d{3})*(?:,\d{2}))/i;
+  const valueRegex = /(?:valor total da nota|total geral|valor líquido|total do pedido|total líquido|vlr total|total da nota).*?(\d{1,3}(?:\.\d{3})*(?:,\d{2}))/i;
   const match = text.match(valueRegex);
   if (match && match[1]) {
     return parseFloat(match[1].replace(/\./g, "").replace(",", "."));
@@ -108,11 +117,32 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     if (!genAI) throw new Error("Google Generative AI no inicializado.");
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    const prompt = `Analise este pedido e extraia: client, cnpj (apenas numeros), category, value (numero), address.
-    Retorne APENAS um JSON: {"client": "...", "cnpj": "...", "category": "...", "value": 0.00, "address": "..."}
-    Categorias Conhecidas: ${categories.join(", ")}
+        const prompt = `ATENÇÃO: Analise este documento de pedido/faturamento.
+    Objetivo: Identificar o CLIENTE (Comprador) e o VALOR FINAL.
+
+    Diferenciação Crítica:
+    - O documento possui um EMISSOR (Fábrica/Vendedor, ex: Cozimax, Deca) e um DESTINATÁRIO (Seu Cliente).
+    - Extraia o nome e CNPJ APENAS do DESTINATÁRIO/CLIENTE. Ignore os dados do Fabricante.
+    - O NOME DO FABRICANTE (Emissor) deve ser usado para definir o campo "category".
+
+    Instruções de Valor:
+    - Extraia o VALOR TOTAL FINAL do pedido. Ignore valores parciais, descontos ou impostos isolados.
+    - Se houver dúvida entre dois valores, escolha o MAIOR que represente o fechamento da nota.
+
+    Retorne APENAS um JSON: 
+    {
+      "client": "NOME DO CLIENTE/COMPRADOR", 
+      "cnpj": "SOMENTE_NUMEROS_DO_CLIENTE", 
+      "category": "NOME_DO_FABRICANTE_EMISSOR", 
+      "value": 0.00, 
+      "address": "ENDERECO_COMPLETO_DO_CLIENTE"
+    }
+
+    Categorias Conhecidas (Se o fabricante for um destes, use exatamente o nome): ${categories.join(", ")}
     Clientes Conhecidos: ${knownClients.map(c => c.name).join(", ")}
-    Conteúdo: ${extractedText}`;
+    
+    Conteúdo do Arquivo:
+    ${extractedText}`;
 
     let result;
     if (detected.type === "image") {
