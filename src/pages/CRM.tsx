@@ -195,11 +195,52 @@ export default function CRMPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
+       // Verificação de Duplicidade por CNPJ
+       if (newClient.cnpj) {
+         const cleanedCnpj = newClient.cnpj.replace(/\D/g, "");
+         const { data: existingClient, error: checkError } = await supabase
+           .from("clients")
+           .select("id, name")
+           .eq("cnpj", cleanedCnpj)
+           .eq("user_id", user.id)
+           .maybeSingle();
+
+         if (checkError) console.error("Error checking duplication:", checkError);
+         
+         if (existingClient) {
+           toast.error(`Cliente já cadastrado: ${existingClient.name}`, {
+             description: "Não é possível cadastrar o mesmo CNPJ duas vezes.",
+             icon: <AlertCircle className="w-5 h-5 text-red-500" />
+           });
+           setSubmitting(false);
+           return;
+         }
+       }
+
        const coords = await getHighPrecisionCoordinates(`${newClient.address}, ${newClient.city}`, newClient.name, newClient.cnpj);
-       await supabase.from("clients").insert([{ ...newClient, lat: coords?.lat, lng: coords?.lng, status: "Ativo", user_id: user.id }]);
+       const { error: insertError } = await supabase.from("clients").insert([{ 
+         ...newClient, 
+         cnpj: newClient.cnpj?.replace(/\D/g, ""),
+         lat: coords?.lat, 
+         lng: coords?.lng, 
+         status: "Ativo", 
+         user_id: user.id 
+       }]);
+
+       if (insertError) throw insertError;
+
+       toast.success("Cliente cadastrado com sucesso!");
        refetch();
        setIsModalOpen(false);
-    } catch (err) { alert("Erro ao cadastrar."); } finally { setSubmitting(false); }
+       setNewClient({
+         name: "", cnpj: "", address: "", phone: "", email: "", city: "", state: "",
+         last_contact: new Date().toISOString().split('T')[0]
+       });
+    } catch (err: any) { 
+      toast.error("Erro ao cadastrar: " + err.message); 
+    } finally { 
+      setSubmitting(false); 
+    }
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -335,29 +376,74 @@ export default function CRMPage() {
 
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xl">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white dark:bg-zinc-900 w-full max-w-xl rounded-[40px] p-10 shadow-2xl border dark:border-zinc-800">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.9, y: 20 }} 
+              className="bg-white/95 dark:bg-zinc-900/95 w-full max-w-xl rounded-[32px] p-10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] border border-white/20 dark:border-zinc-800/50 backdrop-blur-xl"
+            >
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-zinc-100 italic">Novo Cliente</h2>
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X className="w-6 h-6 text-slate-400" /></button>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight flex items-center gap-2">
+                       <div className="p-2 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg text-indigo-600"><Plus className="w-5 h-5"/></div>
+                       Novo Cliente
+                    </h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Preencha os dados oficiais da empresa</p>
+                  </div>
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
                 </div>
+
                 <div className="space-y-4">
-                  <div className="flex gap-2 p-1 bg-slate-50 dark:bg-zinc-950 rounded-[28px] border dark:border-zinc-800">
-                    <input type="text" placeholder="CNPJ" value={newClient.cnpj} onChange={e => setNewClient(prev => ({ ...prev, cnpj: e.target.value }))} className="flex-1 p-4 bg-transparent font-black tracking-widest text-lg outline-none" />
-                    <button type="button" onClick={handleCnpjLookup} disabled={isSearchingCnpj} className="px-6 bg-indigo-600 text-white rounded-[24px] font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 shadow-md">
-                      {isSearchingCnpj ? <Loader2 className="animate-spin w-4 h-4" /> : "BUSCAR"}
+                  <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-zinc-950 rounded-2xl border dark:border-zinc-850">
+                    <input 
+                      type="text" 
+                      placeholder="CNPJ (apenas números)" 
+                      value={newClient.cnpj} 
+                      onChange={e => setNewClient(prev => ({ ...prev, cnpj: e.target.value }))} 
+                      className="flex-1 px-4 py-2 bg-transparent font-bold tracking-tight text-sm outline-none placeholder:text-slate-300" 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={handleCnpjLookup} 
+                      disabled={isSearchingCnpj} 
+                      className="px-5 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md active:scale-95"
+                    >
+                      {isSearchingCnpj ? <Loader2 className="animate-spin w-3 h-3" /> : "BUSCAR"}
                     </button>
                   </div>
-                  <input type="text" placeholder="Razão Social" value={newClient.name} onChange={e => setNewClient(prev => ({ ...prev, name: e.target.value }))} required className="w-full p-5 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-800 rounded-3xl font-black text-sm uppercase shadow-inner outline-none focus:border-indigo-500" />
-                  <input type="text" placeholder="Endereço Completo" value={newClient.address} onChange={e => setNewClient(prev => ({ ...prev, address: e.target.value }))} className="w-full p-5 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-800 rounded-3xl font-bold text-sm shadow-inner outline-none focus:border-indigo-500" />
-                  <div className="grid grid-cols-2 gap-4">
-                    <input type="text" placeholder="Telefone" value={newClient.phone} onChange={e => setNewClient(prev => ({ ...prev, phone: e.target.value }))} className="p-5 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-800 rounded-3xl font-black text-sm shadow-inner outline-none focus:border-indigo-500" />
-                    <input type="email" placeholder="E-mail" value={newClient.email} onChange={e => setNewClient(prev => ({ ...prev, email: e.target.value }))} className="p-5 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-800 rounded-3xl font-black text-sm shadow-inner outline-none focus:border-indigo-500" />
+
+                  <div className="grid gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Razão Social</label>
+                      <input type="text" placeholder="Ex: REPRESENTAÇÕES LTDA" value={newClient.name} onChange={e => setNewClient(prev => ({ ...prev, name: e.target.value }))} required className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-850 rounded-2xl font-bold text-sm outline-none focus:border-indigo-500 transition-colors" />
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Endereço Completo</label>
+                      <input type="text" placeholder="Rua, Número, Bairro, Cidade - UF" value={newClient.address} onChange={e => setNewClient(prev => ({ ...prev, address: e.target.value }))} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-850 rounded-2xl font-bold text-sm outline-none focus:border-indigo-500 transition-colors" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Telefone</label>
+                        <input type="text" placeholder="(00) 0000-0000" value={newClient.phone} onChange={e => setNewClient(prev => ({ ...prev, phone: e.target.value }))} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-850 rounded-2xl font-bold text-sm outline-none focus:border-indigo-500 transition-colors" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">E-mail</label>
+                        <input type="email" placeholder="contato@empresa.com" value={newClient.email} onChange={e => setNewClient(prev => ({ ...prev, email: e.target.value }))} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-850 rounded-2xl font-bold text-sm outline-none focus:border-indigo-500 transition-colors" />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <button type="submit" disabled={submitting} className="w-full py-6 bg-indigo-600 text-white rounded-[28px] font-black uppercase tracking-widest shadow-xl hover:bg-indigo-700 active:scale-[0.98] transition-all">
-                  {submitting ? <Loader2 className="animate-spin mx-auto w-6 h-6" /> : "CADASTRAR CLIENTE"}
+
+                <button 
+                  type="submit" 
+                  disabled={submitting} 
+                  className="w-full py-5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                >
+                  {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <>CADASTRAR CLIENTE <ChevronRight className="w-4 h-4"/></>}
                 </button>
               </form>
             </motion.div>
@@ -365,76 +451,119 @@ export default function CRMPage() {
         )}
 
         {showDropzoneModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xl">
-             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white dark:bg-zinc-900 w-full max-w-xl rounded-[40px] p-12 shadow-2xl border dark:border-zinc-800 text-center">
-                <div className="flex justify-between items-center mb-8">
-                  <h2 className="text-2xl font-black uppercase tracking-tight italic">Importar Carteira</h2>
-                  <button onClick={() => setShowDropzoneModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full"><X className="w-6 h-6 text-slate-400" /></button>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
+             <motion.div 
+               initial={{ opacity: 0, y: 20 }} 
+               animate={{ opacity: 1, y: 0 }} 
+               exit={{ opacity: 0, y: 20 }} 
+               className="bg-white/95 dark:bg-zinc-900/95 w-full max-w-xl rounded-[32px] p-10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] border border-white/20 dark:border-zinc-800/50 backdrop-blur-xl text-center"
+             >
+                <div className="flex justify-between items-center mb-8 text-left">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight italic">Importar Carteira</h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Sincronização em massa via OCR</p>
+                  </div>
+                  <button onClick={() => setShowDropzoneModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full"><X className="w-5 h-5 text-slate-400" /></button>
                 </div>
+                
                 <div 
                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                    onDragLeave={() => setIsDragging(false)}
                    onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files[0]; if (file) processSelectedFile(file); }}
-                   className={`h-72 border-4 border-dashed rounded-[48px] flex flex-col items-center justify-center transition-all cursor-pointer group relative ${isDragging ? "border-indigo-600 bg-indigo-50/50" : "border-slate-100 dark:border-zinc-800 hover:border-indigo-400"}`}
+                   className={`h-64 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center transition-all cursor-pointer group relative ${isDragging ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20" : "border-slate-200 dark:border-zinc-800 hover:border-indigo-400 dark:hover:border-indigo-500 bg-slate-50/50 dark:bg-zinc-950/50"}`}
                 >
                    <input type="file" onChange={(e) => { const file = e.target.files?.[0]; if (file) processSelectedFile(file); }} className="absolute inset-0 opacity-0 cursor-pointer" />
-                   <div className="p-8 bg-indigo-50 dark:bg-indigo-950/30 rounded-3xl mb-4 group-hover:scale-110 transition-transform">
-                      <Upload className="w-12 h-12 text-indigo-600" />
+                   <div className="p-6 bg-white dark:bg-zinc-900 rounded-2xl mb-4 shadow-sm group-hover:scale-110 transition-transform border dark:border-zinc-800">
+                      <Upload className="w-8 h-8 text-indigo-600" />
                    </div>
-                   <p className="font-black text-slate-900 dark:text-zinc-100 uppercase tracking-widest text-sm">Arraste sua planilha ou PDF</p>
-                   <p className="text-xs text-slate-400 mt-2 font-bold uppercase tracking-tight">Extração inteligente de CNPJs via IA</p>
+                   <p className="font-black text-slate-900 dark:text-zinc-100 uppercase tracking-widest text-[11px]">Arraste sua planilha ou PDF</p>
+                   <p className="text-[9px] text-slate-400 mt-2 font-bold uppercase tracking-tight">Extração inteligente de CNPJs via IA</p>
                 </div>
              </motion.div>
           </div>
         )}
 
         {showImportModal && importResults && (
-           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-2xl">
-              <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-[48px] p-12 shadow-2xl border border-indigo-100 dark:border-indigo-950/30 text-center">
-                 <div className="mb-8 relative h-28 w-28 mx-auto">
+           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }} 
+                animate={{ scale: 1, opacity: 1 }} 
+                className="bg-white/95 dark:bg-zinc-900/95 w-full max-w-sm rounded-[32px] p-8 shadow-2xl border border-indigo-100/50 dark:border-indigo-900/30 text-center"
+              >
+                 <div className="mb-6 relative h-24 w-24 mx-auto">
                     <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
                        <circle className="stroke-slate-100 dark:stroke-zinc-800 fill-none" strokeWidth="3" cx="18" cy="18" r="16" />
                        <circle className="stroke-indigo-600 fill-none transition-all duration-500 ease-out" strokeWidth="3" cx="18" cy="18" r="16" strokeDasharray={`${(importResults.processed / (importResults.total || 1)) * 100}, 100`} />
                     </svg>
-                    <div className="absolute inset-0 flex items-center justify-center text-2xl font-black tabular-nums">{Math.round((importResults.processed / (importResults.total || 1)) * 100)}%</div>
+                    <div className="absolute inset-0 flex items-center justify-center text-xl font-black tabular-nums">${Math.round((importResults.processed / (importResults.total || 1)) * 100)}%</div>
                  </div>
-                 <h2 className="text-2xl font-black uppercase mb-2 italic tracking-tight">PROCESSANDO...</h2>
-                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-8">{importResults.processed} de {importResults.total} registros</p>
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="p-6 bg-emerald-50 dark:bg-emerald-950/20 rounded-[32px] border border-emerald-100 dark:border-emerald-900/30">
-                       <span className="text-[10px] font-black text-emerald-600 block mb-1 uppercase tracking-widest">Sucesso</span>
-                       <span className="text-3xl font-black text-emerald-700 dark:text-emerald-400">{importResults.success}</span>
+                 <h2 className="text-lg font-black uppercase mb-1 italic tracking-tight">PROCESSANDO...</h2>
+                 <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-8">${importResults.processed} de ${importResults.total} registros</p>
+                 
+                 <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/20">
+                       <span className="text-[8px] font-black text-emerald-600 block mb-1 uppercase tracking-widest">Sucesso</span>
+                       <span className="text-2xl font-black text-emerald-700 dark:text-emerald-400">${importResults.success}</span>
                     </div>
-                    <div className="p-6 bg-amber-50 dark:bg-amber-950/20 rounded-[32px] border border-amber-100 dark:border-amber-900/30">
-                       <span className="text-[10px] font-black text-amber-600 block mb-1 uppercase tracking-widest">Skipped</span>
-                       <span className="text-3xl font-black text-amber-700 dark:text-amber-400">{importResults.skipped}</span>
+                    <div className="p-4 bg-amber-50/50 dark:bg-amber-950/10 rounded-2xl border border-amber-100 dark:border-amber-900/20">
+                       <span className="text-[8px] font-black text-amber-600 block mb-1 uppercase tracking-widest">Atenção</span>
+                       <span className="text-2xl font-black text-amber-700 dark:text-amber-400">${importResults.skipped}</span>
                     </div>
                  </div>
+                 
                  {importResults.processed === importResults.total && (
-                    <button onClick={() => setShowImportModal(false)} className="w-full mt-10 py-6 bg-indigo-600 text-white rounded-[28px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20">FECHAR JANELA</button>
+                    <button 
+                      onClick={() => setShowImportModal(false)} 
+                      className="w-full mt-8 py-4 bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-lg transition-all active:scale-95"
+                    >
+                      FINALIZAR
+                    </button>
                  )}
               </motion.div>
            </div>
         )}
 
         {isEditModalOpen && editingClient && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xl">
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white dark:bg-zinc-900 w-full max-w-xl rounded-[40px] p-10 shadow-2xl border dark:border-zinc-800">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              className="bg-white/95 dark:bg-zinc-900/95 w-full max-w-xl rounded-[32px] p-8 shadow-2xl border border-white/20 dark:border-zinc-800/50 backdrop-blur-xl"
+            >
               <form onSubmit={handleEditSubmit} className="space-y-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-black uppercase tracking-tight italic">Editar Cliente</h2>
-                  <button type="button" onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full"><X className="w-6 h-6 text-slate-400" /></button>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight italic">Editar Cliente</h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Atualize as informações cadastrais</p>
+                  </div>
+                  <button type="button" onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full"><X className="w-5 h-5 text-slate-400" /></button>
                 </div>
+
                 <div className="space-y-4">
-                   <input type="text" placeholder="Nome" value={editFormData.name} onChange={e => setEditFormData(prev => ({ ...prev, name: e.target.value }))} className="w-full p-5 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-800 rounded-3xl font-black text-sm uppercase outline-none" />
-                   <input type="text" placeholder="Endereço" value={editFormData.address} onChange={e => setEditFormData(prev => ({ ...prev, address: e.target.value }))} className="w-full p-5 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-800 rounded-3xl font-bold text-sm outline-none" />
+                   <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Razão Social</label>
+                      <input type="text" placeholder="Nome" value={editFormData.name} onChange={e => setEditFormData(prev => ({ ...prev, name: e.target.value }))} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-850 rounded-2xl font-bold text-sm outline-none" />
+                   </div>
+                   
+                   <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Endereço</label>
+                      <input type="text" placeholder="Endereço" value={editFormData.address} onChange={e => setEditFormData(prev => ({ ...prev, address: e.target.value }))} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-850 rounded-2xl font-bold text-sm outline-none" />
+                   </div>
+
                    <div className="grid grid-cols-2 gap-4">
-                      <input type="text" placeholder="Telefone" value={editFormData.phone} onChange={e => setEditFormData(prev => ({ ...prev, phone: e.target.value }))} className="p-5 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-800 rounded-3xl font-black" />
-                      <input type="email" placeholder="E-mail" value={editFormData.email} onChange={e => setEditFormData(prev => ({ ...prev, email: e.target.value }))} className="p-5 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-800 rounded-3xl font-black" />
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Telefone</label>
+                        <input type="text" placeholder="Telefone" value={editFormData.phone} onChange={e => setEditFormData(prev => ({ ...prev, phone: e.target.value }))} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-850 rounded-2xl font-bold text-sm outline-none" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">E-mail</label>
+                        <input type="email" placeholder="E-mail" value={editFormData.email} onChange={e => setEditFormData(prev => ({ ...prev, email: e.target.value }))} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-850 rounded-2xl font-bold text-sm outline-none" />
+                      </div>
                    </div>
                 </div>
-                <button type="submit" disabled={submitting} className="w-full py-6 bg-indigo-600 text-white rounded-[28px] font-black uppercase tracking-widest shadow-xl">
-                  {submitting ? <Loader2 className="animate-spin mx-auto w-6 h-6" /> : "SALVAR ALTERAÇÕES"}
+
+                <button type="submit" disabled={submitting} className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">
+                  {submitting ? <Loader2 className="animate-spin mx-auto w-5 h-5" /> : "SALVAR ALTERAÇÕES"}
                 </button>
               </form>
             </motion.div>
