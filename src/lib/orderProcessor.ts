@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+﻿import * as XLSX from "xlsx";
 import * as pdfjs from "pdfjs-dist";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -108,11 +108,11 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     if (!genAI) throw new Error("Google Generative AI no inicializado.");
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    const prompt = \Analise este pedido e extraia: client, cnpj (apenas numeros), category, value (numero), address.
+    const prompt = `Analise este pedido e extraia: client, cnpj (apenas numeros), category, value (numero), address.
     Retorne APENAS um JSON: {"client": "...", "cnpj": "...", "category": "...", "value": 0.00, "address": "..."}
-    Categorias Conhecidas: \
-    Clientes Conhecidos: \
-    Contedo: \\;
+    Categorias Conhecidas: ${categories.join(", ")}
+    Clientes Conhecidos: ${knownClients.map(c => c.name).join(", ")}
+    Conteúdo: ${extractedText}`;
 
     let result;
     if (detected.type === "image") {

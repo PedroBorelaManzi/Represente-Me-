@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+﻿import * as XLSX from 'xlsx';
 import * as pdfjs from 'pdfjs-dist';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -42,9 +42,9 @@ function fileToBase64(file: File): Promise<string> {
 async function processWithGemini(file: File): Promise<string[]> {
   if (!apiKey || !genAI) throw new Error("VITE_GEMINI_API_KEY no configurada.");
   
-  const prompt = \ATENO: Este  um documento contendo informaes fiscais/corporativas.
-Extraia TODOS os nmeros de CNPJ (14 dgitos) contidos. Ignore CPFs, IEs ou RGs.
-Retorne APENAS um Array JSON: ["12345678000199", "98765432000111"]\;
+  const prompt = `ATENÇÃO: Este é um documento contendo informações fiscais/corporativas.
+Extraia TODOS os números de CNPJ (14 dígitos) contidos. Ignore CPFs, IEs ou RGs.
+Retorne APENAS um Array JSON: ["12345678000199", "98765432000111"]`;
 
   const detected = await detectFileType(file);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -59,23 +59,24 @@ Retorne APENAS um Array JSON: ["12345678000199", "98765432000111"]\;
       if (detected.type === 'excel') {
         const buffer = await file.arrayBuffer();
         const workbook = XLSX.read(buffer);
-        workbook.SheetNames.forEach(name => { text += XLSX.utils.sheet_to_csv(workbook.Sheets[name]) + '\\n'; });
+        workbook.SheetNames.forEach(name => { text += XLSX.utils.sheet_to_csv(workbook.Sheets[name]) + '\n'; });
       } else if (detected.type === 'pdf') {
-        text = (await extractTextFromPDF(file)).join('\\n');
+        const pages = await extractTextFromPDF(file);
+        text = pages.join('\n');
       } else {
         text = await file.text();
       }
-      result = await model.generateContent(prompt + "\\n\\nContedo:\\n" + text);
+      result = await model.generateContent(prompt + "\n\nConteúdo:\n" + text);
     }
 
     const resText = result.response.text();
-    const cleanJson = resText.replace(/\\\\\\\\\json/g, "").replace(/\\\\\\\\\/g, "").trim();
+    const cleanJson = resText.replace(/```json/g, "").replace(/```/g, "").trim();
     const cnpjs = JSON.parse(cleanJson);
-    return Array.isArray(cnpjs) ? cnpjs.map(String).map(s => s.replace(/\\D/g, '')).filter(s => s.length === 14) : [];
+    return Array.isArray(cnpjs) ? cnpjs.map(String).map(s => s.replace(/\D/g, '')).filter(s => s.length === 14) : [];
   } catch (error: any) {
     console.error("Erro no Gemini:", error);
     if (detected.type === 'pdf') return extractCnpjsFallbackFromPDF(file);
-    throw new Error("Erro na IA de Importao: " + error.message);
+    throw new Error("Erro na IA de Importação: " + error.message);
   }
 }
 

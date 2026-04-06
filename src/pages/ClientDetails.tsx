@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock } from "lucide-react";
@@ -116,7 +116,7 @@ export default function ClientDetailsPage() {
   };
 
   const handleDeleteClient = async () => {
-    if (!window.confirm("Deseja realmente excluir este cliente?\n\nATENÇÃO: Todos os pedidos, arquivos e compromissos vinculados a este cliente serão perdidos permanentemente.")) return;
+    if (!window.confirm("Deseja realmente excluir este cliente?\n\nATENÃ‡ÃƒO: Todos os pedidos, arquivos e compromissos vinculados a este cliente serÃ£o perdidos permanentemente.")) return;
     
     setIsDeleting(true);
     try {
@@ -148,7 +148,7 @@ export default function ClientDetailsPage() {
     }
   };
 
-      const handleAnalyzePDF = async () => {
+  const handleAnalyzePDF = async () => {
     if (!selectedFile) return;
     setIsAnalyzing(true);
     try {
@@ -174,28 +174,6 @@ export default function ClientDetailsPage() {
 
       const text = result.response.text().trim();
       if (text) {
-        let value = text.replace(/[R]/g, '');
-        if (value.includes(',') && value.includes('.')) {
-          value = value.replace(/\./g, '').replace(',', '.');
-        } else if (value.includes(',')) {
-          value = value.replace(',', '.');
-        }
-        value = value.replace(/[^0-9.]/g, '');
-        setOrderValue(value);
-      }
-    } catch (err) {
-      console.error("Gemini Analysis Error:", err);
-    }
-    setIsAnalyzing(false);
-  };base64,${base64}` }
-              }
-            ]
-          }
-        ]
-      });
-
-      const text = response.choices[0].message.content?.trim();
-      if (text) {
         let value = text.replace(/[R$s]/g, '');
         if (value.includes(',') && value.includes('.')) {
           value = value.replace(/\./g, '').replace(',', '.');
@@ -206,7 +184,7 @@ export default function ClientDetailsPage() {
         setOrderValue(value);
       }
     } catch (err) {
-      console.error("OpenAI Error:", err);
+      console.error("Gemini Analysis Error:", err);
     }
     setIsAnalyzing(false);
   };
@@ -372,12 +350,12 @@ export default function ClientDetailsPage() {
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 shadow-sm dark:shadow-none space-y-6">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 mb-3">
-                <FileText className="w-4 h-4 text-indigo-500" /> Observações Gerais
+                <FileText className="w-4 h-4 text-indigo-500" /> ObservaÃ§Ãµes Gerais
               </h3>
               <textarea 
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Digite aqui observações sobre este cliente..."
+                placeholder="Digite aqui observaÃ§Ãµes sobre este cliente..."
                 className="w-full h-32 px-3 py-2 text-sm border border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
               />
               <button 
@@ -385,7 +363,7 @@ export default function ClientDetailsPage() {
                 disabled={isSavingNotes}
                 className="mt-2 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors"
               >
-                {isSavingNotes ? "Salvando..." : "Salvar Observações"}
+                {isSavingNotes ? "Salvando..." : "Salvar ObservaÃ§Ãµes"}
               </button>
             </div>
 
@@ -458,7 +436,7 @@ export default function ClientDetailsPage() {
                         </span>
                         <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mt-1 truncate max-w-xs">{actualName}</h4>
                         <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
-                          <Calendar className="w-3 h-3"/> {uploadDate} · {formatSize(file.metadata?.size)}
+                          <Calendar className="w-3 h-3"/> {uploadDate} Â· {formatSize(file.metadata?.size)}
                         </p>
                       </div>
                     </div>
