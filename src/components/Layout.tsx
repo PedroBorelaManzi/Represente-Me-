@@ -19,7 +19,8 @@ export default function Layout() {
   const [settingsTab, setSettingsTab] = useState<'menu' | 'alerta' | 'tema'>('menu');
   const [integracoesOpen, setIntegracoesOpen] = useState(false);
   const [shortcutLinks, setShortcutLinks] = useState<any[]>([]);
-    type AlertItem = { clientName: string, category: string, days: number };
+  const [expandedSections, setExpandedSections] = useState<{perda: boolean, critico: boolean, alerta: boolean}>({ perda: false, critico: false, alerta: true });
+  type AlertItem = { clientName: string, category: string, days: number };
   const [stats, setStats] = useState<{alerta: AlertItem[], critico: AlertItem[], perda: AlertItem[]}>({ alerta: [], critico: [], perda: [] });
 
   useEffect(() => {
@@ -198,66 +199,111 @@ export default function Layout() {
              <h3 className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-3 mb-3">
                Acompanhamento
              </h3>
-             <div className="space-y-3 px-1">
+             <div className="space-y-2 px-1">
                 
-                <div className="rounded-xl border border-red-100 bg-red-50/50 overflow-hidden">
-                   <div className="flex items-center justify-between p-2.5 bg-red-50">
+                {/* Perda Section */}
+                <div className="rounded-xl border border-red-100 bg-red-50/50 overflow-hidden transition-all duration-300">
+                  <button 
+                    type="button"
+                    onClick={() => setExpandedSections(prev => ({ ...prev, perda: !prev.perda }))}
+                    className="w-full flex items-center justify-between p-2.5 bg-red-50 hover:bg-red-100/50 transition-colors"
+                  >
                     <div className="flex items-center gap-2">
                        <div className="w-2 h-2 rounded-full bg-red-500" />
                        <span className="text-xs font-bold text-red-900">Perda ({settings.perda_days}D+)</span>
                     </div>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-red-100 text-red-700 rounded-md">{stats.perda.length}</span>
-                  </div>
-                  {stats.perda.length > 0 && (
-                    <div className="p-2 space-y-1.5 border-t border-red-100/50">
-                      {stats.perda.map((item, idx) => (
-                        <div key={idx} className="text-[11px] leading-tight flex flex-col gap-0.5 p-1.5 hover:bg-red-100/50 rounded-lg transition-colors">
-                          <span className="font-bold text-red-900">{item.category} <span className="text-red-500 font-medium">({item.days}d)</span></span>
-                          <span className="text-red-700 truncate opacity-90">{item.clientName}</span>
-                        </div>
-                      ))}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 bg-red-100 text-red-700 rounded-md">{stats.perda.length}</span>
+                      <ChevronDown className={cn("w-3 h-3 text-red-400 transition-transform", expandedSections.perda && "rotate-180")} />
                     </div>
-                  )}
+                  </button>
+                  <AnimatePresence>
+                    {expandedSections.perda && stats.perda.length > 0 && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden p-2 space-y-1.5 border-t border-red-100/50"
+                      >
+                        {stats.perda.map((item, idx) => (
+                          <div key={idx} className="text-[11px] leading-tight flex flex-col gap-0.5 p-1.5 hover:bg-red-100/50 rounded-lg transition-colors">
+                            <span className="font-bold text-red-900">{item.category} <span className="text-red-500 font-medium">({item.days}d)</span></span>
+                            <span className="text-red-700 truncate opacity-90">{item.clientName}</span>
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                <div className="rounded-xl border border-orange-100 bg-orange-50/50 overflow-hidden">
-                  <div className="flex items-center justify-between p-2.5 bg-orange-50">
+                {/* Crítico Section */}
+                <div className="rounded-xl border border-orange-100 bg-orange-50/50 overflow-hidden transition-all duration-300">
+                  <button 
+                    type="button"
+                    onClick={() => setExpandedSections(prev => ({ ...prev, critico: !prev.critico }))}
+                    className="w-full flex items-center justify-between p-2.5 bg-orange-50 hover:bg-orange-100/50 transition-colors"
+                  >
                     <div className="flex items-center gap-2">
                        <div className="w-2 h-2 rounded-full bg-orange-500" />
                        <span className="text-xs font-bold text-orange-900">Crítico ({settings.critico_days}D)</span>
                     </div>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded-md">{stats.critico.length}</span>
-                  </div>
-                  {stats.critico.length > 0 && (
-                    <div className="p-2 space-y-1.5 border-t border-orange-100/50">
-                      {stats.critico.map((item, idx) => (
-                        <div key={idx} className="text-[11px] leading-tight flex flex-col gap-0.5 p-1.5 hover:bg-orange-100/50 rounded-lg transition-colors">
-                          <span className="font-bold text-red-900">{item.category} <span className="text-red-500 font-medium">({item.days}d)</span></span>
-                          <span className="text-red-700 truncate opacity-90">{item.clientName}</span>
-                        </div>
-                      ))}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded-md">{stats.critico.length}</span>
+                      <ChevronDown className={cn("w-3 h-3 text-orange-400 transition-transform", expandedSections.critico && "rotate-180")} />
                     </div>
-                  )}
+                  </button>
+                  <AnimatePresence>
+                    {expandedSections.critico && stats.critico.length > 0 && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden p-2 space-y-1.5 border-t border-orange-100/50"
+                      >
+                        {stats.critico.map((item, idx) => (
+                          <div key={idx} className="text-[11px] leading-tight flex flex-col gap-0.5 p-1.5 hover:bg-orange-100/50 rounded-lg transition-colors">
+                            <span className="font-bold text-red-900">{item.category} <span className="text-red-500 font-medium">({item.days}d)</span></span>
+                            <span className="text-red-700 truncate opacity-90">{item.clientName}</span>
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                <div className="rounded-xl border border-amber-100 bg-amber-50/50 overflow-hidden">
-                  <div className="flex items-center justify-between p-2.5 bg-amber-50">
+                {/* Alerta Section */}
+                <div className="rounded-xl border border-amber-100 bg-amber-50/50 overflow-hidden transition-all duration-300">
+                  <button 
+                    type="button"
+                    onClick={() => setExpandedSections(prev => ({ ...prev, alerta: !prev.alerta }))}
+                    className="w-full flex items-center justify-between p-2.5 bg-amber-50 hover:bg-amber-100/50 transition-colors"
+                  >
                     <div className="flex items-center gap-2">
                        <div className="w-2 h-2 rounded-full bg-amber-500" />
                        <span className="text-xs font-bold text-amber-900">Alerta ({settings.alerta_days}D)</span>
                     </div>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-md">{stats.alerta.length}</span>
-                  </div>
-                  {stats.alerta.length > 0 && (
-                    <div className="p-2 space-y-1.5 border-t border-amber-100/50">
-                      {stats.alerta.map((item, idx) => (
-                         <div key={idx} className="text-[11px] leading-tight flex flex-col gap-0.5 p-1.5 hover:bg-amber-100/50 rounded-lg transition-colors">
-                           <span className="font-bold text-amber-900">{item.category} <span className="text-amber-500 font-medium">({item.days}d)</span></span>
-                           <span className="text-amber-700 truncate opacity-90">{item.clientName}</span>
-                         </div>
-                      ))}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-md">{stats.alerta.length}</span>
+                      <ChevronDown className={cn("w-3 h-3 text-amber-400 transition-transform", expandedSections.alerta && "rotate-180")} />
                     </div>
-                  )}
+                  </button>
+                  <AnimatePresence>
+                    {expandedSections.alerta && stats.alerta.length > 0 && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden p-2 space-y-1.5 border-t border-amber-100/50"
+                      >
+                        {stats.alerta.map((item, idx) => (
+                           <div key={idx} className="text-[11px] leading-tight flex flex-col gap-0.5 p-1.5 hover:bg-amber-100/50 rounded-lg transition-colors">
+                             <span className="font-bold text-amber-900">{item.category} <span className="text-amber-500 font-medium">({item.days}d)</span></span>
+                             <span className="text-amber-700 truncate opacity-90">{item.clientName}</span>
+                           </div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
               </div>

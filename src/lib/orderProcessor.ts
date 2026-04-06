@@ -1,4 +1,4 @@
-Ôªøimport * as XLSX from "xlsx";
+import * as XLSX from "xlsx";
 import * as pdfjs from "pdfjs-dist";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -41,29 +41,29 @@ function fileToBase64(file) {
 
 export async function processOrderFile(file, knownClients = [], categories = []) {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("VITE_GEMINI_API_KEY n√£o configurada.");
+  if (!apiKey) throw new Error("VITE_GEMINI_API_KEY n„o configurada.");
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
   
-  const prompt = `Analise detalhadamente este arquivo de pedido/faturamento e extraia as informa√ß√µes no formato JSON.
+  const prompt = `Analise detalhadamente este arquivo de pedido/faturamento e extraia as informaÁıes no formato JSON.
 
-  REGRAS DE EXTRA√á√ÉO:
-  1. "client": Nome da Empresa/Cliente/Raz√£o Social que est√° COMPRANDO.
-  2. "cnpj": CNPJ do cliente comprador (apenas n√∫meros). Procure por "CNPJ Destinat√°rio" ou similar.
+  REGRAS DE EXTRA«√O:
+  1. "client": Nome da Empresa/Cliente/Raz„o Social que est· COMPRANDO.
+  2. "cnpj": CNPJ do cliente comprador (apenas n˙meros). Procure por "CNPJ Destinat·rio" ou similar.
   3. "category": Identifique a qual CATEGORIA ou REPRESENTADA o pedido se refere. 
-     - Analise os produtos vendidos. Se forem roupas de marca X, a categoria √© X. 
-     - Se o cabe√ßalho indicar "Pedido de Empresa Y", a categoria pode ser Y.
+     - Analise os produtos vendidos. Se forem roupas de marca X, a categoria È X. 
+     - Se o cabeÁalho indicar "Pedido de Empresa Y", a categoria pode ser Y.
      - Categorias Conhecidas: ${categories.join(", ")}
-     - Se N√ÉO tiver certeza, tente sugerir a mais prov√°vel ou deixe null.
-  4. "value": Valor TOTAL do pedido (n√∫mero decimal com . como separador).
-  5. "address": Endere√ßo completo do cliente (Rua, N√∫mero, Bairro, Cidade, UF). Muito importante para geolocaliza√ß√£o.
+     - Se N√O tiver certeza, tente sugerir a mais prov·vel ou deixe null.
+  4. "value": Valor TOTAL do pedido (n˙mero decimal com . como separador).
+  5. "address": EndereÁo completo do cliente (Rua, N˙mero, Bairro, Cidade, UF). Muito importante para geolocalizaÁ„o.
   
-  Lista de Clientes que j√° temos no sistema: ${knownClients.join(", ")}
+  Lista de Clientes que j· temos no sistema: ${knownClients.join(", ")}
   
-  Retorne APENAS o JSON no formato abaixo, sem explica√ß√µes:
+  Retorne APENAS o JSON no formato abaixo, sem explicaÁıes:
   {"client": "NOME", "cnpj": "12345678901234", "category": "CATEGORIA", "value": 0.00, "address": "ENDERECO COMPLETO"}
   
-  Se um campo n√£o for encontrado, use null.`;
+  Se um campo n„o for encontrado, use null.`;
 
   try {
     const detected = await detectFileType(file);
