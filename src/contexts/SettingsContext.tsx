@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
 
@@ -47,10 +47,12 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     async function loadSettings() {
+      // Don't clear settings while user is still loading (refresh)
       if (!user) {
         setLoading(false);
         return;
       }
+      
       setLoading(true);
       const { data, error } = await supabase
         .from("user_settings")
@@ -67,12 +69,21 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           theme: data.theme ?? defaultSettings.theme,
           has_completed_onboarding: data.has_completed_onboarding ?? defaultSettings.has_completed_onboarding,
           categories: data.categories || [],
-          revenue_ceiling: data.revenue_ceiling ?? defaultSettings.revenue_ceiling,
+          revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
         });
       } else if (error) {
         console.error("Error loading settings:", error);
-        setSettings(defaultSettings);
       } else {
+        // No settings found, create them to ensure persistence works
+        try {
+          await supabase.from("user_settings").upsert({
+            user_id: user.id,
+            ...defaultSettings,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' });
+        } catch (e) {
+          console.error("Failed to Initialize settings:", e);
+        }
         setSettings(defaultSettings);
       }
       setLoading(false);
@@ -92,11 +103,12 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         user_id: user.id,
         ...updated,
         updated_at: new Date().toISOString(),
-      });
+      }, { onConflict: 'user_id' });
 
     if (!error) {
       setSettings(updated);
     } else {
+      console.error("Error updating settings:", error);
       throw error;
     }
   };

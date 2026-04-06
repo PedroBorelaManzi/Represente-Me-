@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
-import { MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar, ShoppingCart } from "lucide-react";
+import { MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar, ShoppingCart, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -18,6 +18,9 @@ export default function Layout() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'menu' | 'alerta' | 'tema'>('menu');
   const [integracoesOpen, setIntegracoesOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  
   const [shortcutLinks, setShortcutLinks] = useState<any[]>([]);
   const [expandedSections, setExpandedSections] = useState<{perda: boolean, critico: boolean, alerta: boolean}>({ perda: false, critico: false, alerta: true });
   type AlertItem = { clientName: string, category: string, days: number };
@@ -77,6 +80,14 @@ export default function Layout() {
       window.removeEventListener('crm_shortcut_links_updated', loadLinks);
     };
   }, [user, settings]);
+
+  // Reset success state when modal opens/closes
+  useEffect(() => {
+    if (!settingsOpen) {
+      setSaveSuccess(false);
+      setIsSaving(false);
+    }
+  }, [settingsOpen]);
 
   const navigation = [
     { name: "Início", href: "/dashboard", icon: Home },
@@ -355,14 +366,19 @@ export default function Layout() {
       <AnimatePresence>
         {settingsOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-xl p-6 w-full max-w-sm space-y-4">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-xl p-6 w-full max-w-sm space-y-4 relative">
               
               {settingsTab === 'menu' && (
                 <>
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Configurações</h2>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Configurações</h2>
+                    <button onClick={() => setSettingsOpen(false)} className="text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
                   <div className="space-y-2">
-                    <button onClick={() => setSettingsTab('alerta')} className="w-full p-3 text-left bg-slate-50 dark:bg-zinc-950 hover:bg-slate-100 rounded-xl font-medium text-slate-800 transition-colors">Configurar Alertas</button>
-                    <button onClick={() => setSettingsTab('tema')} className="w-full p-3 text-left bg-slate-50 dark:bg-zinc-950 hover:bg-slate-100 rounded-xl font-medium text-slate-800 transition-colors">Escolher Tema</button>
+                    <button onClick={() => setSettingsTab('alerta')} className="w-full p-3 text-left bg-slate-50 dark:bg-zinc-950 hover:bg-slate-100 rounded-xl font-medium text-slate-800 dark:text-zinc-200 transition-colors">Configurar Alertas</button>
+                    <button onClick={() => setSettingsTab('tema')} className="w-full p-3 text-left bg-slate-50 dark:bg-zinc-950 hover:bg-slate-100 rounded-xl font-medium text-slate-800 dark:text-zinc-200 transition-colors">Escolher Tema</button>
                   </div>
                   <div className="pt-2">
                     <button onClick={() => setSettingsOpen(false)} className="w-full px-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 font-medium text-sm">Fechar</button>
@@ -378,6 +394,7 @@ export default function Layout() {
                   </div>
                   <form onSubmit={async (e) => {
                      e.preventDefault();
+                     setIsSaving(true);
                      const formData = new FormData(e.target as HTMLFormElement);
                      try {
                          await updateSettings({
@@ -385,26 +402,49 @@ export default function Layout() {
                             critico_days: Number(formData.get('critico')),
                             perda_days: Number(formData.get('perda'))
                          });
-                         // Close the modal after successful save
-                         setSettingsTab('menu');
-                         setSettingsOpen(false);
-                     } catch (err) { alert("Erro ao salvar."); }
+                         setSaveSuccess(true);
+                         setTimeout(() => {
+                           setSaveSuccess(false);
+                           setSettingsTab('menu');
+                           setSettingsOpen(false);
+                         }, 1500);
+                     } catch (err) { 
+                       alert("Erro ao salvar."); 
+                       setIsSaving(false);
+                     }
                   }} className="space-y-4">
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Alerta (dias)</label>
-                      <input name="alerta" type="number" step="5" min="0" defaultValue={settings.alerta_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
+                      <input name="alerta" type="number" step="1" min="0" defaultValue={settings.alerta_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Crítico (dias)</label>
-                      <input name="critico" type="number" step="5" min="0" defaultValue={settings.critico_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
+                      <input name="critico" type="number" step="1" min="0" defaultValue={settings.critico_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Perda (dias)</label>
-                      <input name="perda" type="number" step="5" min="0" defaultValue={settings.perda_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
+                      <input name="perda" type="number" step="1" min="0" defaultValue={settings.perda_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div className="flex items-center gap-3 pt-2">
                       <button type="button" onClick={() => setSettingsTab('menu')} className="flex-1 px-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 font-medium text-sm">Voltar</button>
-                      <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-sm dark:shadow-none hover:bg-indigo-700 font-medium text-sm">Salvar</button>
+                      <button 
+                        type="submit" 
+                        disabled={isSaving}
+                        className={cn(
+                          "flex-1 px-4 py-2 rounded-xl shadow-sm font-medium text-sm transition-all flex items-center justify-center gap-2",
+                          saveSuccess ? "bg-emerald-500 text-white" : "bg-indigo-600 text-white hover:bg-indigo-700",
+                          isSaving && !saveSuccess && "opacity-70 cursor-not-allowed"
+                        )}
+                      >
+                        {saveSuccess ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Salvo!
+                          </>
+                        ) : (
+                          isSaving ? "Salvando..." : "Salvar"
+                        )}
+                      </button>
                     </div>
                   </form>
                 </>
@@ -419,11 +459,11 @@ export default function Layout() {
                   <div className="grid grid-cols-2 gap-3">
                     <button onClick={async () => { await updateSettings({ theme: 'light' }); setSettingsOpen(false); setSettingsTab('menu'); }} className={`p-4 border rounded-xl flex flex-col items-center gap-2 ${settings.theme === 'light' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 dark:border-zinc-800'}`}>
                        <Sun className="w-6 h-6 text-slate-600 dark:text-zinc-400" />
-                       <span className="text-sm font-medium text-slate-800">Claro</span>
+                       <span className="text-sm font-medium text-slate-800 dark:text-zinc-200">Claro</span>
                     </button>
                     <button onClick={async () => { await updateSettings({ theme: 'dark' }); setSettingsOpen(false); setSettingsTab('menu'); }} className={`p-4 border rounded-xl flex flex-col items-center gap-2 ${settings.theme === 'dark' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 dark:border-zinc-800'}`}>
                        <Moon className="w-6 h-6 text-slate-600 dark:text-zinc-400" />
-                       <span className="text-sm font-medium text-slate-800">Escuro</span>
+                       <span className="text-sm font-medium text-slate-800 dark:text-zinc-200">Escuro</span>
                     </button>
                   </div>
                   <div className="pt-2">
