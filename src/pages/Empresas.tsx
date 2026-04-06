@@ -172,7 +172,7 @@ export default function EmpresasPage() {
       await loadOrders();
     } catch (err) {
       console.error("Fast Sync Error:", err);
-      if (!isSilent) alert("Erro na sincroniza├º├úo r├ípida: " + (err instanceof Error ? err.message : String(err)));
+      if (!isSilent) alert("Erro na sincronização rápida: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       if (!isSilent) setLoading(false);
       setSyncStatus(null);
@@ -478,7 +478,7 @@ export default function EmpresasPage() {
                <div className="flex items-center gap-3 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl animate-pulse">
                   <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-400">
-                    Sincronizando: {Math.round((syncStatus.current / syncStatus.total) * 100)}%
+                    sincronização: {Math.round((syncStatus.current / syncStatus.total) * 100)}%
                   </span>
                </div>
             )}
@@ -503,7 +503,7 @@ export default function EmpresasPage() {
         {/* Left Column: List of Categories */}
         <div className="md:col-span-1 space-y-4">
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-5 shadow-sm space-y-4">
-             <h3 className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Representadas</h3>
+             <h3 className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Faturamento por Empresas</h3>
              
              <div className="space-y-2 max-h-[calc(100vh-24rem)] overflow-y-auto pr-1">
                 <div 
@@ -516,7 +516,7 @@ export default function EmpresasPage() {
                 >
                   <div className="flex items-center gap-2 font-bold text-sm">
                     <FileText className={`w-4 h-4 ${selectedCategory === "all" ? "text-indigo-600" : "text-slate-400"}`} />
-                    <span>Todos os Lan├ºamentos</span>
+                    <span>Faturamento Total</span>
                   </div>
                   <span className="text-xs font-black px-2 py-0.5 bg-slate-100 dark:bg-zinc-800 rounded-lg group-hover:bg-indigo-100 transition-colors">
                     {allOrders.length}
@@ -579,7 +579,7 @@ export default function EmpresasPage() {
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-6 flex flex-col h-[calc(100vh-16rem)]">
              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-zinc-850">
                 <div>
-                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "Hist├│rico Geral" : selectedCategory}</h2>
+                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "Faturamento Geral" : selectedCategory}</h2>
                    <p className={`mt-0.5 ${selectedCategory === "all" ? "text-sm font-semibold text-slate-500" : "text-xs text-slate-500 dark:text-zinc-400"}`}>Listagem de faturamento e extratos carregados.</p>
                 </div>
                 <div className="text-right">
@@ -841,6 +841,7 @@ export default function EmpresasPage() {
     </div>
   );
 }
+
 
 
 
