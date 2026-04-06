@@ -492,7 +492,7 @@ export default function EmpresasPage() {
                <TrendingUp className="w-8 h-8 text-indigo-600" />
             </div>
             <div>
-               <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">Faturamento Total Geral</p>
+               <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">Histórico de Pedidos Geral</p>
                <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-100 mt-1">{formatCurrency(totalGeral)}</h2>
             </div>
          </div>
@@ -516,7 +516,7 @@ export default function EmpresasPage() {
                 >
                   <div className="flex items-center gap-2 font-bold text-sm">
                     <FileText className={`w-4 h-4 ${selectedCategory === "all" ? "text-indigo-600" : "text-slate-400"}`} />
-                    <span>Faturamento Total</span>
+                    <span>Histórico de Pedidos</span>
                   </div>
                   <span className="text-xs font-black px-2 py-0.5 bg-slate-100 dark:bg-zinc-800 rounded-lg group-hover:bg-indigo-100 transition-colors">
                     {allOrders.length}
@@ -579,8 +579,8 @@ export default function EmpresasPage() {
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-6 flex flex-col h-[calc(100vh-16rem)]">
              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-zinc-850">
                 <div>
-                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "Faturamento Geral" : selectedCategory}</h2>
-                   <p className={`mt-0.5 ${selectedCategory === "all" ? "text-sm font-semibold text-slate-500" : "text-xs text-slate-500 dark:text-zinc-400"}`}>Listagem de faturamento e extratos carregados.</p>
+                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "Histórico de Pedidos" : selectedCategory}</h2>
+                   
                 </div>
                 <div className="text-right">
                    <span className="text-xs text-slate-500 dark:text-zinc-400">Total Representada</span>
@@ -841,6 +841,7 @@ export default function EmpresasPage() {
     </div>
   );
 }
+
 
 
 
