@@ -92,7 +92,7 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     const model = genAI.getGenerativeModel({ 
         model: "gemini-2.5-flash",
         systemInstruction: SYSTEM_INSTRUCTION
-    }, { apiVersion: "v1" });
+    }, { apiVersion: "v1beta" });
 
     const userPrompt = `Analise este documento:
     HINTS LOCAIS (Extraídos via Regex):
@@ -160,3 +160,4 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     };
   }
 }
+
