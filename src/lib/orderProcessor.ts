@@ -18,43 +18,42 @@ export interface OrderExtractionResult {
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-async function detectFileType(file) {
-  try {
-    const buffer = await file.slice(0, 12).arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) return { type: "pdf", mimeType: "application/pdf" };
-    if (bytes[0] === 0x50 && bytes[1] === 0x4B && bytes[2] === 0x03 && bytes[3] === 0x04) return { type: "excel", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
-    if (bytes[0] === 0xD0 && bytes[1] === 0xCF && bytes[2] === 0x11 && bytes[3] === 0xE0) return { type: "excel", mimeType: "application/vnd.ms-excel" };
-    if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return { type: "image", mimeType: "image/jpeg" };
-    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return { type: "image", mimeType: "image/png" };
-    const name = file.name.toLowerCase();
-    if (name.endsWith(".csv") || name.endsWith(".xlsx")) return { type: "excel" };
-    if (name.endsWith(".txt")) return { type: "text", mimeType: "text/plain" };
-    return { type: "unknown", mimeType: file.type };
-  } catch (e) { return { type: "unknown", mimeType: file.type }; }
-}
+// 1. OTIMIZAO: Prompt de Sistema Centralizado (Processamento mais rpido no servidor Google)
+const SYSTEM_INSTRUCTION = `Você é um especialista em OCR de documentos fiscais brasileiros.
+Analise o conteúdo e extraia:
+1. CLIENTE DESTINATÁRIO (Comprador): Nome e CNPJ. Ignore o Fornecedor/Emissor.
+2. VALOR TOTAL: O valor final líquido da nota/pedido.
+3. CATEGORIA: O nome do Fabricante/Emissor da nota.
+4. ENDEREÇO: O endereço completo do cliente destinatário.
 
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result.split(",")[1]);
-    reader.onerror = reject;
-  });
+Retorne APENAS um objeto JSON válido seguindo este esquema:
+{
+  "client": string,
+  "cnpj": string (apenas números),
+  "category": string,
+  "value": number,
+  "address": string
+}`;
+
+async function detectFileType(file) {
+  const buffer = await file.slice(0, 12).arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  if (bytes[0] === 0x25 && bytes[1] === 0x50) return { type: "pdf", mimeType: "application/pdf" };
+  if (bytes[0] === 0x50 && bytes[1] === 0x4B) return { type: "excel", mimeType: "application/vnd.openxmlformats" };
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png") || name.endsWith(".webp")) return { type: "image", mimeType: file.type };
+  return { type: "unknown", mimeType: file.type };
 }
 
 function extractCNPJLocally(text: string): string {
   const cnpjRegex = /\d{2}\.?\d{3}\.?\d{3}\/\d{4}-?\d{2}/g;
   const matches = text.match(cnpjRegex);
   if (matches && matches.length > 0) {
-    if (matches.length > 1) {
-      const lowerText = text.toLowerCase();
-      const clientKeywords = ["destinatário", "cliente", "comprador", "entregar", "razão social"];
-      for (const match of matches) {
-        const index = text.indexOf(match);
-        const context = lowerText.substring(Math.max(0, index - 100), index);
-        if (clientKeywords.some(kw => context.includes(kw))) return match.replace(/\D/g, "");
-      }
+    const clientKeywords = ["destinatário", "cliente", "comprador", "entregar"];
+    for (const match of matches) {
+      const index = text.indexOf(match);
+      const context = text.toLowerCase().substring(Math.max(0, index - 150), index);
+      if (clientKeywords.some(kw => context.includes(kw))) return match.replace(/\D/g, "");
     }
     return matches[0].replace(/\D/g, "");
   }
@@ -62,26 +61,23 @@ function extractCNPJLocally(text: string): string {
 }
 
 function extractValueLocally(text: string): number {
-  const valueRegex = /(?:valor total da nota|total geral|valor líquido|total do pedido|total líquido|vlr total|total da nota).*?(\d{1,3}(?:\.\d{3})*(?:,\d{2}))/i;
+  const valueRegex = /(?:valor total da nota|total geral|valor líquido|vlr total|total do pedido).*?(\d{1,3}(?:\.\d{3})*(?:,\d{2}))/i;
   const match = text.match(valueRegex);
-  if (match && match[1]) {
-    return parseFloat(match[1].replace(/\./g, "").replace(",", "."));
-  }
-  return 0;
+  return match?.[1] ? parseFloat(match[1].replace(/\./g, "").replace(",", ".")) : 0;
 }
 
 export async function processOrderFile(file, knownClients = [], categories = []) {
-  if (!apiKey) throw new Error("VITE_GEMINI_API_KEY no configurada.");
+  if (!apiKey || !genAI) throw new Error("Chave Gemini não configurada.");
   
   try {
     const detected = await detectFileType(file);
     let extractedText = "";
 
-    // 1. EXTRAO DE TEXTO (PDF / Excel / TXT)
+    // Extrao de Texto (Acelerada)
     if (detected.type === "pdf") {
       const buffer = await file.arrayBuffer();
       const pdf = await pdfjs.getDocument({ data: buffer }).promise;
-      for (let i = 1; i <= pdf.numPages; i++) {
+      for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) { // Limite de 3 pginas para velocidade
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
         extractedText += content.items.map((item: any) => item.str).join(" ") + "\n";
@@ -89,95 +85,65 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     } else if (detected.type === "excel") {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer);
-      workbook.SheetNames.forEach(name => {
-        extractedText += XLSX.utils.sheet_to_csv(workbook.Sheets[name]) + "\n";
-      });
-    } else if (detected.type === "text") {
-      extractedText = await file.text();
+      extractedText = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
     }
 
-    // 2. TENTATIVA DE TRIAGEM LOCAL (CNPJ e Valor)
+    // 2. OTIMIZAO: Triagem Local como Dica para a IA
     const localCnpj = extractCNPJLocally(extractedText);
     const localValue = extractValueLocally(extractedText);
 
-    // Se o arquivo for imagem ou no tiver CNPJ claro, pular triagem local e ir direto pra IA
-    if (detected.type !== "image" && localCnpj && localValue > 0) {
-      console.log("Local Triage Success:", file.name, "CNPJ:", localCnpj, "Value:", localValue);
-      return {
-        client: "Detectado via CNPJ",
-        cnpj: localCnpj,
-        category: "", // Deixamos para o usurio ou IA secundria
-        value: localValue,
-        status: "ready",
-        method: "local"
-      };
-    }
+    const model = genAI.getGenerativeModel({ 
+        model: "gemini-2.0-flash",
+        systemInstruction: SYSTEM_INSTRUCTION
+    }, { apiVersion: "v1" });
 
-    // 3. FALLBACK GEMINI IA (GRTIS)
-    if (!genAI) throw new Error("Google Generative AI no inicializado.");
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: "v1" });
+    const userPrompt = `Analise este documento:
+    HINTS LOCAIS (Extraídos via Regex):
+    - CNPJ provável: ${localCnpj || "Não detectado"}
+    - Valor provável: ${localValue || "Não detectado"}
     
-        const prompt = `ATENÇÃO: Analise este documento de pedido/faturamento.
-    Objetivo: Identificar o CLIENTE (Comprador) e o VALOR FINAL.
-
-    Diferenciação Crítica:
-    - O documento possui um EMISSOR (Fábrica/Vendedor, ex: Cozimax, Deca) e um DESTINATÁRIO (Seu Cliente).
-    - Extraia o nome e CNPJ APENAS do DESTINATÁRIO/CLIENTE. Ignore os dados do Fabricante.
-    - O NOME DO FABRICANTE (Emissor) deve ser usado para definir o campo "category".
-
-    Instruções de Valor:
-    - Extraia o VALOR TOTAL FINAL do pedido. Ignore valores parciais, descontos ou impostos isolados.
-    - Se houver dúvida entre dois valores, escolha o MAIOR que represente o fechamento da nota.
-
-    Retorne APENAS um JSON: 
-    {
-      "client": "NOME DO CLIENTE/COMPRADOR", 
-      "cnpj": "SOMENTE_NUMEROS_DO_CLIENTE", 
-      "category": "NOME_DO_FABRICANTE_EMISSOR", 
-      "value": 0.00, 
-      "address": "ENDERECO_COMPLETO_DO_CLIENTE"
-    }
-
-    Categorias Conhecidas (Se o fabricante for um destes, use exatamente o nome): ${categories.join(", ")}
-    Clientes Conhecidos: ${knownClients.map(c => c.name).join(", ")}
+    CATEGORIAS CONHECIDAS: ${categories.join(", ")}
     
-    Conteúdo do Arquivo:
-    ${extractedText}`;
+    CONTEÚDO DO DOCUMENTO:
+    ${extractedText.substring(0, 10000)} // Limite de 10k chars para velocidade
+    `;
 
     let result;
     if (detected.type === "image") {
-      const base64 = await fileToBase64(file);
-      result = await model.generateContent([
-        prompt,
-        { inlineData: { data: base64, mimeType: detected.mimeType } }
-      ]);
+       const reader = new FileReader();
+       const base64Promise = new Promise((resolve) => {
+          reader.onload = () => resolve((reader.result as string).split(",")[1]);
+          reader.readAsDataURL(file);
+       });
+       const base64 = await base64Promise;
+       result = await model.generateContent({
+         contents: [{ role: "user", parts: [
+            { text: userPrompt },
+            { inlineData: { data: base64 as string, mimeType: detected.mimeType } }
+         ]}],
+         generationConfig: { responseMimeType: "application/json" }
+       });
     } else {
-      result = await model.generateContent(prompt);
+       result = await model.generateContent({
+         contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+         generationConfig: { responseMimeType: "application/json" }
+       });
     }
 
-    const responseText = result.response.text();
-    const cleanJson = responseText.replace(/`json/g, "").replace(/`/g, "").trim();
-    const data = JSON.parse(cleanJson);
+    const data = JSON.parse(result.response.text());
 
     return {
-      client: data.client || "",
-      cnpj: (data.cnpj || "").replace(/\D/g, ""),
+      client: data.client || "Desconhecido",
+      cnpj: (data.cnpj || localCnpj || "").replace(/\D/g, ""),
       category: data.category || "",
-      value: typeof data.value === "number" ? data.value : parseFloat(String(data.value).replace(/[^\d.]/g, "")) || 0,
+      value: data.value || localValue || 0,
       address: data.address || "",
       status: "ready",
       method: "ai"
     };
 
   } catch (err) {
-    console.error("Gemini Extraction error:", err);
-    return { 
-      client: "", 
-      cnpj: "", 
-      category: "", 
-      value: 0, 
-      status: "error", 
-      error: err instanceof Error ? err.message : "Falha no processamento Gemini." 
-    };
+    console.error("AI Reader Error:", err);
+    return { client: "", cnpj: "", category: "", value: 0, status: "error", error: "Falha na leitura IA acelerada." };
   }
 }
