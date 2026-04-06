@@ -156,7 +156,7 @@ export default function ClientDetailsPage() {
       if (!apiKey) throw new Error("VITE_GEMINI_API_KEY no configurada.");
       
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: "v1" });
       
       const reader = new FileReader();
       const base64Promise = new Promise((resolve) => {
