@@ -88,7 +88,7 @@ export default function PedidosPage() {
         if (n) cid = n.id;
       }
       const cleanName = selectedFile.name.replace(/[^\w.-]/g, "_");
-      const path = ${user.id}//___VALOR____;
+      const path = `${user.id}/${cid}/${selectedCategory}___VALOR_${orderValue}___${cleanName}`;
       await supabase.storage.from("client_vault").upload(path, selectedFile, { upsert: true });
       await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: selectedCategory, value: parseFloat(orderValue), file_name: cleanName, file_path: path, status: "concluido" }]);
       setIsManualModalOpen(false); loadData();
@@ -118,7 +118,7 @@ export default function PedidosPage() {
     try {
       let cid = res.clientId;
       if (res.needsNewClient) { const n = await registerNewClient(res.client, res.cnpj, res.address); if (n) cid = n.id; }
-      const path = ${user.id}//___VALOR____;
+      const path = `${user.id}/${cid}/${res.category}___VALOR_${res.value}___${res.file.name}`;
       await supabase.storage.from("client_vault").upload(path, res.file, { upsert: true });
       await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: res.category, value: res.value, file_name: res.file.name, file_path: path, status: "concluido" }]);
       setBatchResults(prev => prev.filter(item => item.file !== res.file)); loadData();
