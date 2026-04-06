@@ -1,8 +1,8 @@
-﻿import * as XLSX from 'xlsx';
-import * as pdfjs from 'pdfjs-dist';
+﻿import * as XLSX from "xlsx";
+import * as pdfjs from "pdfjs-dist";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
 export interface OrderExtractionResult {
   client: string;
@@ -10,7 +10,7 @@ export interface OrderExtractionResult {
   category: string;
   value: number;
   address?: string;
-  status: 'ready' | 'error';
+  status: "ready" | "error";
   error?: string;
 }
 
@@ -18,23 +18,23 @@ async function detectFileType(file) {
   try {
     const buffer = await file.slice(0, 12).arrayBuffer();
     const bytes = new Uint8Array(buffer);
-    if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) return { type: 'pdf', mimeType: 'application/pdf' };
-    if (bytes[0] === 0x50 && bytes[1] === 0x4B && bytes[2] === 0x03 && bytes[3] === 0x04) return { type: 'excel', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
-    if (bytes[0] === 0xD0 && bytes[1] === 0xCF && bytes[2] === 0x11 && bytes[3] === 0xE0) return { type: 'excel', mimeType: 'application/vnd.ms-excel' };
-    if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return { type: 'image', mimeType: 'image/jpeg' };
-    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return { type: 'image', mimeType: 'image/png' };
+    if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) return { type: "pdf", mimeType: "application/pdf" };
+    if (bytes[0] === 0x50 && bytes[1] === 0x4B && bytes[2] === 0x03 && bytes[3] === 0x04) return { type: "excel", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
+    if (bytes[0] === 0xD0 && bytes[1] === 0xCF && bytes[2] === 0x11 && bytes[3] === 0xE0) return { type: "excel", mimeType: "application/vnd.ms-excel" };
+    if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return { type: "image", mimeType: "image/jpeg" };
+    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return { type: "image", mimeType: "image/png" };
     const name = file.name.toLowerCase();
-    if (name.endsWith('.csv') || name.endsWith('.xlsx')) return { type: 'excel' };
-    if (name.endsWith('.txt')) return { type: 'text', mimeType: 'text/plain' };
-    return { type: 'unknown', mimeType: file.type };
-  } catch (e) { return { type: 'unknown', mimeType: file.type }; }
+    if (name.endsWith(".csv") || name.endsWith(".xlsx")) return { type: "excel" };
+    if (name.endsWith(".txt")) return { type: "text", mimeType: "text/plain" };
+    return { type: "unknown", mimeType: file.type };
+  } catch (e) { return { type: "unknown", mimeType: file.type }; }
 }
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onload = () => resolve(reader.result.split(",")[1]);
     reader.onerror = reject;
   });
 }
@@ -44,27 +44,35 @@ export async function processOrderFile(file, knownClients = [], categories = [])
   if (!apiKey) throw new Error("VITE_GEMINI_API_KEY não configurada.");
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-  const prompt = Analise este arquivo de pedido e extraia:
+  
+  const prompt = `Analise este arquivo de pedido e extraia as seguintes informações em formato JSON:
   1. "client": Nome da Empresa/Cliente/Razão Social.
   2. "cnpj": CNPJ do cliente (apenas números).
   3. "category": Categoria/Representada/Fábrica.
-  4. "value": Valor Total do pedido.
+  4. "value": Valor Total do pedido (número decimal com . como separador).
   5. "address": Endereço completo.
-  Lista de Clientes Conhecidos: 
-  Lista de Categorias Conhecidas: 
-  Retorne em JSON: {"client": "NOME", "cnpj": "12345678901234", "category": "CATEGORIA", "value": 0.00, "address": "ENDERECO"}
-  Tente encontrar matches na lista fornecida. Se não encontrar, deixe como "".;
+  
+  Lista de Clientes Conhecidos: ${knownClients.join(", ")}
+  Lista de Categorias Conhecidas: ${categories.join(", ")}
+  
+  Retorne APENAS o JSON no formato:
+  {"client": "NOME", "cnpj": "12345678901234", "category": "CATEGORIA", "value": 0.00, "address": "ENDERECO"}
+  
+  Se não encontrar, deixe como "" ou null.`;
+
   try {
     const detected = await detectFileType(file);
-    if (detected.type === 'excel') {
+    if (detected.type === "excel") {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer);
       let fullText = "";
-      workbook.SheetNames.forEach(name => fullText += XLSX.utils.sheet_to_csv(workbook.Sheets[name]) + "\n");
+      workbook.SheetNames.forEach(name => {
+        fullText += "--- Planilha: " + name + " ---\n" + XLSX.utils.sheet_to_csv(workbook.Sheets[name]) + "\n";
+      });
       const result = await model.generateContent([prompt, fullText]);
       return parseAIResponse(result.response.text());
     }
-    if (detected.type === 'text' || (detected.type === 'unknown' && file.size < 500000)) {
+    if (detected.type === "text" || (detected.type === "unknown" && file.size < 500000)) {
        try {
            const text = await file.text();
            const result = await model.generateContent([prompt, text]);
@@ -72,27 +80,28 @@ export async function processOrderFile(file, knownClients = [], categories = [])
        } catch(e) {}
     }
     const base64 = await fileToBase64(file);
-    const result = await model.generateContent([{ inlineData: { mimeType: detected.mimeType || 'application/pdf', data: base64 } }, prompt]);
+    const result = await model.generateContent([{ inlineData: { mimeType: detected.mimeType || "application/pdf", data: base64 } }, prompt]);
     return parseAIResponse(result.response.text());
   } catch (err) {
-    return { client: "", cnpj: "", category: "", value: 0, status: 'error', error: "Falha no processamento IA." };
+    console.error("Extraction error:", err);
+    return { client: "", cnpj: "", category: "", value: 0, status: "error", error: "Falha no processamento IA." };
   }
 }
 
 function parseAIResponse(text) {
   try {
     const jsonMatch = text.match(/\{.*\}/s);
-    if (!jsonMatch) throw new Error("No JSON");
+    if (!jsonMatch) throw new Error("No JSON found");
     const data = JSON.parse(jsonMatch[0]);
     return {
       client: data.client || "",
       cnpj: (data.cnpj || "").replace(/\D/g, ""),
       category: data.category || "",
-      value: typeof data.value === 'number' ? data.value : parseFloat(String(data.value).replace(/[^\d.]/g, "")) || 0,
+      value: typeof data.value === "number" ? data.value : parseFloat(String(data.value).replace(/[^\d.]/g, "")) || 0,
       address: data.address || "",
-      status: 'ready'
+      status: "ready"
     };
   } catch (e) {
-    return { client: "", cnpj: "", category: "", value: 0, status: 'error', error: "Falha ao ler resposta da IA." };
+    return { client: "", cnpj: "", category: "", value: 0, status: "error", error: "Falha ao ler resposta da IA." };
   }
 }
