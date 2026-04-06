@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check, Loader2, Upload, Search, MapPin, AlertCircle, FileCheck, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
@@ -172,7 +172,7 @@ export default function EmpresasPage() {
       await loadOrders();
     } catch (err) {
       console.error("Fast Sync Error:", err);
-      if (!isSilent) alert("Erro na sincronização rápida: " + (err instanceof Error ? err.message : String(err)));
+      if (!isSilent) alert("Erro na sincronizaÃ§Ã£o rÃ¡pida: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       if (!isSilent) setLoading(false);
       setSyncStatus(null);
@@ -245,7 +245,7 @@ export default function EmpresasPage() {
                     return updated;
                 });
             } else {
-                throw new Error(result.error || "Falha na extração");
+                throw new Error(result.error || "Falha na extraÃ§Ã£o");
             }
         } catch (err) {
             console.error("Erro no processamento:", err);
@@ -259,20 +259,6 @@ export default function EmpresasPage() {
                 };
                 return updated;
             });
-        }
-    }
-    setIsProcessing(false);
-  };
-                    }
-                    return f;
-                }));
-            }
-        } catch (err) {
-            console.error("Erro AI:", err);
-            setUploadFiles(prev => prev.map((f, idx) => {
-                if (f.file === current.file) return { ...f, status: 'error', error: "Falha na leitura" };
-                return f;
-            }));
         }
     }
     setIsProcessing(false);
@@ -352,7 +338,7 @@ export default function EmpresasPage() {
       setNewCat("");
       if (!selectedCategory) setSelectedCategory(newCat.trim());
     } else if (newCat.trim()) {
-        alert("Esta empresa já existe!");
+        alert("Esta empresa jÃ¡ existe!");
         setNewCat("");
     }
   };
@@ -445,7 +431,7 @@ export default function EmpresasPage() {
   };
 
   const handleDeleteSub = async () => {
-      if (window.confirm(`Deseja realmente excluir a representada "${editingCategory}"? TODOS os arquivos e dados vinculados serão mantidos, mas a representada não aparecerá mais nos filtros.`)) {
+      if (window.confirm(`Deseja realmente excluir a representada "${editingCategory}"? TODOS os arquivos e dados vinculados serÃ£o mantidos, mas a representada nÃ£o aparecerÃ¡ mais nos filtros.`)) {
           const updated = (settings?.categories || []).filter(c => c.toLowerCase() !== editingCategory.toLowerCase());
           await updateSettings({ categories: updated });
           if (selectedCategory.toLowerCase() === editingCategory.toLowerCase()) {
@@ -530,7 +516,7 @@ export default function EmpresasPage() {
                 >
                   <div className="flex items-center gap-2 font-bold text-sm">
                     <FileText className={`w-4 h-4 ${selectedCategory === "all" ? "text-indigo-600" : "text-slate-400"}`} />
-                    <span>Todos os Lançamentos</span>
+                    <span>Todos os LanÃ§amentos</span>
                   </div>
                   <span className="text-xs font-black px-2 py-0.5 bg-slate-100 dark:bg-zinc-800 rounded-lg group-hover:bg-indigo-100 transition-colors">
                     {allOrders.length}
@@ -593,7 +579,7 @@ export default function EmpresasPage() {
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-6 flex flex-col h-[calc(100vh-16rem)]">
              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-zinc-850">
                 <div>
-                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "Histórico Geral" : selectedCategory}</h2>
+                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "HistÃ³rico Geral" : selectedCategory}</h2>
                    <p className={`mt-0.5 ${selectedCategory === "all" ? "text-sm font-semibold text-slate-500" : "text-xs text-slate-500 dark:text-zinc-400"}`}>Listagem de faturamento e extratos carregados.</p>
                 </div>
                 <div className="text-right">
@@ -672,11 +658,11 @@ export default function EmpresasPage() {
                    </div>
                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 rounded-xl flex items-start gap-3">
                         <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5" />
-                        <p className="text-xs text-amber-700 dark:text-amber-400">Nota: Ao renomear, o sistema atualizará todos os faturamentos e caminhos de arquivos vinculados.</p>
+                        <p className="text-xs text-amber-700 dark:text-amber-400">Nota: Ao renomear, o sistema atualizarÃ¡ todos os faturamentos e caminhos de arquivos vinculados.</p>
                    </div>
                 </div>
                 <div className="flex flex-col gap-2 pt-4 border-t border-slate-100 dark:border-zinc-850">
-                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Salvar Alterações</button>
+                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Salvar AlteraÃ§Ãµes</button>
                     <button onClick={handleDeleteSub} className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border border-red-100"><Trash2 className="w-4 h-4" /> Excluir permanentemente</button>
                 </div>
              </motion.div>
@@ -800,7 +786,7 @@ export default function EmpresasPage() {
                                                             value={item.address} 
                                                             onChange={(e) => setUploadFiles(prev => prev.map((f, i) => i === idx ? { ...f, address: e.target.value } : f))}
                                                             className="bg-transparent border-none p-0 text-[10px] font-bold text-indigo-500 focus:ring-0 flex-1"
-                                                            placeholder="Endereço para localização..."
+                                                            placeholder="EndereÃ§o para localizaÃ§Ã£o..."
                                                         />
                                                     </div>
                                                 )}
@@ -844,7 +830,7 @@ export default function EmpresasPage() {
                         >
                             Limpar Tudo
                         </button>
-                        <p className="text-xs text-slate-400 font-medium italic">Dados extraídos automaticamente via Inteligência Artificial.</p>
+                        <p className="text-xs text-slate-400 font-medium italic">Dados extraÃ­dos automaticamente via InteligÃªncia Artificial.</p>
                     </div>
                 )}
              </motion.div>
@@ -855,3 +841,6 @@ export default function EmpresasPage() {
     </div>
   );
 }
+
+
+
