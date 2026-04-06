@@ -10,7 +10,7 @@ export async function getHighPrecisionCoordinates(address: string, clientName?: 
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: "v1" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: "v1" });
     
     const prompt = `Atue como um especialista em geolocalização no Brasil. 
       Encontre as coordenadas exatas (Latitude e Longitude) para este cliente:

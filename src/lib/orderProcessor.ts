@@ -115,7 +115,7 @@ export async function processOrderFile(file, knownClients = [], categories = [])
 
     // 3. FALLBACK GEMINI IA (GRTIS)
     if (!genAI) throw new Error("Google Generative AI no inicializado.");
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: "v1" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: "v1" });
     
         const prompt = `ATENÇÃO: Analise este documento de pedido/faturamento.
     Objetivo: Identificar o CLIENTE (Comprador) e o VALOR FINAL.
