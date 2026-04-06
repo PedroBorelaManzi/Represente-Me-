@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import * as pdfjs from "pdfjs-dist";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
 
@@ -13,6 +13,12 @@ export interface OrderExtractionResult {
   status: "ready" | "error";
   error?: string;
 }
+
+const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+const openai = new OpenAI({
+  apiKey: apiKey,
+  dangerouslyAllowBrowser: true
+});
 
 async function detectFileType(file) {
   try {
@@ -40,88 +46,90 @@ function fileToBase64(file) {
 }
 
 export async function processOrderFile(file, knownClients = [], categories = []) {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("VITE_GEMINI_API_KEY não configurada.");
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+  if (!apiKey) throw new Error("VITE_OPENAI_API_KEY no configurada.");
   
-  const prompt = `Analise detalhadamente este arquivo de pedido/faturamento e extraia as informações no formato JSON.
+  const prompt = `Analise detalhadamente este arquivo de pedido/faturamento e extraia as informaes no formato JSON.
 
-  REGRAS DE EXTRAÇÃO:
-  1. "client": Nome da Empresa/Cliente/Razão Social que está COMPRANDO.
-  2. "cnpj": CNPJ do cliente comprador (apenas números). Procure por "CNPJ Destinatário" ou similar.
+  REGRAS DE EXTRAO:
+  1. "client": Nome da Empresa/Cliente/Razo Social que est COMPRANDO.
+  2. "cnpj": CNPJ do cliente comprador (apenas nmeros). Procure por "CNPJ Destinatrio" ou similar.
   3. "category": Identifique a qual CATEGORIA ou REPRESENTADA o pedido se refere. 
-     - Analise os produtos vendidos. Se forem roupas de marca X, a categoria é X. 
-     - Se o cabeçalho indicar "Pedido de Empresa Y", a categoria pode ser Y.
+     - Analise os produtos vendidos. Se forem roupas de marca X, a categoria  X. 
+     - Se o cabealho indicar "Pedido de Empresa Y", a categoria pode ser Y.
      - Categorias Conhecidas: ${categories.join(", ")}
-     - Se NÃO tiver certeza, tente sugerir a mais provável ou deixe null.
-  4. "value": Valor TOTAL do pedido (número decimal com . como separador).
-  5. "address": Endereço completo do cliente (Rua, Número, Bairro, Cidade, UF). Muito importante para geolocalização.
+     - Se NO tiver certeza, tente sugerir a mais provvel ou deixe null.
+  4. "value": Valor TOTAL do pedido (nmero decimal com . como separador).
+  5. "address": Endereo completo do cliente (Rua, Nmero, Bairro, Cidade, UF). Muito importante para geolocalizao.
   
-  Lista de Clientes que já temos no sistema: ${knownClients.join(", ")}
+  Lista de Clientes que j temos no sistema: ${knownClients.join(", ")}
   
-  Retorne APENAS o JSON no formato abaixo, sem explicações:
+  Retorne APENAS o JSON no formato abaixo, sem explicaes:
   {"client": "NOME", "cnpj": "12345678901234", "category": "CATEGORIA", "value": 0.00, "address": "ENDERECO COMPLETO"}
   
-  Se um campo não for encontrado, use null.`;
+  Se um campo no for encontrado, use null.`;
 
   try {
     const detected = await detectFileType(file);
-    console.log("Processing file:", file.name, "Detected type:", detected.type);
+    console.log("GPT Processing file:", file.name, "Type:", detected.type);
 
-    if (detected.type === "excel") {
+    let content: any[] = [{ type: "text", text: prompt }];
+
+    if (detected.type === "image") {
+      const base64 = await fileToBase64(file);
+      content.push({
+        type: "image_url",
+        image_url: { url: `data:${detected.mimeType};base64,${base64}` }
+      });
+    } else if (detected.type === "excel") {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer);
       let fullText = "";
       workbook.SheetNames.forEach(name => {
         fullText += "--- Planilha: " + name + " ---\n" + XLSX.utils.sheet_to_csv(workbook.Sheets[name]) + "\n";
       });
-      const result = await model.generateContent([prompt, fullText]);
-      return parseAIResponse(result.response.text());
+      content.push({ type: "text", text: "Contedo do Excel:\n" + fullText });
+    } else {
+      // PDF or Text - Extract text content
+      let text = "";
+      if (detected.type === "pdf") {
+         const buffer = await file.arrayBuffer();
+         const pdf = await pdfjs.getDocument({ data: buffer }).promise;
+         for (let i = 1; i <= pdf.numPages; i++) {
+           const page = await pdf.getPage(i);
+           const content = await page.getTextContent();
+           text += content.items.map((item: any) => item.str).join(" ") + "\n";
+         }
+      } else {
+         text = await file.text();
+      }
+      content.push({ type: "text", text: "Contedo extrado do arquivo:\n" + text });
     }
 
-    if (detected.type === "text" || (detected.type === "unknown" && file.size < 50000)) {
-       try {
-           const text = await file.text();
-           if (text.trim().length > 10) {
-               const result = await model.generateContent([prompt, text]);
-               return parseAIResponse(result.response.text());
-           }
-       } catch(e) {
-           console.warn("Text read fallback failed:", e);
-       }
-    }
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [{ role: "user", content }],
+      response_format: { type: "json_object" }
+    });
 
-    const base64 = await fileToBase64(file);
-    const result = await model.generateContent([
-      { 
-        inlineData: { 
-          mimeType: detected.mimeType || file.type || "application/pdf", 
-          data: base64 
-        } 
-      }, 
-      prompt
-    ]);
-    
-    return parseAIResponse(result.response.text());
+    const resultText = response.choices[0].message.content || "{}";
+    return parseAIResponse(resultText);
+
   } catch (err) {
-    console.error("Extraction error:", err);
+    console.error("GPT Extraction error:", err);
     return { 
       client: "", 
       cnpj: "", 
       category: "", 
       value: 0, 
       status: "error", 
-      error: err instanceof Error ? err.message : "Falha no processamento IA." 
+      error: err instanceof Error ? err.message : "Falha no processamento GPT." 
     };
   }
 }
 
 function parseAIResponse(text) {
   try {
-    const jsonMatch = text.match(/\{.*\}/s);
-    if (!jsonMatch) throw new Error("No JSON found");
-    const data = JSON.parse(jsonMatch[0]);
+    const data = JSON.parse(text);
     return {
       client: data.client || "",
       cnpj: (data.cnpj || "").replace(/\D/g, ""),

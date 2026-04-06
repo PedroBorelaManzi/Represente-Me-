@@ -1,43 +1,50 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(API_KEY);
+const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+const openai = new OpenAI({
+  apiKey: apiKey,
+  dangerouslyAllowBrowser: true
+});
 
 export async function getHighPrecisionCoordinates(address: string, clientName?: string, cnpj?: string): Promise<{ lat: number; lng: number } | null> {
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+  if (!apiKey) {
+    console.error("VITE_OPENAI_API_KEY no configurada.");
+    return null;
+  }
 
+  try {
     const prompt = `
-      Atue como um especialista em geolocalização no Brasil. 
-      Sua tarefa é encontrar as coordenadas exatas (Latitude e Longitude) para o seguinte cliente:
-      Nome: ${clientName || "Não informado"}
-      CNPJ: ${cnpj || "Não informado"}
-      Endereço Sugerido: ${address}
+      Atue como um especialista em geolocalizao no Brasil. 
+      Sua tarefa  encontrar as coordenadas exatas (Latitude e Longitude) para o seguinte cliente:
+      Nome: ${clientName || "No informado"}
+      CNPJ: ${cnpj || "No informado"}
+      Endereo Sugerido: ${address}
 
       Use seu conhecimento de mapas e busca para encontrar o ponto exato da empresa. 
-      Se o endereço for aproximado, tente encontrar a sede da empresa pelo nome/CNPJ.
+      Se o endereo for aproximado, tente encontrar a sede da empresa pelo nome/CNPJ.
       
       Retorne APENAS um objeto JSON no formato:
       {"lat": -00.00000, "lng": -00.00000}
       
-      Não responda nada além do JSON puro. Se não encontrar de jeito nenhum, retorne null.
+      No responda nada alm do JSON puro. Se no encontrar de jeito nenhum, retorne null.
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" }
+    });
+
+    const resultText = response.choices[0].message.content || "{}";
+    const coords = JSON.parse(resultText);
     
-    const jsonMatch = text.match(/\{.*\}/s);
-    if (!jsonMatch) return null;
-    
-    const coords = JSON.parse(jsonMatch[0]);
     if (coords && typeof coords.lat === 'number' && typeof coords.lng === 'number') {
       return coords;
     }
     
     return null;
   } catch (error) {
-    console.error("Gemini Geocoding Error:", error);
+    console.error("OpenAI Geocoding Error:", error);
     return null;
   }
 }

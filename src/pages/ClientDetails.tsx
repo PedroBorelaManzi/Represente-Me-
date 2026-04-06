@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -152,8 +152,10 @@ export default function ClientDetailsPage() {
     if (!selectedFile) return;
     setIsAnalyzing(true);
     try {
-      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+      const openai = new OpenAI({
+        apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+        dangerouslyAllowBrowser: true
+      });
       
       const reader = new FileReader();
       const base64Promise = new Promise((resolve) => {
@@ -162,12 +164,23 @@ export default function ClientDetailsPage() {
       });
       const base64 = await base64Promise;
 
-      const result = await model.generateContent([
-        { inlineData: { mimeType: selectedFile.type, data: base64 as string } },
-        "Extraia o valor total final deste pedido ou orçamento. Retorne APENAS o número sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50"
-      ]);
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Extraia o valor total final deste pedido ou orçamento. Retorne APENAS o número sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50" },
+              {
+                type: "image_url",
+                image_url: { url: `data:${selectedFile.type};base64,${base64}` }
+              }
+            ]
+          }
+        ]
+      });
 
-      const text = result.response.text().trim();
+      const text = response.choices[0].message.content?.trim();
       if (text) {
         let value = text.replace(/[R$s]/g, '');
         if (value.includes(',') && value.includes('.')) {
@@ -179,7 +192,7 @@ export default function ClientDetailsPage() {
         setOrderValue(value);
       }
     } catch (err) {
-      console.error(err);
+      console.error("OpenAI Error:", err);
     }
     setIsAnalyzing(false);
   };
