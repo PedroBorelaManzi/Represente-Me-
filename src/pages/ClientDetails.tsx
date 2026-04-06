@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -148,14 +148,15 @@ export default function ClientDetailsPage() {
     }
   };
 
-  const handleAnalyzePDF = async () => {
+    const handleAnalyzePDF = async () => {
     if (!selectedFile) return;
     setIsAnalyzing(true);
     try {
-      const openai = new OpenAI({
-        apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-        dangerouslyAllowBrowser: true
-      });
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error("VITE_GEMINI_API_KEY no configurada.");
+      
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
       const reader = new FileReader();
       const base64Promise = new Promise((resolve) => {
@@ -164,16 +165,29 @@ export default function ClientDetailsPage() {
       });
       const base64 = await base64Promise;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Extraia o valor total final deste pedido ou orçamento. Retorne APENAS o número sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50" },
-              {
-                type: "image_url",
-                image_url: { url: `data:${selectedFile.type};base64,${base64}` }
+      const prompt = "Extraia o valor total final deste pedido ou oramento. Retorne APENAS o nmero sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50";
+      
+      const result = await model.generateContent([
+        prompt,
+        { inlineData: { data: base64 as string, mimeType: selectedFile.type } }
+      ]);
+
+      const text = result.response.text().trim();
+      if (text) {
+        let value = text.replace(/[R]/g, '');
+        if (value.includes(',') && value.includes('.')) {
+          value = value.replace(/\./g, '').replace(',', '.');
+        } else if (value.includes(',')) {
+          value = value.replace(',', '.');
+        }
+        value = value.replace(/[^0-9.]/g, '');
+        setOrderValue(value);
+      }
+    } catch (err) {
+      console.error("Gemini Analysis Error:", err);
+    }
+    setIsAnalyzing(false);
+  };base64,${base64}` }
               }
             ]
           }
@@ -557,3 +571,4 @@ export default function ClientDetailsPage() {
     </div>
   );
 }
+
