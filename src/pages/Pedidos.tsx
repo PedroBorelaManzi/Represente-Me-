@@ -28,6 +28,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { processOrderFile } from '../lib/orderProcessor';
 
 export default function PedidosPage() {
   const { user } = useAuth();
@@ -130,30 +131,29 @@ export default function PedidosPage() {
     
     setIsAnalyzingManual(true);
     try {
-        const api_key = import.meta.env.VITE_GEMINI_API_KEY;
-        const genAI = new GoogleGenerativeAI(api_key);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await processOrderFile(file, clients.map(c => c.name), settings.categories || []);
         
-        const base64 = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve((reader.result as string).split(",")[1]);
-            reader.readAsDataURL(file);
-        });
+        if (result.status === 'ready') {
+            if (result.value > 0) setOrderValue(result.value.toString());
+            
+            if (result.client) {
+                const match = clients.find(c => 
+                    c.name.toLowerCase().includes(result.client.toLowerCase()) || 
+                    result.client.toLowerCase().includes(c.name.toLowerCase())
+                );
+                if (match) setSelectedClient(match.id);
+            }
 
-        const result = await model.generateContent([
-            { inlineData: { mimeType: file.type, data: base64 as string } },
-            "Extraia o valor total final deste pedido. Retorne APENAS o nÃºmero com ponto decimal. Exemplo: 1250.50"
-        ]);
-
-        const text = result.response.text().trim();
-        if (text) {
-            const val = text.replace(/[^0-9.]/g, "");
-            if (!isNaN(parseFloat(val))) {
-                setOrderValue(val);
+            if (result.category) {
+                const catMatch = (settings.categories || []).find((cat) => 
+                    cat.toLowerCase().includes(result.category.toLowerCase()) ||
+                    result.category.toLowerCase().includes(cat.toLowerCase())
+                );
+                if (catMatch) setSelectedCategory(catMatch);
             }
         }
     } catch (err) {
-        console.error("Erro na anÃ¡lise:", err);
+        console.error("Erro na análise:", err);
     } finally {
         setIsAnalyzingManual(false);
     }
@@ -237,40 +237,42 @@ export default function PedidosPage() {
     setIsProcessingBatch(true);
     setBatchResults([]);
 
-    const api_key = import.meta.env.VITE_GEMINI_API_KEY;
-    const genAI = new GoogleGenerativeAI(api_key);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const knownClientNames = clients.map(c => c.name);
+    const knownCategories = settings.categories || [];
 
     for (const file of batchFiles) {
       try {
-        const base64 = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve((reader.result as string).split(",")[1]);
-          reader.readAsDataURL(file);
-        });
-
-        const result = await model.generateContent([
-          { inlineData: { mimeType: file.type, data: base64 as string } },
-          `Analise este pedido e extraia:
-          1. Nome da Empresa/Cliente (tente encontrar o mais prÃ³ximo na lista fornecida)
-          2. Categoria/Representada
-          3. Valor Total
-          
-          Lista de Clientes conhecidos: ${clients.map(c => c.name).join(", ")}
-          Lista de Categorias conhecidas: ${(settings.categories || []).join(", ")}
-          
-          Retorne em JSON: {"client": "NOME", "category": "CATEGORIA", "value": 0.00}`
-        ]);
-
-        const text = result.response.text();
-        const jsonMatch = text.match(/\{.*\}/s);
-        const data = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-
-        if (data) {
-          setBatchResults(prev => [...prev, { file: file, ...data, status: 'processed' }]);
+        const result = await processOrderFile(file, knownClientNames, knownCategories);
+        
+        if (result.status === 'ready') {
+          setBatchResults(prev => [...prev, { 
+            file: file, 
+            client: result.client,
+            category: result.category,
+            value: result.value,
+            address: result.address,
+            status: 'processed' 
+          }]);
+        } else {
+          setBatchResults(prev => [...prev, { 
+            file: file, 
+            client: "Erro na extração", 
+            category: "", 
+            value: 0, 
+            status: 'error',
+            error: result.error 
+          }]);
         }
       } catch (err) {
         console.error("Erro no lote:", err);
+        setBatchResults(prev => [...prev, { 
+          file: file, 
+          client: "Erro fatal", 
+          category: "", 
+          value: 0, 
+          status: 'error',
+          error: "Falha ao processar arquivo" 
+        }]);
       }
     }
     setIsProcessingBatch(false);

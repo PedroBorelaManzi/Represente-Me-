@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { Link } from "react-router-dom";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { processOrderFile } from "../lib/orderProcessor";
 import { getHighPrecisionCoordinates } from "../lib/geminiGeocoding";
 import { toast } from "sonner";
 
@@ -207,64 +208,61 @@ export default function EmpresasPage() {
     
     setUploadFiles(prev => [...prev, ...newFiles]);
 
-    const api_key = import.meta.env.VITE_GEMINI_API_KEY;
-    const genAI = new GoogleGenerativeAI(api_key);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
     for (let i = 0; i < newFiles.length; i++) {
-        const current = newFiles[i];
+        const currentFile = newFiles[i].file;
         try {
-            const base64 = await new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve((reader.result as string).split(",")[1]);
-              reader.readAsDataURL(current.file);
+            const result = await processOrderFile(currentFile, [], settings.categories || []);
+
+            if (result.status === 'ready') {
+                // Pre-processamento de CNPJ
+                const cleanCnpj = result.cnpj.replace(/\D/g, "");
+                
+                // Check if client exists by CNPJ
+                let matchedClient = null;
+                if (cleanCnpj) {
+                    const { data: clientByCnpj } = await supabase
+                        .from("clients")
+                        .select("id, name")
+                        .eq("cnpj", cleanCnpj)
+                        .maybeSingle();
+                    matchedClient = clientByCnpj;
+                }
+
+                setUploadFiles(prev => {
+                    const updated = [...prev];
+                    const idx = updated.length - newFiles.length + i;
+                    updated[idx] = {
+                        ...updated[idx],
+                        clientName: result.client,
+                        cnpj: result.cnpj,
+                        category: result.category,
+                        value: result.value,
+                        address: result.address,
+                        status: 'ready',
+                        isNewClient: !matchedClient,
+                        matchedClientId: matchedClient?.id
+                    };
+                    return updated;
+                });
+            } else {
+                throw new Error(result.error || "Falha na extração");
+            }
+        } catch (err) {
+            console.error("Erro no processamento:", err);
+            setUploadFiles(prev => {
+                const updated = [...prev];
+                const idx = updated.length - newFiles.length + i;
+                updated[idx] = { 
+                    ...updated[idx], 
+                    status: 'error', 
+                    error: err.message || "Falha ao processar arquivo" 
+                };
+                return updated;
             });
-
-            const prompt = `Analise este pedido e extraia:
-            1. Nome do Cliente/Razao Social
-            2. CNPJ
-            3. Categoria/Representada/Fabrica (tente encontrar o nome da empresa vendedora no topo ou rodapé)
-            4. Valor Total do Pedido
-            5. Endereco completo (Logradouro, Numero, Bairro, Cidade, Estado) para novos cadastros
-            
-            Lista de Categorias Conhecidas: ${(settings.categories || []).join(", ")}
-            
-            Retorne APENAS um JSON no formato:
-            {"client": "NOME", "cnpj": "12345678901234", "category": "CATEGORIA", "value": 0.00, "address": "RUA, NUMERO - CIDADE/UF"}
-            
-            Se houver multiplas categorias, use a principal. Se a categoria não estiver na lista, retorne a que encontrar no pedido.`;
-
-            const result = await model.generateContent([
-              { inlineData: { mimeType: current.file.type, data: base64 as string } },
-              prompt
-            ]);
-
-            const text = result.response.text();
-            const jsonMatch = text.match(/\{.*\}/s);
-            const data = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-
-            if (data) {
-                // Check if client exists
-                const { data: existingClient } = await supabase
-                    .from("clients")
-                    .select("id, name")
-                    .or(`cnpj.eq.${data.cnpj.replace(/\D/g, "")},name.ilike.%${data.client.trim()}%`)
-                    .limit(1)
-                    .maybeSingle();
-
-                setUploadFiles(prev => prev.map((f, idx) => {
-                    if (f.file === current.file) {
-                        return {
-                            ...f,
-                            clientName: existingClient?.name || data.client,
-                            cnpj: data.cnpj.replace(/\D/g, ""),
-                            category: data.category,
-                            value: data.value,
-                            address: data.address,
-                            status: 'ready',
-                            isNewClient: !existingClient,
-                            matchedClientId: existingClient?.id
-                        };
+        }
+    }
+    setIsProcessing(false);
+  };
                     }
                     return f;
                 }));
