@@ -1,10 +1,26 @@
-﻿import React, { useState, useEffect, useRef } from "react";
-import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check, Loader2 } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check, Loader2, Upload, Search, MapPin, AlertCircle, FileCheck, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { Link } from "react-router-dom";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getHighPrecisionCoordinates } from "../lib/geminiGeocoding";
+import { toast } from "sonner";
+
+interface ProcessedFile {
+  file: File;
+  clientName: string;
+  cnpj: string;
+  category: string;
+  value: number;
+  address?: string;
+  status: 'idle' | 'processing' | 'ready' | 'saving' | 'done' | 'error';
+  isNewClient: boolean;
+  error?: string;
+  matchedClientId?: string;
+}
 
 export default function EmpresasPage() {
   const { user } = useAuth();
@@ -17,10 +33,15 @@ export default function EmpresasPage() {
   const [syncStatus, setSyncStatus] = useState<{current: number, total: number} | null>(null);
   const scrollSentinelRef = React.useRef(null);
 
-  // Edit Modal State
+  // Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<string>("");
   const [editNameInput, setEditNameInput] = useState<string>("");
+  
+  // Intelligent Upload Modal State
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadFiles, setUploadFiles] = useState<ProcessedFile[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const filteredOrders = (allOrders || []).filter(o => {
     const matchesCategory = selectedCategory === "all" || o.category.toLowerCase() === selectedCategory.toLowerCase();
@@ -45,7 +66,6 @@ export default function EmpresasPage() {
     if (!user) return;
     setLoading(true);
     
-    // Updated to include file_name if present, otherwise fallback
     const { data: dbOrders, error } = await supabase
       .from("orders")
       .select(`
@@ -71,7 +91,6 @@ export default function EmpresasPage() {
         created_at: o.created_at
       }));
 
-      // Update global categories if any are new
       const discoveredCategories = [...new Set(orders.map(o => o.category))];
       const currentGlobal = settings?.categories || [];
       const newCats = discoveredCategories.filter(c => 
@@ -101,7 +120,6 @@ export default function EmpresasPage() {
 
       if (!isSilent) setSyncStatus({ current: 0, total: clients.length });
 
-      // Parallel processing with batching (Max 10 parallel clients)
       const batchSize = 10;
       for (let i = 0; i < clients.length; i += batchSize) {
         const clientBatch = clients.slice(i, i + batchSize);
@@ -136,12 +154,10 @@ export default function EmpresasPage() {
                }
             }
 
-            // High-speed batch upsert for orders of this client
             if (clientOrders.length > 0) {
               await supabase.from("orders").upsert(clientOrders, { onConflict: "client_id,file_path" });
             }
 
-            // Single update for faturamento
             await supabase
               .from("clients")
               .update({ faturamento: newFaturamento })
@@ -170,6 +186,166 @@ export default function EmpresasPage() {
        };
     }
   }, [user, settingsLoading]);
+
+  // Intelligent Upload Methods
+  const handleUploadClick = () => {
+    setIsUploadModalOpen(true);
+    setUploadFiles([]);
+  };
+
+  const processFiles = async (files: FileList) => {
+    setIsProcessing(true);
+    const newFiles: ProcessedFile[] = Array.from(files).map(f => ({
+      file: f,
+      clientName: "",
+      cnpj: "",
+      category: "",
+      value: 0,
+      status: 'processing',
+      isNewClient: false
+    }));
+    
+    setUploadFiles(prev => [...prev, ...newFiles]);
+
+    const api_key = import.meta.env.VITE_GEMINI_API_KEY;
+    const genAI = new GoogleGenerativeAI(api_key);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    for (let i = 0; i < newFiles.length; i++) {
+        const current = newFiles[i];
+        try {
+            const base64 = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve((reader.result as string).split(",")[1]);
+              reader.readAsDataURL(current.file);
+            });
+
+            const prompt = `Analise este pedido e extraia:
+            1. Nome do Cliente/Razao Social
+            2. CNPJ
+            3. Categoria/Representada/Fabrica (tente encontrar o nome da empresa vendedora no topo ou rodapé)
+            4. Valor Total do Pedido
+            5. Endereco completo (Logradouro, Numero, Bairro, Cidade, Estado) para novos cadastros
+            
+            Lista de Categorias Conhecidas: ${(settings.categories || []).join(", ")}
+            
+            Retorne APENAS um JSON no formato:
+            {"client": "NOME", "cnpj": "12345678901234", "category": "CATEGORIA", "value": 0.00, "address": "RUA, NUMERO - CIDADE/UF"}
+            
+            Se houver multiplas categorias, use a principal. Se a categoria não estiver na lista, retorne a que encontrar no pedido.`;
+
+            const result = await model.generateContent([
+              { inlineData: { mimeType: current.file.type, data: base64 as string } },
+              prompt
+            ]);
+
+            const text = result.response.text();
+            const jsonMatch = text.match(/\{.*\}/s);
+            const data = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+
+            if (data) {
+                // Check if client exists
+                const { data: existingClient } = await supabase
+                    .from("clients")
+                    .select("id, name")
+                    .or(`cnpj.eq.${data.cnpj.replace(/\D/g, "")},name.ilike.%${data.client.trim()}%`)
+                    .limit(1)
+                    .maybeSingle();
+
+                setUploadFiles(prev => prev.map((f, idx) => {
+                    if (f.file === current.file) {
+                        return {
+                            ...f,
+                            clientName: existingClient?.name || data.client,
+                            cnpj: data.cnpj.replace(/\D/g, ""),
+                            category: data.category,
+                            value: data.value,
+                            address: data.address,
+                            status: 'ready',
+                            isNewClient: !existingClient,
+                            matchedClientId: existingClient?.id
+                        };
+                    }
+                    return f;
+                }));
+            }
+        } catch (err) {
+            console.error("Erro AI:", err);
+            setUploadFiles(prev => prev.map((f, idx) => {
+                if (f.file === current.file) return { ...f, status: 'error', error: "Falha na leitura" };
+                return f;
+            }));
+        }
+    }
+    setIsProcessing(false);
+  };
+
+  const confirmSingleUpload = async (index: number) => {
+      const item = uploadFiles[index];
+      setUploadFiles(prev => prev.map((f, idx) => idx === index ? { ...f, status: 'saving' } : f));
+
+      try {
+          let clientId = item.matchedClientId;
+
+          // 1. Create New Client if needed (Deep Search)
+          if (!clientId) {
+              const coords = await getHighPrecisionCoordinates(`${item.address}`, item.clientName, item.cnpj);
+              const { data: newClientRes, error: clientErr } = await supabase
+                  .from("clients")
+                  .insert([{
+                      user_id: user?.id,
+                      name: item.clientName,
+                      cnpj: item.cnpj,
+                      address: item.address,
+                      lat: coords?.lat,
+                      lng: coords?.lng,
+                      status: 'Ativo'
+                  }])
+                  .select()
+                  .single();
+              
+              if (clientErr) throw clientErr;
+              clientId = newClientRes.id;
+              toast.success(`Cliente ${item.clientName} cadastrado com sucesso!`);
+          }
+
+          // 2. Prepare Storage Path
+          const cleanName = item.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
+          const cleanValue = `VALOR_${parseFloat(item.value.toString()).toFixed(2)}`;
+          const formattedName = `${item.category}___${cleanValue}___${cleanName}`;
+          const path = `${user?.id}/${clientId}/${formattedName}`;
+
+          // 3. Upload to Storage
+          const { error: uploadError } = await supabase.storage
+              .from("client_vault")
+              .upload(path, item.file, { upsert: true });
+
+          if (uploadError) throw uploadError;
+
+          // 4. Update Orders Table
+          await supabase.from("orders").upsert([{
+              user_id: user?.id,
+              client_id: clientId,
+              category: item.category,
+              value: item.value,
+              file_name: formattedName,
+              file_path: path
+          }], { onConflict: "client_id,file_path" });
+
+          // 5. Update Faturamento Cache
+          const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", clientId).single();
+          const fat = clientData?.faturamento || {};
+          fat[item.category] = (Number(fat[item.category] || 0) + Number(item.value));
+          await supabase.from("clients").update({ faturamento: fat }).eq("id", clientId);
+
+          setUploadFiles(prev => prev.map((f, idx) => idx === index ? { ...f, status: 'done' } : f));
+          await loadOrders();
+      } catch (err) {
+          console.error("Erro no processamento:", err);
+          toast.error("Erro ao salvar pedido.");
+          setUploadFiles(prev => prev.map((f, idx) => idx === index ? { ...f, status: 'error', error: "Falha ao salvar" } : f));
+      }
+  };
 
   const addCategory = async () => {
     if (newCat.trim() && !settings.categories?.some(c => c.toLowerCase() === newCat.trim().toLowerCase())) {
@@ -271,7 +447,7 @@ export default function EmpresasPage() {
   };
 
   const handleDeleteSub = async () => {
-      if (window.confirm(`Deseja realmente excluir a empresa/categoria "${editingCategory}"? TODOS os arquivos e dados vinculados serão mantidos, mas a categoria não aparecerá mais nos filtros.`)) {
+      if (window.confirm(`Deseja realmente excluir a representada "${editingCategory}"? TODOS os arquivos e dados vinculados serão mantidos, mas a representada não aparecerá mais nos filtros.`)) {
           const updated = (settings?.categories || []).filter(c => c.toLowerCase() !== editingCategory.toLowerCase());
           await updateSettings({ categories: updated });
           if (selectedCategory.toLowerCase() === editingCategory.toLowerCase()) {
@@ -302,16 +478,27 @@ export default function EmpresasPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
             <Building2 className="w-7 h-7 text-indigo-600" /> Pedidos e Empresas
           </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Gerencie seus pedidos e empresas em uma visão unificada.</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Gerencie seus pedidos e faturamentos inteligentes.</p>
         </div>
-        {syncStatus && (
-           <div className="flex items-center gap-3 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl animate-pulse">
-              <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-400">
-                Sincronizando: {Math.round((syncStatus.current / syncStatus.total) * 100)}%
-              </span>
-           </div>
-        )}
+        
+        <div className="flex items-center gap-4">
+            <button 
+                onClick={handleUploadClick}
+                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-lg active:scale-95 group"
+            >
+                <Upload className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+                Enviar Pedidos
+            </button>
+            
+            {syncStatus && (
+               <div className="flex items-center gap-3 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl animate-pulse">
+                  <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-400">
+                    Sincronizando: {Math.round((syncStatus.current / syncStatus.total) * 100)}%
+                  </span>
+               </div>
+            )}
+        </div>
       </div>
 
       {/* Total Revenue Card */}
@@ -321,7 +508,7 @@ export default function EmpresasPage() {
                <TrendingUp className="w-8 h-8 text-indigo-600" />
             </div>
             <div>
-               <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">Faturamento Total das Empresas</p>
+               <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">Faturamento Total Geral</p>
                <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-100 mt-1">{formatCurrency(totalGeral)}</h2>
             </div>
          </div>
@@ -332,7 +519,7 @@ export default function EmpresasPage() {
         {/* Left Column: List of Categories */}
         <div className="md:col-span-1 space-y-4">
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-5 shadow-sm space-y-4">
-             <h3 className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Suas Empresas</h3>
+             <h3 className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Representadas</h3>
              
              <div className="space-y-2 max-h-[calc(100vh-24rem)] overflow-y-auto pr-1">
                 <div 
@@ -345,7 +532,7 @@ export default function EmpresasPage() {
                 >
                   <div className="flex items-center gap-2 font-bold text-sm">
                     <FileText className={`w-4 h-4 ${selectedCategory === "all" ? "text-indigo-600" : "text-slate-400"}`} />
-                    <span>Todos os Pedidos</span>
+                    <span>Todos os Lançamentos</span>
                   </div>
                   <span className="text-xs font-black px-2 py-0.5 bg-slate-100 dark:bg-zinc-800 rounded-lg group-hover:bg-indigo-100 transition-colors">
                     {allOrders.length}
@@ -388,7 +575,7 @@ export default function EmpresasPage() {
                   type="text"
                   value={newCat}
                   onChange={(e) => setNewCat(e.target.value)}
-                  placeholder="Nova empresa..."
+                  placeholder="Nova representada..."
                   className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100"
                   onKeyDown={(e) => e.key === "Enter" && addCategory()}
                 />
@@ -408,11 +595,11 @@ export default function EmpresasPage() {
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-6 flex flex-col h-[calc(100vh-16rem)]">
              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-zinc-850">
                 <div>
-                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "" : selectedCategory}</h2>
-                   <p className={`mt-0.5 ${selectedCategory === "all" ? "text-lg font-black text-indigo-600 dark:text-indigo-400" : "text-xs text-slate-500 dark:text-zinc-400"}`}>{selectedCategory === "all" ? "TODOS OS PEDIDOS:" : "Listagem de pedidos vinculados a esta empresa."}</p>
+                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "Histórico Geral" : selectedCategory}</h2>
+                   <p className={`mt-0.5 ${selectedCategory === "all" ? "text-sm font-semibold text-slate-500" : "text-xs text-slate-500 dark:text-zinc-400"}`}>Listagem de faturamento e extratos carregados.</p>
                 </div>
                 <div className="text-right">
-                   <span className="text-xs text-slate-500 dark:text-zinc-400">Faturamento</span>
+                   <span className="text-xs text-slate-500 dark:text-zinc-400">Total Representada</span>
                    <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">{formatCurrency(totalCategory)}</p>
                 </div>
              </div>
@@ -427,25 +614,31 @@ export default function EmpresasPage() {
                            key={order.id}
                            initial={{ opacity: 0, y: 10 }}
                            animate={{ opacity: 1, y: 0 }}
-                           className="flex items-center justify-between p-4 border border-slate-100 dark:border-zinc-850 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-950 transition-colors"
+                           className="flex items-center justify-between p-4 border border-slate-100 dark:border-zinc-850 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-950 transition-colors group"
                          >
                            <div className="flex items-center gap-3 truncate">
-                             <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl">
+                             <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl group-hover:bg-indigo-100 transition-colors">
                                 <FileText className="w-5 h-5 text-indigo-600" />
                              </div>
                              <div className="truncate max-w-sm">
                                 <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">{order.name}</h4>
-                                <Link to={`/dashboard/clientes/${order.clientId}`} className="text-xs text-indigo-600 hover:underline flex items-center gap-0.5 mt-0.5">{order.clientName}</Link>
+                                <Link to={`/dashboard/clientes/${order.clientId}`} className="text-xs text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-0.5 mt-0.5 hover:underline">{order.clientName}</Link>
                              </div>
                            </div>
                            <div className="flex items-center gap-4">
                              <div className="text-right">
-                                <span className="text-[10px] text-slate-400 dark:text-zinc-500">{new Date(order.created_at).toLocaleDateString("pt-BR")}</span>
+                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-bold">{new Date(order.created_at).toLocaleDateString("pt-BR")}</span>
                                 <p className="text-sm font-black text-slate-800 dark:text-zinc-200">{formatCurrency(order.value)}</p>
                              </div>
                            </div>
                          </motion.div>
                       ))}
+                      {filteredOrders.length === 0 && (
+                          <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-2 opacity-50">
+                              <FileText className="w-12 h-12" />
+                              <p className="text-sm font-bold">Nenhum pedido encontrado</p>
+                          </div>
+                      )}
                    </AnimatePresence>
                 )}
              </div>
@@ -466,12 +659,12 @@ export default function EmpresasPage() {
                className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-xl p-6 w-full max-w-md space-y-4"
              >
                 <div className="flex justify-between items-center">
-                   <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Editar Empresa</h3>
+                   <h3 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Editar Representada</h3>
                    <button onClick={() => setIsEditModalOpen(false)} className="p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-850 rounded-xl"><X className="w-5 h-5"/></button>
                 </div>
                 <div className="space-y-4">
                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">Nome da Empresa</label>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1.5">Nome da Representada</label>
                       <input 
                         type="text"
                         value={editNameInput}
@@ -479,12 +672,183 @@ export default function EmpresasPage() {
                         className="w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100"
                       />
                    </div>
-                   <p className="text-xs text-emerald-600 dark:text-emerald-500 font-medium">Nota: A alteração renomeará todos os registros e arquivos vinculados a esta empresa.</p>
+                   <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 rounded-xl flex items-start gap-3">
+                        <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5" />
+                        <p className="text-xs text-amber-700 dark:text-amber-400">Nota: Ao renomear, o sistema atualizará todos os faturamentos e caminhos de arquivos vinculados.</p>
+                   </div>
                 </div>
                 <div className="flex flex-col gap-2 pt-4 border-t border-slate-100 dark:border-zinc-850">
-                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Salvar Alterações</button>
-                    <button onClick={handleDeleteSub} className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-sm flex items-center justify-center gap-1 border border-red-100"><Trash2 className="w-4 h-4" /> Excluir Empresa</button>
+                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Salvar Alterações</button>
+                    <button onClick={handleDeleteSub} className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border border-red-100"><Trash2 className="w-4 h-4" /> Excluir permanentemente</button>
                 </div>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Intelligent Upload Modal */}
+      <AnimatePresence>
+        {isUploadModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+             <motion.div
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               exit={{ opacity: 0, y: 20 }}
+               className="bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-200 dark:border-zinc-800 shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+             >
+                <div className="p-8 border-b dark:border-zinc-850 flex justify-between items-center bg-indigo-50/30 dark:bg-indigo-950/20">
+                   <div className="flex items-center gap-4">
+                        <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg">
+                            <Upload className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-black text-slate-900 dark:text-zinc-100">Portal de Envio Inteligente</h3>
+                            <p className="text-sm text-slate-500 dark:text-zinc-400 font-medium">Arraste seus faturamentos e deixe a IA cuidar do resto.</p>
+                        </div>
+                   </div>
+                   <button onClick={() => setIsUploadModalOpen(false)} className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-2xl transition-colors"><X className="w-6 h-6"/></button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                    {uploadFiles.length === 0 ? (
+                        <div 
+                            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            onDrop={(e) => { e.preventDefault(); e.stopPropagation(); processFiles(e.dataTransfer.files); }}
+                            className="h-80 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-[32px] flex flex-col items-center justify-center space-y-4 hover:border-indigo-500 transition-all bg-slate-50/50 dark:bg-zinc-950/50 group"
+                        >
+                            <div className="p-6 bg-white dark:bg-zinc-900 rounded-full shadow-xl group-hover:scale-110 transition-transform">
+                                <Upload className="w-12 h-12 text-indigo-600" />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-lg font-black text-slate-700 dark:text-zinc-300">Arraste seus arquivos aqui</p>
+                                <p className="text-sm text-slate-400 dark:text-zinc-500 mt-1">Suporte para PDF, JPG, PNG e arquivos de pedido.</p>
+                            </div>
+                            <label className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm cursor-pointer shadow-lg active:scale-95 transition-all">
+                                Selecionar Arquivos
+                                <input type="file" multiple onChange={(e) => e.target.files && processFiles(e.target.files)} className="hidden" />
+                            </label>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest">Fila de Processamento</h4>
+                                {isProcessing && <div className="flex items-center gap-2 text-indigo-600 font-bold text-xs"><Loader2 className="w-3 h-3 animate-spin"/> IA Trabalhando...</div>}
+                            </div>
+                            {uploadFiles.map((item, idx) => (
+                                <motion.div 
+                                    key={idx}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className={`p-5 rounded-3xl border transition-all ${
+                                        item.status === 'done' ? 'border-emerald-200 bg-emerald-50/30 dark:bg-emerald-950/10' : 
+                                        item.status === 'error' ? 'border-red-200 bg-red-50/30' : 
+                                        'border-slate-100 dark:border-zinc-850 bg-white dark:bg-zinc-900'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between gap-6">
+                                        <div className="flex items-center gap-4 flex-1 truncate">
+                                            <div className={`p-3 rounded-2xl ${item.status === 'done' ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-zinc-800 text-slate-500'}`}>
+                                                {item.status === 'done' ? <CheckCircle2 className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
+                                            </div>
+                                            <div className="truncate">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-tight">{item.file.name}</p>
+                                                {item.status === 'processing' ? (
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <div className="h-2 w-32 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-indigo-600 animate-progress-indeterminate w-full"></div>
+                                                        </div>
+                                                        <span className="text-xs text-indigo-600 font-bold animate-pulse">Analisando...</span>
+                                                    </div>
+                                                ) : item.status === 'ready' || item.status === 'saving' || item.status === 'done' ? (
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg border border-indigo-100/50 dark:border-indigo-900/40">
+                                                            <Search className="w-3 h-3 text-indigo-500" />
+                                                            <input 
+                                                                type="text" 
+                                                                value={item.clientName} 
+                                                                onChange={(e) => setUploadFiles(prev => prev.map((f, i) => i === idx ? { ...f, clientName: e.target.value } : f))}
+                                                                className="bg-transparent border-none p-0 text-xs font-black text-indigo-700 dark:text-indigo-300 focus:ring-0 w-auto min-w-[50px]"
+                                                            />
+                                                            {item.isNewClient && <span className="text-[9px] bg-indigo-600 text-white px-1.5 py-0.5 rounded-md font-black uppercase">Novo</span>}
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-zinc-800 rounded-lg border border-slate-100 dark:border-zinc-700">
+                                                            <Building2 className="w-3 h-3 text-slate-400" />
+                                                            <select 
+                                                                value={item.category}
+                                                                onChange={(e) => setUploadFiles(prev => prev.map((f, i) => i === idx ? { ...f, category: e.target.value } : f))}
+                                                                className="bg-transparent border-none p-0 text-xs font-bold text-slate-600 dark:text-zinc-400 focus:ring-0 cursor-pointer"
+                                                            >
+                                                                {(settings.categories || []).map(c => <option key={c} value={c}>{c}</option>)}
+                                                            </select>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg border border-emerald-100/50 dark:border-emerald-900/40">
+                                                            <DollarSign className="w-3 h-3 text-emerald-500" />
+                                                            <input 
+                                                                type="number" 
+                                                                value={item.value} 
+                                                                onChange={(e) => setUploadFiles(prev => prev.map((f, i) => i === idx ? { ...f, value: Number(e.target.value) } : f))}
+                                                                className="bg-transparent border-none p-0 text-xs font-black text-emerald-700 dark:text-emerald-300 focus:ring-0 w-20"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : item.status === 'error' && (
+                                                    <p className="text-xs text-red-600 font-bold flex items-center gap-1 mt-1"><AlertCircle className="w-3 h-3"/> {item.error}</p>
+                                                )}
+                                                {item.isNewClient && item.status === 'ready' && (
+                                                    <div className="flex items-center gap-1 mt-1 text-[10px] text-indigo-500 font-bold">
+                                                        <MapPin className="w-3 h-3" />
+                                                        <input 
+                                                            type="text" 
+                                                            value={item.address} 
+                                                            onChange={(e) => setUploadFiles(prev => prev.map((f, i) => i === idx ? { ...f, address: e.target.value } : f))}
+                                                            className="bg-transparent border-none p-0 text-[10px] font-bold text-indigo-500 focus:ring-0 flex-1"
+                                                            placeholder="Endereço para localização..."
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-shrink-0">
+                                            {item.status === 'ready' && (
+                                                <button 
+                                                    onClick={() => confirmSingleUpload(idx)}
+                                                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs shadow-lg active:scale-95 transition-all flex items-center gap-2"
+                                                >
+                                                    Confirmar e Salvar
+                                                </button>
+                                            )}
+                                            {item.status === 'saving' && (
+                                                <div className="px-5 py-2.5 bg-slate-100 dark:bg-zinc-800 rounded-2xl flex items-center gap-2">
+                                                    <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                                                    <span className="text-xs font-black text-slate-500">Salvando...</span>
+                                                </div>
+                                            )}
+                                            {item.status === 'done' && (
+                                                <div className="flex items-center gap-2 text-emerald-600 px-2 py-1">
+                                                    <FileCheck className="w-5 h-5" />
+                                                    <span className="text-xs font-black uppercase tracking-widest">Finalizado</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {uploadFiles.length > 0 && !isProcessing && (
+                    <div className="p-8 bg-slate-50 dark:bg-zinc-950 border-t dark:border-zinc-850 flex justify-between items-center">
+                        <button 
+                            onClick={() => setUploadFiles([])}
+                            className="text-sm font-bold text-slate-500 hover:text-slate-700 dark:hover:text-zinc-300 transition-colors"
+                        >
+                            Limpar Tudo
+                        </button>
+                        <p className="text-xs text-slate-400 font-medium italic">Dados extraídos automaticamente via Inteligência Artificial.</p>
+                    </div>
+                )}
              </motion.div>
           </div>
         )}
