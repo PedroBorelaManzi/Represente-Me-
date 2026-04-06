@@ -5,7 +5,7 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 
 export async function getHighPrecisionCoordinates(address: string, clientName?: string, cnpj?: string): Promise<{ lat: number; lng: number } | null> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     const prompt = `
       Atue como um especialista em geolocalização no Brasil. 

@@ -1,4 +1,4 @@
-Ôªøimport React from "react";
+import React from "react";
 import { X } from "lucide-react";
 
 interface Appointment {
@@ -64,7 +64,7 @@ export default function AppointmentForm({
         <div className="space-y-5">
           <div>
             <label className="block text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
-              T√≠tulo do Evento
+              TÌtulo do Evento
             </label>
             <input 
               type="text" 
@@ -103,7 +103,7 @@ export default function AppointmentForm({
             </div>
             <div>
               <label className="block text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
-                Hor√°rio
+                Hor·rio
               </label>
               <input 
                 type="text" 

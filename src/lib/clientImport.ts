@@ -81,7 +81,7 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 /**
- * Processa a IA usando gemini-1.5-flash e Regex Fundido
+ * Processa a IA usando gemini-1.5-flash-latest e Regex Fundido
  */
 async function processWithGemini(file: File): Promise<string[]> {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -90,7 +90,7 @@ async function processWithGemini(file: File): Promise<string[]> {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
   const prompt = `ATENÇÃO: Este é um documento contendo informações fiscais/corporativas.
 Você é uma ferramenta de OCR analítico altamente capacitada. 

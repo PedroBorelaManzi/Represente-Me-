@@ -43,7 +43,7 @@ export async function processOrderFile(file, knownClients = [], categories = [])
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) throw new Error("VITE_GEMINI_API_KEY não configurada.");
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
   
   const prompt = `Analise detalhadamente este arquivo de pedido/faturamento e extraia as informações no formato JSON.
 
