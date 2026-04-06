@@ -2,7 +2,7 @@
 import * as pdfjs from "pdfjs-dist";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+pdfjs.GlobalWorkerOptions.workerSrc = "https://unpkg.com/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
 
 export interface OrderExtractionResult {
   client: string;
@@ -18,7 +18,6 @@ export interface OrderExtractionResult {
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-// 1. OTIMIZAO: Prompt de Sistema Centralizado (Processamento mais rpido no servidor Google)
 const SYSTEM_INSTRUCTION = `Você é um especialista em OCR de documentos fiscais brasileiros.
 Analise o conteúdo e extraia:
 1. CLIENTE DESTINATÁRIO (Comprador): Nome e CNPJ. Ignore o Fornecedor/Emissor.
@@ -73,11 +72,10 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     const detected = await detectFileType(file);
     let extractedText = "";
 
-    // Extrao de Texto (Acelerada)
     if (detected.type === "pdf") {
       const buffer = await file.arrayBuffer();
       const pdf = await pdfjs.getDocument({ data: buffer }).promise;
-      for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) { // Limite de 3 pginas para velocidade
+      for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
         extractedText += content.items.map((item: any) => item.str).join(" ") + "\n";
@@ -88,12 +86,11 @@ export async function processOrderFile(file, knownClients = [], categories = [])
       extractedText = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
     }
 
-    // 2. OTIMIZAO: Triagem Local como Dica para a IA
     const localCnpj = extractCNPJLocally(extractedText);
     const localValue = extractValueLocally(extractedText);
 
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
         systemInstruction: SYSTEM_INSTRUCTION
     }, { apiVersion: "v1" });
 
@@ -105,7 +102,7 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     CATEGORIAS CONHECIDAS: ${categories.join(", ")}
     
     CONTEÚDO DO DOCUMENTO:
-    ${extractedText.substring(0, 10000)} // Limite de 10k chars para velocidade
+    ${extractedText.substring(0, 10000)}
     `;
 
     let result;
@@ -130,7 +127,12 @@ export async function processOrderFile(file, knownClients = [], categories = [])
        });
     }
 
-    const data = JSON.parse(result.response.text());
+    let textResult = result.response.text();
+    // Remover blocos de código markdown (```json ... ```) se existirem
+    if (textResult.includes("```")) {
+        textResult = textResult.replace(/```(?:json)?\n?([\s\S]*?)```/g, '$1').trim();
+    }
+    const data = JSON.parse(textResult);
 
     return {
       client: data.client || "Desconhecido",
@@ -143,7 +145,18 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     };
 
   } catch (err) {
-    console.error("AI Reader Error:", err);
-    return { client: "", cnpj: "", category: "", value: 0, status: "error", error: "Falha na leitura IA acelerada." };
+    console.error("AI Reader Error Details:", {
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : "",
+        file: file.name
+    });
+    return { 
+        client: "", 
+        cnpj: "", 
+        category: "", 
+        value: 0, 
+        status: "error", 
+        error: "Falha na leitura IA acelerada: " + (err instanceof Error ? err.message : "Erro desconhecido") 
+    };
   }
 }
