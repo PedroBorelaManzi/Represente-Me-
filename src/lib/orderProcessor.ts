@@ -45,23 +45,30 @@ export async function processOrderFile(file, knownClients = [], categories = [])
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
   
-  const prompt = `Analise este arquivo de pedido e extraia as seguintes informações em formato JSON:
-  1. "client": Nome da Empresa/Cliente/Razão Social.
-  2. "cnpj": CNPJ do cliente (apenas números).
-  3. "category": Categoria/Representada/Fábrica.
-  4. "value": Valor Total do pedido (número decimal com . como separador).
-  5. "address": Endereço completo.
+  const prompt = `Analise detalhadamente este arquivo de pedido/faturamento e extraia as informações no formato JSON.
+
+  REGRAS DE EXTRAÇÃO:
+  1. "client": Nome da Empresa/Cliente/Razão Social que está COMPRANDO.
+  2. "cnpj": CNPJ do cliente comprador (apenas números). Procure por "CNPJ Destinatário" ou similar.
+  3. "category": Identifique a qual CATEGORIA ou REPRESENTADA o pedido se refere. 
+     - Analise os produtos vendidos. Se forem roupas de marca X, a categoria é X. 
+     - Se o cabeçalho indicar "Pedido de Empresa Y", a categoria pode ser Y.
+     - Categorias Conhecidas: ${categories.join(", ")}
+     - Se NÃO tiver certeza, tente sugerir a mais provável ou deixe null.
+  4. "value": Valor TOTAL do pedido (número decimal com . como separador).
+  5. "address": Endereço completo do cliente (Rua, Número, Bairro, Cidade, UF). Muito importante para geolocalização.
   
-  Lista de Clientes Conhecidos: ${knownClients.join(", ")}
-  Lista de Categorias Conhecidas: ${categories.join(", ")}
+  Lista de Clientes que já temos no sistema: ${knownClients.join(", ")}
   
-  Retorne APENAS o JSON no formato:
-  {"client": "NOME", "cnpj": "12345678901234", "category": "CATEGORIA", "value": 0.00, "address": "ENDERECO"}
+  Retorne APENAS o JSON no formato abaixo, sem explicações:
+  {"client": "NOME", "cnpj": "12345678901234", "category": "CATEGORIA", "value": 0.00, "address": "ENDERECO COMPLETO"}
   
-  Se não encontrar, deixe como "" ou null.`;
+  Se um campo não for encontrado, use null.`;
 
   try {
     const detected = await detectFileType(file);
+    console.log("Processing file:", file.name, "Detected type:", detected.type);
+
     if (detected.type === "excel") {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer);
@@ -72,19 +79,41 @@ export async function processOrderFile(file, knownClients = [], categories = [])
       const result = await model.generateContent([prompt, fullText]);
       return parseAIResponse(result.response.text());
     }
-    if (detected.type === "text" || (detected.type === "unknown" && file.size < 500000)) {
+
+    if (detected.type === "text" || (detected.type === "unknown" && file.size < 50000)) {
        try {
            const text = await file.text();
-           const result = await model.generateContent([prompt, text]);
-           return parseAIResponse(result.response.text());
-       } catch(e) {}
+           if (text.trim().length > 10) {
+               const result = await model.generateContent([prompt, text]);
+               return parseAIResponse(result.response.text());
+           }
+       } catch(e) {
+           console.warn("Text read fallback failed:", e);
+       }
     }
+
     const base64 = await fileToBase64(file);
-    const result = await model.generateContent([{ inlineData: { mimeType: detected.mimeType || "application/pdf", data: base64 } }, prompt]);
+    const result = await model.generateContent([
+      { 
+        inlineData: { 
+          mimeType: detected.mimeType || file.type || "application/pdf", 
+          data: base64 
+        } 
+      }, 
+      prompt
+    ]);
+    
     return parseAIResponse(result.response.text());
   } catch (err) {
     console.error("Extraction error:", err);
-    return { client: "", cnpj: "", category: "", value: 0, status: "error", error: "Falha no processamento IA." };
+    return { 
+      client: "", 
+      cnpj: "", 
+      category: "", 
+      value: 0, 
+      status: "error", 
+      error: err instanceof Error ? err.message : "Falha no processamento IA." 
+    };
   }
 }
 
