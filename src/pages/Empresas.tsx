@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check, Loader2, Upload, Search, MapPin, AlertCircle, FileCheck, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
@@ -55,7 +55,7 @@ export default function EmpresasPage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("orders")
-        .select("*, clients (name)")
+        .select("*, clients(name)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
@@ -86,10 +86,10 @@ export default function EmpresasPage() {
       for (let i = 0; i < clients.length; i += 5) {
         const batch = clients.slice(i, i + 5);
         await Promise.all(batch.map(async (client) => {
-          const { data: files } = await supabase.storage.from("client_vault").list(${user.id}/);
+          const { data: files } = await supabase.storage.from("client_vault").list(`${user.id}/${client.id}`);
           if (files && files.length > 0) {
-            const clientOrders = [];
-            let newFaturamento = {};
+            const clientOrders: any[] = [];
+            let newFaturamento: any = {};
 
             for (const file of files) {
               const parts = file.name.split("___");
@@ -105,7 +105,7 @@ export default function EmpresasPage() {
                   category,
                   value,
                   file_name: file.name,
-                  file_path: ${user.id}//,
+                  file_path: `${user.id}/${client.id}/${file.name}`,
                   created_at: file.created_at
                 });
               }
@@ -116,7 +116,7 @@ export default function EmpresasPage() {
             await supabase.from("clients").update({ faturamento: newFaturamento }).eq("id", client.id);
           }
         }));
-        setSyncStatus(prev => prev ? { ...prev, current: i + batch.length } : null);
+        setSyncStatus(prev => prev ? { ...prev, current: Math.min(i + batch.length, clients.length) } : null);
       }
       await loadOrders();
     } catch (err) {
@@ -213,7 +213,7 @@ export default function EmpresasPage() {
           let clientId = item.matchedClientId;
 
           if (!clientId) {
-              const coords = await getHighPrecisionCoordinates(${item.address}, item.clientName, item.cnpj);
+              const coords = await getHighPrecisionCoordinates(`${item.address}`, item.clientName, item.cnpj);
               const { data: newClientRes, error: clientErr } = await supabase
                   .from("clients")
                   .insert([{
@@ -230,13 +230,13 @@ export default function EmpresasPage() {
               
               if (clientErr) throw clientErr;
               clientId = newClientRes.id;
-              toast.success(Cliente  cadastrado com sucesso!);
+              toast.success(`Cliente ${item.clientName} cadastrado com sucesso!`);
           }
 
           const cleanName = item.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
-          const cleanValue = VALOR_;
-          const formattedName = ${item.category}______;
-          const path = ${user?.id}//;
+          const cleanValue = `VALOR_${parseFloat(item.value.toString()).toFixed(2)}`;
+          const formattedName = `${item.category}___${cleanValue}___${cleanName}`;
+          const path = `${user?.id}/${clientId}/${formattedName}`;
 
           const { error: uploadError } = await supabase.storage
               .from("client_vault")
@@ -299,14 +299,14 @@ export default function EmpresasPage() {
           const { data: clients } = await supabase.from("clients").select("id, faturamento, category_last_contact").eq("user_id", user?.id);
           if (clients) {
               for (const client of clients) {
-                  const { data: files } = await supabase.storage.from("client_vault").list(${user?.id}/);
+                  const { data: files } = await supabase.storage.from("client_vault").list(`${user?.id}/${client.id}`);
                   if (files) {
                       for (const file of files) {
                           const parts = file.name.split("___");
                           if (parts.length > 0 && parts[0].toLowerCase() === oldCat.toLowerCase()) {
                               const newName = file.name.replace(parts[0], newCatName);
-                              const oldPath = ${user?.id}//;
-                              const newPath = ${user?.id}//;
+                              const oldPath = `${user?.id}/${client.id}/${file.name}`;
+                              const newPath = `${user?.id}/${client.id}/${newName}`;
                               await supabase.storage.from("client_vault").copy(oldPath, newPath);
                               await supabase.storage.from("client_vault").remove([oldPath]);
                           }
@@ -350,7 +350,7 @@ export default function EmpresasPage() {
   };
 
   const handleDeleteSub = async () => {
-    if (!window.confirm(ATENÇÃO: Deseja realmente excluir a representada ""? \n\nISSO APAGARÁ DEFINITIVAMENTE: \n1. Todos os pedidos registrados dela.\n2. Todos os arquivos anexados desta empresa.\n3. Todo o histórico de faturamento acumulado.\n\nESTA AÇÃO É IRREVERSÍVEL.)) return;
+    if (!window.confirm(`ATENÇÃO: Deseja realmente excluir a representada "${editingCategory}"? \n\nISSO APAGARÁ DEFINITIVAMENTE: \n1. Todos os pedidos registrados dela.\n2. Todos os arquivos anexados desta empresa.\n3. Todo o histórico de faturamento acumulado.\n\nESTA AÇÃO É IRREVERSÍVEL.`)) return;
     
     setLoading(true);
     try {
@@ -359,9 +359,9 @@ export default function EmpresasPage() {
         
         if (clients) {
             for (const client of clients) {
-                const { data: files } = await supabase.storage.from("client_vault").list(${user?.id}/);
+                const { data: files } = await supabase.storage.from("client_vault").list(`${user?.id}/${client.id}`);
                 if (files) {
-                    const filesToDelete = files.filter(f => f.name.startsWith(${editingCategory}___)).map(f => ${user?.id}//);
+                    const filesToDelete = files.filter(f => f.name.startsWith(`${editingCategory}___`)).map(f => `${user?.id}/${client.id}/${f.name}`);
                     if (filesToDelete.length > 0) await supabase.storage.from("client_vault").remove(filesToDelete);
                 }
 
@@ -391,17 +391,18 @@ export default function EmpresasPage() {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
   };
 
-  const catTotals = (settings?.categories || []).reduce((acc, cat) => {
+  const catTotals = (settings?.categories || []).reduce((acc: any, cat: string) => {
       acc[cat] = allOrders
           .filter(o => o.category.toLowerCase() === cat.toLowerCase())
           .reduce((s, o) => s + o.value, 0);
       return acc;
   }, {});
 
-  const totalGeral = Object.values(catTotals).reduce((sum, val) => sum + Number(val), 0);
+  const totalGeral = Object.values(catTotals).reduce((sum: number, val: any) => sum + Number(val), 0) as number;
 
   return (
     <div className="space-y-8">
+      {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
@@ -450,19 +451,27 @@ export default function EmpresasPage() {
              <div className="space-y-2 max-h-[calc(100vh-24rem)] overflow-y-auto pr-1">
                 <div 
                   onClick={() => setSelectedCategory("all")}
-                  className={lex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all }
+                  className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    selectedCategory === "all" 
+                      ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-200" 
+                      : "border-slate-100 dark:border-zinc-850 hover:bg-slate-50 dark:hover:bg-zinc-950 text-slate-700 dark:text-zinc-300"
+                  }`}
                 >
                   <div className="flex items-center gap-2 font-bold text-sm">
-                    <FileText className={w-4 h-4 } />
+                    <FileText className={`w-4 h-4 ${selectedCategory === "all" ? "text-indigo-600" : "text-slate-400"}`} />
                     <span>Faturamento geral</span>
                   </div>
                 </div>
 
-                {(settings?.categories || []).map((cat) => (
+                {(settings?.categories || []).map((cat: string) => (
                    <div 
                      key={cat}
                      onClick={() => setSelectedCategory(cat)}
-                     className={lex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all }
+                     className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
+                       selectedCategory.toLowerCase() === cat.toLowerCase() 
+                         ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-200" 
+                         : "border-slate-100 dark:border-zinc-850 hover:bg-slate-50 dark:hover:bg-zinc-950 text-slate-700 dark:text-zinc-300"
+                     }`}
                    >
                      <div className="flex flex-col truncate flex-1">
                        <span className="font-bold text-sm truncate">{cat}</span>
@@ -484,7 +493,6 @@ export default function EmpresasPage() {
                   onChange={(e) => setNewCat(e.target.value)}
                   placeholder="Nova representada..."
                   className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100"
-                  onKeyDown={(e) => e.key === "Enter" && addCategory()}
                 />
                 <button onClick={addCategory} className="p-2 bg-indigo-600 text-white rounded-xl"><Plus className="w-5 h-5" /></button>
              </div>
@@ -513,7 +521,7 @@ export default function EmpresasPage() {
                           </div>
                           <div>
                              <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">{order.file_name}</h4>
-                             <Link to={/dashboard/clientes/} className="text-xs text-indigo-600 hover:underline">{order.clientName}</Link>
+                             <Link to={`/dashboard/clientes/${order.client_id}`} className="text-xs text-indigo-600 hover:underline">{order.clientName}</Link>
                           </div>
                         </div>
                         <div className="text-right">
@@ -528,6 +536,7 @@ export default function EmpresasPage() {
         </div>
       </div>
 
+      {/* Edit Modal */}
       <AnimatePresence>
         {isEditModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -546,6 +555,7 @@ export default function EmpresasPage() {
         )}
       </AnimatePresence>
 
+      {/* Upload Modal */}
       <AnimatePresence>
         {isUploadModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
