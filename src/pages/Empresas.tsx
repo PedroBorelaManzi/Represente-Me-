@@ -633,7 +633,7 @@ export default function EmpresasPage() {
                    
                 </div>
                 <div className="text-right">
-                   <span className="text-xs text-slate-500 dark:text-zinc-400">Total Representada</span>
+                   <span className="text-xs text-slate-500 dark:text-zinc-400">TOTAL:</span>
                    <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">{formatCurrency(totalCategory)}</p>
                 </div>
              </div>
@@ -891,6 +891,7 @@ export default function EmpresasPage() {
     </div>
   );
 }
+
 
 
 
