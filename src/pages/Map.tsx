@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -77,14 +77,14 @@ export default function MapPage() {
   const handleCnpjLookup = async () => {
     const cleanedCnpj = newLocation.cnpj.replace(/\D/g, "");
     if (!cleanedCnpj || cleanedCnpj.length !== 14) {
-      alert("Por favor, insira um CNPJ vÃ¡lido com 14 dÃƒÂ­gitos.");
+      alert("Por favor, insira um CNPJ válido com 14 dígitos.");
       return;
     }
 
     setIsSearchingCnpj(true);
     try {
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanedCnpj}`);
-      if (!response.ok) throw new Error("CNPJ nÃ£o encontrado");
+      if (!response.ok) throw new Error("CNPJ não encontrado");
       
       const data = await response.json();
       const streetType = data.tipo_logradouro ? `${data.tipo_logradouro} ` : "";
@@ -130,7 +130,7 @@ export default function MapPage() {
         lng
       }));
     } catch (err) {
-      alert("NÃ£o foi possÃƒÂ­vel buscar os dados do CNPJ. Preencha manualmente.");
+      alert("Não foi possível buscar os dados do CNPJ. Preencha manualmente.");
     } finally {
       setIsSearchingCnpj(false);
     }
@@ -165,7 +165,7 @@ export default function MapPage() {
         // Zoom closer for specific addresses, wider for cities/states
         setZoom(result.class === "place" && (result.type === "city" || result.type === "state") ? 12 : 15);
       } else {
-         console.log("Local nÃ£o encontrado na base do mapa.");
+         console.log("Local não encontrado na base do mapa.");
       }
     } catch (err) {
       console.error("Erro ao buscar local no mapa", err);

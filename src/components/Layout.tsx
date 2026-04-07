@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from "react-router-dom";
+﻿import { Outlet, Link, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
 import { MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar, ShoppingCart, Check } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -90,7 +90,7 @@ export default function Layout() {
   }, [settingsOpen]);
 
   const navigation = [
-    { name: "InÃ­cio", href: "/dashboard", icon: Home },
+    { name: "Início", href: "/dashboard", icon: Home },
     { name: "Mapa", href: "/dashboard/map", icon: MapPin },
     { name: "Integrações", href: "/dashboard/links", icon: LinkIcon },
     { name: "Clientes", href: "/dashboard/clientes", icon: Users },
@@ -247,7 +247,7 @@ export default function Layout() {
                   </AnimatePresence>
                 </div>
 
-                {/* CrÃ­tico Section */}
+                {/* Crítico Section */}
                 <div className="rounded-xl border border-orange-100 bg-orange-50/50 overflow-hidden transition-all duration-300">
                   <button 
                     type="button"
@@ -256,7 +256,7 @@ export default function Layout() {
                   >
                     <div className="flex items-center gap-2">
                        <div className="w-2 h-2 rounded-full bg-orange-500" />
-                       <span className="text-xs font-bold text-orange-900">CrÃ­tico ({settings.critico_days}D)</span>
+                       <span className="text-xs font-bold text-orange-900">Crítico ({settings.critico_days}D)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded-md">{stats.critico.length}</span>
@@ -418,7 +418,7 @@ export default function Layout() {
                       <input name="alerta" type="number" step="1" min="0" defaultValue={settings.alerta_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">CrÃ­tico (dias)</label>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Crítico (dias)</label>
                       <input name="critico" type="number" step="1" min="0" defaultValue={settings.critico_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div>

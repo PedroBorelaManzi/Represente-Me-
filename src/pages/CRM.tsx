@@ -211,7 +211,7 @@ export default function CRMPage() {
          
          if (existingClient) {
            toast.error(`Cadastro Bloqueado: ${existingClient.name}`, {
-             description: "JÃƒÂ¡ existe um cliente com este CNPJ. Verifique sua lista.",
+             description: "Já existe um cliente com este CNPJ. Verifique sua lista.",
              icon: <AlertCircle className="w-5 h-5 text-red-500" />
            });
            setSubmitting(false);
@@ -271,7 +271,7 @@ export default function CRMPage() {
       const total = cnpjs.length;
       setImportResults(prev => ({ ...prev, total }));
 
-      // Buscar todos os CNPJs existentes do usuÃƒÂ¡rio para checagem rÃƒÂ¡pida em memÃƒÂ³ria
+      // Buscar todos os CNPJs existentes do usuário para checagem rápida em memória
       const { data: existingClients } = await supabase
         .from("clients")
         .select("cnpj")
@@ -291,9 +291,9 @@ export default function CRMPage() {
             continue;
          }
 
-         // Aqui poderÃƒÂ­amos buscar o nome via Gemini ou API, mas para velocidade criaremos o registro basico
+         // Aqui poderíamos buscar o nome via Gemini ou API, mas para velocidade criaremos o registro basico
          const { error: insertError } = await supabase.from("clients").insert([{
-           name: `Novo Cliente (${cleanCnpj.substring(0, 8)})`, // Nome provisÃƒÂ³rio
+           name: `Novo Cliente (${cleanCnpj.substring(0, 8)})`, // Nome provisório
            cnpj: cleanCnpj,
            status: "Ativo",
            user_id: user.id,
@@ -311,9 +311,9 @@ export default function CRMPage() {
       }
       
       refetch();
-      toast.success("ImportaÃƒÂ§ÃƒÂ£o concluÃƒÂ­da!", { description: `${cnpjs.length} processados.` });
+      toast.success("Importação concluída!", { description: `${cnpjs.length} processados.` });
     } catch (err: any) { 
-      toast.error("Erro na importaÃƒÂ§ÃƒÂ£o: " + err.message); 
+      toast.error("Erro na importação: " + err.message); 
     } finally { 
       setImporting(false); 
     }
@@ -326,7 +326,7 @@ export default function CRMPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-            <Users className="w-7 h-7 text-indigo-600" /> GestÃƒÂ£o de Clientes
+            <Users className="w-7 h-7 text-indigo-600" /> Gestão de Clientes
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Monitore sua carteira e alertas de inatividade.</p>
         </div>
@@ -355,7 +355,7 @@ export default function CRMPage() {
               <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Cliente</th>
               <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Contato</th>
               <th className="px-6 py-4 text-[10px] font-black uppercase text-slate-400 tracking-widest">Alertas</th>
-              <th className="px-6 py-4 text-right pr-8 text-[10px] font-black uppercase text-slate-400 tracking-widest">AÃƒÂ§ÃƒÂµes</th>
+              <th className="px-6 py-4 text-right pr-8 text-[10px] font-black uppercase text-slate-400 tracking-widest">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y dark:divide-zinc-850">
@@ -378,7 +378,7 @@ export default function CRMPage() {
                   <div className="flex flex-wrap gap-1">
                     {client.alerts?.map((a, idx) => (
                       <span key={idx} className={`px-2 py-0.5 rounded-lg text-[9px] font-black border uppercase tracking-tighter ${a.type === "Perda" ? "bg-red-50 text-red-700 border-red-100" : "bg-amber-50 text-amber-700 underline"}`}>
-                        {a.company} Ã¢â‚¬Â¢ {a.days}D
+                        {a.company} • {a.days}D
                       </span>
                     ))}
                     {!client.alerts?.length && <span className="text-emerald-600 text-[10px] font-black uppercase">Em dia</span>}
@@ -443,7 +443,7 @@ export default function CRMPage() {
                   <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-zinc-950 rounded-2xl border dark:border-zinc-850">
                     <input 
                       type="text" 
-                      placeholder="CNPJ (apenúmeros)" 
+                      placeholder="CNPJ (apenas números)" 
                       value={newClient.cnpj} 
                       onChange={e => setNewClient(prev => ({ ...prev, cnpj: e.target.value }))} 
                       className="flex-1 px-4 py-2 bg-transparent font-bold tracking-tight text-sm outline-none placeholder:text-slate-300" 
@@ -461,12 +461,12 @@ export default function CRMPage() {
                   <div className="grid gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Razão Social</label>
-                      <input type="text" placeholder="Ex: REPRESENTAÃƒâ€¡Ãƒâ€¢ES LTDA" value={newClient.name} onChange={e => setNewClient(prev => ({ ...prev, name: e.target.value }))} required className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-850 rounded-2xl font-bold text-sm outline-none focus:border-indigo-500 transition-colors" />
+                      <input type="text" placeholder="Ex: REPRESENTAÇÕES LTDA" value={newClient.name} onChange={e => setNewClient(prev => ({ ...prev, name: e.target.value }))} required className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-850 rounded-2xl font-bold text-sm outline-none focus:border-indigo-500 transition-colors" />
                     </div>
                     
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-1">Endereço Completo</label>
-                      <input type="text" placeholder="Rua, nmero, Bairro, Cidade - UF" value={newClient.address} onChange={e => setNewClient(prev => ({ ...prev, address: e.target.value }))} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-850 rounded-2xl font-bold text-sm outline-none focus:border-indigo-500 transition-colors" />
+                      <input type="text" placeholder="Rua, número, Bairro, Cidade - UF" value={newClient.address} onChange={e => setNewClient(prev => ({ ...prev, address: e.target.value }))} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border dark:border-zinc-850 rounded-2xl font-bold text-sm outline-none focus:border-indigo-500 transition-colors" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -521,7 +521,7 @@ export default function CRMPage() {
                       <Upload className="w-8 h-8 text-indigo-600" />
                    </div>
                    <p className="font-black text-slate-900 dark:text-zinc-100 uppercase tracking-widest text-[11px]">Arraste sua planilha ou PDF</p>
-                   <p className="text-[9px] text-slate-400 mt-2 font-bold uppercase tracking-tight">ExtraÃƒÂ§ÃƒÂ£o inteligente de CNPJs via IA</p>
+                   <p className="text-[9px] text-slate-400 mt-2 font-bold uppercase tracking-tight">Extração inteligente de CNPJs via IA</p>
                 </div>
              </motion.div>
           </div>
@@ -578,7 +578,7 @@ export default function CRMPage() {
                 <div className="flex justify-between items-center">
                   <div>
                     <h2 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight italic">Editar Cliente</h2>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Atualize as informaÃƒÂ§ÃƒÂµes cadastrais</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Atualize as informações cadastrais</p>
                   </div>
                   <button type="button" onClick={() => setIsEditModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full"><X className="w-5 h-5 text-slate-400" /></button>
                 </div>
@@ -607,7 +607,7 @@ export default function CRMPage() {
                 </div>
 
                 <button type="submit" disabled={submitting} className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">
-                  {submitting ? <Loader2 className="animate-spin mx-auto w-5 h-5" /> : "SALVAR ALTERAÃƒâ€¡Ãƒâ€¢ES"}
+                  {submitting ? <Loader2 className="animate-spin mx-auto w-5 h-5" /> : "SALVAR ALTERAÇÕES"}
                 </button>
               </form>
             </motion.div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Link as LinkIcon, Plus, ExternalLink, MoreVertical, Search, MessageSquare, Mail, FileText, Briefcase, X, Trash2, HardDrive, Calendar, Maximize2, Minimize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -158,9 +158,9 @@ export default function LinksPage() {
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-md mb-4 ${activeLink.color || 'bg-indigo-500'}`}>
                <IconComponent className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Este aplicativo nÃ£o permite exibiÃ§Ã£o interna</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Este aplicativo não permite exibição interna</h2>
             <p className="text-sm text-slate-500 max-w-md mb-6 leading-relaxed">
-              Por motivos de seguranÃ§a (bloqueio do Google/WhatsApp), este serviÃ§o precisa ser aberto em uma nova aba para funcionar corretamente.
+              Por motivos de segurança (bloqueio do Google/WhatsApp), este serviço precisa ser aberto em uma nova aba para funcionar corretamente.
             </p>
             <a 
               href={activeLink.url} 
@@ -187,7 +187,7 @@ export default function LinksPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100">Painel Atalho Hub</h1>
-          <p className="text-sm text-slate-500 mt-1">Acesse todas as suas ferramentas em um sÃ³ lugar.</p>
+          <p className="text-sm text-slate-500 mt-1">Acesse todas as suas ferramentas em um só lugar.</p>
         </div>
         
         <div className="flex items-center gap-4">
@@ -308,7 +308,7 @@ export default function LinksPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">TÃƒÂ­tulo</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Título</label>
                   <input 
                     type="text" 
                     value={title} 
