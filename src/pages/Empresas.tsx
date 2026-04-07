@@ -338,7 +338,7 @@ export default function EmpresasPage() {
       setNewCat("");
       if (!selectedCategory) setSelectedCategory(newCat.trim());
     } else if (newCat.trim()) {
-        alert("Esta empresa jÃ¡ existe!");
+        alert("Esta empresa já existe!");
         setNewCat("");
     }
   };
@@ -431,7 +431,7 @@ export default function EmpresasPage() {
   };
 
   const handleDeleteSub = async () => {
-      if (window.confirm(`Deseja realmente excluir a representada "${editingCategory}"? TODOS os arquivos e dados vinculados serÃ£o mantidos, mas a representada n+Ãºo aparecer+Ã­ mais nos filtros.`)) {
+      if (window.confirm(`Deseja realmente excluir a representada "${editingCategory}"? TODOS os arquivos e dados vinculados serão mantidos, mas a representada n+Ãºo aparecer+Ã­ mais nos filtros.`)) {
           const updated = (settings?.categories || []).filter(c => c.toLowerCase() !== editingCategory.toLowerCase());
           await updateSettings({ categories: updated });
           if (selectedCategory.toLowerCase() === editingCategory.toLowerCase()) {
@@ -492,7 +492,7 @@ export default function EmpresasPage() {
                <TrendingUp className="w-8 h-8 text-indigo-600" />
             </div>
             <div>
-               <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">Histórico de Pedidos Geral</p>
+               <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">Faturamento geral</p>
                <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-100 mt-1">{formatCurrency(totalGeral)}</h2>
             </div>
          </div>
@@ -503,7 +503,7 @@ export default function EmpresasPage() {
         {/* Left Column: List of Categories */}
         <div className="md:col-span-1 space-y-4">
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-5 shadow-sm space-y-4">
-             <h3 className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Faturamento por Empresass</h3>
+             <h3 className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Faturamento por Empresas</h3>
              
              <div className="space-y-2 max-h-[calc(100vh-24rem)] overflow-y-auto pr-1">
                 <div 
@@ -516,7 +516,7 @@ export default function EmpresasPage() {
                 >
                   <div className="flex items-center gap-2 font-bold text-sm">
                     <FileText className={`w-4 h-4 ${selectedCategory === "all" ? "text-indigo-600" : "text-slate-400"}`} />
-                    <span>Histórico de Pedidos</span>
+                    <span>Faturamento por empresa</span>
                   </div>
                   <span className="text-xs font-black px-2 py-0.5 bg-slate-100 dark:bg-zinc-800 rounded-lg group-hover:bg-indigo-100 transition-colors">
                     {allOrders.length}
@@ -579,7 +579,7 @@ export default function EmpresasPage() {
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-6 flex flex-col h-[calc(100vh-16rem)]">
              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-zinc-850">
                 <div>
-                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "Histórico de Pedidos" : selectedCategory}</h2>
+                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "Faturamento por empresa" : selectedCategory}</h2>
                    
                 </div>
                 <div className="text-right">
@@ -662,7 +662,7 @@ export default function EmpresasPage() {
                    </div>
                 </div>
                 <div className="flex flex-col gap-2 pt-4 border-t border-slate-100 dark:border-zinc-850">
-                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Salvar AlteraÃ§Ãµes</button>
+                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Salvar Alterações</button>
                     <button onClick={handleDeleteSub} className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border border-red-100"><Trash2 className="w-4 h-4" /> Excluir permanentemente</button>
                 </div>
              </motion.div>

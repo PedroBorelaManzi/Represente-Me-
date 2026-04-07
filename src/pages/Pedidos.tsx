@@ -42,7 +42,7 @@ export default function PedidosPage() {
   const registerNewClient = async (name, cnpj, address) => {
     const cleanCnpj = cnpj ? cnpj.replace(/\D/g, "") : "";
     
-    // VerificaÃ§Ã£o de integridade silenciosa
+    // Verificação de integridade silenciosa
     if (cleanCnpj) {
       const { data: existing } = await supabase.from("clients").select("id").eq("cnpj", cleanCnpj).eq("user_id", user.id).maybeSingle();
       if (existing) return existing;

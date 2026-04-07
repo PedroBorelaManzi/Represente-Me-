@@ -116,7 +116,7 @@ export default function ClientDetailsPage() {
   };
 
   const handleDeleteClient = async () => {
-    if (!window.confirm("Deseja realmente excluir este cliente?\n\nATENÃƒâ€¡ÃƒÆ’O: Todos os pedidos, arquivos e compromissos vinculados a este cliente serÃƒÂ£o perdidos permanentemente.")) return;
+    if (!window.confirm("Deseja realmente excluir este cliente?\n\nATENÇÃO: Todos os pedidos, arquivos e compromissos vinculados a este cliente serão perdidos permanentemente.")) return;
     
     setIsDeleting(true);
     try {
@@ -153,10 +153,10 @@ export default function ClientDetailsPage() {
     setIsAnalyzing(true);
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("VITE_GEMINI_API_KEY nÃƒÂ£o configurada.");
+      if (!apiKey) throw new Error("VITE_GEMINI_API_KEY não configurada.");
       
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: "v1" });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: "v1" });
       
       const reader = new FileReader();
       const base64Promise = new Promise((resolve) => {
@@ -165,7 +165,7 @@ export default function ClientDetailsPage() {
       });
       const base64 = await base64Promise;
 
-            conÃºmero sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50";
+            const prompt = "Extraia o valor total do pedido. Retorne apenas o número sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50";
       
       const result = await model.generateContent([
         prompt,
@@ -350,12 +350,12 @@ export default function ClientDetailsPage() {
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 shadow-sm dark:shadow-none space-y-6">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 mb-3">
-                <FileText className="w-4 h-4 text-indigo-500" /> ObservaÃƒÂ§ÃƒÂµes Gerais
+                <FileText className="w-4 h-4 text-indigo-500" /> Observações Gerais
               </h3>
               <textarea 
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Digite aqui observaÃƒÂ§ÃƒÂµes sobre este cliente..."
+                placeholder="Digite aqui observações sobre este cliente..."
                 className="w-full h-32 px-3 py-2 text-sm border border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
               />
               <button 
@@ -363,7 +363,7 @@ export default function ClientDetailsPage() {
                 disabled={isSavingNotes}
                 className="mt-2 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors"
               >
-                {isSavingNotes ? "Salvando..." : "Salvar ObservaÃƒÂ§ÃƒÂµes"}
+                {isSavingNotes ? "Salvando..." : "Salvar Observações"}
               </button>
             </div>
 
@@ -436,7 +436,7 @@ export default function ClientDetailsPage() {
                         </span>
                         <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mt-1 truncate max-w-xs">{actualName}</h4>
                         <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
-                          <Calendar className="w-3 h-3"/> {uploadDate} Ãƒâ€šÃ‚Â· {formatSize(file.metadata?.size)}
+                          <Calendar className="w-3 h-3"/> {uploadDate} · {formatSize(file.metadata?.size)}
                         </p>
                       </div>
                     </div>
@@ -549,6 +549,7 @@ export default function ClientDetailsPage() {
     </div>
   );
 }
+
 
 
 
