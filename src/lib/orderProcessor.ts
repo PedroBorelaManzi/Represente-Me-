@@ -21,7 +21,7 @@ const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 const SYSTEM_INSTRUCTION = `Você é um especialista em OCR de documentos fiscais brasileiros.
 Sua tarefa é extrair quatro informações fundamentais em formato JSON:
 1. CLIENTE DESTINATÁRIO: Nome da empresa que está comprando. Ignore o Emissor.
-2. VALOR TOTAL: O valíquido do documento.
+2. VALOR TOTAL: O valor final líquido do documento.
 3. CATEGORIA (FORNECEDOR): O fabricante/emissor do pedido. 
    - REGRA DE OURO: Você deve selecionar EXCLUSIVAMENTE uma das "CATEGORIAS CONHECIDAS" fornecidas.
    - Use o nome EXATO que estiver na lista. Se o emissor for "Cozimax Móveis Mirassol Ltda" e a lista tiver "Cozimax", use "Cozimax".
@@ -63,7 +63,7 @@ function extractCNPJLocally(text: string): string {
 }
 
 function extractValueLocally(text: string): number {
-  const valíquido|vlr total|total do pedido).*?(\d{1,3}(?:\.\d{3})*(?:,\d{2}))/i;
+  const valueRegex = /(?:valor total da nota|total geral|valor líquido|vlr total|total do pedido).*?(\d{1,3}(?:\.\d{3})*(?:,\d{2}))/i;
   const match = text.match(valueRegex);
   return match?.[1] ? parseFloat(match[1].replace(/\./g, "").replace(",", ".")) : 0;
 }
@@ -171,3 +171,4 @@ export async function processOrderFile(file: File, knownClients = [], categories
     };
   }
 }
+
