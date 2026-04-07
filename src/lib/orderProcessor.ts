@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+Ôªøimport * as XLSX from "xlsx";
 import * as pdfjs from "pdfjs-dist";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -18,23 +18,26 @@ export interface OrderExtractionResult {
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-const SYSTEM_INSTRUCTION = `VocÍ È um especialista em OCR de documentos fiscais brasileiros.
-Analise o conte˙do e extraia:
-1. CLIENTE DESTINAT¡RIO (Comprador): Nome e CNPJ. Ignore o Fornecedor/Emissor.
-2. VALOR TOTAL: O valor final lÌquido da nota/pedido.
-3. CATEGORIA: O nome do Fabricante/Emissor da nota.
-4. ENDERE«O: O endereÁo completo do cliente destinat·rio.
+const SYSTEM_INSTRUCTION = `Voc√™ √© um especialista em OCR de documentos fiscais brasileiros.
+Sua tarefa √© extrair quatro informa√ß√µes fundamentais em formato JSON:
+1. CLIENTE DESTINAT√ÅRIO: Nome da empresa que est√° comprando. Ignore o Emissor.
+2. VALOR TOTAL: O val√≠quido do documento.
+3. CATEGORIA (FORNECEDOR): O fabricante/emissor do pedido. 
+   - REGRA DE OURO: Voc√™ deve selecionar EXCLUSIVAMENTE uma das "CATEGORIAS CONHECIDAS" fornecidas.
+   - Use o nome EXATO que estiver na lista. Se o emissor for "Cozimax M√≥veis Mirassol Ltda" e a lista tiver "Cozimax", use "Cozimax".
+   - NUNCA invente uma categoria nova. Se n√£o houver correspond√™ncia clara, retorne uma string vazia.
+4. ENDERE√áO: O endere√ßo completo de entrega do cliente.
 
-Retorne APENAS um objeto JSON v·lido seguindo este esquema:
+Retorne APENAS um objeto JSON v√°lido seguindo este esquema:
 {
   "client": string,
-  "cnpj": string (apenas n˙meros),
+  "cnpj": string,
   "category": string,
   "value": number,
   "address": string
 }`;
 
-async function detectFileType(file) {
+async function detectFileType(file: File) {
   const buffer = await file.slice(0, 12).arrayBuffer();
   const bytes = new Uint8Array(buffer);
   if (bytes[0] === 0x25 && bytes[1] === 0x50) return { type: "pdf", mimeType: "application/pdf" };
@@ -48,7 +51,7 @@ function extractCNPJLocally(text: string): string {
   const cnpjRegex = /\d{2}\.?\d{3}\.?\d{3}\/\d{4}-?\d{2}/g;
   const matches = text.match(cnpjRegex);
   if (matches && matches.length > 0) {
-    const clientKeywords = ["destinat·rio", "cliente", "comprador", "entregar"];
+    const clientKeywords = ["destinat√°rio", "cliente", "comprador", "entregar"];
     for (const match of matches) {
       const index = text.indexOf(match);
       const context = text.toLowerCase().substring(Math.max(0, index - 150), index);
@@ -60,13 +63,13 @@ function extractCNPJLocally(text: string): string {
 }
 
 function extractValueLocally(text: string): number {
-  const valueRegex = /(?:valor total da nota|total geral|valor lÌquido|vlr total|total do pedido).*?(\d{1,3}(?:\.\d{3})*(?:,\d{2}))/i;
+  const val√≠quido|vlr total|total do pedido).*?(\d{1,3}(?:\.\d{3})*(?:,\d{2}))/i;
   const match = text.match(valueRegex);
   return match?.[1] ? parseFloat(match[1].replace(/\./g, "").replace(",", ".")) : 0;
 }
 
-export async function processOrderFile(file, knownClients = [], categories = []) {
-  if (!apiKey || !genAI) throw new Error("Chave Gemini n„o configurada.");
+export async function processOrderFile(file: File, knownClients = [], categories = []) {
+  if (!apiKey || !genAI) throw new Error("Chave Gemini n√£o configurada.");
   
   try {
     const detected = await detectFileType(file);
@@ -90,18 +93,18 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     const localValue = extractValueLocally(extractedText);
 
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash-exp",
         systemInstruction: SYSTEM_INSTRUCTION
     }, { apiVersion: "v1beta" });
 
     const userPrompt = `Analise este documento:
-    HINTS LOCAIS (ExtraÌdos via Regex):
-    - CNPJ prov·vel: ${localCnpj || "N„o detectado"}
-    - Valor prov·vel: ${localValue || "N„o detectado"}
+    HINTS LOCAIS (Extra√≠dos via Regex):
+    - CN√£o detectado"}
+    - Valor prov√°vel: ${localValue || "N√£o detectado"}
     
-    CATEGORIAS CONHECIDAS: ${categories.join(", ")}
+    CATEGORIAS CONHECIDAS (USE APENAS UMA DESTAS): ${categories.join(", ")}
     
-    CONTE⁄DO DO DOCUMENTO:
+    CONTE√öDO DO DOCUMENTO:
     ${extractedText.substring(0, 10000)}
     `;
 
@@ -128,16 +131,28 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     }
 
     let textResult = result.response.text();
-    // Remover blocos de cÛdigo markdown (```json ... ```) se existirem
     if (textResult.includes("```")) {
         textResult = textResult.replace(/```(?:json)?\n?([\s\S]*?)```/g, '$1').trim();
     }
     const data = JSON.parse(textResult);
 
+    // Valida√ß√£o final de categoria (Refor√ßo √† instru√ß√£o)
+    let finalCategory = data.category || "";
+    if (finalCategory && categories.length > 0) {
+        const found = categories.find(c => c.toLowerCase() === finalCategory.toLowerCase());
+        if (!found) {
+            // Tenta busca parcial se n√£o houver match exato
+            const partial = categories.find(c => finalCategory.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(finalCategory.toLowerCase()));
+            finalCategory = partial || ""; // Se n√£o encontrar nada parecido, zera.
+        } else {
+            finalCategory = found;
+        }
+    }
+
     return {
       client: data.client || "Desconhecido",
       cnpj: (data.cnpj || localCnpj || "").replace(/\D/g, ""),
-      category: data.category || "",
+      category: finalCategory,
       value: data.value || localValue || 0,
       address: data.address || "",
       status: "ready",
@@ -145,11 +160,7 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     };
 
   } catch (err) {
-    console.error("AI Reader Error Details:", {
-        message: err instanceof Error ? err.message : String(err),
-        stack: err instanceof Error ? err.stack : "",
-        file: file.name
-    });
+    console.error("AI Reader Error Details:", err);
     return { 
         client: "", 
         cnpj: "", 
@@ -160,5 +171,3 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     };
   }
 }
-
-

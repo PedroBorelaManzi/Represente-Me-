@@ -64,7 +64,7 @@ export default function AppointmentForm({
         <div className="space-y-5">
           <div>
             <label className="block text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
-              TÌtulo do Evento
+              T√≠tulo do Evento
             </label>
             <input 
               type="text" 
@@ -103,7 +103,7 @@ export default function AppointmentForm({
             </div>
             <div>
               <label className="block text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
-                Hor·rio
+                Hor√°rio
               </label>
               <input 
                 type="text" 

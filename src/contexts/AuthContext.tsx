@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Erro ao carregar sess„o:", err);
+        console.error("Erro ao carregar sess√£o:", err);
         setLoading(false); // Destrava o loading
       });
 

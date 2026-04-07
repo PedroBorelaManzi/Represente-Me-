@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Plus, Search, Filter, FileText, Download, MoreHorizontal, Mail, Phone, Calendar, DollarSign, TrendingUp, Clock, CheckCircle2, AlertCircle, X, Upload, Loader2, FileSpreadsheet, ArrowRight, ExternalLink, ShoppingBag, UserPlus } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -42,7 +42,7 @@ export default function PedidosPage() {
   const registerNewClient = async (name, cnpj, address) => {
     const cleanCnpj = cnpj ? cnpj.replace(/\D/g, "") : "";
     
-    // Verificação de integridade silenciosa
+    // VerificaÃ§Ã£o de integridade silenciosa
     if (cleanCnpj) {
       const { data: existing } = await supabase.from("clients").select("id").eq("cnpj", cleanCnpj).eq("user_id", user.id).maybeSingle();
       if (existing) return existing;

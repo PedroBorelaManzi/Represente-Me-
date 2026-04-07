@@ -65,8 +65,8 @@ export default function OnboardingModal() {
               className="space-y-4"
             >
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50">Vamos começar!</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Primeiro, me fale quais empresas você vende ou representa que já vou criar as categorias para você.</p>
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50">Vamos comeÃ§ar!</h2>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Primeiro, me fale quais empresas vocÃª vende ou representa que jÃ¡ vou criar as categorias para vocÃª.</p>
               </div>
 
               <div className="flex gap-2">
@@ -109,7 +109,7 @@ export default function OnboardingModal() {
                 disabled={categories.length === 0}
                 className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm tracking-wide disabled:opacity-50 flex items-center justify-center gap-1 mt-4"
               >
-                Próximo Passo <ChevronRight className="w-4 h-4" />
+                PrÃ³ximo Passo <ChevronRight className="w-4 h-4" />
               </button>
             </motion.div>
           )}
@@ -124,7 +124,7 @@ export default function OnboardingModal() {
             >
               <div>
                 <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50">Alertas de Inatividade</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Como você deseja acompanhar suas perdas, crítico e alertas de clientes sem compra?</p>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Como vocÃª deseja acompanhar suas perdas, crÃ­tico e alertas de clientes sem compra?</p>
               </div>
 
               <div className="space-y-3">
@@ -143,7 +143,7 @@ export default function OnboardingModal() {
 
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs">
-                    <span className="font-semibold text-orange-600">Dias para Crítico (Quente)</span>
+                    <span className="font-semibold text-orange-600">Dias para CrÃ­tico (Quente)</span>
                     <span className="font-bold text-slate-700 dark:text-zinc-300">{critico} dias</span>
                   </div>
                   <input type="range" min={alerta + 5} max="90" step="5" value={critico} onChange={(e) => {
@@ -164,7 +164,7 @@ export default function OnboardingModal() {
 
               <div className="flex gap-3 mt-4">
                 <button onClick={() => setStep(1)} className="flex-1 py-3 bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300 rounded-xl font-bold text-sm">Voltar</button>
-                <button onClick={() => setStep(3)} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1">Próximo</button>
+                <button onClick={() => setStep(3)} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1">PrÃ³ximo</button>
               </div>
             </motion.div>
           )}

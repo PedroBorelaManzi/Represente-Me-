@@ -2,15 +2,15 @@ import { supabase } from './supabase';
 
 const MANUAL_HOLIDAYS_BY_CITY: Record<string, { month: number, day: number, name: string }[]> = {
   "porto feliz": [
-    { month: 8, day: 15, name: "Nossa Senhora M„e dos Homens - Porto Feliz" },
-    { month: 10, day: 13, name: "Anivers·rio de Porto Feliz" }
+    { month: 8, day: 15, name: "Nossa Senhora M√£e dos Homens - Porto Feliz" },
+    { month: 10, day: 13, name: "Anivers√°rio de Porto Feliz" }
   ],
   "cerquilho": [
-    { month: 3, day: 19, name: "S„o JosÈ - Cerquilho" },
-    { month: 4, day: 3, name: "Anivers·rio de Cerquilho" }
+    { month: 3, day: 19, name: "S√£o Jos√© - Cerquilho" },
+    { month: 4, day: 3, name: "Anivers√°rio de Cerquilho" }
   ],
   "angatuba": [
-    { month: 3, day: 11, name: "Anivers·rio de Angatuba" }
+    { month: 3, day: 11, name: "Anivers√°rio de Angatuba" }
     // Corpus Christi removed because it's a moving holiday and already present in municipal/national bases
   ]
 };
@@ -130,8 +130,8 @@ export async function fetchHolidays(year: number, locations: { city: string; sta
         let finalName = h.nome || h.name || "Feriado";
         
         const normName = finalName.toLowerCase();
-        if ((normName.includes("anivers·rio") || normName.includes("cidade")) && cityName) {
-          finalName = `Anivers·rio de ${cityName}`;
+        if ((normName.includes("anivers√°rio") || normName.includes("cidade")) && cityName) {
+          finalName = `Anivers√°rio de ${cityName}`;
         } else if (normName === "feriado municipal" && cityName) {
           finalName = `Feriado - ${cityName}`;
         }

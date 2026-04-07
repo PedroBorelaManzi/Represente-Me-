@@ -9,10 +9,10 @@ export default function GoogleCallback() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [message, setMessage] = useState("Processando sua conex�o com o Google...");
+  const [message, setMessage] = useState("Processando sua conexÃ£o com o Google...");
 
   useEffect(() => {
-    // Importante: Aguarda o carregamento da sess�o do Supabase
+    // Importante: Aguarda o carregamento da sessÃ£o do Supabase
     if (loading) return;
 
     async function handleCallback() {
@@ -20,13 +20,13 @@ export default function GoogleCallback() {
       
       if (!code) {
         setStatus("error");
-        setMessage("C�digo de autoriza��o n�o encontrado. A autoriza��o foi negada ou o link expirou.");
+        setMessage("CÃ³digo de autorizaÃ§Ã£o nÃ£o encontrado. A autorizaÃ§Ã£o foi negada ou o link expirou.");
         return;
       }
 
       if (!user) {
         setStatus("error");
-        setMessage("Sess�o n�o identificada. Por favor, fa�a login no site novamente antes de conectar o Google.");
+        setMessage("SessÃ£o nÃ£o identificada. Por favor, faÃ§a login no site novamente antes de conectar o Google.");
         return;
       }
 
@@ -36,10 +36,10 @@ export default function GoogleCallback() {
         const redirectUri = `${window.location.origin}/auth/callback/google`;
 
         if (!clientId || !clientSecret) {
-          throw new Error("As chaves do Google (Client ID/Secret) n�o foram configuradas no servidor (Vercel). Verifique as Environment Variables.");
+          throw new Error("As chaves do Google (Client ID/Secret) nÃ£o foram configuradas no servidor (Vercel). Verifique as Environment Variables.");
         }
 
-        // Trocar o c�digo pelos tokens usando a API do Google
+        // Trocar o cÃ³digo pelos tokens usando a API do Google
         const response = await fetch("https://oauth2.googleapis.com/token", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -81,7 +81,7 @@ export default function GoogleCallback() {
       } catch (err: any) {
         console.error("Erro no callback do Google:", err);
         setStatus("error");
-        setMessage(`Falha na conex�o: ${err.message}`);
+        setMessage(`Falha na conexÃ£o: ${err.message}`);
       }
     }
 
@@ -94,7 +94,7 @@ export default function GoogleCallback() {
         {(status === "loading" || loading) && (
           <div className="space-y-4">
             <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mx-auto" />
-            <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100 italic">Validando Sess�o...</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100 italic">Validando SessÃ£o...</h2>
             <p className="text-slate-500 dark:text-zinc-400">{message}</p>
           </div>
         )}
@@ -114,7 +114,7 @@ export default function GoogleCallback() {
             <div className="w-16 h-16 bg-red-100 dark:bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
               <AlertCircle className="w-10 h-10 text-red-600 dark:text-red-400" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Erro na Conex�o</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Erro na ConexÃ£o</h2>
             <p className="text-slate-500 dark:text-zinc-400 text-sm leading-relaxed">{message}</p>
             <div className="pt-4 space-y-2">
               <button 
@@ -127,7 +127,7 @@ export default function GoogleCallback() {
                 onClick={() => navigate("/")}
                 className="w-full px-6 py-3 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all"
               >
-                Voltar ao Início
+                Voltar ao InÃƒÂ­cio
               </button>
             </div>
           </div>

@@ -40,9 +40,9 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 async function processWithGemini(file: File): Promise<string[]> {
-  if (!apiKey || !genAI) throw new Error("VITE_GEMINI_API_KEY não configurada.");
+  if (!apiKey || !genAI) throw new Error("VITE_GEMINI_API_KEY nÃ£o configurada.");
   
-    const prompt = `ATENÇÃO: Extraia os números de CNPJ (14 dígitos) apenas dos CLIENTES/COMPRADORES contidos neste documento. Ignore o CNPJ da Fábrica/Emissor.
+    const prompt = `ATENÃ‡ÃƒO: Extraia os nÃºmeros de CNPJ (14 dÃ­gitos) apenas dos CLIENTES/COMPRADORES contidos neste documento. Ignore o CNPJ da FÃ¡brica/Emissor.
   Retorne APENAS um Array JSON: ["12345678000199", "98765432000111"]`;
 
   const detected = await detectFileType(file);
@@ -65,7 +65,7 @@ async function processWithGemini(file: File): Promise<string[]> {
       } else {
         text = await file.text();
       }
-      result = await model.generateContent(prompt + "\n\nConteúdo:\n" + text);
+      result = await model.generateContent(prompt + "\n\nConteÃºdo:\n" + text);
     }
 
     const resText = result.response.text();
@@ -75,7 +75,7 @@ async function processWithGemini(file: File): Promise<string[]> {
   } catch (error: any) {
     console.error("Erro no Gemini:", error);
     if (detected.type === 'pdf') return extractCnpjsFallbackFromPDF(file);
-    throw new Error("Erro na IA de Importação: " + error.message);
+    throw new Error("Erro na IA de ImportaÃ§Ã£o: " + error.message);
   }
 }
 

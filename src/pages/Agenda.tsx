@@ -119,7 +119,7 @@ export default function Agenda() {
   const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert("Erro: Client ID do Google n�o configurado.");
+      alert("Erro: Client ID do Google nÃ£o configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -241,7 +241,7 @@ export default function Agenda() {
 
         <div className="flex-1 flex flex-col overflow-x-auto custom-scrollbar">
           <div className="grid grid-cols-7 border-b border-slate-300 dark:border-zinc-700/50 bg-slate-100/30 dark:bg-zinc-950/80 sticky top-0 z-10 min-w-[800px]">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'S�b'].map(day => (
+            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b'].map(day => (
               <div key={day} className="p-4 text-center text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">{day}</div>
             ))}
           </div>
@@ -294,7 +294,7 @@ export default function Agenda() {
                             onDragStart={(e) => onDragStart(e, event.id)}
                             className="text-[10px] font-bold p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 truncate shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group/item"
                           >
-                            <span className="text-indigo-600 dark:text-indigo-400 mr-1 opacity-50">•</span>
+                            <span className="text-indigo-600 dark:text-indigo-400 mr-1 opacity-50">Ã¢â‚¬Â¢</span>
                             {event.title}
                           </div>
                         ))}
@@ -354,7 +354,7 @@ export default function Agenda() {
               
               <div className="mt-6 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-2xl border border-slate-100 dark:border-zinc-800">
                 <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed font-medium">
-                  {selectedHoliday.description || "Este � um feriado oficial. Fique atento às altera��es nos seus compromissos e planeje-se com anteced�ncia para otimizar suas visitas a clientes nesta regi�o."}
+                  {selectedHoliday.description || "Este Ã© um feriado oficial. Fique atento ÃƒÂ s alteraÃ§Ãµes nos seus compromissos e planeje-se com antecedÃªncia para otimizar suas visitas a clientes nesta regiÃ£o."}
                 </p>
               </div>
 
