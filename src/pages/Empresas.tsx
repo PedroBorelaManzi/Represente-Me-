@@ -105,7 +105,6 @@ export default function EmpresasPage() {
       setAllOrders(orders);
     }
     setLoading(false);
-  };
 
   const performDeepSync = async (isSilent = false) => {
     if (!user) return;
@@ -172,19 +171,18 @@ export default function EmpresasPage() {
       await loadOrders();
     } catch (err) {
       console.error("Fast Sync Error:", err);
-      if (!isSilent) alert("Erro na sincronizaÃ§Ã£o rÃ¡pida: " + (err instanceof Error ? err.message : String(err)));
+      if (!isSilent) alert("Erro na sincronização rÃ¡pida: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       if (!isSilent) setLoading(false);
       setSyncStatus(null);
     }
-  };
 
   useEffect(() => {
     if (!settingsLoading && user) {
        performDeepSync(true); 
        return () => {
           performDeepSync(true); 
-       };
+
     }
   }, [user, settingsLoading]);
 
@@ -192,7 +190,6 @@ export default function EmpresasPage() {
   const handleUploadClick = () => {
     setIsUploadModalOpen(true);
     setUploadFiles([]);
-  };
 
   const processFiles = async (files: FileList) => {
     setIsProcessing(true);
@@ -241,7 +238,7 @@ export default function EmpresasPage() {
                         status: 'ready',
                         isNewClient: !matchedClient,
                         matchedClientId: matchedClient?.id
-                    };
+
                     return updated;
                 });
             } else {
@@ -256,13 +253,12 @@ export default function EmpresasPage() {
                     ...updated[idx], 
                     status: 'error', 
                     error: err.message || "Falha ao processar arquivo" 
-                };
+
                 return updated;
             });
         }
     }
     setIsProcessing(false);
-  };
 
   const confirmSingleUpload = async (index: number) => {
       const item = uploadFiles[index];
@@ -329,7 +325,6 @@ export default function EmpresasPage() {
           toast.error("Erro ao salvar pedido.");
           setUploadFiles(prev => prev.map((f, idx) => idx === index ? { ...f, status: 'error', error: "Falha ao salvar" } : f));
       }
-  };
 
   const addCategory = async () => {
     if (newCat.trim() && !settings.categories?.some(c => c.toLowerCase() === newCat.trim().toLowerCase())) {
@@ -341,13 +336,11 @@ export default function EmpresasPage() {
         alert("Esta empresa já existe!");
         setNewCat("");
     }
-  };
 
   const openEditModal = (cat: string) => {
       setEditingCategory(cat);
       setEditNameInput(cat);
       setIsEditModalOpen(true);
-  };
 
   const handleSaveEdit = async () => {
       if (!editNameInput.trim() || editNameInput.trim() === editingCategory) {
@@ -428,7 +421,6 @@ export default function EmpresasPage() {
           setLoading(false);
           setIsEditModalOpen(false);
       }
-  };
 
   const handleDeleteSub = async () => {
       if (!window.confirm(`ATENÇÃO: Deseja realmente excluir a representada "${editingCategory}"? \n\nISSO APAGARÁ DEFINITIVAMENTE: \n1. Todos os pedidos registrados dela.\n2. Todos os arquivos anexados desta empresa.\n3. Todo o histórico de faturamento acumulado.\n\nESTA AÇÃO É IRREVERSÍVEL.`)) return;
@@ -487,9 +479,8 @@ export default function EmpresasPage() {
           alert("Erro ao excluir: " + (err instanceof Error ? err.message : String(err)));
       } finally {
           setLoading(false);
-      }
-  }
   };
+  }
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
@@ -528,7 +519,7 @@ export default function EmpresasPage() {
                <div className="flex items-center gap-3 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl animate-pulse">
                   <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-400">
-                    sincronizaÃ§Ã£o: {Math.round((syncStatus.current / syncStatus.total) * 100)}%
+                    sincronização: {Math.round((syncStatus.current / syncStatus.total) * 100)}%
                   </span>
                </div>
             )}
@@ -891,6 +882,7 @@ export default function EmpresasPage() {
     </div>
   );
 }
+
 
 
 
