@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check, Loader2, Upload, Search, MapPin, AlertCircle, FileCheck, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
@@ -431,14 +431,64 @@ export default function EmpresasPage() {
   };
 
   const handleDeleteSub = async () => {
-      if (window.confirm(`Deseja realmente excluir a representada "${editingCategory}"? TODOS os arquivos e dados vinculados serão mantidos, mas a representada n+Ãºo aparecer+Ã­ mais nos filtros.`)) {
-          const updated = (settings?.categories || []).filter(c => c.toLowerCase() !== editingCategory.toLowerCase());
-          await updateSettings({ categories: updated });
-          if (selectedCategory.toLowerCase() === editingCategory.toLowerCase()) {
-             setSelectedCategory(updated.length > 0 ? updated[0] : "");
+      if (!window.confirm(`ATENÇÃO: Deseja realmente excluir a representada "${editingCategory}"? \n\nISSO APAGARÁ DEFINITIVAMENTE: \n1. Todos os pedidos registrados dela.\n2. Todos os arquivos anexados desta empresa.\n3. Todo o histórico de faturamento acumulado.\n\nESTA AÇÃO É IRREVERSÍVEL.`)) return;
+      
+      setLoading(true);
+      try {
+          // 1. Deletar registros de pedidos (tabela orders)
+          await supabase.from("orders").delete().eq("category", editingCategory).eq("user_id", user?.id);
+
+          // 2. Limpar arquivos do Storage e atualizar faturamento nos clientes
+          const { data: clients } = await supabase.from("clients").select("id, faturamento, category_last_contact").eq("user_id", user?.id);
+          
+          if (clients) {
+              for (const client of clients) {
+                  // Remover arquivos
+                  const { data: files } = await supabase.storage.from("client_vault").list(`${user?.id}/${client.id}`);
+                  if (files) {
+                      const filesToDelete = files.filter(f => f.name.startsWith(`${editingCategory}___`)).map(f => `${user?.id}/${client.id}/${f.name}`);
+                      if (filesToDelete.length > 0) {
+                          await supabase.storage.from("client_vault").remove(filesToDelete);
+                      }
+                  }
+
+                  // Limpar JSONB
+                  let needsUpdate = false;
+                  const fat = client.faturamento || {};
+                  const lastC = client.category_last_contact || {};
+                  
+                  if (fat[editingCategory] !== undefined) {
+                      delete fat[editingCategory];
+                      needsUpdate = true;
+                  }
+                  if (lastC[editingCategory] !== undefined) {
+                      delete lastC[editingCategory];
+                      needsUpdate = true;
+                  }
+
+                  if (needsUpdate) {
+                      await supabase.from("clients").update({ faturamento: fat, category_last_contact: lastC }).eq("id", client.id);
+                  }
+              }
           }
+
+          // 3. Remover categoria das configurações globais
+          const updated = (settings?.categories || []).filter(c => c !== editingCategory);
+          await updateSettings({ categories: updated });
+
+          if (selectedCategory === editingCategory) {
+              setSelectedCategory(updated.length > 0 ? updated[0] : "all");
+          }
+          
+          await loadOrders();
           setIsEditModalOpen(false);
+      } catch (err) {
+          console.error("Erro na exclusão profunda:", err);
+          alert("Erro ao excluir: " + (err instanceof Error ? err.message : String(err)));
+      } finally {
+          setLoading(false);
       }
+  }
   };
 
   const formatCurrency = (val: number) => {
@@ -841,6 +891,7 @@ export default function EmpresasPage() {
     </div>
   );
 }
+
 
 
 
