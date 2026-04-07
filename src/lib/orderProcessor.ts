@@ -1,4 +1,4 @@
-Ôªøimport * as XLSX from "xlsx";
+import * as XLSX from "xlsx";
 import * as pdfjs from "pdfjs-dist";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -18,17 +18,17 @@ export interface OrderExtractionResult {
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-const SYSTEM_INSTRUCTION = `Voc√™ √© um especialista em OCR de documentos fiscais brasileiros.
-Analise o conte√∫do e extraia:
-1. CLIENTE DESTINAT√ÅRIO (Comprador): Nome e CNPJ. Ignore o Fornecedor/Emissor.
-2. VALOR TOTAL: O valor final l√≠quido da nota/pedido.
+const SYSTEM_INSTRUCTION = `VocÍ È um especialista em OCR de documentos fiscais brasileiros.
+Analise o conte˙do e extraia:
+1. CLIENTE DESTINAT¡RIO (Comprador): Nome e CNPJ. Ignore o Fornecedor/Emissor.
+2. VALOR TOTAL: O valor final lÌquido da nota/pedido.
 3. CATEGORIA: O nome do Fabricante/Emissor da nota.
-4. ENDERE√áO: O endere√ßo completo do cliente destinat√°rio.
+4. ENDERE«O: O endereÁo completo do cliente destinat·rio.
 
-Retorne APENAS um objeto JSON v√°lido seguindo este esquema:
+Retorne APENAS um objeto JSON v·lido seguindo este esquema:
 {
   "client": string,
-  "cnpj": string (apenas n√∫meros),
+  "cnpj": string (apenas n˙meros),
   "category": string,
   "value": number,
   "address": string
@@ -48,7 +48,7 @@ function extractCNPJLocally(text: string): string {
   const cnpjRegex = /\d{2}\.?\d{3}\.?\d{3}\/\d{4}-?\d{2}/g;
   const matches = text.match(cnpjRegex);
   if (matches && matches.length > 0) {
-    const clientKeywords = ["destinat√°rio", "cliente", "comprador", "entregar"];
+    const clientKeywords = ["destinat·rio", "cliente", "comprador", "entregar"];
     for (const match of matches) {
       const index = text.indexOf(match);
       const context = text.toLowerCase().substring(Math.max(0, index - 150), index);
@@ -60,13 +60,13 @@ function extractCNPJLocally(text: string): string {
 }
 
 function extractValueLocally(text: string): number {
-  const valueRegex = /(?:valor total da nota|total geral|valor l√≠quido|vlr total|total do pedido).*?(\d{1,3}(?:\.\d{3})*(?:,\d{2}))/i;
+  const valueRegex = /(?:valor total da nota|total geral|valor lÌquido|vlr total|total do pedido).*?(\d{1,3}(?:\.\d{3})*(?:,\d{2}))/i;
   const match = text.match(valueRegex);
   return match?.[1] ? parseFloat(match[1].replace(/\./g, "").replace(",", ".")) : 0;
 }
 
 export async function processOrderFile(file, knownClients = [], categories = []) {
-  if (!apiKey || !genAI) throw new Error("Chave Gemini n√£o configurada.");
+  if (!apiKey || !genAI) throw new Error("Chave Gemini n„o configurada.");
   
   try {
     const detected = await detectFileType(file);
@@ -95,13 +95,13 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     }, { apiVersion: "v1beta" });
 
     const userPrompt = `Analise este documento:
-    HINTS LOCAIS (Extra√≠dos via Regex):
-    - CNPJ prov√°vel: ${localCnpj || "N√£o detectado"}
-    - Valor prov√°vel: ${localValue || "N√£o detectado"}
+    HINTS LOCAIS (ExtraÌdos via Regex):
+    - CNPJ prov·vel: ${localCnpj || "N„o detectado"}
+    - Valor prov·vel: ${localValue || "N„o detectado"}
     
     CATEGORIAS CONHECIDAS: ${categories.join(", ")}
     
-    CONTE√öDO DO DOCUMENTO:
+    CONTE⁄DO DO DOCUMENTO:
     ${extractedText.substring(0, 10000)}
     `;
 
@@ -128,7 +128,7 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     }
 
     let textResult = result.response.text();
-    // Remover blocos de c√≥digo markdown (```json ... ```) se existirem
+    // Remover blocos de cÛdigo markdown (```json ... ```) se existirem
     if (textResult.includes("```")) {
         textResult = textResult.replace(/```(?:json)?\n?([\s\S]*?)```/g, '$1').trim();
     }
@@ -160,4 +160,5 @@ export async function processOrderFile(file, knownClients = [], categories = [])
     };
   }
 }
+
 

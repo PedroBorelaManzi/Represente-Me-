@@ -142,7 +142,7 @@ export default function Dashboard() {
   const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert("Erro: Client ID do Google n√£o configurado.");
+      alert("Erro: Client ID do Google n„o configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -393,3 +393,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

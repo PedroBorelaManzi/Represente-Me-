@@ -55,7 +55,7 @@ export default function MapPage() {
           setZoom(14);
         },
         (error) => {
-          console.error("Erro ao obter localiza√ß√£o:", error);
+          console.error("Erro ao obter localizaÁ„o:", error);
         }
       );
     }
@@ -70,21 +70,21 @@ export default function MapPage() {
     if (!error) {
       setCompanies(prev => prev.map(c => c.id === id ? { ...c, lat: latlng.lat, lng: latlng.lng } : c));
     } else {
-      alert("Erro ao salvar localiza√ß√£o: " + error.message);
+      alert("Erro ao salvar localizaÁ„o: " + error.message);
     }
   };
 
   const handleCnpjLookup = async () => {
     const cleanedCnpj = newLocation.cnpj.replace(/\D/g, "");
     if (!cleanedCnpj || cleanedCnpj.length !== 14) {
-      alert("Por favor, insira um CNPJ v√°lido com 14 d√≠gitos.");
+      alert("Por favor, insira um CNPJ v·lido com 14 d√≠gitos.");
       return;
     }
 
     setIsSearchingCnpj(true);
     try {
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanedCnpj}`);
-      if (!response.ok) throw new Error("CNPJ n√£o encontrado");
+      if (!response.ok) throw new Error("CNPJ n„o encontrado");
       
       const data = await response.json();
       const streetType = data.tipo_logradouro ? `${data.tipo_logradouro} ` : "";
@@ -130,7 +130,7 @@ export default function MapPage() {
         lng
       }));
     } catch (err) {
-      alert("N√£o foi poss√≠vel buscar os dados do CNPJ. Preencha manualmente.");
+      alert("N„o foi poss√≠vel buscar os dados do CNPJ. Preencha manualmente.");
     } finally {
       setIsSearchingCnpj(false);
     }
@@ -165,7 +165,7 @@ export default function MapPage() {
         // Zoom closer for specific addresses, wider for cities/states
         setZoom(result.class === "place" && (result.type === "city" || result.type === "state") ? 12 : 15);
       } else {
-         console.log("Local n√£o encontrado na base do mapa.");
+         console.log("Local n„o encontrado na base do mapa.");
       }
     } catch (err) {
       console.error("Erro ao buscar local no mapa", err);
@@ -258,7 +258,7 @@ export default function MapPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
-              placeholder="Buscar Cliente ou Endere√ßo..."
+              placeholder="Buscar Cliente ou EndereÁo..."
             />
           </form>
           <button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 font-medium text-sm transition-colors whitespace-nowrap">
@@ -324,7 +324,7 @@ export default function MapPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Nome do Local / Raz√£o Social</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Nome do Local / Raz„o Social</label>
                   <input required type="text" value={newLocation.name} onChange={e => setNewLocation({...newLocation, name: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm" placeholder="Nome Fantasia" />
                 </div>
                 <div>
@@ -332,13 +332,13 @@ export default function MapPage() {
                   <input type="text" value={newLocation.contact} onChange={e => setNewLocation({...newLocation, contact: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Observa√ß√µes / Endere√ßo</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">ObservaÁıes / EndereÁo</label>
                   <textarea value={newLocation.address} onChange={e => setNewLocation({...newLocation, address: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm resize-none h-16" placeholder="Rua exemplo, 123..." />
                 </div>
 
                 <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-start gap-2">
                   <Info className="w-4 h-4 text-indigo-600 mt-0.5" />
-                  <p className="text-xs text-slate-600 leading-normal">O pin ser√° posicionado no mapa com base no endere√ßo encontrado.</p>
+                  <p className="text-xs text-slate-600 leading-normal">O pin ser· posicionado no mapa com base no endereÁo encontrado.</p>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
@@ -353,6 +353,8 @@ export default function MapPage() {
     </div>
   );
 }
+
+
 
 
 

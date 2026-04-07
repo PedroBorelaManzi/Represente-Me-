@@ -17,7 +17,7 @@ export default function Landing() {
               <a href="#planos" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Planos</a>
               <Link to="/login" className="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">Login</Link>
               <Link to="/login" className="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">
-                ComeÃ§ar Agora
+                Começar Agora
               </Link>
             </div>
           </div>
@@ -34,20 +34,20 @@ export default function Landing() {
             transition={{ duration: 0.5 }}
           >
             <span className="inline-block py-1 px-3 rounded-full bg-indigo-100 text-indigo-700 text-sm font-semibold mb-6 border border-indigo-200">
-              Centralize tudo em um Ãºnico lugar.
+              Centralize tudo em um único lugar.
             </span>
             <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 mb-8 leading-tight">
               Domine as suas <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500">VENDAS!</span>
             </h1>
             <p className="mt-4 text-xl text-slate-600 max-w-3xl mx-auto mb-10 leading-relaxed">
-              Tenha acesso a um mapa inteligente para ter um controle mais eficiente de suas vendas, melhore a gestÃ£o de seus clientes, tenha seu prÃ³prio painel de integraÃ§Ãµes, conecte tudo em um sÃ³ lugar e tenha uma base de prospecÃ§Ã£o implacÃ¡vel para o seu negÃ³cio.
+              Tenha acesso a um mapa inteligente para ter um controle mais eficiente de suas vendas, melhore a gestão de seus clientes, tenha seu próprio painel de integrações, conecte tudo em um só lugar e tenha uma base de prospecção implacável para o seu negócio.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/login" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-0.5">
-                ComeÃ§ar Gratuitamente <ArrowRight className="ml-2 w-5 h-5" />
+                Começar Gratuitamente <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
               <a href="#planos" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium rounded-full text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all hover:border-slate-300">
-                ConheÃ§a nossos planos
+                Conheça nossos planos
               </a>
             </div>
           </motion.div>
@@ -59,29 +59,29 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">Funcionalidades</h2>
-            <p className="mt-4 text-lg text-slate-600">Tudo que vocÃª precisa para acelerar suas vendas.</p>
+            <p className="mt-4 text-lg text-slate-600">Tudo que você precisa para acelerar suas vendas.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <FeatureCard 
               icon={<MapPin className="w-8 h-8 text-indigo-600" />}
               title="Radar Territorial"
-              description="GeolocalizaÃ§Ã£o focada em vendas. Identifique potenciais clientes diretamente no mapa da sua regiÃ£o. Busca integrada e auto-preenchimento via CNPJ."
+              description="Geolocalização focada em vendas. Identifique potenciais clientes diretamente no mapa da sua região. Busca integrada e auto-preenchimento via CNPJ."
             />
             <FeatureCard 
               icon={<LinkIcon className="w-8 h-8 text-indigo-600" />}
               title="Painel Atalho Hub"
-              description="Integre todos os seus sistemas, sites essenciais, WhatsApp e links de uso recorrente em nossa interface principal. Acesso em um clique a tudo do negÃ³cio."
+              description="Integre todos os seus sistemas, sites essenciais, WhatsApp e links de uso recorrente em nossa interface principal. Acesso em um clique a tudo do negócio."
             />
             <FeatureCard 
               icon={<Users className="w-8 h-8 text-indigo-600" />}
               title="Mini CRM Dedicado"
-              description="Cadastros rÃ¡pidos e dinÃ¢micos para organizar a carteira e acompanhar as relaÃ§Ãµes por meio de anotaÃ§Ãµes prÃ¡ticas para cada um de seus contatos."
+              description="Cadastros rápidos e dinÃ¢micos para organizar a carteira e acompanhar as relações por meio de anotações práticas para cada um de seus contatos."
             />
             <FeatureCard 
               icon={<Clock className="w-8 h-8 text-indigo-600" />}
-              title="Tempo e EficiÃªncia"
-              description="Desenvolvido para priorizar agilidade. Pare de perder tempo trocando entre vÃ¡rias abas/aplicativos, tenha mais tempo para focar em VENDER!"
+              title="Tempo e Eficiência"
+              description="Desenvolvido para priorizar agilidade. Pare de perder tempo trocando entre várias abas/aplicativos, tenha mais tempo para focar em VENDER!"
             />
           </div>
         </div>
@@ -91,42 +91,42 @@ export default function Landing() {
       <section id="planos" className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">Planos e PreÃ§os</h2>
+            <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">Planos e Preços</h2>
             <p className="mt-4 text-lg text-slate-600">Escolha o plano ideal para o seu momento.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <PricingCard 
               title="Acesso Exclusivo"
-              description="Ideal para prospectadores e representaÃ§Ãµes locais que estÃ£o comeÃ§ando a criar a carteira de vendas."
+              description="Ideal para prospectadores e representações locais que estão começando a criar a carteira de vendas."
               price="R$ 99,90"
               features={[
-                "AtÃ© 2 empresas cadastradas",
-                "Acesso ao Mapa e CRM BÃ¡sico",
+                "Até 2 empresas cadastradas",
+                "Acesso ao Mapa e CRM Básico",
                 "Suporte por email"
               ]}
               buttonText="Assinar"
             />
             <PricingCard 
               title="Profissional"
-              description="Desenvolvido para agÃªncias, vendedores e distribuidores de mÃ©dio e grande volume."
-              price="R$ 149,90/mÃªs"
+              description="Desenvolvido para agências, vendedores e distribuidores de médio e grande volume."
+              price="R$ 149,90/mês"
               features={[
-                "AtÃ© 5 empresas cadastradas",
-                "Pesquisa AutomÃ¡tica de CNPJ",
-                "Suporte PrioritÃ¡rio (WhatsApp)"
+                "Até 5 empresas cadastradas",
+                "Pesquisa Automática de CNPJ",
+                "Suporte Prioritário (WhatsApp)"
               ]}
               buttonText="Assinar Agora"
               popular
             />
             <PricingCard 
               title="Master"
-              description="Projetado para escritÃ³rios de representaÃ§Ã£o master, holding de vendas e franquias atacadistas."
-              price="R$ 199,90/mÃªs"
+              description="Projetado para escritórios de representação master, holding de vendas e franquias atacadistas."
+              price="R$ 199,90/mês"
               features={[
                 "Lojas + Links Ilimitados",
-                "Mapeamento AvanÃ§ado",
-                "Mentoria EstratÃ©gica Inclusa"
+                "Mapeamento Avançado",
+                "Mentoria Estratégica Inclusa"
               ]}
               buttonText="Assinar"
             />
@@ -186,4 +186,5 @@ function PricingCard({ title, description, price, features, buttonText, popular 
     </div>
   );
 }
+
 

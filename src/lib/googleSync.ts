@@ -44,7 +44,7 @@ async function refreshAccessToken(userId: string, refreshToken: string) {
 export async function syncGoogleEvents(userId: string) {
   try {
     const auth = await getValidToken(userId);
-    if (!auth) return { success: false, message: 'Google n√£o conectado.' };
+    if (!auth) return { success: false, message: 'Google n„o conectado.' };
 
     let accessToken = auth.accessToken;
     
@@ -65,14 +65,14 @@ export async function syncGoogleEvents(userId: string) {
     }
 
     if (!response.ok) {
-      return { success: false, message: 'O Google n√£o retornou eventos. Verifique suas permiss√µes.' };
+      return { success: false, message: 'O Google n„o retornou eventos. Verifique suas permissıes.' };
     }
 
     const data = await response.json();
     const googleEvents = data.items || [];
 
     if (googleEvents.length === 0) {
-      return { success: true, count: 0, message: 'Nenhum evento encontrado no seu Google Agenda (√∫ltimos 7 dias).' };
+      return { success: true, count: 0, message: 'Nenhum evento encontrado no seu Google Agenda (˙ltimos 7 dias).' };
     }
 
     const syncResults = await Promise.all(googleEvents.map(async (gevent: any) => {
@@ -113,12 +113,12 @@ export async function syncGoogleEvents(userId: string) {
       count: successfulSyncs.length,
       message: successfulSyncs.length > 0 
         ? `Sucesso! Sincronizados: ${titles}${more}` 
-        : 'Sincronizado, mas os eventos n√£o puderam ser salvos.' 
+        : 'Sincronizado, mas os eventos n„o puderam ser salvos.' 
     };
 
   } catch (error) {
-    console.error('Erro t√©cnico:', error);
-    return { success: false, message: 'Erro t√©cnico na sincroniza√ß√£o.' };
+    console.error('Erro tÈcnico:', error);
+    return { success: false, message: 'Erro tÈcnico na sincronizaÁ„o.' };
   }
 }
 
@@ -221,4 +221,5 @@ export async function deleteEventFromGoogle(userId: string, googleEventId: strin
     return { success: false };
   }
 }
+
 

@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Erro ao carregar sessÃ£o:", err);
+        console.error("Erro ao carregar sessão:", err);
         setLoading(false); // Destrava o loading
       });
 
@@ -53,3 +53,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

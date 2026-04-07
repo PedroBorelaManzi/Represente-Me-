@@ -1,4 +1,4 @@
-Ôªøimport React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check, Loader2, Upload, Search, MapPin, AlertCircle, FileCheck, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
@@ -172,7 +172,7 @@ export default function EmpresasPage() {
       await loadOrders();
     } catch (err) {
       console.error("Fast Sync Error:", err);
-      if (!isSilent) alert("Erro na sincroniza√ß√£o r√°pida: " + (err instanceof Error ? err.message : String(err)));
+      if (!isSilent) alert("Erro na sincronizaÁ„o r·pida: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       if (!isSilent) setLoading(false);
       setSyncStatus(null);
@@ -245,7 +245,7 @@ export default function EmpresasPage() {
                     return updated;
                 });
             } else {
-                throw new Error(result.error || "Falha na extra‚îú¬∫‚îú√∫o");
+                throw new Error(result.error || "Falha na extraÁ„o");
             }
         } catch (err) {
             console.error("Erro no processamento:", err);
@@ -338,7 +338,7 @@ export default function EmpresasPage() {
       setNewCat("");
       if (!selectedCategory) setSelectedCategory(newCat.trim());
     } else if (newCat.trim()) {
-        alert("Esta empresa j‚îú√≠ existe!");
+        alert("Esta empresa j· existe!");
         setNewCat("");
     }
   };
@@ -431,7 +431,7 @@ export default function EmpresasPage() {
   };
 
   const handleDeleteSub = async () => {
-      if (window.confirm(`Deseja realmente excluir a representada "${editingCategory}"? TODOS os arquivos e dados vinculados ser‚îú√∫o mantidos, mas a representada n‚îú√∫o aparecer‚îú√≠ mais nos filtros.`)) {
+      if (window.confirm(`Deseja realmente excluir a representada "${editingCategory}"? TODOS os arquivos e dados vinculados ser„o mantidos, mas a representada n+˙o aparecer+Ì mais nos filtros.`)) {
           const updated = (settings?.categories || []).filter(c => c.toLowerCase() !== editingCategory.toLowerCase());
           await updateSettings({ categories: updated });
           if (selectedCategory.toLowerCase() === editingCategory.toLowerCase()) {
@@ -478,7 +478,7 @@ export default function EmpresasPage() {
                <div className="flex items-center gap-3 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl animate-pulse">
                   <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-400">
-                    sincroniza√ß√£o: {Math.round((syncStatus.current / syncStatus.total) * 100)}%
+                    sincronizaÁ„o: {Math.round((syncStatus.current / syncStatus.total) * 100)}%
                   </span>
                </div>
             )}
@@ -492,7 +492,7 @@ export default function EmpresasPage() {
                <TrendingUp className="w-8 h-8 text-indigo-600" />
             </div>
             <div>
-               <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">Hist√≥rico de Pedidos Geral</p>
+               <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">HistÛrico de Pedidos Geral</p>
                <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-100 mt-1">{formatCurrency(totalGeral)}</h2>
             </div>
          </div>
@@ -516,7 +516,7 @@ export default function EmpresasPage() {
                 >
                   <div className="flex items-center gap-2 font-bold text-sm">
                     <FileText className={`w-4 h-4 ${selectedCategory === "all" ? "text-indigo-600" : "text-slate-400"}`} />
-                    <span>Hist√≥rico de Pedidos</span>
+                    <span>HistÛrico de Pedidos</span>
                   </div>
                   <span className="text-xs font-black px-2 py-0.5 bg-slate-100 dark:bg-zinc-800 rounded-lg group-hover:bg-indigo-100 transition-colors">
                     {allOrders.length}
@@ -579,7 +579,7 @@ export default function EmpresasPage() {
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-6 flex flex-col h-[calc(100vh-16rem)]">
              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-zinc-850">
                 <div>
-                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "Hist√≥rico de Pedidos" : selectedCategory}</h2>
+                   <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "HistÛrico de Pedidos" : selectedCategory}</h2>
                    
                 </div>
                 <div className="text-right">
@@ -658,11 +658,11 @@ export default function EmpresasPage() {
                    </div>
                    <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/40 rounded-xl flex items-start gap-3">
                         <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5" />
-                        <p className="text-xs text-amber-700 dark:text-amber-400">Nota: Ao renomear, o sistema atualizar‚îú√≠ todos os faturamentos e caminhos de arquivos vinculados.</p>
+                        <p className="text-xs text-amber-700 dark:text-amber-400">Nota: Ao renomear, o sistema atualizar· todos os faturamentos e caminhos de arquivos vinculados.</p>
                    </div>
                 </div>
                 <div className="flex flex-col gap-2 pt-4 border-t border-slate-100 dark:border-zinc-850">
-                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Salvar Altera‚îú¬∫‚îú√Åes</button>
+                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Salvar AlteraÁıes</button>
                     <button onClick={handleDeleteSub} className="w-full py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border border-red-100"><Trash2 className="w-4 h-4" /> Excluir permanentemente</button>
                 </div>
              </motion.div>
@@ -786,7 +786,7 @@ export default function EmpresasPage() {
                                                             value={item.address} 
                                                             onChange={(e) => setUploadFiles(prev => prev.map((f, i) => i === idx ? { ...f, address: e.target.value } : f))}
                                                             className="bg-transparent border-none p-0 text-[10px] font-bold text-indigo-500 focus:ring-0 flex-1"
-                                                            placeholder="Endere‚îú¬∫o para localiza‚îú¬∫‚îú√∫o..."
+                                                            placeholder="EndereÁo para localizaÁ„o..."
                                                         />
                                                     </div>
                                                 )}
@@ -830,7 +830,7 @@ export default function EmpresasPage() {
                         >
                             Limpar Tudo
                         </button>
-                        <p className="text-xs text-slate-400 font-medium italic">Dados extra‚îú¬°dos automaticamente via Intelig‚îú¬¨ncia Artificial.</p>
+                        <p className="text-xs text-slate-400 font-medium italic">Dados extra+°dos automaticamente via Intelig+¨ncia Artificial.</p>
                     </div>
                 )}
              </motion.div>
@@ -841,6 +841,7 @@ export default function EmpresasPage() {
     </div>
   );
 }
+
 
 
 

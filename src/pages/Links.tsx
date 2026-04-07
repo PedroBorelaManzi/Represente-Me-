@@ -158,9 +158,9 @@ export default function LinksPage() {
             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-md mb-4 ${activeLink.color || 'bg-indigo-500'}`}>
                <IconComponent className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Este aplicativo n√£o permite exibi√ß√£o interna</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Este aplicativo n„o permite exibiÁ„o interna</h2>
             <p className="text-sm text-slate-500 max-w-md mb-6 leading-relaxed">
-              Por motivos de seguran√ßa (bloqueio do Google/WhatsApp), este servi√ßo precisa ser aberto em uma nova aba para funcionar corretamente.
+              Por motivos de seguranÁa (bloqueio do Google/WhatsApp), este serviÁo precisa ser aberto em uma nova aba para funcionar corretamente.
             </p>
             <a 
               href={activeLink.url} 
@@ -187,7 +187,7 @@ export default function LinksPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100">Painel Atalho Hub</h1>
-          <p className="text-sm text-slate-500 mt-1">Acesse todas as suas ferramentas em um s√≥ lugar.</p>
+          <p className="text-sm text-slate-500 mt-1">Acesse todas as suas ferramentas em um sÛ lugar.</p>
         </div>
         
         <div className="flex items-center gap-4">
@@ -365,3 +365,4 @@ export default function LinksPage() {
     </div>
   );
 }
+

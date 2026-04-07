@@ -35,7 +35,7 @@ const Login = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      return toast.error("As senhas nÃ£o coincidem");
+      return toast.error("As senhas não coincidem");
     }
     setLoading(true);
     try {
@@ -50,7 +50,7 @@ const Login = () => {
       });
       if (error) throw error;
       if (data?.user) {
-        toast.success("Conta criada com sucesso! FaÃ§a login.");
+        toast.success("Conta criada com sucesso! Faça login.");
         setIsLogin(true);
       }
     } catch (error: any) {
@@ -77,10 +77,10 @@ const Login = () => {
           
           <h1 className="text-5xl font-extrabold text-white leading-tight mb-6">
             Sua jornada para o <br />
-            <span className="text-indigo-200">sucesso comeÃ§a aqui.</span>
+            <span className="text-indigo-200">sucesso começa aqui.</span>
           </h1>
           <p className="text-indigo-100 text-lg max-w-md">
-            Simplificamos a gestÃ£o da sua representaÃ§Ã£o comercial para vocÃª focar no que importa: vender mais.
+            Simplificamos a gestão da sua representação comercial para você focar no que importa: vender mais.
           </p>
         </div>
 
@@ -92,8 +92,8 @@ const Login = () => {
           </div>
           <div className="p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10">
             <LogIn className="h-6 w-6 text-white mb-3" />
-            <h3 className="text-white font-semibold mb-1">Acesso RÃ¡pido</h3>
-            <p className="text-indigo-200 text-sm">Logon Ã¡gil em qualquer dispositivo.</p>
+            <h3 className="text-white font-semibold mb-1">Acesso Rápido</h3>
+            <p className="text-indigo-200 text-sm">Logon ágil em qualquer dispositivo.</p>
           </div>
         </div>
       </div>
@@ -110,7 +110,7 @@ const Login = () => {
               {isLogin ? "Bem-vindo de volta!" : "Crie sua conta!"}
             </h2>
             <p className="text-slate-500">
-              {isLogin ? "Acesse sua conta para continuar." : "Comece a organizar suas representaÃ§Ãµes hoje."}
+              {isLogin ? "Acesse sua conta para continuar." : "Comece a organizar suas representações hoje."}
             </p>
           </div>
 
@@ -215,13 +215,13 @@ const Login = () => {
 
           <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center space-x-2">
             <span className="text-sm text-slate-500">
-              {isLogin ? "NÃ£o tem uma conta?" : "JÃ¡ tem uma conta?"}
+              {isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}
             </span>
             <button
               onClick={() => setIsLogin(!isLogin)}
               className="text-sm font-bold text-indigo-600 hover:text-indigo-700"
             >
-              {isLogin ? "Cadastre-se" : "FaÃ§a Login"}
+              {isLogin ? "Cadastre-se" : "Faça Login"}
             </button>
           </div>
 
@@ -237,4 +237,5 @@ const Login = () => {
 };
 
 export default Login;
+
 
