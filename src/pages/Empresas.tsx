@@ -75,52 +75,62 @@ export default function EmpresasPage() {
     if (!user) return;
     try {
       if (!isSilent) setLoading(true);
-      const { data: clients } = await supabase.from("clients").select("id, user_id").eq("user_id", user.id);
-      if (!clients || clients.length === 0) {
+      
+      // 1. Carrega todos os dados necessários em paralelo (Otimização de rede)
+      const [clientsRes, ordersRes] = await Promise.all([
+        supabase.from("clients").select("id, faturamento").eq("user_id", user.id),
+        supabase.from("orders").select("client_id, category, value").eq("user_id", user.id)
+      ]);
+
+      if (clientsRes.error) throw clientsRes.error;
+      const clients = clientsRes.data || [];
+      const orders = ordersRes.data || [];
+
+      if (clients.length === 0) {
         await loadOrders();
         return;
       }
 
       setSyncStatus({ current: 0, total: clients.length });
 
-      for (let i = 0; i < clients.length; i += 5) {
-        const batch = clients.slice(i, i + 5);
-        await Promise.all(batch.map(async (client) => {
-          const { data: files } = await supabase.storage.from("client_vault").list(`${user.id}/`);
-          if (files && files.length > 0) {
-            const clientOrders: any[] = [];
-            let newFaturamento: any = {};
+      // 2. Processamento em Memória (O(N) em vez de rede no loop)
+      const faturamentosPorCliente: Record<string, any> = {};
+      
+      // Inicializa mapa
+      clients.forEach(c => faturamentosPorCliente[c.id] = {});
+      
+      // Agrega valores dos pedidos
+      orders.forEach(order => {
+        if (faturamentosPorCliente[order.client_id]) {
+          const cat = order.category;
+          faturamentosPorCliente[order.client_id][cat] = (faturamentosPorCliente[order.client_id][cat] || 0) + (order.value || 0);
+        }
+      });
 
-            for (const file of files) {
-              const parts = file.name.split("___");
-              if (parts.length >= 2) {
-                const category = parts[0];
-                const valueStr = parts[1].replace("VALOR_", "");
-                const value = parseFloat(valueStr) || 0;
-                
-                newFaturamento[category] = (newFaturamento[category] || 0) + value;
-                clientOrders.push({
-                  user_id: user.id,
-                  client_id: client.id,
-                  category,
-                  value,
-                  file_name: file.name,
-                  file_path: `${user.id}/${file.name}`,
-                  created_at: file.created_at
-                });
-              }
-            }
-            if (clientOrders.length > 0) {
-              await supabase.from("orders").upsert(clientOrders, { onConflict: "client_id,file_path" });
-            }
-            await supabase.from("clients").update({ faturamento: newFaturamento }).eq("id", client.id);
-          }
-        }));
-        setSyncStatus(prev => prev ? { ...prev, current: Math.min(i + batch.length, clients.length) } : null);
+      // 3. Batched Updates (Apenas para clientes que mudaram)
+      const clientsToUpdate = clients.filter(c => {
+        const novo = JSON.stringify(faturamentosPorCliente[c.id]);
+        const antigo = JSON.stringify(c.faturamento || {});
+        return novo !== antigo;
+      });
+
+      if (clientsToUpdate.length > 0) {
+        // Usamos lotes para não sobrecarregar o Supabase em um único request gigante
+        const batchSize = 25;
+        for (let i = 0; i < clientsToUpdate.length; i += batchSize) {
+          const batch = clientsToUpdate.slice(i, i + batchSize);
+          await Promise.all(batch.map(c => 
+            supabase.from("clients")
+              .update({ faturamento: faturamentosPorCliente[c.id] })
+              .eq("id", c.id)
+          ));
+          setSyncStatus(prev => prev ? { ...prev, current: Math.min(i + batch.length, clients.length) } : null);
+        }
       }
+
       await loadOrders();
     } catch (err) {
-      console.error("Deep Sync Error:", err);
+      console.error("Optimization Sync Error:", err);
     } finally {
       setSyncStatus(null);
       setLoading(false);
