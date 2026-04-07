@@ -76,7 +76,7 @@ export default function Landing() {
             <FeatureCard 
               icon={<Users className="w-8 h-8 text-indigo-600" />}
               title="Mini CRM Dedicado"
-              description="Cadastros rÃ¡pidos e dinâmicos para organizar a carteira e acompanhar as relações por meio de anotações práticas para cada um de seus contatos."
+              description="Cadastros rápidos e dinâmicos para organizar a carteira e acompanhar as relações por meio de anotações práticas para cada um de seus contatos."
             />
             <FeatureCard 
               icon={<Clock className="w-8 h-8 text-indigo-600" />}
@@ -98,7 +98,7 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <PricingCard 
               title="Acesso Exclusivo"
-              description="Ideal para prospectadores e representações locais que estão comeÃ§ando a criar a carteira de vendas."
+              description="Ideal para prospectadores e representações locais que estão começando a criar a carteira de vendas."
               price="R$ 99,90"
               features={[
                 "Até 2 empresas cadastradas",
