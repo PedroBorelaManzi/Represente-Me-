@@ -86,7 +86,7 @@ export default function EmpresasPage() {
       for (let i = 0; i < clients.length; i += 5) {
         const batch = clients.slice(i, i + 5);
         await Promise.all(batch.map(async (client) => {
-          const { data: files } = await supabase.storage.from("client_vault").list(${user.id}/);
+          const { data: files } = await supabase.storage.from("client_vault").list(`${user.id}/`);
           if (files && files.length > 0) {
             const clientOrders: any[] = [];
             let newFaturamento: any = {};
@@ -105,7 +105,7 @@ export default function EmpresasPage() {
                   category,
                   value,
                   file_name: file.name,
-                  file_path: ${user.id}//,
+                  file_path: `${user.id}/${file.name}`,
                   created_at: file.created_at
                 });
               }

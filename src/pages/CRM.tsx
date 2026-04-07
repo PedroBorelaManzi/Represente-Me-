@@ -79,7 +79,7 @@ export default function CRMPage() {
       .from("clients")
       .select("*")
       .eq("user_id", user.id)
-      .order("name", { ascending: true }); // ORDEM ALFABÃ‰TICA SOLICITADA
+      .order("name", { ascending: true }); // ORDEM ALFABÉTICA SOLICITADA
 
     if (error || !clientsData) return [];
 
