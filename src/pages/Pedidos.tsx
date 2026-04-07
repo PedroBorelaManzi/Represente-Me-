@@ -8,60 +8,59 @@ import { toast } from "sonner";
 
 export default function PedidosPage() {
   const { user } = useAuth();
-  const [orders, setOrders] = useState([]);
-  const [clients, setClients] = useState([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [settings, setSettings] = useState({});
+  const [settings, setSettings] = useState<any>({});
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [orderValue, setOrderValue] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isAnalyzingManual, setIsAnalyzingManual] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState(null);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
-  const [batchResults, setBatchResults] = useState([]);
+  const [batchResults, setBatchResults] = useState<any[]>([]);
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
 
   useEffect(() => { if (user) { loadData(); loadSettings(); } }, [user]);
 
   const loadSettings = async () => {
-    const { data } = await supabase.from("user_settings").select("*").eq("user_id", user.id).maybeSingle();
+    const { data } = await supabase.from("user_settings").select("*").eq("user_id", user?.id).maybeSingle();
     if (data) setSettings(data);
   };
 
   const loadData = async () => {
     setLoading(true);
-    const { data: o } = await supabase.from("orders").select("*, client:clients(name, cnpj)").eq("user_id", user.id).order("created_at", { ascending: false });
-    const { data: c } = await supabase.from("clients").select("id, name, cnpj").eq("user_id", user.id).order("name");
+    const { data: o } = await supabase.from("orders").select("*, client:clients(name, cnpj)").eq("user_id", user?.id).order("created_at", { ascending: false });
+    const { data: c } = await supabase.from("clients").select("id, name, cnpj").eq("user_id", user?.id).order("name");
     setOrders(o || []); setClients(c || []); setLoading(false);
   };
 
-  const registerNewClient = async (name, cnpj, address) => {
+  const registerNewClient = async (name: string, cnpj: string, address: string) => {
     const cleanCnpj = cnpj ? cnpj.replace(/\D/g, "") : "";
     const cleanName = name?.trim();
     
-    // Verificação robusta de integridade para evitar duplicatas
     if (cleanCnpj) {
-      const { data: existing } = await supabase.from("clients").select("id").eq("cnpj", cleanCnpj).eq("user_id", user.id).maybeSingle();
+      const { data: existing } = await supabase.from("clients").select("id").eq("cnpj", cleanCnpj).eq("user_id", user?.id).maybeSingle();
       if (existing) return existing;
     }
     
     if (cleanName) {
-      const { data: existingName } = await supabase.from("clients").select("id").eq("name", cleanName).eq("user_id", user.id).maybeSingle();
+      const { data: existingName } = await supabase.from("clients").select("id").eq("name", cleanName).eq("user_id", user?.id).maybeSingle();
       if (existingName) return existingName;
     }
 
     let lat = -23.5505, lng = -46.6333;
     if (address) { try { const coords = await getHighPrecisionCoordinates(address, name, cnpj); if (coords) { lat = coords.lat; lng = coords.lng; } } catch (e) {} }
-    const { data, error } = await supabase.from("clients").insert([{ user_id: user.id, name: cleanName, cnpj: cleanCnpj, address: address || "", latitude: lat, longitude: lng, status: "Ativo" }]).select().single();
+    const { data, error } = await supabase.from("clients").insert([{ user_id: user?.id, name: cleanName, cnpj: cleanCnpj, address: address || "", latitude: lat, longitude: lng, status: "Ativo" }]).select().single();
     if (error) throw error; loadData(); return data;
   };
 
-  const handleManualFileChange = async (e) => {
+  const handleManualFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return;
     setSelectedFile(file); setIsAnalyzingManual(true);
     try {
@@ -69,7 +68,6 @@ export default function PedidosPage() {
       if (result.status === "ready") {
         setAnalysisResult(result); setOrderValue(result.value?.toString() || "");
         
-        // Matching inteligente com limpeza de CNPJ e Nome
         const cleanResCnpj = result.cnpj?.replace(/\D/g, "");
         const cleanResName = result.client?.trim().toLowerCase();
         
@@ -81,14 +79,14 @@ export default function PedidosPage() {
 
         if (match) { setSelectedClient(match.id); setShowNewClientForm(false); } else { setShowNewClientForm(true); setSelectedClient(""); }
         if (result.category) {
-          const catMatch = (settings.categories || []).find(cat => cat.toLowerCase().includes(result.category.toLowerCase()));
+          const catMatch = (settings.categories || []).find((cat: string) => cat.toLowerCase().includes(result.category.toLowerCase()));
           if (catMatch) setSelectedCategory(catMatch);
         }
       }
     } catch (err) {} finally { setIsAnalyzingManual(false); }
   };
 
-  const handleManualSubmit = async (e) => {
+  const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!user || !selectedCategory || !orderValue || !selectedFile) return;
     setIsSaving(true);
     try {
@@ -97,22 +95,23 @@ export default function PedidosPage() {
         const n = await registerNewClient(analysisResult.client, analysisResult.cnpj, analysisResult.address);
         if (n) cid = n.id;
       }
-      const cleanName = selectedFile.name.replace(/[^\w.-]/g, "_");
-      const path = ${user.id}//___VALOR____;
+      const cleanName = selectedFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
+      const formattedName = `${selectedCategory}___VALOR_${orderValue}___${cleanName}`;
+      const path = `${user.id}/${formattedName}`;
+      
       await supabase.storage.from("client_vault").upload(path, selectedFile, { upsert: true });
-      await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: selectedCategory, value: parseFloat(orderValue), file_name: cleanName, file_path: path, status: "concluido" }]);
+      await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: selectedCategory, value: parseFloat(orderValue), file_name: formattedName, file_path: path, status: "concluido" }], { onConflict: "client_id,file_path" });
+      
       setIsManualModalOpen(false); loadData();
       toast.success("Pedido registrado com sucesso!");
-    } catch (err) { alert(err.message); } finally { setIsSaving(false); }
+    } catch (err: any) { alert(err.message); } finally { setIsSaving(false); }
   };
 
-  const handleBatchUpload = async (e) => {
+  const handleBatchUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []); setIsProcessingBatch(true);
     for (const file of files) {
       try {
         const res = await processOrderFile(file, clients.map(c => c.name), settings.categories || []);
-        
-        // Matching inteligente
         const cleanResCnpj = res.cnpj?.replace(/\D/g, "");
         const cleanResName = res.client?.trim().toLowerCase();
         
@@ -128,16 +127,21 @@ export default function PedidosPage() {
     setIsProcessingBatch(false);
   };
 
-  const confirmBatchOrder = async (res) => {
+  const confirmBatchOrder = async (res: any) => {
     try {
       let cid = res.clientId;
       if (res.needsNewClient) { const n = await registerNewClient(res.client, res.cnpj, res.address); if (n) cid = n.id; }
-      const path = ${user.id}//___VALOR____;
+      
+      const cleanName = res.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
+      const formattedName = `${res.category}___VALOR_${res.value}___${cleanName}`;
+      const path = `${user?.id}/${formattedName}`;
+      
       await supabase.storage.from("client_vault").upload(path, res.file, { upsert: true });
-      await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: res.category, value: res.value, file_name: res.file.name, file_path: path, status: "concluido" }]);
+      await supabase.from("orders").upsert([{ user_id: user?.id, client_id: cid, category: res.category, value: res.value, file_name: formattedName, file_path: path, status: "concluido" }], { onConflict: "client_id,file_path" });
+      
       setBatchResults(prev => prev.filter(item => item.file !== res.file)); loadData();
       toast.success("Pedido em lote processado!");
-    } catch (err) { alert(err.message); }
+    } catch (err: any) { alert(err.message); }
   };
 
   return (
@@ -200,8 +204,8 @@ export default function PedidosPage() {
                 {isAnalyzingManual && <p className="animate-pulse text-indigo-600 font-bold text-xs uppercase px-2 text-center">Analisando pela IA...</p>}
                 {analysisResult && <div className="p-6 bg-emerald-50 rounded-3xl"><span className="text-[10px] font-black text-emerald-600 uppercase">LIDO:</span><p className="font-black text-slate-900">{analysisResult.client}</p></div>}
                 <div className="grid grid-cols-2 gap-4">
-                  <select value={selectedCategory} onChange={e=>setSelectedCategory(e.target.value)} required className="p-5 bg-slate-50 border rounded-2xl font-black text-xs uppercase outline-none"><option value="">CATEGORIA</option>{(settings.categories||[]).map(c=>(<option key={c} value={c}>{c}</option>))}</select>
-                  <input type="text" value={orderValue} onChange={e=>setOrderValue(e.target.value)} required className="p-5 bg-slate-50 border rounded-2xl font-black text-xl outline-none" />
+                  <select value={selectedCategory} onChange={e=>setSelectedCategory(e.target.value)} required className="p-5 bg-slate-50 dark:bg-zinc-950 border rounded-2xl font-black text-xs uppercase outline-none"><option value="">CATEGORIA</option>{(settings.categories||[]).map((c: string)=>(<option key={c} value={c}>{c}</option>))}</select>
+                  <input type="text" value={orderValue} onChange={e=>setOrderValue(e.target.value)} required className="p-5 bg-slate-50 dark:bg-zinc-950 border rounded-2xl font-black text-xl outline-none" />
                 </div>
               </div>
               <button disabled={isSaving} className="w-full py-6 bg-indigo-600 text-white rounded-3xl font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">{isSaving ? "SALVANDO..." : "CONFIRMAR"}</button>
@@ -214,10 +218,10 @@ export default function PedidosPage() {
           <div className="bg-white dark:bg-zinc-900 w-full max-w-6xl max-h-[90vh] rounded-[48px] p-12 overflow-hidden flex flex-col shadow-2xl border">
             <div className="flex justify-between items-center mb-10"><h2 className="text-3xl font-black uppercase">Lote IA</h2><X onClick={()=>setIsBatchModalOpen(false)} className="cursor-pointer"/></div>
             <div className="flex-1 overflow-y-auto mb-10 pr-4">
-              {batchResults.length === 0 ? (<div className="h-64 border-4 border-dashed rounded-[40px] flex items-center justify-center relative bg-slate-50"><input type="file" multiple onChange={handleBatchUpload} className="absolute inset-0 opacity-0 cursor-pointer"/><p className="font-black text-slate-400 uppercase tracking-widest text-sm">Arraste seus pedidos aqui</p></div>) : (<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">{batchResults.map((r,i)=>(<div key={i} className="p-6 bg-slate-50 dark:bg-zinc-950 border rounded-3xl flex justify-between items-center shadow-sm"><div><p className="font-black truncate max-w-[200px]">{r.client}</p><span className="text-[10px] font-black text-indigo-600 uppercase">{r.category}</span></div><div className="text-right"><p className="font-black text-xl tabular-nums">{new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(r.value)}</p><button onClick={()=>confirmBatchOrder(r)} className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase shadow-sm">CONFIRMAR</button></div></div>))}</div>)}
+              {batchResults.length === 0 ? (<div className="h-64 border-4 border-dashed rounded-[40px] flex items-center justify-center relative bg-slate-50 dark:bg-zinc-950"><input type="file" multiple onChange={handleBatchUpload} className="absolute inset-0 opacity-0 cursor-pointer"/><p className="font-black text-slate-400 uppercase tracking-widest text-sm text-center">Arraste seus pedidos aqui ou clique para selecionar</p></div>) : (<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">{batchResults.map((r,i)=>(<div key={i} className="p-6 bg-slate-50 dark:bg-zinc-950 border rounded-3xl flex justify-between items-center shadow-sm"><div><p className="font-black truncate max-w-[200px]">{r.client}</p><span className="text-[10px] font-black text-indigo-600 uppercase">{r.category}</span></div><div className="text-right"><p className="font-black text-xl tabular-nums">{new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(r.value)}</p><button onClick={()=>confirmBatchOrder(r)} className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase shadow-sm">CONFIRMAR</button></div></div>))}</div>)}
             </div>
             {isProcessingBatch && (
-              <div className="flex items-center gap-3 p-6 bg-indigo-50 rounded-3xl border border-indigo-100">
+              <div className="flex items-center gap-3 p-6 bg-indigo-50 dark:bg-indigo-950/40 rounded-3xl border border-indigo-100 dark:border-indigo-900/40">
                 <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
                 <p className="text-indigo-600 font-black uppercase text-xs tracking-widest italic">PROCESSANDO LOTE COM IA...</p>
               </div>

@@ -162,7 +162,6 @@ export default function EmpresasPage() {
                 const cleanName = result.client?.trim();
                 let matchedClient = null;
                 
-                // Busca robusta por CNPJ ou Nome para evitar duplicatas
                 if (cleanCnpj) {
                     const { data: clientByCnpj } = await supabase
                         .from("clients")
@@ -227,7 +226,7 @@ export default function EmpresasPage() {
           let clientId = item.matchedClientId;
 
           if (!clientId) {
-              const coords = await getHighPrecisionCoordinates(${item.address}, item.clientName, item.cnpj);
+              const coords = await getHighPrecisionCoordinates(`${item.address}`, item.clientName, item.cnpj);
               const { data: newClientRes, error: clientErr } = await supabase
                   .from("clients")
                   .insert([{
@@ -244,13 +243,12 @@ export default function EmpresasPage() {
               
               if (clientErr) throw clientErr;
               clientId = newClientRes.id;
-              toast.success(Cliente  cadastrado com sucesso!);
+              toast.success("Cliente cadastrado com sucesso!");
           }
 
           const cleanName = item.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
-          const cleanValue = VALOR_;
-          const formattedName = ${item.category}______;
-          const path = ${user?.id}//;
+          const formattedName = `${item.category}___VALOR_${item.value}___${cleanName}`;
+          const path = `${user?.id}/${formattedName}`;
 
           const { error: uploadError } = await supabase.storage
               .from("client_vault")
@@ -313,14 +311,14 @@ export default function EmpresasPage() {
           const { data: clients } = await supabase.from("clients").select("id, faturamento, category_last_contact").eq("user_id", user?.id);
           if (clients) {
               for (const client of clients) {
-                  const { data: files } = await supabase.storage.from("client_vault").list(${user?.id}/);
+                  const { data: files } = await supabase.storage.from("client_vault").list(`${user?.id}/`);
                   if (files) {
                       for (const file of files) {
                           const parts = file.name.split("___");
                           if (parts.length > 0 && parts[0].toLowerCase() === oldCat.toLowerCase()) {
                               const newName = file.name.replace(parts[0], newCatName);
-                              const oldPath = ${user?.id}//;
-                              const newPath = ${user?.id}//;
+                              const oldPath = `${user?.id}/${file.name}`;
+                              const newPath = `${user?.id}/${newName}`;
                               await supabase.storage.from("client_vault").copy(oldPath, newPath);
                               await supabase.storage.from("client_vault").remove([oldPath]);
                           }
@@ -367,33 +365,30 @@ export default function EmpresasPage() {
     if (!editingCategory) return;
     const cleanCategory = editingCategory.trim();
 
-    if (!window.confirm(ATENÇÃO: Deseja realmente excluir a representada ""? \n\nISSO APAGARÁ DEFINITIVAMENTE: \n1. Todos os pedidos registrados dela.\n2. Todos os arquivos anexados desta empresa.\n3. Todo o histórico de faturamento acumulado.\n\nESTA AÇÃO É IRREVERSÍVEL.)) return;
+    if (!window.confirm(`ATENÇÃO: Deseja realmente excluir a representada "${cleanCategory}"? \n\nISSO APAGARÁ DEFINITIVAMENTE: \n1. Todos os pedidos registrados dela.\n2. Todos os arquivos anexados desta empresa.\n3. Todo o histórico de faturamento acumulado.\n\nESTA AÇÃO É IRREVERSÍVEL.`)) return;
     
     setLoading(true);
     try {
-        // 1. Deletar os pedidos da tabela
         const { error: orderError } = await supabase.from("orders").delete().eq("category", cleanCategory).eq("user_id", user?.id);
         if (orderError) throw orderError;
 
-        // 2. Buscar arquivos para identificar clientes
         const { data: userFiles } = await supabase.rpc("list_user_files", { u_id: user.id });
         
         const clientsWithTargetFiles = new Set<string>();
         if (userFiles) {
             userFiles.forEach((f: any) => {
-                if (f.file_name?.startsWith(${cleanCategory}___)) {
+                if (f.file_name?.startsWith(`${cleanCategory}___`)) {
                     clientsWithTargetFiles.add(f.client_id);
                 }
             });
         }
 
-        // 3. Deletar arquivos
         for (const clientId of Array.from(clientsWithTargetFiles)) {
-             const { data: files } = await supabase.storage.from("client_vault").list(${user?.id}/);
+             const { data: files } = await supabase.storage.from("client_vault").list(`${user?.id}/`);
              if (files) {
                  const filesToDelete = files
-                    .filter(f => f.name.startsWith(${cleanCategory}___))
-                    .map(f => ${user?.id}//);
+                    .filter(f => f.name.startsWith(`${cleanCategory}___`))
+                    .map(f => `${user?.id}/${f.name}`);
                  
                  if (filesToDelete.length > 0) {
                      await supabase.storage.from("client_vault").remove(filesToDelete);
@@ -401,7 +396,6 @@ export default function EmpresasPage() {
              }
         }
 
-        // 4. Limpar histórico nos clientes
         const { data: clientsToUpdate } = await supabase.from("clients").select("id, faturamento, category_last_contact").eq("user_id", user?.id);
         
         if (clientsToUpdate) {
@@ -422,11 +416,10 @@ export default function EmpresasPage() {
             }
         }
 
-        // 5. Remover da lista global
         const newGlobalCats = (settings.categories || []).filter(c => c !== editingCategory);
         await updateSettings({ categories: newGlobalCats });
         
-        toast.success(Representada "" excluída com sucesso!);
+        toast.success(`Representada "${cleanCategory}" excluída com sucesso!`);
         setIsEditModalOpen(false);
         await loadOrders();
     } catch (err: any) {
@@ -452,7 +445,6 @@ export default function EmpresasPage() {
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
@@ -501,10 +493,10 @@ export default function EmpresasPage() {
              <div className="space-y-2 max-h-[calc(100vh-24rem)] overflow-y-auto pr-1">
                 <div 
                   onClick={() => setSelectedCategory("all")}
-                  className={lex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all }
+                  className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${selectedCategory === "all" ? "border-indigo-600 bg-indigo-50/50" : "border-slate-100"}`}
                 >
                   <div className="flex items-center gap-2 font-bold text-sm">
-                    <FileText className={w-4 h-4 } />
+                    <FileText className={`w-4 h-4 ${selectedCategory === "all" ? "text-indigo-600" : "text-slate-400"}`} />
                     <span>Faturamento geral</span>
                   </div>
                 </div>
@@ -513,7 +505,7 @@ export default function EmpresasPage() {
                    <div 
                      key={cat}
                      onClick={() => setSelectedCategory(cat)}
-                     className={lex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all }
+                     className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${selectedCategory === cat ? "border-indigo-600 bg-indigo-50/50" : "border-slate-100"}`}
                    >
                      <div className="flex flex-col truncate flex-1">
                        <span className="font-bold text-sm truncate">{cat}</span>
@@ -563,7 +555,7 @@ export default function EmpresasPage() {
                           </div>
                           <div>
                              <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">{order.file_name}</h4>
-                             <Link to={/dashboard/clientes/} className="text-xs text-indigo-600 hover:underline">{order.clientName}</Link>
+                             <Link to="/dashboard/clientes/" className="text-xs text-indigo-600 hover:underline">{order.clientName}</Link>
                           </div>
                         </div>
                         <div className="text-right">
