@@ -4,7 +4,6 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { processOrderFile } from "../lib/orderProcessor";
 import { getHighPrecisionCoordinates } from "../lib/geminiGeocoding";
-import { toast } from "sonner";
 
 export default function PedidosPage() {
   const { user } = useAuth();
@@ -42,22 +41,16 @@ export default function PedidosPage() {
 
   const registerNewClient = async (name, cnpj, address) => {
     const cleanCnpj = cnpj ? cnpj.replace(/\D/g, "") : "";
-    const cleanName = name?.trim();
     
-    // Verificação robusta de integridade para evitar duplicatas
+    // Verifica├º├úo de integridade silenciosa
     if (cleanCnpj) {
       const { data: existing } = await supabase.from("clients").select("id").eq("cnpj", cleanCnpj).eq("user_id", user.id).maybeSingle();
       if (existing) return existing;
     }
-    
-    if (cleanName) {
-      const { data: existingName } = await supabase.from("clients").select("id").eq("name", cleanName).eq("user_id", user.id).maybeSingle();
-      if (existingName) return existingName;
-    }
 
     let lat = -23.5505, lng = -46.6333;
-    if (address) { try { const coords = await getHighPrecisionCoordinates(address, name, cnpj); if (coords) { lat = coords.lat; lng = coords.lng; } } catch (e) {} }
-    const { data, error } = await supabase.from("clients").insert([{ user_id: user.id, name: cleanName, cnpj: cleanCnpj, address: address || "", latitude: lat, longitude: lng, status: "Ativo" }]).select().single();
+    if (address) { try { const coords = await getHighPrecisionCoordinates(address); if (coords) { lat = coords.lat; lng = coords.lng; } } catch (e) {} }
+    const { data, error } = await supabase.from("clients").insert([{ user_id: user.id, name, cnpj: cleanCnpj, address: address || "", latitude: lat, longitude: lng, status: "Ativo" }]).select().single();
     if (error) throw error; loadData(); return data;
   };
 
@@ -69,14 +62,11 @@ export default function PedidosPage() {
       if (result.status === "ready") {
         setAnalysisResult(result); setOrderValue(result.value?.toString() || "");
         
-        // Matching inteligente com limpeza de CNPJ e Nome
+        // Matching inteligente com limpeza de CNPJ
         const cleanResCnpj = result.cnpj?.replace(/\D/g, "");
-        const cleanResName = result.client?.trim().toLowerCase();
-        
         const match = clients.find(c => {
           const clientCnpj = c.cnpj?.replace(/\D/g, "");
-          const clientName = c.name?.trim().toLowerCase();
-          return (cleanResCnpj && clientCnpj === cleanResCnpj) || (clientName && clientName === cleanResName);
+          return (cleanResCnpj && clientCnpj === cleanResCnpj) || c.name?.toLowerCase().includes(result.client?.toLowerCase());
         });
 
         if (match) { setSelectedClient(match.id); setShowNewClientForm(false); } else { setShowNewClientForm(true); setSelectedClient(""); }
@@ -98,11 +88,10 @@ export default function PedidosPage() {
         if (n) cid = n.id;
       }
       const cleanName = selectedFile.name.replace(/[^\w.-]/g, "_");
-      const path = ${user.id}//___VALOR____;
+      const path = `${user.id}/${cid}/${selectedCategory}___VALOR_${orderValue}___${cleanName}`;
       await supabase.storage.from("client_vault").upload(path, selectedFile, { upsert: true });
       await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: selectedCategory, value: parseFloat(orderValue), file_name: cleanName, file_path: path, status: "concluido" }]);
       setIsManualModalOpen(false); loadData();
-      toast.success("Pedido registrado com sucesso!");
     } catch (err) { alert(err.message); } finally { setIsSaving(false); }
   };
 
@@ -112,14 +101,11 @@ export default function PedidosPage() {
       try {
         const res = await processOrderFile(file, clients.map(c => c.name), settings.categories || []);
         
-        // Matching inteligente
+        // Matching inteligente com limpeza de CNPJ
         const cleanResCnpj = res.cnpj?.replace(/\D/g, "");
-        const cleanResName = res.client?.trim().toLowerCase();
-        
         const match = clients.find(c => {
           const clientCnpj = c.cnpj?.replace(/\D/g, "");
-          const clientName = c.name?.trim().toLowerCase();
-          return (cleanResCnpj && clientCnpj === cleanResCnpj) || (clientName && clientName === cleanResName);
+          return (cleanResCnpj && clientCnpj === cleanResCnpj) || c.name?.toLowerCase().includes(res.client?.toLowerCase());
         });
 
         setBatchResults(prev => [...prev, { file, client: res.client, category: res.category, value: res.value, needsNewClient: !match, clientId: match?.id, address: res.address, cnpj: res.cnpj }]);
@@ -132,11 +118,10 @@ export default function PedidosPage() {
     try {
       let cid = res.clientId;
       if (res.needsNewClient) { const n = await registerNewClient(res.client, res.cnpj, res.address); if (n) cid = n.id; }
-      const path = ${user.id}//___VALOR____;
+      const path = `${user.id}/${cid}/${res.category}___VALOR_${res.value}___${res.file.name}`;
       await supabase.storage.from("client_vault").upload(path, res.file, { upsert: true });
       await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: res.category, value: res.value, file_name: res.file.name, file_path: path, status: "concluido" }]);
       setBatchResults(prev => prev.filter(item => item.file !== res.file)); loadData();
-      toast.success("Pedido em lote processado!");
     } catch (err) { alert(err.message); }
   };
 

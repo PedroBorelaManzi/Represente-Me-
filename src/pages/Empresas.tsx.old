@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from "react";
-import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check, Loader2, Upload, Search, MapPin, AlertCircle, FileCheck, CheckCircle2, ShoppingBag } from "lucide-react";
+import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check, Loader2, Upload, Search, MapPin, AlertCircle, FileCheck, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -86,7 +86,7 @@ export default function EmpresasPage() {
       for (let i = 0; i < clients.length; i += 5) {
         const batch = clients.slice(i, i + 5);
         await Promise.all(batch.map(async (client) => {
-          const { data: files } = await supabase.storage.from("client_vault").list(${user.id}/);
+          const { data: files } = await supabase.storage.from("client_vault").list(`${user.id}/${client.id}`);
           if (files && files.length > 0) {
             const clientOrders: any[] = [];
             let newFaturamento: any = {};
@@ -105,7 +105,7 @@ export default function EmpresasPage() {
                   category,
                   value,
                   file_name: file.name,
-                  file_path: ${user.id}//,
+                  file_path: `${user.id}/${client.id}/${file.name}`,
                   created_at: file.created_at
                 });
               }
@@ -159,28 +159,14 @@ export default function EmpresasPage() {
 
             if (result.status === 'ready') {
                 const cleanCnpj = result.cnpj.replace(/\D/g, "");
-                const cleanName = result.client?.trim();
                 let matchedClient = null;
-                
-                // Busca robusta por CNPJ ou Nome para evitar duplicatas
                 if (cleanCnpj) {
                     const { data: clientByCnpj } = await supabase
                         .from("clients")
                         .select("id, name")
                         .eq("cnpj", cleanCnpj)
-                        .eq("user_id", user?.id)
                         .maybeSingle();
                     matchedClient = clientByCnpj;
-                }
-                
-                if (!matchedClient && cleanName) {
-                    const { data: clientByName } = await supabase
-                        .from("clients")
-                        .select("id, name")
-                        .eq("name", cleanName)
-                        .eq("user_id", user?.id)
-                        .maybeSingle();
-                    matchedClient = clientByName;
                 }
 
                 setUploadFiles(prev => {
@@ -200,7 +186,7 @@ export default function EmpresasPage() {
                     return updated;
                 });
             } else {
-                throw new Error(result.error || "Falha na extração");
+                throw new Error(result.error || "Falha na extra├º├úo");
             }
         } catch (err) {
             console.error("Erro no processamento:", err);
@@ -227,16 +213,16 @@ export default function EmpresasPage() {
           let clientId = item.matchedClientId;
 
           if (!clientId) {
-              const coords = await getHighPrecisionCoordinates(${item.address}, item.clientName, item.cnpj);
+              const coords = await getHighPrecisionCoordinates(`${item.address}`, item.clientName, item.cnpj);
               const { data: newClientRes, error: clientErr } = await supabase
                   .from("clients")
                   .insert([{
                       user_id: user?.id,
                       name: item.clientName,
-                      cnpj: item.cnpj?.replace(/\D/g, ""),
+                      cnpj: item.cnpj,
                       address: item.address,
-                      latitude: coords?.lat || -23.5505,
-                      longitude: coords?.lng || -46.6333,
+                      lat: coords?.lat,
+                      lng: coords?.lng,
                       status: 'Ativo'
                   }])
                   .select()
@@ -244,13 +230,13 @@ export default function EmpresasPage() {
               
               if (clientErr) throw clientErr;
               clientId = newClientRes.id;
-              toast.success(Cliente  cadastrado com sucesso!);
+              toast.success(`Cliente ${item.clientName} cadastrado com sucesso!`);
           }
 
           const cleanName = item.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
-          const cleanValue = VALOR_;
-          const formattedName = ${item.category}______;
-          const path = ${user?.id}//;
+          const cleanValue = `VALOR_${parseFloat(item.value.toString()).toFixed(2)}`;
+          const formattedName = `${item.category}___${cleanValue}___${cleanName}`;
+          const path = `${user?.id}/${clientId}/${formattedName}`;
 
           const { error: uploadError } = await supabase.storage
               .from("client_vault")
@@ -288,7 +274,7 @@ export default function EmpresasPage() {
       setNewCat("");
       if (!selectedCategory) setSelectedCategory(newCat.trim());
     } else if (newCat.trim()) {
-        alert("Esta empresa já existe!");
+        alert("Esta empresa j├í existe!");
         setNewCat("");
     }
   };
@@ -313,14 +299,14 @@ export default function EmpresasPage() {
           const { data: clients } = await supabase.from("clients").select("id, faturamento, category_last_contact").eq("user_id", user?.id);
           if (clients) {
               for (const client of clients) {
-                  const { data: files } = await supabase.storage.from("client_vault").list(${user?.id}/);
+                  const { data: files } = await supabase.storage.from("client_vault").list(`${user?.id}/${client.id}`);
                   if (files) {
                       for (const file of files) {
                           const parts = file.name.split("___");
                           if (parts.length > 0 && parts[0].toLowerCase() === oldCat.toLowerCase()) {
                               const newName = file.name.replace(parts[0], newCatName);
-                              const oldPath = ${user?.id}//;
-                              const newPath = ${user?.id}//;
+                              const oldPath = `${user?.id}/${client.id}/${file.name}`;
+                              const newPath = `${user?.id}/${client.id}/${newName}`;
                               await supabase.storage.from("client_vault").copy(oldPath, newPath);
                               await supabase.storage.from("client_vault").remove([oldPath]);
                           }
@@ -364,74 +350,38 @@ export default function EmpresasPage() {
   };
 
   const handleDeleteSub = async () => {
-    if (!editingCategory) return;
-    const cleanCategory = editingCategory.trim();
-
-    if (!window.confirm(ATENÇÃO: Deseja realmente excluir a representada ""? \n\nISSO APAGARÁ DEFINITIVAMENTE: \n1. Todos os pedidos registrados dela.\n2. Todos os arquivos anexados desta empresa.\n3. Todo o histórico de faturamento acumulado.\n\nESTA AÇÃO É IRREVERSÍVEL.)) return;
+    if (!window.confirm(`ATEN├ç├âO: Deseja realmente excluir a representada "${editingCategory}"? \n\nISSO APAGAR├ü DEFINITIVAMENTE: \n1. Todos os pedidos registrados dela.\n2. Todos os arquivos anexados desta empresa.\n3. Todo o hist├│rico de faturamento acumulado.\n\nESTA A├ç├âO ├ë IRREVERS├ìVEL.`)) return;
     
     setLoading(true);
     try {
-        // 1. Deletar os pedidos da tabela
-        const { error: orderError } = await supabase.from("orders").delete().eq("category", cleanCategory).eq("user_id", user?.id);
-        if (orderError) throw orderError;
-
-        // 2. Buscar arquivos para identificar clientes
-        const { data: userFiles } = await supabase.rpc("list_user_files", { u_id: user.id });
+        await supabase.from("orders").delete().eq("category", editingCategory).eq("user_id", user?.id);
+        const { data: clients } = await supabase.from("clients").select("id, faturamento, category_last_contact").eq("user_id", user?.id);
         
-        const clientsWithTargetFiles = new Set<string>();
-        if (userFiles) {
-            userFiles.forEach((f: any) => {
-                if (f.file_name?.startsWith(${cleanCategory}___)) {
-                    clientsWithTargetFiles.add(f.client_id);
+        if (clients) {
+            for (const client of clients) {
+                const { data: files } = await supabase.storage.from("client_vault").list(`${user?.id}/${client.id}`);
+                if (files) {
+                    const filesToDelete = files.filter(f => f.name.startsWith(`${editingCategory}___`)).map(f => `${user?.id}/${client.id}/${f.name}`);
+                    if (filesToDelete.length > 0) await supabase.storage.from("client_vault").remove(filesToDelete);
                 }
-            });
-        }
 
-        // 3. Deletar arquivos
-        for (const clientId of Array.from(clientsWithTargetFiles)) {
-             const { data: files } = await supabase.storage.from("client_vault").list(${user?.id}/);
-             if (files) {
-                 const filesToDelete = files
-                    .filter(f => f.name.startsWith(${cleanCategory}___))
-                    .map(f => ${user?.id}//);
-                 
-                 if (filesToDelete.length > 0) {
-                     await supabase.storage.from("client_vault").remove(filesToDelete);
-                 }
-             }
-        }
-
-        // 4. Limpar histórico nos clientes
-        const { data: clientsToUpdate } = await supabase.from("clients").select("id, faturamento, category_last_contact").eq("user_id", user?.id);
-        
-        if (clientsToUpdate) {
-            for (const client of clientsToUpdate) {
-                let updated = false;
-                const newFat = { ...(client.faturamento || {}) };
-                const newLastC = { ...(client.category_last_contact || {}) };
-
-                if (newFat[cleanCategory]) { delete newFat[cleanCategory]; updated = true; }
-                if (newLastC[cleanCategory]) { delete newLastC[cleanCategory]; updated = true; }
-
-                if (updated) {
-                    await supabase.from("clients").update({
-                        faturamento: newFat,
-                        category_last_contact: newLastC
-                    }).eq("id", client.id);
-                }
+                let needsUpdate = false;
+                const fat = client.faturamento || {};
+                const lastC = client.category_last_contact || {};
+                
+                if (fat[editingCategory] !== undefined) { delete fat[editingCategory]; needsUpdate = true; }
+                if (lastC[editingCategory] !== undefined) { delete lastC[editingCategory]; needsUpdate = true; }
+                if (needsUpdate) await supabase.from("clients").update({ faturamento: fat, category_last_contact: lastC }).eq("id", client.id);
             }
         }
 
-        // 5. Remover da lista global
-        const newGlobalCats = (settings.categories || []).filter(c => c !== editingCategory);
-        await updateSettings({ categories: newGlobalCats });
-        
-        toast.success(Representada "" excluída com sucesso!);
-        setIsEditModalOpen(false);
+        const updated = (settings?.categories || []).filter(c => c !== editingCategory);
+        await updateSettings({ categories: updated });
+        if (selectedCategory === editingCategory) setSelectedCategory(updated.length > 0 ? updated[0] : "all");
         await loadOrders();
-    } catch (err: any) {
-        console.error("Delete Category Error:", err);
-        toast.error("Erro ao excluir.");
+        setIsEditModalOpen(false);
+    } catch (err) {
+        console.error("Erro na exclus├úo:", err);
     } finally {
         setLoading(false);
     }
@@ -474,7 +424,7 @@ export default function EmpresasPage() {
                <div className="flex items-center gap-3 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl animate-pulse">
                   <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-400">
-                    sincronização: {Math.round((syncStatus.current / syncStatus.total) * 100)}%
+                    sincroniza├º├úo: {Math.round((syncStatus.current / syncStatus.total) * 100)}%
                   </span>
                </div>
             )}
@@ -501,10 +451,14 @@ export default function EmpresasPage() {
              <div className="space-y-2 max-h-[calc(100vh-24rem)] overflow-y-auto pr-1">
                 <div 
                   onClick={() => setSelectedCategory("all")}
-                  className={lex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all }
+                  className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    selectedCategory === "all" 
+                      ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-200" 
+                      : "border-slate-100 dark:border-zinc-850 hover:bg-slate-50 dark:hover:bg-zinc-950 text-slate-700 dark:text-zinc-300"
+                  }`}
                 >
                   <div className="flex items-center gap-2 font-bold text-sm">
-                    <FileText className={w-4 h-4 } />
+                    <FileText className={`w-4 h-4 ${selectedCategory === "all" ? "text-indigo-600" : "text-slate-400"}`} />
                     <span>Faturamento geral</span>
                   </div>
                 </div>
@@ -513,7 +467,11 @@ export default function EmpresasPage() {
                    <div 
                      key={cat}
                      onClick={() => setSelectedCategory(cat)}
-                     className={lex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all }
+                     className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${
+                       selectedCategory.toLowerCase() === cat.toLowerCase() 
+                         ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-200" 
+                         : "border-slate-100 dark:border-zinc-850 hover:bg-slate-50 dark:hover:bg-zinc-950 text-slate-700 dark:text-zinc-300"
+                     }`}
                    >
                      <div className="flex flex-col truncate flex-1">
                        <span className="font-bold text-sm truncate">{cat}</span>
@@ -563,7 +521,7 @@ export default function EmpresasPage() {
                           </div>
                           <div>
                              <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">{order.file_name}</h4>
-                             <Link to={/dashboard/clientes/} className="text-xs text-indigo-600 hover:underline">{order.clientName}</Link>
+                             <Link to={`/dashboard/clientes/${order.client_id}`} className="text-xs text-indigo-600 hover:underline">{order.clientName}</Link>
                           </div>
                         </div>
                         <div className="text-right">
@@ -589,7 +547,7 @@ export default function EmpresasPage() {
                 </div>
                 <input type="text" value={editNameInput} onChange={(e) => setEditNameInput(e.target.value)} className="w-full px-3 py-2 border rounded-xl dark:bg-zinc-950" />
                 <div className="flex flex-col gap-2 pt-4">
-                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm">Salvar Alterações</button>
+                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm">Salvar Altera├º├Áes</button>
                     <button onClick={handleDeleteSub} className="w-full py-2.5 bg-red-50 text-red-600 rounded-xl font-bold text-sm border border-red-100">Excluir permanentemente</button>
                 </div>
              </motion.div>

@@ -99,7 +99,7 @@ export async function processOrderFile(file: File, knownClients = [], categories
 
     const userPrompt = `Analise este documento:
     HINTS LOCAIS (Extraídos via Regex):
-    - CNão detectado"}
+    - CNPJ detectado: ${localCnpj || "Não detectado"}
     - Valor provável: ${localValue || "Não detectado"}
     
     CATEGORIAS CONHECIDAS (USE APENAS UMA DESTAS): ${categories.join(", ")}
@@ -171,5 +171,6 @@ export async function processOrderFile(file: File, knownClients = [], categories
     };
   }
 }
+
 
 
