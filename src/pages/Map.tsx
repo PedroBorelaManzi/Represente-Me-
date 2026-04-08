@@ -176,42 +176,48 @@ export default function MapPage() {
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] gap-4 relative">
-      {/* Header / Search Overlay */}
-      <div className="absolute top-4 left-4 right-4 z-[1000] flex flex-col md:flex-row gap-2 pointer-events-none">
-        <div className="flex-1 max-w-md pointer-events-auto">
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+    <div className="flex flex-col h-[calc(100vh-2rem)] gap-6">
+      {/* Header Clássico */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+           <h1 className='text-3xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 uppercase'>
+              <MapPin className="w-10 h-10 text-indigo-600"/> MAPA INTERATIVO
+           </h1>
+        </div>
+
+        <div className="flex flex-col md:flex-row items-center gap-3">
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input 
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por nome, CNPJ ou cidade..."
-              className="w-full pl-12 pr-4 py-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-white/20 dark:border-zinc-800 rounded-2xl shadow-2xl shadow-black/10 outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-xs uppercase italic tracking-tighter"
+              className="w-full pl-12 pr-4 py-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-xs uppercase"
             />
           </div>
-        </div>
 
-        <div className="flex gap-2 pointer-events-auto">
-          <button 
-            onClick={handleGetCurrentLocation}
-            className="p-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-white/20 dark:border-zinc-800 rounded-2xl shadow-xl hover:bg-slate-50 transition-all text-slate-600 dark:text-zinc-400"
-            title="Minha Localização"
-          >
-            <Target className="w-5 h-5" />
-          </button>
-          
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-500/20 font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> Novo Cliente
-          </button>
+          <div className="flex gap-2 w-full md:w-auto">
+            <button 
+              onClick={handleGetCurrentLocation}
+              className="p-3 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-sm hover:bg-slate-50 transition-all text-slate-600 dark:text-zinc-400"
+              title="Minha Localização"
+            >
+              <Target className="w-5 h-5" />
+            </button>
+            
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="flex-1 md:flex-none px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-lg shadow-indigo-500/20 font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Novo Cliente
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Map Container */}
-      <div className="flex-1 rounded-[40px] overflow-hidden border-4 border-white dark:border-zinc-900 shadow-2xl relative z-0">
+      <div className="flex-1 rounded-[40px] overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-xl relative z-0">
         <MapContainer center={center} zoom={zoom} style={{ height: "100%", width: "100%" }} zoomControl={false}>
           <ChangeView center={center} zoom={zoom} />
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -237,7 +243,7 @@ export default function MapPage() {
             >
               <Popup className="custom-popup">
                 <div className="p-2 min-w-[200px]">
-                  <h4 className="font-black text-xs text-slate-900 dark:text-white uppercase italic tracking-tighter mb-2 border-b pb-2">{company.name}</h4>
+                  <h4 className="font-black text-xs text-slate-900 dark:text-white uppercase tracking-tighter mb-2 border-b pb-2">{company.name}</h4>
                   <div className="space-y-2">
                     <p className="text-[10px] flex items-center gap-2 text-slate-500 font-bold"><Building2 className="w-3 h-3"/> {company.cnpj || 'Sem CNPJ'}</p>
                     <p className="text-[10px] flex items-center gap-2 text-slate-500 font-bold"><MapPin className="w-3 h-3"/> {company.city || 'Cidade não inf.'}</p>

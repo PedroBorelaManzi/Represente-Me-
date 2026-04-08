@@ -197,12 +197,9 @@ export default function CRMPage() {
       {/* Header */}
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
         <div>
-          <h1 className='text-2xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-2 uppercase italic tracking-tighter'>
+          <h1 className='text-3xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 uppercase'>
              Gestão de Clientes
           </h1>
-          <p className='text-xs text-slate-500 dark:text-zinc-400 mt-1 uppercase font-bold tracking-widest'>
-            {clients.length} clientes na base • {clients.filter(c => c.alerts?.length > 0).length} com alertas ativos
-          </p>
         </div>
         
         <div className='flex items-center gap-3'>
