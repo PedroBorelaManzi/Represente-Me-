@@ -30,7 +30,7 @@ export default function MapPage() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchingMap, setIsSearchingMap] = useState(false);
-  const [center, setCenter] = useState<[number, number]>([-23.550520, -46.633308]);
+  const [center, setCenter] = useState<[number, number]>([-23.1675, -47.7419]); // Cerquilho as default
   const [zoom, setZoom] = useState(13);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchingCnpj, setIsSearchingCnpj] = useState(false);
@@ -38,7 +38,7 @@ export default function MapPage() {
   const [isLocating, setIsLocating] = useState(false);
 
   const [newLocation, setNewLocation] = useState({
-    cnpj: "", name: "",  contact: "", address: "", lat: -23.5500, lng: -46.6340
+    cnpj: "", name: "",  contact: "", address: "", lat: -23.1675, lng: -47.7419
   });
 
   const loadClients = async () => {
@@ -55,7 +55,6 @@ export default function MapPage() {
 
   const handleGetCurrentLocation = () => {
     if (!("geolocation" in navigator)) {
-      toast.error("Geolocalização não suportada no seu navegador.");
       return;
     }
 
@@ -66,12 +65,10 @@ export default function MapPage() {
         setCenter([latitude, longitude]);
         setZoom(16);
         setIsLocating(false);
-        toast.success("Localização atualizada via GPS!");
       },
       (error) => {
         console.error("Erro ao obter localização:", error);
         setIsLocating(false);
-        toast.error("Não foi possível obter sua localização GPS.");
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
@@ -190,14 +187,7 @@ export default function MapPage() {
         const cleanCnpj = newLocation.cnpj.replace(/\D/g, "");
         
         // Verificação de Duplicidade
-        let dupQuery = supabase.from("clients").select("id, name").eq("user_id", user.id);
-        if (cleanCnpj) {
-            dupQuery = dupQuery.eq("cnpj", cleanCnpj);
-        } else {
-            dupQuery = dupQuery.eq("name", newLocation.name.trim());
-        }
-        
-        const { data: existing } = await dupQuery.maybeSingle();
+        const { data: existing } = await supabase.from("clients").select("id, name").eq("user_id", user.id).eq("cnpj", cleanCnpj).maybeSingle();
         if (existing) {
             toast.error(`Cliente já existe: ${existing.name}`);
             setSubmitting(false);
@@ -222,7 +212,7 @@ export default function MapPage() {
         setIsModalOpen(false);
         setCenter([newLocation.lat, newLocation.lng]);
         setZoom(16);
-        setNewLocation({ cnpj: "", name: "",  contact: "", address: "", lat: -23.5500, lng: -46.6340 });
+        setNewLocation({ cnpj: "", name: "",  contact: "", address: "", lat: -23.1675, lng: -47.7419 });
     } catch (err: any) {
         toast.error("Erro ao cadastrar: " + err.message);
     } finally {
@@ -268,7 +258,7 @@ export default function MapPage() {
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-zinc-100 italic uppercase tracking-tighter">Geolocalização</h1>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-zinc-100 italic uppercase tracking-tighter">Mapa de Clientes</h1>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 opacity-60">Visão panorâmica da sua base instalada de clientes.</p>
         </div>
         
@@ -285,14 +275,6 @@ export default function MapPage() {
               placeholder="Buscar Cliente ou Endereço..."
             />
           </form>
-          
-          <button 
-            onClick={handleGetCurrentLocation} 
-            disabled={isLocating}
-            className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-indigo-500 dark:hover:border-indigo-500 transition-all"
-          >
-            {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4 mr-2 text-indigo-600" />} GPS
-          </button>
 
           <button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all whitespace-nowrap">
             <Plus className="w-4 h-4 mr-2" /> Novo Cliente

@@ -106,45 +106,50 @@ export default function CRMPage() {
           </span>
         </div>
         
-        <div className='flex-1 overflow-y-auto p-4'>
-           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-              {loading ? (
-                 <div className='col-span-full flex items-center justify-center h-40'><Loader2 className='w-6 h-6 text-indigo-600 animate-spin' /></div>
-              ) : (
-                 filteredClients.map((client) => (
+        <div className='flex-1 overflow-y-auto'>
+           {loading ? (
+              <div className='flex items-center justify-center h-40'><Loader2 className='w-6 h-6 text-indigo-600 animate-spin' /></div>
+           ) : (
+              <div className='divide-y divide-slate-100 dark:divide-zinc-850'>
+                 {filteredClients.map((client) => (
                     <div 
                       key={client.id}
                       onClick={() => setSelectedClient(client)}
-                      className={`p-6 rounded-[28px] cursor-pointer transition-all border group relative ${selectedClient?.id === client.id ? 'bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800' : 'bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 hover:border-indigo-100 dark:hover:border-indigo-900 shadow-sm'}`}
+                      className={`p-4 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-zinc-850/50 flex items-center gap-4 group ${selectedClient?.id === client.id ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''}`}
                     >
-                       <div className='flex items-start gap-4'>
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-black uppercase ${selectedClient?.id === client.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-zinc-850 text-slate-500 dark:text-zinc-400'}`}>
-                             {client.name?.substring(0, 2)}
-                          </div>
-                          <div className='flex-1 min-w-0'>
-                             <p className='text-sm font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight truncate'>{client.name}</p>
-                             <p className='text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest'>CNPJ: {client.cnpj || '--- '}</p>
-                          </div>
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteClient(client.id); }} className='p-2 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-xl transition-all'>
-                             <Trash2 className='w-4 h-4' />
-                          </button>
+                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black uppercase ${selectedClient?.id === client.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-zinc-850 text-slate-500 dark:text-zinc-400'}`}>
+                          {client.name?.substring(0, 2)}
                        </div>
                        
-                       <div className='mt-6 pt-6 border-t border-slate-50 dark:border-zinc-850 flex items-center justify-between'>
-                          <div>
-                             <p className='text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1'>Faturamento</p>
-                             <p className='text-lg font-black text-indigo-600 dark:text-indigo-400'>
-                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(getClientFaturamentoTotal(client))}
-                             </p>
+                       <div className='flex-1 min-w-0'>
+                          <div className='flex items-center gap-2'>
+                             <p className='text-sm font-black text-slate-900 dark:text-zinc-100 uppercase truncate text-ellipsis overflow-hidden'>{client.name}</p>
+                             <span className='px-2 py-0.5 bg-slate-100 dark:bg-zinc-800 text-[9px] font-bold text-slate-500 dark:text-zinc-400 rounded-md uppercase whitespace-nowrap'>
+                                {client.cnpj || 'Sem CNPJ'}
+                             </span>
                           </div>
-                          <div className='p-2 bg-slate-50 dark:bg-zinc-850 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all'>
-                             <ChevronRight className='w-4 h-4' />
-                          </div>
+                          <p className='text-[11px] text-slate-400 dark:text-zinc-500 truncate mt-0.5 uppercase tracking-tight'>
+                             {client.address || 'Endereço não informado'}
+                          </p>
+                       </div>
+
+                       <div className='text-right mr-4 hidden md:block'>
+                          <p className='text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5'>Faturamento</p>
+                          <p className='text-sm font-black text-indigo-600 dark:text-indigo-400'>
+                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(getClientFaturamentoTotal(client))}
+                          </p>
+                       </div>
+
+                       <div className='flex items-center gap-2'>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteClient(client.id); }} className='p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-all'>
+                             <Trash2 className='w-4 h-4' />
+                          </button>
+                          <ChevronRight className='w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors' />
                        </div>
                     </div>
-                 ))
-              )}
-           </div>
+                 ))}
+              </div>
+           )}
         </div>
 
         {/* Floating Client Detail Overlay (When selected) */}
