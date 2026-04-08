@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Search, MapPin, Building2, Phone, Mail, FileText, ChevronRight, Filter, Plus, Trash2, Clock, CheckCircle2, TrendingUp, AlertCircle, X, Download, UserPlus, MoreHorizontal, Settings, LayoutGrid, Info, Loader2, Upload } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Search, MapPin, Building2, Phone, Mail, FileText, ChevronRight, Filter, Plus, Trash2, Clock, CheckCircle2, TrendingUp, AlertCircle, X, Download, UserPlus, MoreHorizontal, Settings, LayoutGrid, Info, Loader2, Upload, FileUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import { parseFileForCnpjs } from '../lib/clientImport';
 
 export default function CRMPage() {
   const { user } = useAuth();
@@ -12,10 +14,11 @@ export default function CRMPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Import Modal State
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [importProgress, setImportProgress] = useState<{current: number, total: number} | null>(null);
+  // Import Modal/State
+  const [isImporting, setIsImporting] = useState(false);
+  const [importStats, setImportStats] = useState({ current: 0, total: 0 });
 
   const loadClients = async () => {
     if (!user) return;
@@ -58,8 +61,86 @@ export default function CRMPage() {
       if (error) throw error;
       setClients(prev => prev.filter(c => c.id !== id));
       if (selectedClient?.id === id) setSelectedClient(null);
+      toast.success('Cliente removido com sucesso.');
     } catch (err) {
       console.error('Delete Error:', err);
+      toast.error('Erro ao remover cliente.');
+    }
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setIsImporting(true);
+    const toastId = toast.loading('Processando arquivo via IA...');
+
+    try {
+      // 1. Extract CNPJs using Gemini
+      const cnpjs = await parseFileForCnpjs(file);
+      if (cnpjs.length === 0) {
+        toast.error('Nenhum CNPJ detectado no arquivo.');
+        setIsImporting(false);
+        toast.dismiss(toastId);
+        return;
+      }
+
+      setImportStats({ current: 0, total: cnpjs.length });
+      toast.loading(`Importando ${cnpjs.length} potenciais clientes...`, { id: toastId });
+
+      let importedCount = 0;
+      let skippedCount = 0;
+
+      for (const cnpj of cnpjs) {
+        setImportStats(prev => ({ ...prev, current: prev.current + 1 }));
+        
+        // 2. Check for duplication
+        const isDuplicate = clients.some(c => c.cnpj === cnpj);
+        if (isDuplicate) {
+          skippedCount++;
+          continue;
+        }
+
+        // 3. Fetch details from BrasilAPI
+        try {
+          const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+          if (response.ok) {
+            const data = await response.json();
+            
+            // 4. Insert into Supabase
+            const { error } = await supabase.from('clients').insert([{
+              user_id: user.id,
+              name: data.razao_social || data.nome_fantasia || 'Cliente Importado',
+              cnpj: cnpj,
+              address: `${data.logradouro || ""}, ${data.numero || "S/N"} - ${data.bairro || ""}, ${data.municipio || ""} - ${data.uf || ""}`.trim(),
+              status: 'Ativo',
+              last_contact: new Date().toISOString().split('T')[0]
+            }]);
+
+            if (!error) importedCount++;
+          } else {
+            // Fallback: If API fails, insert minimal data
+             const { error } = await supabase.from('clients').insert([{
+               user_id: user.id,
+               name: `Cliente ${cnpj.substring(0, 4)}`,
+               cnpj: cnpj,
+               status: 'Ativo',
+               last_contact: new Date().toISOString().split('T')[0]
+             }]);
+             if (!error) importedCount++;
+          }
+        } catch (err) {
+          skippedCount++;
+        }
+      }
+
+      toast.success(`Importação concluída! ${importedCount} novos clientes adicionados.`, { id: toastId });
+      loadClients();
+    } catch (err: any) {
+      toast.error('Erro na importação: ' + err.message, { id: toastId });
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -89,9 +170,26 @@ export default function CRMPage() {
                value={searchTerm}
                onChange={(e) => setSearchTerm(e.target.value)}
                placeholder='Buscar por nome, CNPJ ou endereço...'
-               className='pl-10 pr-4 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm w-80 outline-none focus:ring-2 focus:ring-indigo-500'
+               className='pl-10 pr-4 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm w-full md:w-80 outline-none focus:ring-2 focus:ring-indigo-500'
              />
            </div>
+
+           <input 
+             type="file" 
+             ref={fileInputRef} 
+             onChange={handleImportFile} 
+             className="hidden" 
+             accept=".pdf,.xlsx,.xls,.txt,image/*" 
+           />
+           
+           <button 
+             onClick={() => fileInputRef.current?.click()}
+             disabled={isImporting}
+             className='px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-2'
+           >
+             {isImporting ? <Loader2 className='w-4 h-4 animate-spin' /> : <FileUp className='w-4 h-4' />}
+             {isImporting ? `Importando (${importStats.current}/${importStats.total})` : 'Importar Lista'}
+           </button>
         </div>
       </div>
 
@@ -200,26 +298,6 @@ export default function CRMPage() {
           )}
         </AnimatePresence>
       </div>
-
-      {/* Settings Modal (Simplified) */}
-      <AnimatePresence>
-        {isImportModalOpen && (
-          <div className='fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md'>
-             <div className='bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-lg p-8 space-y-6 shadow-2xl border border-slate-100 dark:border-zinc-800'>
-                <div className='flex justify-between items-center'>
-                   <h2 className='text-xl font-black uppercase'>Importação Geográfica</h2>
-                   <X onClick={() => setIsImportModalOpen(false)} className='cursor-pointer text-slate-400' />
-                </div>
-                
-                <div className='p-6 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-[28px] flex flex-col items-center justify-center gap-4 bg-slate-50/50 dark:bg-zinc-950/50'>
-                    <Upload className='w-10 h-10 text-indigo-600' />
-                    <button className='px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg'>Selecionar Arquivo</button>
-                    <p className='text-[10px] text-slate-400 font-bold'>Suporte para Excel (.xlsx) e CSV</p>
-                </div>
-             </div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

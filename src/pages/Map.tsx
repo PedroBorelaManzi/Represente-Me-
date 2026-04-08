@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, ExternalLink, AlertCircle, Navigation } from "lucide-react";
+import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, ExternalLink, AlertCircle, Navigation, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
@@ -256,9 +256,10 @@ export default function MapPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
+      {/* Header com Tipografia Corrigida */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-zinc-100 italic uppercase tracking-tighter">Mapa de Clientes</h1>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">Mapa de Clientes</h1>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 opacity-60">Visão panorâmica da sua base instalada de clientes.</p>
         </div>
         

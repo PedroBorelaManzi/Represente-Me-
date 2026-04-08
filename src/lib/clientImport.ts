@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import * as pdfjs from 'pdfjs-dist';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs';
+pdfjs.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
@@ -42,17 +42,17 @@ function fileToBase64(file: File): Promise<string> {
 async function processWithGemini(file: File): Promise<string[]> {
   if (!apiKey || !genAI) throw new Error("VITE_GEMINI_API_KEY não configurada.");
   
-    const prompt = `ATENÇÃO: Extraia os números de CNPJ (14 dígitos) apenas dos CLIENTES/COMPRADORES contidos neste documento. Ignore o CNPJ da Fábrica/Emissor.
-  Retorne APENAS um Array JSON: ["12345678000199", "98765432000111"]`;
+  const prompt = `ATENÇÃO: Extraia os números de CNPJ (14 dígitos) apenas dos CLIENTES/COMPRADORES contidos neste documento. Ignore o CNPJ da Fábrica/Emissor.
+  Retorne APENAS um Array JSON puro: ["12345678000199", "98765432000111"]`;
 
   const detected = await detectFileType(file);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }, { apiVersion: "v1" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }, { apiVersion: "v1" });
 
   try {
     let result;
     if (detected.type === 'image') {
       const base64 = await fileToBase64(file);
-      result = await model.generateContent([prompt, { inlineData: { data: base64, mimeType: detected.mimeType } }]);
+      result = await model.generateContent([prompt, { inlineData: { data: base64, mimeType: detected.mimeType || 'image/jpeg' } }]);
     } else {
       let text = "";
       if (detected.type === 'excel') {
@@ -65,36 +65,39 @@ async function processWithGemini(file: File): Promise<string[]> {
       } else {
         text = await file.text();
       }
-      result = await model.generateContent(prompt + "\n\nConteúdo:\n" + text);
+      result = await model.generateContent(prompt + "\n\nConteúdo:\n" + text.substring(0, 30000));
     }
 
-    const resText = result.response.text();
-    const cleanJson = resText.replace(/```json/g, "").replace(/```/g, "").trim();
-    const cnpjs = JSON.parse(cleanJson);
+    let resText = result.response.text();
+    resText = resText.replace(/```json/g, "").replace(/```/g, "").trim();
+    const cnpjs = JSON.parse(resText);
     return Array.isArray(cnpjs) ? cnpjs.map(String).map(s => s.replace(/\D/g, '')).filter(s => s.length === 14) : [];
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erro no Gemini:", error);
     if (detected.type === 'pdf') return extractCnpjsFallbackFromPDF(file);
-    throw new Error("Erro na IA de Importação: " + error.message);
+    return [];
   }
 }
 
 async function extractTextFromPDF(file: File): Promise<string[]> {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-  const pagesText: string[] = [];
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    pagesText.push(content.items.map((item: any) => item.str).join(' '));
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+    const pagesText: string[] = [];
+    for (let i = 1; i <= Math.min(pdf.numPages, 10); i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      pagesText.push(content.items.map((item: any) => item.str).join(' '));
+    }
+    return pagesText;
+  } catch (e) {
+    return [];
   }
-  return pagesText;
 }
 
 async function extractCnpjsFallbackFromPDF(file: File): Promise<string[]> {
   const texts = await extractTextFromPDF(file);
-  const results = extractCnpjs(texts.join('\\n'));
-  if (results.length === 0) throw new Error("Nenhum CNPJ detectado.");
+  const results = extractCnpjs(texts.join('\n'));
   return results;
 }
 
@@ -102,9 +105,7 @@ export async function parseFileForCnpjs(file: File): Promise<string[]> {
   try {
     const cnpjs = await processWithGemini(file);
     return Array.from(new Set(cnpjs));
-  } catch (error: any) {
-    console.error('Erro no parse do CNPJ:', error);
-    throw new Error(error.message || 'Falha na leitura do arquivo.');
+  } catch (error) {
+    return [];
   }
 }
-
