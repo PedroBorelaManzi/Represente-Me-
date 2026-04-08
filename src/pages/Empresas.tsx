@@ -55,14 +55,14 @@ export default function EmpresasPage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("orders")
-        .select("*, clients(name)")
+        .select("*, clients(id, name)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       setAllOrders((data || []).map(o => ({
         ...o,
-        clientName: o.clients?.name || "Cliente Desconhecido"
+        clientName: o.clients?.name || "Cliente Desconhecido", clientId: o.clients?.id
       })));
     } catch (err) {
       console.error("Load Orders Error:", err);
@@ -565,7 +565,7 @@ export default function EmpresasPage() {
                           </div>
                           <div>
                              <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">{order.file_name}</h4>
-                             <Link to="/dashboard/clientes/" className="text-xs text-indigo-600 hover:underline">{order.clientName}</Link>
+                             <Link to={`/dashboard/clientes/${order.clientId}`} className="text-xs text-indigo-600 hover:underline">{order.clientName}</Link>
                           </div>
                         </div>
                         <div className="text-right">
