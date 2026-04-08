@@ -231,7 +231,7 @@ export default function Agenda() {
               <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-zinc-400 transition-all"><ChevronRight className="w-4 h-4" /></button>
             </div>
             <button 
-              onClick={() => { setEditingEvent(null); setIsModalOpen(true); }}
+              onClick={() => { setEditingEvent({ id: '', title: '', date: formatDateLocal(new Date()), time: '09:00 - 10:00' }); setIsModalOpen(true); }}
               className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all shadow-lg shadow-indigo-100 dark:shadow-none uppercase tracking-wider"
             >
               <Plus className="w-4 h-4" /> Novo
