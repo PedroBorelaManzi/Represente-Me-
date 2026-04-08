@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, ExternalLink, AlertCircle } from "lucide-react";
+import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, ExternalLink, AlertCircle, Navigation } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
@@ -35,6 +35,7 @@ export default function MapPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchingCnpj, setIsSearchingCnpj] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
 
   const [newLocation, setNewLocation] = useState({
     cnpj: "", name: "",  contact: "", address: "", lat: -23.5500, lng: -46.6340
@@ -45,30 +46,41 @@ export default function MapPage() {
     const { data, error } = await supabase
         .from("clients")
         .select("*")
-        .eq("user_id", user.id); // FILTRAGEM POR USUÁRIO (CRÍTICO)
+        .eq("user_id", user.id);
     
     if (!error && data) {
       setCompanies(data);
     }
   };
 
-  useEffect(() => {
-    loadClients();
-  }, [user]);
+  const handleGetCurrentLocation = () => {
+    if (!("geolocation" in navigator)) {
+      toast.error("Geolocalização não suportada no seu navegador.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setCenter([latitude, longitude]);
+        setZoom(16);
+        setIsLocating(false);
+        toast.success("Localização atualizada via GPS!");
+      },
+      (error) => {
+        console.error("Erro ao obter localização:", error);
+        setIsLocating(false);
+        toast.error("Não foi possível obter sua localização GPS.");
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+  };
 
   useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCenter([position.coords.latitude, position.coords.longitude]);
-          setZoom(14);
-        },
-        (error) => {
-          console.error("Erro ao obter localização:", error);
-        }
-      );
-    }
-  }, []);
+    loadClients();
+    handleGetCurrentLocation();
+  }, [user]);
 
   const handleMarkerDrag = async (id: string, latlng: { lat: number, lng: number }) => {
     const { error } = await supabase
@@ -177,7 +189,7 @@ export default function MapPage() {
     try {
         const cleanCnpj = newLocation.cnpj.replace(/\D/g, "");
         
-        // Verificação de Duplicidade (IGUAL AO CRM)
+        // Verificação de Duplicidade
         let dupQuery = supabase.from("clients").select("id, name").eq("user_id", user.id);
         if (cleanCnpj) {
             dupQuery = dupQuery.eq("cnpj", cleanCnpj);
@@ -198,7 +210,7 @@ export default function MapPage() {
            address: newLocation.address,
            lat: newLocation.lat,
            lng: newLocation.lng,
-           user_id: user.id, // INCLUIR USER_ID (CRÍTICO)
+           user_id: user.id,
            status: "Ativo",
            last_contact: new Date().toISOString().split('T')[0]
         }]);
@@ -256,7 +268,7 @@ export default function MapPage() {
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-zinc-100 italic uppercase tracking-tighter">Radar de Atendimento</h1>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-zinc-100 italic uppercase tracking-tighter">Geolocalização</h1>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 opacity-60">Visão panorâmica da sua base instalada de clientes.</p>
         </div>
         
@@ -273,6 +285,15 @@ export default function MapPage() {
               placeholder="Buscar Cliente ou Endereço..."
             />
           </form>
+          
+          <button 
+            onClick={handleGetCurrentLocation} 
+            disabled={isLocating}
+            className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-indigo-500 dark:hover:border-indigo-500 transition-all"
+          >
+            {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4 mr-2 text-indigo-600" />} GPS
+          </button>
+
           <button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 active:scale-95 transition-all whitespace-nowrap">
             <Plus className="w-4 h-4 mr-2" /> Novo Cliente
           </button>
