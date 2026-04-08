@@ -36,7 +36,7 @@ export default function PedidosPage() {
 
   const loadData = async () => {
     setLoading(true);
-    const { data: o } = await supabase.from("orders").select("*, client:clients(name, cnpj)").eq("user_id", user?.id).order("created_at", { ascending: false });
+    const { data: o } = await supabase.from("orders").select("*, client:clients(id, name, cnpj)").eq("user_id", user?.id).order("created_at", { ascending: false });
     const { data: c } = await supabase.from("clients").select("id, name, cnpj").eq("user_id", user?.id).order("name");
     setOrders(o || []); setClients(c || []); setLoading(false);
   };
@@ -182,7 +182,7 @@ export default function PedidosPage() {
           <tbody className="divide-y border-t">
             {orders.filter(o=>o.client?.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(order => (
               <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                <td className="p-6"><Link to={`/dashboard/clientes/${order.client_id}`} className="font-bold hover:text-indigo-600 transition-colors">{order.client?.name}</Link></td>
+                <td className="p-6"><Link to={`/dashboard/clientes/${order.client?.id}`} className="font-bold hover:text-indigo-600 transition-colors">{order.client?.name}</Link></td>
                 <td className="p-6"><span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase text-center block w-fit">{order.category}</span></td>
                 <td className="p-6 text-right font-black">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(order.value)}</td>
                 <td className="p-6 text-center text-xs font-bold text-slate-500">{new Date(order.created_at).toLocaleDateString("pt-BR")}</td>
