@@ -230,138 +230,77 @@ export default function CRMPage() {
         </div>
       </div>
 
-      {/* TWO COLUMN LAYOUT: Main List (Left) + Radar/Alerts (Right) */}
-      <div className='flex-1 flex flex-col md:flex-row gap-6 min-h-0'>
+      {/* Main Content: Client List (Full Width) */}
+      <div className='flex-1 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 flex flex-col min-h-0 shadow-sm overflow-hidden relative'>
         
-        {/* Left: Client List */}
-        <div className='flex-1 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 flex flex-col min-h-0 shadow-sm overflow-hidden relative'>
-          
-          {/* Tabs restored from old version */}
-          <div className='px-4 pt-4 border-b dark:border-zinc-850 bg-slate-50/50 dark:bg-zinc-950/20 flex items-center gap-4'>
-            {(['Todos', 'Alerta', 'Critico', 'Perda'] as const).map(tab => (
-              <button 
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`pb-3 px-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
-              >
-                {tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: any) => a.type === tab)).length})</span>
-              </button>
-            ))}
-          </div>
-          
-          <div className='flex-1 overflow-y-auto'>
-             {loading ? (
-                <div className='flex items-center justify-center h-40'><Loader2 className='w-6 h-6 text-indigo-600 animate-spin' /></div>
-             ) : (
-                <div className='divide-y divide-slate-100 dark:divide-zinc-850'>
-                   {filteredClients.map((client) => (
-                      <div 
-                        key={client.id}
-                        onClick={() => setSelectedClient(client)}
-                        className={`p-4 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-zinc-850/50 flex items-center gap-4 group ${selectedClient?.id === client.id ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''}`}
-                      >
-                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black uppercase ${selectedClient?.id === client.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-zinc-850 text-slate-500 dark:text-zinc-400'}`}>
-                            {client.name?.substring(0, 2)}
-                         </div>
-                         
-                         <div className='flex-1 min-w-0'>
-                            <div className='flex items-center gap-2'>
-                               <p className='text-sm font-black text-slate-900 dark:text-zinc-100 uppercase truncate text-ellipsis overflow-hidden'>{client.name}</p>
-                               {client.alerts?.length > 0 && (
-                                 <span className="flex gap-1">
-                                   {client.alerts.slice(0, 1).map((a: any, i: number) => (
-                                     <span key={i} className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase border ${a.type === 'Perda' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                                       {a.type}: {a.days}D
-                                     </span>
-                                   ))}
-                                 </span>
-                               )}
-                            </div>
-                            <div className='flex items-center gap-2 mt-0.5'>
-                               <span className='px-1.5 py-0.5 bg-slate-100 dark:bg-zinc-800 text-[8px] font-bold text-slate-500 dark:text-zinc-400 rounded-md uppercase whitespace-nowrap tracking-widest'>
-                                  {client.cnpj || 'Sem CNPJ'}
-                               </span>
-                               <p className='text-[10px] text-slate-400 dark:text-zinc-500 truncate uppercase font-bold tracking-tight'>
-                                  {client.city ? `🏙️ ${client.city}` : 'Cidade não informada'}
-                               </p>
-                            </div>
-                         </div>
-
-                         <div className='text-right mr-4 hidden md:block'>
-                            <p className='text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5'>Faturamento</p>
-                            <p className='text-sm font-black text-indigo-600 dark:text-indigo-400'>
-                               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(getClientFaturamentoTotal(client))}
-                            </p>
-                         </div>
-
-                         <div className='flex items-center gap-2'>
-                            <button onClick={(e) => { e.stopPropagation(); handleDeleteClient(client.id); }} className='p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-all'>
-                               <Trash2 className='w-4 h-4' />
-                            </button>
-                            <ChevronRight className='w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors' />
-                         </div>
-                      </div>
-                   ))}
-                </div>
-             )}
-          </div>
-        </div>
-
-        {/* Right: Radar/Alert Sidebar (Restored) */}
-        <div className='w-full md:w-80 flex flex-col gap-6'>
-          
-          {/* Radar Summary Card */}
-          <div className='bg-slate-900 text-white rounded-[32px] p-6 shadow-xl border border-white/5'>
-            <div className='flex items-center gap-2 mb-6'>
-              <Activity className='w-5 h-5 text-indigo-400' />
-              <h3 className='text-sm font-black uppercase tracking-widest italic'>Radar de Atendimento</h3>
-            </div>
-            
-            <div className='space-y-4'>
-              <div className='p-4 bg-white/5 rounded-2xl border border-white/10'>
-                <div className='flex justify-between items-end'>
-                  <div>
-                    <p className='text-[10px] font-black text-red-400 uppercase tracking-widest'>PERDAS CRÍTICAS</p>
-                    <p className='text-3xl font-black italic mt-1'>{clients.filter(c => c.alerts?.some((a:any) => a.type === 'Perda')).length}</p>
-                  </div>
-                  <AlertCircle className='w-8 h-8 text-red-500/20' />
-                </div>
-              </div>
-              
-              <div className='p-4 bg-white/5 rounded-2xl border border-white/10'>
-                <div className='flex justify-between items-end'>
-                  <div>
-                    <p className='text-[10px] font-black text-amber-400 uppercase tracking-widest'>STATUS CRÍTICO</p>
-                    <p className='text-3xl font-black italic mt-1'>{clients.filter(c => c.alerts?.some((a:any) => a.type === 'Critico')).length}</p>
-                  </div>
-                  <TrendingUp className='w-8 h-8 text-amber-500/20' />
-                </div>
-              </div>
-
-              <div className='p-4 bg-white/5 rounded-2xl border border-white/10'>
-                <div className='flex justify-between items-end'>
-                  <div>
-                    <p className='text-[10px] font-black text-indigo-400 uppercase tracking-widest'>ALERTAS INICIAIS</p>
-                    <p className='text-3xl font-black italic mt-1'>{clients.filter(c => c.alerts?.some((a:any) => a.type === 'Alerta')).length}</p>
-                  </div>
-                  <Clock className='w-8 h-8 text-indigo-500/20' />
-                </div>
-              </div>
-            </div>
-
-            <button className='w-full mt-6 py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/40 hover:bg-indigo-700 transition-all'>
-               GERAR RELATÓRIO DE CHURN
+        {/* Tabs next to search matches filter */}
+        <div className='px-4 pt-4 border-b dark:border-zinc-850 bg-slate-50/50 dark:bg-zinc-950/20 flex items-center gap-4'>
+          {(['Todos', 'Alerta', 'Critico', 'Perda'] as const).map(tab => (
+            <button 
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-3 px-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
+            >
+              {tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: any) => a.type === tab)).length})</span>
             </button>
-          </div>
+          ))}
+        </div>
+        
+        <div className='flex-1 overflow-y-auto'>
+           {loading ? (
+              <div className='flex items-center justify-center h-40'><Loader2 className='w-6 h-6 text-indigo-600 animate-spin' /></div>
+           ) : (
+              <div className='divide-y divide-slate-100 dark:divide-zinc-850'>
+                 {filteredClients.map((client) => (
+                    <div 
+                      key={client.id}
+                      onClick={() => setSelectedClient(client)}
+                      className={`p-4 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-zinc-850/50 flex items-center gap-4 group ${selectedClient?.id === client.id ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''}`}
+                    >
+                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black uppercase ${selectedClient?.id === client.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-zinc-850 text-slate-500 dark:text-zinc-400'}`}>
+                          {client.name?.substring(0, 2)}
+                       </div>
+                       
+                       <div className='flex-1 min-w-0'>
+                          <div className='flex items-center gap-2'>
+                             <p className='text-sm font-black text-slate-900 dark:text-zinc-100 uppercase truncate text-ellipsis overflow-hidden'>{client.name}</p>
+                             {client.alerts?.length > 0 && (
+                               <span className="flex gap-1">
+                                 {client.alerts.slice(0, 1).map((a: any, i: number) => (
+                                   <span key={i} className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase border ${a.type === 'Perda' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                     {a.type}: {a.days}D
+                                   </span>
+                                 ))}
+                               </span>
+                             )}
+                          </div>
+                          <div className='flex items-center gap-2 mt-0.5'>
+                             <span className='px-1.5 py-0.5 bg-slate-100 dark:bg-zinc-800 text-[8px] font-bold text-slate-500 dark:text-zinc-400 rounded-md uppercase whitespace-nowrap tracking-widest'>
+                                {client.cnpj || 'Sem CNPJ'}
+                             </span>
+                             <p className='text-[10px] text-slate-400 dark:text-zinc-500 truncate uppercase font-bold tracking-tight'>
+                                {client.city ? `🏙️ ${client.city}` : 'Cidade não informada'}
+                             </p>
+                          </div>
+                       </div>
 
-          {/* Quick Stats or Tips */}
-          <div className='flex-1 bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-200 dark:border-zinc-800 p-6 shadow-sm overflow-hidden'>
-             <h4 className='text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4'>DICA DO DIA</h4>
-             <p className='text-xs font-bold text-slate-600 dark:text-zinc-400 leading-relaxed uppercase italic'>
-                Clientes em estado de "Perda" não compram há mais de {settings.perda_days || 365} dias. Considere uma visita presencial para reativação.
-             </p>
-          </div>
+                       <div className='text-right mr-4 hidden md:block'>
+                          <p className='text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5'>Faturamento</p>
+                          <p className='text-sm font-black text-indigo-600 dark:text-indigo-400'>
+                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(getClientFaturamentoTotal(client))}
+                          </p>
+                       </div>
 
+                       <div className='flex items-center gap-2'>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteClient(client.id); }} className='p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-all'>
+                             <Trash2 className='w-4 h-4' />
+                          </button>
+                          <ChevronRight className='w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors' />
+                       </div>
+                    </div>
+                 ))}
+              </div>
+           )}
         </div>
       </div>
 
