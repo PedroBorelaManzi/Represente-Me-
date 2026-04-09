@@ -275,7 +275,7 @@ export default function Agenda() {
                       </div>
                       
                       {/* Internal scrollable area for events and holidays */}
-                      <div className="flex-1 overflow-y-auto custom-scrollbar-visible space-y-1">
+                      <div className="flex-1 overflow-y-scroll custom-scrollbar-visible space-y-1">
                         {/* Holidays */}
                         {holidays.filter(h => h.date === dateIso).map((h, idx) => (
                           <div 
@@ -377,3 +377,4 @@ export default function Agenda() {
     </div>
   );
 }
+
