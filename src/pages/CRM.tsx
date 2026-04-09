@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Building2, Phone, Mail, FileText, ChevronRight, Filter, Plus, Trash2, Clock, CheckCircle2, TrendingUp, AlertCircle, X, Download, UserPlus, MoreHorizontal, Settings, LayoutGrid, Info, Loader2, Upload, FileUp, Activity } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -7,6 +7,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { parseFileForCnpjs } from '../lib/clientImport';
+import { getHighPrecisionCoordinates } from '../lib/geminiGeocoding';
 
 export default function CRMPage() {
   const { user } = useAuth();
@@ -291,3 +292,4 @@ export default function CRMPage() {
     </div>
   );
 }
+
