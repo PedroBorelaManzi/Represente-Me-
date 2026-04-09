@@ -58,14 +58,15 @@ export default function ClientDetailsPage() {
   };
 
   const loadFiles = async () => {
-    if (!user) return;
-    const { data, error } = await supabase.storage
-      .from("client_vault")
-      .list(`${user.id}/${id}`);
+    if (!id) return;
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("client_id", id)
+      .order("created_at", { ascending: false });
 
     if (!error && data) {
-      const sorted = data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setFiles(sorted);
+      setFiles(data);
     }
   };
 
@@ -189,13 +190,13 @@ export default function ClientDetailsPage() {
     setIsAnalyzing(false);
   };
 
-  const handleDownload = async (name: string) => {
+  const handleDownload = async (name: string, p: string) => {
     if (!user) return;
-    const path = `${user.id}/${id}/${name}`;
+    
     const parts = name.split("___");
     const actualName = parts.length > 2 ? parts.slice(2).join("___") : (parts.length > 1 ? parts.slice(1).join("___") : name);
 
-    const { data, error } = await supabase.storage.from("client_vault").download(path);
+    const { data, error } = await supabase.storage.from("client_vault").download(p);
     if (!error && data) {
       const url = URL.createObjectURL(data);
       const a = document.createElement("a");
@@ -205,11 +206,11 @@ export default function ClientDetailsPage() {
     }
   };
 
-  const handleFileDelete = async (name: string) => {
+  const handleFileDelete = async (name: string, p: string, orderId: string) => {
     if (window.confirm("Deseja realmente excluir este arquivo?") && user) {
-      const path = `${user.id}/${id}/${name}`;
-      const { error } = await supabase.storage.from("client_vault").remove([path]);
-      if (!error) loadFiles();
+      const { error: storageError } = await supabase.storage.from("client_vault").remove([p]);
+      const { error: dbError } = await supabase.from("orders").delete().eq("id", orderId);
+      if (!storageError && !dbError) loadFiles();
     }
   };
 
@@ -409,6 +410,52 @@ export default function ClientDetailsPage() {
           <div className="flex-1 overflow-y-auto space-y-3 pr-2">
             <AnimatePresence>
               {files.map((file) => {
+                const parts = file.file_name?.split("___") || [];
+                const categoryName = file.category || "Pedido";
+                const actualName = parts.length > 2 ? parts.slice(2).join("___") : (parts.length > 1 ? parts.slice(1).join("___") : file.file_name);
+                const uploadDate = new Date(file.created_at).toLocaleDateString('pt-BR');
+                const orderValue = file.value ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(file.value) : null;
+
+                return (
+                  <motion.div
+                    key={file.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="flex items-center justify-between p-4 border border-slate-50 dark:border-zinc-950 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-900 transition-all group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-indigo-50 dark:bg-zinc-900 rounded-xl">
+                        <FileText className="w-6 h-6 text-indigo-600" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300 rounded-md">
+                            {categoryName}
+                          </span>
+                          {orderValue && (
+                            <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-md">
+                              {orderValue}
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mt-1 truncate max-w-xs">{actualName}</h4>
+                        <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
+                          <Calendar className="w-3 h-3"/> {uploadDate}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleDownload(file.file_name, file.file_path)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><Download className="w-4 h-4" /></button>
+                      <button onClick={() => handleFileDelete(file.file_name, file.file_path, file.id)} className="p-2 text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </motion.div>
+                )
+              })}
+
+              {/* REMOVED OLD MAP */}
+              {false && files.map((file) => {
                 const parts = file.name.split("___");
                 const hasCategory = parts.length > 2;
                 const rawCategory = hasCategory ? parts[0] : "Pedido";

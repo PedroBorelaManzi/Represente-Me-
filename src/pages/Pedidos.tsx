@@ -98,7 +98,7 @@ export default function PedidosPage() {
       }
       const cleanName = selectedFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
       const formattedName = `${selectedCategory}___VALOR_${orderValue}___${cleanName}`;
-      const path = `${user.id}/${formattedName}`;
+      const path = `${user.id}/${cid}/${formattedName}`;
       
       await supabase.storage.from("client_vault").upload(path, selectedFile, { upsert: true });
       await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: selectedCategory, value: parseFloat(orderValue), file_name: formattedName, file_path: path, status: "concluido" }], { onConflict: "client_id,file_path" });
@@ -135,7 +135,7 @@ export default function PedidosPage() {
       
       const cleanName = res.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
       const formattedName = `${res.category}___VALOR_${res.value}___${cleanName}`;
-      const path = `${user?.id}/${formattedName}`;
+      const path = `${user?.id}/${cid}/${formattedName}`;
       
       await supabase.storage.from("client_vault").upload(path, res.file, { upsert: true });
       await supabase.from("orders").upsert([{ user_id: user?.id, client_id: cid, category: res.category, value: res.value, file_name: formattedName, file_path: path, status: "concluido" }], { onConflict: "client_id,file_path" });
