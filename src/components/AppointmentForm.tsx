@@ -40,8 +40,10 @@ export default function AppointmentForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Filter payload to only include database-valid columns
     const payload = {
-      ...formData,
+      title: formData.title,
+      date: formData.date,
       time: `${formData.startTime} - ${formData.endTime}`,
       client_id: formData.client_id || null
     };
