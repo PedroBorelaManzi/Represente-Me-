@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock, TrendingUp } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../contexts/SettingsContext";
-import { toast } from "sonner";
 
 export default function ClientDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -59,27 +58,28 @@ export default function ClientDetailsPage() {
   };
 
   const loadFiles = async () => {
-    if (!user) return;
-    const { data, error } = await supabase.storage
-      .from("client_vault")
-      .list(`${user.id}/${id}`);
+    if (!id) return;
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("client_id", id)
+      .order("created_at", { ascending: false });
 
     if (!error && data) {
-      const sorted = data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setFiles(sorted);
+      setFiles(data);
     }
   };
 
   const loadAppointments = async () => {
     if (!id) return;
-    const { data: appData, error } = await supabase
+    const { data, error } = await supabase
       .from("appointments")
       .select("*")
       .eq("client_id", id)
       .order("date", { ascending: true });
     
-    if (!error && appData) {
-      setClientAppointments(appData);
+    if (!error && data) {
+      setClientAppointments(data);
     }
   };
 
@@ -111,9 +111,7 @@ export default function ClientDetailsPage() {
       .eq("id", id);
     
     if (error) {
-      toast.error("Erro ao salvar notas: " + error.message);
-    } else {
-      toast.success("Notas salvas!");
+      alert("Erro ao salvar notas: " + error.message);
     }
     setIsSavingNotes(false);
   };
@@ -141,11 +139,11 @@ export default function ClientDetailsPage() {
           .eq("id", id);
         
         if (dbError) throw dbError;
-        toast.success("Cliente removido com sucesso.");
+
         navigate("/dashboard/clientes");
       }
     } catch (err) {
-      toast.error("Erro ao excluir cliente: " + (err instanceof Error ? err.message : String(err)));
+      alert("Erro ao excluir cliente: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsDeleting(false);
     }
@@ -168,7 +166,7 @@ export default function ClientDetailsPage() {
       });
       const base64 = await base64Promise;
 
-      const prompt = "Extraia o valor total do pedido. Retorne apenas o número sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50";
+            const prompt = "Extraia o valor total do pedido. Retorne apenas o número sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50";
       
       const result = await model.generateContent([
         prompt,
@@ -192,13 +190,13 @@ export default function ClientDetailsPage() {
     setIsAnalyzing(false);
   };
 
-  const handleDownload = async (name: string) => {
+  const handleDownload = async (name: string, p: string) => {
     if (!user) return;
-    const path = `${user.id}/${id}/${name}`;
+    
     const parts = name.split("___");
     const actualName = parts.length > 2 ? parts.slice(2).join("___") : (parts.length > 1 ? parts.slice(1).join("___") : name);
 
-    const { data, error } = await supabase.storage.from("client_vault").download(path);
+    const { data, error } = await supabase.storage.from("client_vault").download(p);
     if (!error && data) {
       const url = URL.createObjectURL(data);
       const a = document.createElement("a");
@@ -208,43 +206,11 @@ export default function ClientDetailsPage() {
     }
   };
 
-  const handleFileDelete = async (name: string) => {
+  const handleFileDelete = async (name: string, p: string, orderId: string) => {
     if (window.confirm("Deseja realmente excluir este arquivo?") && user) {
-      try {
-        const path = `${user.id}/${id}/${name}`;
-        
-        // Extract data for database update
-        const parts = name.split("___");
-        const category = parts[0];
-        let valueStr = "0";
-        if (parts[1]?.startsWith("VALOR_")) {
-          valueStr = parts[1].replace("VALOR_", "");
-        }
-        const value = parseFloat(valueStr) || 0;
-
-        // 1. Remove from Storage
-        const { error: storageError } = await supabase.storage.from("client_vault").remove([path]);
-        if (storageError) throw storageError;
-
-        // 2. Remove from 'orders' table
-        await supabase.from("orders").delete().eq("file_path", path);
-
-        // 3. Update Client Faturamento (subtract)
-        if (client) {
-          const currentFat = client.faturamento || {};
-          const currentVal = Number(currentFat[category] || 0);
-          const updatedFat = { ...currentFat, [category]: Math.max(0, currentVal - value) };
-          
-          await supabase.from('clients').update({ faturamento: updatedFat }).eq('id', id);
-          setClient({ ...client, faturamento: updatedFat });
-        }
-
-        toast.success("Arquivo e registro excluídos!");
-        loadFiles();
-        loadCategories();
-      } catch (err: any) {
-        toast.error("Erro ao excluir: " + err.message);
-      }
+      const { error: storageError } = await supabase.storage.from("client_vault").remove([p]);
+      const { error: dbError } = await supabase.from("orders").delete().eq("id", orderId);
+      if (!storageError && !dbError) loadFiles();
     }
   };
 
@@ -266,57 +232,39 @@ export default function ClientDetailsPage() {
     if (!selectedFile || !user) return;
     setIsUploading(true);
     
-    try {
-      // Naming pattern: Categoria___VALOR_XXX___NomeOriginal
-      const cleanName = selectedFile.name
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w\s.-]/g, '').replace(/\s+/g, '_');
+    // Naming pattern: Categoria___VALOR_XXX___NomeOriginal
+    const cleanName = selectedFile.name
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w\s.-]/g, '').replace(/\s+/g, '_');
+    const cleanValue = orderValue ? `VALOR_${parseFloat(orderValue).toFixed(2)}` : "VALOR_0";
+    const formattedName = `${selectedCategory}___${cleanValue}___${cleanName}`;
+    const path = `${user.id}/${id}/${formattedName}`;
+    
+    const { error } = await supabase.storage.from("client_vault").upload(path, selectedFile, { upsert: true });
+
+    if (!error) {
       const enteredValue = parseFloat(orderValue) || 0;
-      const cleanValueTag = `VALOR_${enteredValue.toFixed(2)}`;
-      const formattedName = `${selectedCategory}___${cleanValueTag}___${cleanName}`;
-      const path = `${user.id}/${id}/${formattedName}`;
       
-      // 1. Storage Upload
-      const { error: storageError } = await supabase.storage.from("client_vault").upload(path, selectedFile, { upsert: true });
-      if (storageError) throw storageError;
-
-      // 2. Database record in 'orders' table
-      await supabase.from("orders").upsert([{
-        user_id: user.id,
-        client_id: id,
-        category: selectedCategory,
-        value: enteredValue,
-        file_name: formattedName,
-        file_path: path,
-        status: "concluido"
-      }], { onConflict: "client_id,file_path" });
-
-      // 3. Update client faturamento (add)
       const currentFat = client?.faturamento || {};
       const updatedFat = { ...currentFat, [selectedCategory]: (Number(currentFat[selectedCategory] || 0) + enteredValue) };
       
       const currentLastC = client?.category_last_contact || {};
       const updatedLastC = { ...currentLastC, [selectedCategory]: new Date().toISOString() };
 
-      const { error: dbError } = await supabase.from('clients').update({ 
+      await supabase.from('clients').update({ 
         faturamento: updatedFat, 
         category_last_contact: updatedLastC, 
         last_contact: new Date().toISOString() 
       }).eq('id', id);
 
-      if (dbError) throw dbError;
-
-      toast.success("Upload e registro concluídos!");
       loadFiles();
       loadCategories();
-      loadClient();
       setIsUploadModalOpen(false);
       setSelectedFile(null);
       setOrderValue("");
-    } catch (err: any) {
-      toast.error("Erro no processamento: " + err.message);
-    } finally {
-      setIsUploading(false);
+    } else {
+      alert("Erro no upload: " + error.message);
     }
+    setIsUploading(false);
   };
 
   const formatSize = (bytes: number) => {
@@ -443,97 +391,118 @@ export default function ClientDetailsPage() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: REVENUE BREAKDOWN & FILE CLOUD */}
-        <div className="lg:col-span-2 space-y-6 flex flex-col h-[calc(100vh-14rem)]">
-          
-          {/* Faturamento por Empresa Recap */}
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 shadow-sm dark:shadow-none">
-            <h3 className="text-sm font-black text-slate-900 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2 mb-4">
-              <TrendingUp className="w-4 h-4 text-indigo-600" /> Faturamento por Empresa
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-               {Object.entries(client?.faturamento || {}).length === 0 ? (
-                 <p className="text-xs text-slate-500 italic col-span-full">Nenhum faturamento registrado.</p>
-               ) : (
-                 Object.entries(client?.faturamento || {}).map(([cat, val]) => (
-                   <div key={cat} className="p-4 bg-slate-50 dark:bg-zinc-950/40 rounded-2xl border border-slate-100 dark:border-zinc-850">
-                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-1 truncate">{cat}</span>
-                      <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
-                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val))}
-                      </p>
-                   </div>
-                 ))
-               )}
+        {/* RIGHT COLUMN: FILE CLOUD */}
+        <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm dark:shadow-none p-6 flex flex-col h-[calc(100vh-14rem)]">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5"><HardDrive className="w-5 h-5 text-indigo-500" /> Nuvem de Arquivos</h2>
+              <p className="text-xs text-slate-500 dark:text-zinc-400">Armazenamento privado de documentos e pedidos.</p>
             </div>
+            
+            <button 
+              onClick={() => setIsUploadModalOpen(true)}
+              className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 font-bold text-sm transition-all whitespace-nowrap"
+            >
+              <Upload className="w-4 h-4 mr-1.5" /> Subir Arquivo
+            </button>
           </div>
 
-          {/* Nuvem de Arquivos */}
-          <div className="flex-1 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm dark:shadow-none p-6 flex flex-col min-h-0">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5"><HardDrive className="w-5 h-5 text-indigo-500" /> Nuvem de Arquivos</h2>
-                <p className="text-xs text-slate-500 dark:text-zinc-400">Armazenamento privado de documentos e pedidos.</p>
-              </div>
-              
-              <button 
-                onClick={() => setIsUploadModalOpen(true)}
-                className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 font-bold text-sm transition-all whitespace-nowrap"
-              >
-                <Upload className="w-4 h-4 mr-1.5" /> Subir Arquivo
-              </button>
-            </div>
+          <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+            <AnimatePresence>
+              {files.map((file) => {
+                const parts = file.file_name?.split("___") || [];
+                const categoryName = file.category || "Pedido";
+                const actualName = parts.length > 2 ? parts.slice(2).join("___") : (parts.length > 1 ? parts.slice(1).join("___") : file.file_name);
+                const uploadDate = new Date(file.created_at).toLocaleDateString('pt-BR');
+                const orderValue = file.value ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(file.value) : null;
 
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-              <AnimatePresence>
-                {files.map((file) => {
-                  const parts = file.name.split("___");
-                  const hasCategory = parts.length > 2;
-                  const rawCategory = hasCategory ? parts[0] : "Pedido";
-                  const matchedCat = settings.categories?.find(c => c.toLowerCase() === rawCategory.toLowerCase());
-                  const categoryName = matchedCat || rawCategory;
-
-                  const actualName = hasCategory ? parts.slice(2).join("___") : (parts.length > 1 ? parts.slice(1).join("___") : file.name);
-                  const uploadDate = new Date(file.created_at).toLocaleDateString('pt-BR');
-
-                  return (
-                    <motion.div
-                      key={file.id || file.name}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="flex items-center justify-between p-4 border border-slate-50 dark:border-zinc-950 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-900 transition-all group"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-indigo-50 dark:bg-zinc-900 rounded-xl">
-                          <FileText className="w-6 h-6 text-indigo-600" />
-                        </div>
-                        <div>
+                return (
+                  <motion.div
+                    key={file.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="flex items-center justify-between p-4 border border-slate-50 dark:border-zinc-950 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-900 transition-all group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-indigo-50 dark:bg-zinc-900 rounded-xl">
+                        <FileText className="w-6 h-6 text-indigo-600" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
                           <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300 rounded-md">
                             {categoryName}
                           </span>
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mt-1 truncate max-w-xs">{actualName}</h4>
-                          <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
-                            <Calendar className="w-3 h-3"/> {uploadDate} · {formatSize(file.metadata?.size)}
-                          </p>
+                          {orderValue && (
+                            <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-md">
+                              {orderValue}
+                            </span>
+                          )}
                         </div>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mt-1 truncate max-w-xs">{actualName}</h4>
+                        <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
+                          <Calendar className="w-3 h-3"/> {uploadDate}
+                        </p>
                       </div>
+                    </div>
 
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => handleDownload(file.name)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><Download className="w-4 h-4" /></button>
-                        <button onClick={() => handleFileDelete(file.name)} className="p-2 text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleDownload(file.file_name, file.file_path)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><Download className="w-4 h-4" /></button>
+                      <button onClick={() => handleFileDelete(file.file_name, file.file_path, file.id)} className="p-2 text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </motion.div>
+                )
+              })}
+
+              {/* REMOVED OLD MAP */}
+              {false && files.map((file) => {
+                const parts = file.name.split("___");
+                const hasCategory = parts.length > 2;
+                const rawCategory = hasCategory ? parts[0] : "Pedido";
+                const matchedCat = settings.categories?.find(c => c.toLowerCase() === rawCategory.toLowerCase());
+                const categoryName = matchedCat || rawCategory;
+
+                const actualName = hasCategory ? parts.slice(2).join("___") : (parts.length > 1 ? parts.slice(1).join("___") : file.name);
+                const uploadDate = new Date(file.created_at).toLocaleDateString('pt-BR');
+
+                return (
+                  <motion.div
+                    key={file.id || file.name}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="flex items-center justify-between p-4 border border-slate-50 dark:border-zinc-950 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-900 transition-all group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-indigo-50 dark:bg-zinc-900 rounded-xl">
+                        <FileText className="w-6 h-6 text-indigo-600" />
                       </div>
-                    </motion.div>
-                  )
-                })}
-              </AnimatePresence>
+                      <div>
+                        <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300 rounded-md">
+                          {categoryName}
+                        </span>
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mt-1 truncate max-w-xs">{actualName}</h4>
+                        <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
+                          <Calendar className="w-3 h-3"/> {uploadDate} · {formatSize(file.metadata?.size)}
+                        </p>
+                      </div>
+                    </div>
 
-              {files.length === 0 && !isUploading && (
-                <div className="h-full flex flex-col items-center justify-center text-slate-400 py-12">
-                  <FileText className="w-12 h-12 stroke-[1] mb-3 text-slate-200" />
-                  <p className="text-sm">Nenhum arquivo anexado</p>
-                </div>
-              )}
-            </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleDownload(file.name)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><Download className="w-4 h-4" /></button>
+                      <button onClick={() => handleFileDelete(file.name)} className="p-2 text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </AnimatePresence>
+
+            {files.length === 0 && !isUploading && (
+              <div className="h-full flex flex-col items-center justify-center text-slate-400 py-12">
+                <FileText className="w-12 h-12 stroke-[1] mb-3 text-slate-200" />
+                <p className="text-sm">Nenhum arquivo anexado</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -627,3 +596,9 @@ export default function ClientDetailsPage() {
     </div>
   );
 }
+
+
+
+
+
+
