@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock } from "lucide-react";
@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../contexts/SettingsContext";
+import { toast } from "sonner";
 
 export default function ClientDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -71,14 +72,14 @@ export default function ClientDetailsPage() {
 
   const loadAppointments = async () => {
     if (!id) return;
-    const { data, error } = await supabase
+    const { data: appData, error } = await supabase
       .from("appointments")
       .select("*")
       .eq("client_id", id)
       .order("date", { ascending: true });
     
-    if (!error && data) {
-      setClientAppointments(data);
+    if (!error && appData) {
+      setClientAppointments(appData);
     }
   };
 
@@ -110,7 +111,9 @@ export default function ClientDetailsPage() {
       .eq("id", id);
     
     if (error) {
-      alert("Erro ao salvar notas: " + error.message);
+      toast.error("Erro ao salvar notas: " + error.message);
+    } else {
+      toast.success("Notas salvas!");
     }
     setIsSavingNotes(false);
   };
@@ -138,11 +141,11 @@ export default function ClientDetailsPage() {
           .eq("id", id);
         
         if (dbError) throw dbError;
-
+        toast.success("Cliente removido com sucesso.");
         navigate("/dashboard/clientes");
       }
     } catch (err) {
-      alert("Erro ao excluir cliente: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Erro ao excluir cliente: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsDeleting(false);
     }
@@ -165,7 +168,7 @@ export default function ClientDetailsPage() {
       });
       const base64 = await base64Promise;
 
-            const prompt = "Extraia o valor total do pedido. Retorne apenas o número sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50";
+      const prompt = "Extraia o valor total do pedido. Retorne apenas o número sem R$ ou texto. Se houver decimais use ponto. Exemplo: 1547.50";
       
       const result = await model.generateContent([
         prompt,
@@ -207,9 +210,41 @@ export default function ClientDetailsPage() {
 
   const handleFileDelete = async (name: string) => {
     if (window.confirm("Deseja realmente excluir este arquivo?") && user) {
-      const path = `${user.id}/${id}/${name}`;
-      const { error } = await supabase.storage.from("client_vault").remove([path]);
-      if (!error) loadFiles();
+      try {
+        const path = `${user.id}/${id}/${name}`;
+        
+        // Extract data for database update
+        const parts = name.split("___");
+        const category = parts[0];
+        let valueStr = "0";
+        if (parts[1]?.startsWith("VALOR_")) {
+          valueStr = parts[1].replace("VALOR_", "");
+        }
+        const value = parseFloat(valueStr) || 0;
+
+        // 1. Remove from Storage
+        const { error: storageError } = await supabase.storage.from("client_vault").remove([path]);
+        if (storageError) throw storageError;
+
+        // 2. Remove from 'orders' table
+        await supabase.from("orders").delete().eq("file_path", path);
+
+        // 3. Update Client Faturamento (subtract)
+        if (client) {
+          const currentFat = client.faturamento || {};
+          const currentVal = Number(currentFat[category] || 0);
+          const updatedFat = { ...currentFat, [category]: Math.max(0, currentVal - value) };
+          
+          await supabase.from('clients').update({ faturamento: updatedFat }).eq('id', id);
+          setClient({ ...client, faturamento: updatedFat });
+        }
+
+        toast.success("Arquivo e registro excluídos!");
+        loadFiles();
+        loadCategories();
+      } catch (err: any) {
+        toast.error("Erro ao excluir: " + err.message);
+      }
     }
   };
 
@@ -231,39 +266,57 @@ export default function ClientDetailsPage() {
     if (!selectedFile || !user) return;
     setIsUploading(true);
     
-    // Naming pattern: Categoria___VALOR_XXX___NomeOriginal
-    const cleanName = selectedFile.name
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w\s.-]/g, '').replace(/\s+/g, '_');
-    const cleanValue = orderValue ? `VALOR_${parseFloat(orderValue).toFixed(2)}` : "VALOR_0";
-    const formattedName = `${selectedCategory}___${cleanValue}___${cleanName}`;
-    const path = `${user.id}/${id}/${formattedName}`;
-    
-    const { error } = await supabase.storage.from("client_vault").upload(path, selectedFile, { upsert: true });
-
-    if (!error) {
+    try {
+      // Naming pattern: Categoria___VALOR_XXX___NomeOriginal
+      const cleanName = selectedFile.name
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w\s.-]/g, '').replace(/\s+/g, '_');
       const enteredValue = parseFloat(orderValue) || 0;
+      const cleanValueTag = `VALOR_${enteredValue.toFixed(2)}`;
+      const formattedName = `${selectedCategory}___${cleanValueTag}___${cleanName}`;
+      const path = `${user.id}/${id}/${formattedName}`;
       
+      // 1. Storage Upload
+      const { error: storageError } = await supabase.storage.from("client_vault").upload(path, selectedFile, { upsert: true });
+      if (storageError) throw storageError;
+
+      // 2. Database record in 'orders' table
+      await supabase.from("orders").upsert([{
+        user_id: user.id,
+        client_id: id,
+        category: selectedCategory,
+        value: enteredValue,
+        file_name: formattedName,
+        file_path: path,
+        status: "concluido"
+      }], { onConflict: "client_id,file_path" });
+
+      // 3. Update client faturamento (add)
       const currentFat = client?.faturamento || {};
       const updatedFat = { ...currentFat, [selectedCategory]: (Number(currentFat[selectedCategory] || 0) + enteredValue) };
       
       const currentLastC = client?.category_last_contact || {};
       const updatedLastC = { ...currentLastC, [selectedCategory]: new Date().toISOString() };
 
-      await supabase.from('clients').update({ 
+      const { error: dbError } = await supabase.from('clients').update({ 
         faturamento: updatedFat, 
         category_last_contact: updatedLastC, 
         last_contact: new Date().toISOString() 
       }).eq('id', id);
 
+      if (dbError) throw dbError;
+
+      toast.success("Upload e registro concluídos!");
       loadFiles();
       loadCategories();
+      loadClient();
       setIsUploadModalOpen(false);
       setSelectedFile(null);
       setOrderValue("");
-    } else {
-      alert("Erro no upload: " + error.message);
+    } catch (err: any) {
+      toast.error("Erro no processamento: " + err.message);
+    } finally {
+      setIsUploading(false);
     }
-    setIsUploading(false);
   };
 
   const formatSize = (bytes: number) => {
@@ -549,9 +602,3 @@ export default function ClientDetailsPage() {
     </div>
   );
 }
-
-
-
-
-
-
