@@ -246,7 +246,7 @@ export default function Agenda() {
             ))}
           </div>
 
-          <div className="grid grid-cols-7 flex-1 bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 auto-rows-fr min-w-[800px]">
+          <div className="grid grid-cols-7 flex-1 bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 min-w-[800px]">
             {daysArray.map((date, i) => {
               const dateIso = date ? formatDateLocal(date) : null;
               const isToday = dateIso === formatDateLocal(new Date());
@@ -255,7 +255,7 @@ export default function Agenda() {
                 <div 
                   key={i} 
                   className={cn(
-                    "border-r border-b border-slate-300 dark:border-zinc-700/50/50 p-2 flex flex-col min-h-[120px] transition-all relative group",
+                    "border-r border-b border-slate-300 dark:border-zinc-700/50/50 p-2 flex flex-col h-40 overflow-hidden transition-all relative group",
                     date ? 'bg-white/60 dark:bg-zinc-900/40' : 'bg-slate-100/20 dark:bg-zinc-950/10',
                     isToday && 'ring-1 ring-inset ring-indigo-500/20 bg-indigo-50/20 dark:bg-indigo-500/10',
                   )}
@@ -265,37 +265,41 @@ export default function Agenda() {
                 >
                   {date && (
                     <>
-                      {/* Holidays */}
-                      {holidays.filter(h => h.date === dateIso).map((h, idx) => (
-                        <div 
-                          key={idx} 
-                          onClick={(e) => { e.stopPropagation(); setSelectedHoliday(h); }}
-                          draggable={false}
-                          className="mb-1 px-1.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-[9px] font-black text-amber-700 dark:text-amber-400 rounded-lg border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm cursor-help hover:scale-[1.02] transition-transform active:scale-95" 
-                          title={h.name}
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                          <span className="truncate flex-1 min-w-0">{h.name}</span>
-                        </div>
-                      ))}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={cn(
+                          "text-[10px] font-black px-1.5 py-0.5 rounded-md transition-all",
+                          isToday ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 dark:text-zinc-500 group-hover:text-indigo-600"
+                        )}>
+                          {date.getDate()}
+                        </span>
+                      </div>
+                      
+                      {/* Internal scrollable area for events and holidays */}
+                      <div className="flex-1 overflow-y-auto custom-scrollbar-hide space-y-1">
+                        {/* Holidays */}
+                        {holidays.filter(h => h.date === dateIso).map((h, idx) => (
+                          <div 
+                            key={idx} 
+                            onClick={(e) => { e.stopPropagation(); setSelectedHoliday(h); }}
+                            className="px-1.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-[9px] font-black text-amber-700 dark:text-amber-400 rounded-lg border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm cursor-help hover:scale-[1.02] transition-transform active:scale-95" 
+                            title={h.name}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
+                            <span className="truncate flex-1 min-w-0">{h.name}</span>
+                          </div>
+                        ))}
 
-                      <span className={cn(
-                        "text-[10px] font-black mb-2 px-1.5 py-0.5 rounded-md self-start transition-all",
-                        isToday ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 dark:text-zinc-500 group-hover:text-indigo-600"
-                      )}>
-                        {date.getDate()}
-                      </span>
-                      <div className="space-y-1">
+                        {/* Events */}
                         {dayEvents.map(event => (
                           <div 
                             key={event.id}
                             onClick={(e) => { e.stopPropagation(); setEditingEvent(event); setIsModalOpen(true); }}
                             draggable
                             onDragStart={(e) => onDragStart(e, event.id)}
-                            className="text-[10px] font-bold p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 truncate shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group/item"
+                            className="text-[10px] font-bold p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 truncate shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group/item flex items-center"
                           >
-                            <span className="text-indigo-600 dark:text-indigo-400 mr-1 opacity-50">•</span>
-                            {event.title}
+                            <span className="text-indigo-600 dark:text-indigo-400 mr-1 opacity-50 flex-shrink-0">•</span>
+                            <span className="truncate">{event.title}</span>
                           </div>
                         ))}
                       </div>
@@ -373,5 +377,3 @@ export default function Agenda() {
     </div>
   );
 }
-
-
