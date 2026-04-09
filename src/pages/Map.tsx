@@ -37,7 +37,10 @@ export default function MapPage() {
   });
 
   const loadClients = async () => {
-    const { data, error } = await supabase.from("clients").select("*");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase.from("clients").select("*").eq("user_id", user.id);
     if (!error && data) {
       setCompanies(data);
     }
@@ -72,6 +75,23 @@ export default function MapPage() {
     } else {
       alert("Erro ao salvar localização: " + error.message);
     }
+  };
+
+  const handleDeleteClient = async (id: string, name: string) => {
+    if (!window.confirm(`Deseja realmente excluir o cliente "${name}"? Esta ação não pode ser desfeita.`)) return;
+
+    const { error } = await supabase.from("clients").delete().eq("id", id);
+    
+    if (error) {
+       if (error.code === "23503") {
+         alert("Não é possível excluir este cliente pois ele possui pedidos ou compromissos vinculados. Exclua os vínculos primeiro.");
+       } else {
+         alert("Erro ao excluir cliente: " + error.message);
+       }
+       return;
+    }
+
+    setCompanies(prev => prev.filter(c => c.id !== id));
   };
 
   const handleCnpjLookup = async () => {
@@ -176,10 +196,13 @@ export default function MapPage() {
 
   const handleCreateLocation = async (e: React.FormEvent) => {
     e.preventDefault();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const { error } = await supabase.from("clients").insert([{
+       user_id: user.id,
        name: newLocation.name,
        cnpj: newLocation.cnpj,
-       
        address: newLocation.address,
        lat: newLocation.lat,
        lng: newLocation.lng,
@@ -293,8 +316,8 @@ export default function MapPage() {
                     <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-slate-400" /><span>{company.phone || "N/A"}</span></div>
                     <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-slate-400" /><span className="truncate">{company.email || "N/A"}</span></div>
                   </div>
-                                    <Link 
-                    to={\/dashboard/clientes/\\}
+                  <Link 
+                    to={`/dashboard/clientes/${company.id}`}
                     className="w-full inline-flex items-center justify-center px-3 py-1.5 border border-indigo-600 text-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-50 transition-colors mt-1"
                   >
                     Ver Ficha <ExternalLink className="w-3 h-3 ml-1" />
@@ -359,12 +382,3 @@ export default function MapPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
