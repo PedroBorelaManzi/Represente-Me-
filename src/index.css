@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 @variant dark (&:where(.dark, .dark *));
 
@@ -15,5 +15,15 @@
   html:not(.dark), html:not(.dark) body {
     background-color: #f8fafc; /* bg-slate-50 */
     color-scheme: light;
+  }
+}
+
+@layer utilities {
+  .custom-scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .custom-scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
