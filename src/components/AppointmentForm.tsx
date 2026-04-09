@@ -91,7 +91,7 @@ function ScrollableTimePicker({
             {/* Hours Column */}
             <div 
               ref={hourRef}
-              className="flex-1 flex flex-col h-56 overflow-y-auto custom-scrollbar-hide snap-y snap-mandatory py-20"
+              className="flex-1 flex flex-col h-56 overflow-y-auto custom-scrollbar-visible snap-y snap-mandatory py-20"
             >
               {hours.map((h) => (
                 <button
@@ -116,7 +116,7 @@ function ScrollableTimePicker({
             {/* Minutes Column */}
             <div 
               ref={minRef}
-              className="flex-1 flex flex-col h-56 overflow-y-auto custom-scrollbar-hide snap-y snap-mandatory py-20"
+              className="flex-1 flex flex-col h-56 overflow-y-auto custom-scrollbar-visible snap-y snap-mandatory py-20"
             >
               {minutes.map((m) => (
                 <button

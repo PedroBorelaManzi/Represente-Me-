@@ -26,4 +26,22 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .custom-scrollbar-visible::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar-visible::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar-visible::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* slate-300 */
+    border-radius: 10px;
+  }
+  .dark .custom-scrollbar-visible::-webkit-scrollbar-thumb {
+    background: #3f3f46; /* zinc-700 */
+  }
+  .custom-scrollbar-visible::-webkit-scrollbar-thumb:hover {
+    background: #6366f1; /* indigo-500 */
+  }
 }
