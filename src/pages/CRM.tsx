@@ -187,11 +187,6 @@ export default function CRMPage() {
     }
   };
 
-  const getClientFaturamentoTotal = (client: any) => {
-    const fat = client.faturamento || {};
-    return Object.values(fat).reduce((sum: number, val: any) => sum + Number(val), 0) as number;
-  };
-
   return (
     <div className='h-[calc(100vh-2rem)] flex flex-col gap-6'>
       {/* Header */}
@@ -279,13 +274,6 @@ export default function CRMPage() {
                                 {client.city ? `🏙️ ${client.city}` : 'Cidade não informada'}
                              </p>
                           </div>
-                       </div>
-
-                       <div className='text-right mr-4 hidden md:block'>
-                          <p className='text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5'>Faturamento</p>
-                          <p className='text-sm font-black text-indigo-600 dark:text-indigo-400'>
-                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(getClientFaturamentoTotal(client))}
-                          </p>
                        </div>
 
                        <div className='flex items-center gap-2'>

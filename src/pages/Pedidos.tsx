@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Plus, Search, Filter, FileText, Download, MoreHorizontal, Mail, Phone, Calendar, DollarSign, TrendingUp, Clock, CheckCircle2, AlertCircle, X, Upload, Loader2, FileSpreadsheet, ArrowRight, ExternalLink, ShoppingBag, UserPlus, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
@@ -189,6 +189,14 @@ export default function PedidosPage() {
     }
   };
 
+  const faturamentoPorEmpresa = useMemo(() => {
+    const caps: any = {};
+    orders.forEach(o => {
+      caps[o.category] = (caps[o.category] || 0) + (o.value || 0);
+    });
+    return Object.entries(caps).sort((a: any, b: any) => b[1] - a[1]);
+  }, [orders]);
+
   return (
     <div className="p-6 space-y-6 bg-slate-50 dark:bg-zinc-950 min-h-screen text-slate-900 dark:text-zinc-100">
       <div className="flex justify-between items-center">
@@ -198,16 +206,40 @@ export default function PedidosPage() {
           <button onClick={() => setIsManualModalOpen(true)} className="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg">Novo Pedido</button>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border shadow-sm">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Faturamento Total</span>
-          <p className="text-4xl font-black mt-1">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(orders.reduce((a,b)=>a+(b.value||0),0))}</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="md:col-span-1 space-y-6">
+           <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border shadow-sm">
+             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Faturamento Geral</span>
+             <p className="text-4xl font-black mt-1 text-indigo-600">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(orders.reduce((a,b)=>a+(b.value||0),0))}</p>
+           </div>
+           <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border shadow-sm">
+             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Pedidos</span>
+             <p className="text-4xl font-black mt-1">{orders.length}</p>
+           </div>
         </div>
-        <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border shadow-sm">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Pedidos</span>
-          <p className="text-4xl font-black mt-1">{orders.length}</p>
+
+        <div className="md:col-span-3 bg-white dark:bg-zinc-900 p-8 rounded-3xl border shadow-sm">
+           <h3 className="text-sm font-black text-slate-900 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2 mb-6">
+             <TrendingUp className="w-4 h-4 text-indigo-600" /> Faturamento por Empresa (Geral)
+           </h3>
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {faturamentoPorEmpresa.length === 0 ? (
+                <p className="text-xs text-slate-500 italic">Nenhum dado disponível.</p>
+              ) : (
+                faturamentoPorEmpresa.map(([cat, val]: any) => (
+                  <div key={cat} className="p-4 bg-slate-50 dark:bg-zinc-950/40 rounded-2xl border border-slate-100 dark:border-zinc-850">
+                     <span className="text-[9px] font-black text-slate-400 uppercase block mb-1 truncate">{cat}</span>
+                     <p className="text-sm font-black text-slate-900 dark:text-zinc-100">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val)}
+                     </p>
+                  </div>
+                ))
+              )}
+           </div>
         </div>
       </div>
+
       <div className="bg-white dark:bg-zinc-900 rounded-[32px] border shadow-sm overflow-hidden">
         <div className="p-6 border-b flex justify-between items-center">
           <div className="relative">

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock, TrendingUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -443,72 +443,97 @@ export default function ClientDetailsPage() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: FILE CLOUD */}
-        <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm dark:shadow-none p-6 flex flex-col h-[calc(100vh-14rem)]">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5"><HardDrive className="w-5 h-5 text-indigo-500" /> Nuvem de Arquivos</h2>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">Armazenamento privado de documentos e pedidos.</p>
+        {/* RIGHT COLUMN: REVENUE BREAKDOWN & FILE CLOUD */}
+        <div className="lg:col-span-2 space-y-6 flex flex-col h-[calc(100vh-14rem)]">
+          
+          {/* Faturamento por Empresa Recap */}
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 shadow-sm dark:shadow-none">
+            <h3 className="text-sm font-black text-slate-900 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2 mb-4">
+              <TrendingUp className="w-4 h-4 text-indigo-600" /> Faturamento por Empresa
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+               {Object.entries(client?.faturamento || {}).length === 0 ? (
+                 <p className="text-xs text-slate-500 italic col-span-full">Nenhum faturamento registrado.</p>
+               ) : (
+                 Object.entries(client?.faturamento || {}).map(([cat, val]) => (
+                   <div key={cat} className="p-4 bg-slate-50 dark:bg-zinc-950/40 rounded-2xl border border-slate-100 dark:border-zinc-850">
+                      <span className="text-[9px] font-black text-slate-400 uppercase block mb-1 truncate">{cat}</span>
+                      <p className="text-sm font-black text-indigo-600 dark:text-indigo-400">
+                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(val))}
+                      </p>
+                   </div>
+                 ))
+               )}
             </div>
-            
-            <button 
-              onClick={() => setIsUploadModalOpen(true)}
-              className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 font-bold text-sm transition-all whitespace-nowrap"
-            >
-              <Upload className="w-4 h-4 mr-1.5" /> Subir Arquivo
-            </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-            <AnimatePresence>
-              {files.map((file) => {
-                const parts = file.name.split("___");
-                const hasCategory = parts.length > 2;
-                const rawCategory = hasCategory ? parts[0] : "Pedido";
-                const matchedCat = settings.categories?.find(c => c.toLowerCase() === rawCategory.toLowerCase());
-                const categoryName = matchedCat || rawCategory;
-
-                const actualName = hasCategory ? parts.slice(2).join("___") : (parts.length > 1 ? parts.slice(1).join("___") : file.name);
-                const uploadDate = new Date(file.created_at).toLocaleDateString('pt-BR');
-
-                return (
-                  <motion.div
-                    key={file.id || file.name}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex items-center justify-between p-4 border border-slate-50 dark:border-zinc-950 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-900 transition-all group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-indigo-50 dark:bg-zinc-900 rounded-xl">
-                        <FileText className="w-6 h-6 text-indigo-600" />
-                      </div>
-                      <div>
-                        <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300 rounded-md">
-                          {categoryName}
-                        </span>
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mt-1 truncate max-w-xs">{actualName}</h4>
-                        <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
-                          <Calendar className="w-3 h-3"/> {uploadDate} · {formatSize(file.metadata?.size)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => handleDownload(file.name)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><Download className="w-4 h-4" /></button>
-                      <button onClick={() => handleFileDelete(file.name)} className="p-2 text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </AnimatePresence>
-
-            {files.length === 0 && !isUploading && (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 py-12">
-                <FileText className="w-12 h-12 stroke-[1] mb-3 text-slate-200" />
-                <p className="text-sm">Nenhum arquivo anexado</p>
+          {/* Nuvem de Arquivos */}
+          <div className="flex-1 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm dark:shadow-none p-6 flex flex-col min-h-0">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5"><HardDrive className="w-5 h-5 text-indigo-500" /> Nuvem de Arquivos</h2>
+                <p className="text-xs text-slate-500 dark:text-zinc-400">Armazenamento privado de documentos e pedidos.</p>
               </div>
-            )}
+              
+              <button 
+                onClick={() => setIsUploadModalOpen(true)}
+                className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 font-bold text-sm transition-all whitespace-nowrap"
+              >
+                <Upload className="w-4 h-4 mr-1.5" /> Subir Arquivo
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+              <AnimatePresence>
+                {files.map((file) => {
+                  const parts = file.name.split("___");
+                  const hasCategory = parts.length > 2;
+                  const rawCategory = hasCategory ? parts[0] : "Pedido";
+                  const matchedCat = settings.categories?.find(c => c.toLowerCase() === rawCategory.toLowerCase());
+                  const categoryName = matchedCat || rawCategory;
+
+                  const actualName = hasCategory ? parts.slice(2).join("___") : (parts.length > 1 ? parts.slice(1).join("___") : file.name);
+                  const uploadDate = new Date(file.created_at).toLocaleDateString('pt-BR');
+
+                  return (
+                    <motion.div
+                      key={file.id || file.name}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="flex items-center justify-between p-4 border border-slate-50 dark:border-zinc-950 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-900 transition-all group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-indigo-50 dark:bg-zinc-900 rounded-xl">
+                          <FileText className="w-6 h-6 text-indigo-600" />
+                        </div>
+                        <div>
+                          <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300 rounded-md">
+                            {categoryName}
+                          </span>
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 mt-1 truncate max-w-xs">{actualName}</h4>
+                          <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
+                            <Calendar className="w-3 h-3"/> {uploadDate} · {formatSize(file.metadata?.size)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handleDownload(file.name)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><Download className="w-4 h-4" /></button>
+                        <button onClick={() => handleFileDelete(file.name)} className="p-2 text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
+
+              {files.length === 0 && !isUploading && (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 py-12">
+                  <FileText className="w-12 h-12 stroke-[1] mb-3 text-slate-200" />
+                  <p className="text-sm">Nenhum arquivo anexado</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
