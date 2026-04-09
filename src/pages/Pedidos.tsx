@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect, useRef } from "react";
-import { Plus, Search, Filter, FileText, Download, MoreHorizontal, Mail, Phone, Calendar, DollarSign, TrendingUp, Clock, CheckCircle2, AlertCircle, X, Upload, Loader2, FileSpreadsheet, ArrowRight, ExternalLink, ShoppingBag, UserPlus } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Plus, Search, Filter, FileText, Download, MoreHorizontal, Mail, Phone, Calendar, DollarSign, TrendingUp, Clock, CheckCircle2, AlertCircle, X, Upload, Loader2, FileSpreadsheet, ArrowRight, ExternalLink, ShoppingBag, UserPlus, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -98,11 +98,19 @@ export default function PedidosPage() {
       }
       const cleanName = selectedFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
       const formattedName = `${selectedCategory}___VALOR_${orderValue}___${cleanName}`;
-      const path = `${user.id}/${formattedName}`;
+      const path = `${user.id}/${cid}/${formattedName}`;
       
       await supabase.storage.from("client_vault").upload(path, selectedFile, { upsert: true });
       await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: selectedCategory, value: parseFloat(orderValue), file_name: formattedName, file_path: path, status: "concluido" }], { onConflict: "client_id,file_path" });
       
+      // Update client faturamento
+      const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", cid).single();
+      if (clientData) {
+        const fat = clientData.faturamento || {};
+        const updatedFat = { ...fat, [selectedCategory]: (Number(fat[selectedCategory] || 0) + parseFloat(orderValue)) };
+        await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", cid);
+      }
+
       setIsManualModalOpen(false); loadData();
       toast.success("Pedido registrado com sucesso!");
     } catch (err: any) { alert(err.message); } finally { setIsSaving(false); }
@@ -135,14 +143,50 @@ export default function PedidosPage() {
       
       const cleanName = res.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
       const formattedName = `${res.category}___VALOR_${res.value}___${cleanName}`;
-      const path = `${user?.id}/${formattedName}`;
+      const path = `${user?.id}/${cid}/${formattedName}`;
       
       await supabase.storage.from("client_vault").upload(path, res.file, { upsert: true });
       await supabase.from("orders").upsert([{ user_id: user?.id, client_id: cid, category: res.category, value: res.value, file_name: formattedName, file_path: path, status: "concluido" }], { onConflict: "client_id,file_path" });
       
+      // Update client faturamento
+      const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", cid).single();
+      if (clientData) {
+        const fat = clientData.faturamento || {};
+        const updatedFat = { ...fat, [res.category]: (Number(fat[res.category] || 0) + res.value) };
+        await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", cid);
+      }
+
       setBatchResults(prev => prev.filter(item => item.file !== res.file)); loadData();
       toast.success("Pedido em lote processado!");
     } catch (err: any) { alert(err.message); }
+  };
+
+  const handleDeleteOrder = async (order: any) => {
+    if (!window.confirm("Deseja realmente excluir este pedido?")) return;
+    try {
+      if (order.file_path) {
+        await supabase.storage.from("client_vault").remove([order.file_path]);
+      }
+      
+      const { error } = await supabase.from("orders").delete().eq("id", order.id);
+      if (error) throw error;
+
+      // Update client faturamento (subtract)
+      if (order.client_id) {
+        const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", order.client_id).single();
+        if (clientData) {
+          const fat = clientData.faturamento || {};
+          const currentVal = Number(fat[order.category] || 0);
+          const updatedFat = { ...fat, [order.category]: Math.max(0, currentVal - (order.value || 0)) };
+          await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", order.client_id);
+        }
+      }
+
+      toast.success("Pedido excluído com sucesso!");
+      loadData();
+    } catch (err: any) {
+      toast.error("Erro ao excluir: " + err.message);
+    }
   };
 
   return (
@@ -178,7 +222,7 @@ export default function PedidosPage() {
           </div>
         </div>
         <table className="w-full text-left">
-          <thead className="bg-slate-50 dark:bg-zinc-950/50 text-[10px] font-black text-slate-400 uppercase"><tr> <th className="p-6">Cliente</th> <th className="p-6">Categoria</th> <th className="p-6 text-right">Valor</th> <th className="p-6 text-center">Data</th> </tr></thead>
+          <thead className="bg-slate-50 dark:bg-zinc-950/50 text-[10px] font-black text-slate-400 uppercase"><tr> <th className="p-6">Cliente</th> <th className="p-6">Categoria</th> <th className="p-6 text-right">Valor</th> <th className="p-6 text-center">Data</th> <th className="p-6 text-right">Ações</th> </tr></thead>
           <tbody className="divide-y border-t">
             {orders.filter(o=>o.client?.name?.toLowerCase().includes(searchTerm.toLowerCase())).map(order => (
               <tr key={order.id} className="hover:bg-slate-50 transition-colors">
@@ -186,6 +230,11 @@ export default function PedidosPage() {
                 <td className="p-6"><span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase text-center block w-fit">{order.category}</span></td>
                 <td className="p-6 text-right font-black">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(order.value)}</td>
                 <td className="p-6 text-center text-xs font-bold text-slate-500">{new Date(order.created_at).toLocaleDateString("pt-BR")}</td>
+                <td className="p-6 text-right">
+                  <button onClick={() => handleDeleteOrder(order)} className="p-2 text-slate-400 hover:text-red-600 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
