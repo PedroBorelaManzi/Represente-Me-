@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { X } from "lucide-react";
 
 interface Appointment {
@@ -29,17 +29,20 @@ export default function AppointmentForm({
 }: AppointmentFormProps) {
   if (!appointment) return null;
 
+  const initialTimes = (appointment.time || "09:00 - 10:00").split(" - ");
   const [formData, setFormData] = React.useState({
     title: appointment.title || "",
     client_id: appointment.client_id || "",
     date: appointment.date || "",
-    time: appointment.time || "",
+    startTime: initialTimes[0] || "09:00",
+    endTime: initialTimes[1] || "10:00",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
       ...formData,
+      time: `${formData.startTime} - ${formData.endTime}`,
       client_id: formData.client_id || null
     };
     await onSave(payload);
@@ -89,26 +92,39 @@ export default function AppointmentForm({
             </select>
           </div>
 
+          <div>
+            <label className="block text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
+              Data
+            </label>
+            <input 
+              type="date" 
+              value={formData.date} 
+              onChange={e => setFormData({...formData, date: e.target.value})} 
+              className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 dark:text-zinc-100 text-sm font-bold" 
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
-                Data
+                Início
               </label>
               <input 
-                type="date" 
-                value={formData.date} 
-                onChange={e => setFormData({...formData, date: e.target.value})} 
+                type="time" 
+                value={formData.startTime} 
+                onChange={e => setFormData({...formData, startTime: e.target.value})} 
                 className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 dark:text-zinc-100 text-sm font-bold" 
+                required 
               />
             </div>
             <div>
               <label className="block text-xs font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2">
-                Horário
+                Término
               </label>
               <input 
-                type="text" 
-                value={formData.time} 
-                onChange={e => setFormData({...formData, time: e.target.value})} 
+                type="time" 
+                value={formData.endTime} 
+                onChange={e => setFormData({...formData, endTime: e.target.value})} 
                 className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 dark:text-zinc-100 text-sm font-bold" 
                 required 
               />

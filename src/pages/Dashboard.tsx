@@ -244,13 +244,25 @@ export default function Dashboard() {
     } catch { return null; }
   };
 
+  const getEventHeight = (time: string) => {
+    try {
+      const parts = time.split(" - ");
+      const start = parts[0].split(":");
+      const end = parts[1].split(":");
+      const startMin = parseInt(start[0]) * 60 + parseInt(start[1] || "0");
+      const endMin = parseInt(end[0]) * 60 + parseInt(end[1] || "0");
+      const duration = endMin - startMin;
+      return Math.max(duration, 24); // Mnimo de 24px para visibilidade
+    } catch { return 48; }
+  };
+
   return (
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-tight">
             <Home className="w-6 h-6 text-indigo-600" />
-            Início
+            Incio
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Sua agenda semanal sincronizada e faturamento.</p>
         </div>
@@ -348,10 +360,11 @@ export default function Dashboard() {
                           <div className="absolute inset-0 pointer-events-none p-0.5">
                             {dayEvents.map(event => {
                               const top = getEventPosition(event.time);
+                              const height = getEventHeight(event.time);
                               if (top === null) return null;
                               const clientName = clients.find(c => c.id === event.client_id)?.name;
                               return (
-                                <div key={event.id} draggable onDragStart={(e) => onDragStart(e, event.id)} onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }} className="absolute left-0.5 right-0.5 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm rounded-lg p-1 transition-all cursor-grab active:cursor-grabbing z-10 overflow-hidden ring-1 ring-slate-900/5" style={{ top: `${top}px`, minHeight: '48px' }}>
+                                <div key={event.id} draggable onDragStart={(e) => onDragStart(e, event.id)} onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }} className="absolute left-0.5 right-0.5 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm rounded-lg p-1 transition-all cursor-grab active:cursor-grabbing z-10 overflow-hidden ring-1 ring-slate-900/5" style={{ top: `${top}px`, height: `${height}px` }}>
                                   <div className="text-[8px] font-black text-slate-900 dark:text-zinc-100 mb-0.5 truncate leading-tight">{event.title}</div>
                                   {clientName && <div className="text-[6px] font-black text-indigo-600 dark:text-indigo-400 uppercase truncate">@{clientName}</div>}
                                 </div>
@@ -393,4 +406,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
