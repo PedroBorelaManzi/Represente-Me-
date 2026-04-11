@@ -179,7 +179,7 @@ function PricingCard({ title, description, price, features, buttonText, popular 
       </ul>
       <a href="#planos" className={`block w-full py-3 px-4 rounded-xl text-center font-semibold transition-colors ${popular ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}>
         {buttonText}
-      </Link>
+      </a>
     </div>
   );
 }
