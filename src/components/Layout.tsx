@@ -1,6 +1,10 @@
-﻿import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
-import { MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar, ShoppingCart, Check, Crown, Globe, BarChart3, Zap, Star, ShieldCheck } from "lucide-react";
+import { 
+  MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, 
+  ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar, ShoppingCart, 
+  Check, Crown, Globe, BarChart3, Zap, Star, ShieldCheck, ChevronRight 
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -22,6 +26,7 @@ export default function Layout() {
   
   const [shortcutLinks, setShortcutLinks] = useState<any[]>([]);
   const [expandedSections, setExpandedSections] = useState<{perda: boolean, critico: boolean, alerta: boolean}>({ perda: false, critico: false, alerta: true });
+  
   type AlertItem = { clientName: string, category: string, days: number };
   const [stats, setStats] = useState<{alerta: AlertItem[], critico: AlertItem[], perda: AlertItem[]}>({ alerta: [], critico: [], perda: [] });
 
@@ -30,7 +35,13 @@ export default function Layout() {
   useEffect(() => {
     const loadLinks = () => {
       const saved = localStorage.getItem("crm_shortcut_links");
-      if (saved) setShortcutLinks(JSON.parse(saved));
+      if (saved) {
+        try {
+          setShortcutLinks(JSON.parse(saved));
+        } catch (e) {
+          console.error("Erro ao carregar atalhos", e);
+        }
+      }
     };
     
     loadLinks();
@@ -38,8 +49,12 @@ export default function Layout() {
     
     async function loadStats() {
       if (!user) return;
-      const { data, error } = await supabase.from("clients").select("name, category_last_contact").eq("user_id", user.id);
-      if (error) return;
+      const { data, error } = await supabase
+        .from("clients")
+        .select("name, category_last_contact")
+        .eq("user_id", user.id);
+      
+      if (error || !data) return;
 
       const alertas: AlertItem[] = [];
       const criticos: AlertItem[] = [];
@@ -51,11 +66,12 @@ export default function Layout() {
         Object.entries(client.category_last_contact).forEach(([category, dateStr]) => {
             const lastContact = new Date(dateStr as string).getTime();
             const diffDays = Math.floor((today - lastContact) / (1000 * 60 * 60 * 24));
-            if (diffDays >= settings.perda_days) {
+            
+            if (diffDays >= (settings.perda_days || 60)) {
                 perdas.push({ clientName: client.name, category, days: diffDays });
-            } else if (diffDays >= settings.critico_days) {
+            } else if (diffDays >= (settings.critico_days || 45)) {
                 criticos.push({ clientName: client.name, category, days: diffDays });
-            } else if (diffDays >= settings.alerta_days) {
+            } else if (diffDays >= (settings.alerta_days || 30)) {
                 alertas.push({ clientName: client.name, category, days: diffDays });
             }
         });
@@ -68,6 +84,7 @@ export default function Layout() {
     }
 
     loadStats();
+    return () => window.removeEventListener('crm_shortcut_links_updated', loadLinks);
   }, [user, settings]);
 
   const navigation = [
@@ -85,7 +102,13 @@ export default function Layout() {
     <div className={cn("flex h-screen bg-slate-50 dark:bg-[#09090b]", settings.theme === 'dark' ? 'dark' : '')}>
       <AnimatePresence>
         {sidebarOpen && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm" />
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            onClick={() => setSidebarOpen(false)} 
+            className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm" 
+          />
         )}
       </AnimatePresence>
 
@@ -109,7 +132,13 @@ export default function Layout() {
               if (item.name === "Integrações") {
                 return (
                   <div key={item.name} className="space-y-1">
-                    <button onClick={() => setIntegracoesOpen(!integracoesOpen)} className={cn("group flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-xl transition-all", isActive || integracoesOpen ? "bg-indigo-50 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400" : "text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-950 hover:text-slate-900 dark:hover:text-zinc-100")}>
+                    <button 
+                      onClick={() => setIntegracoesOpen(!integracoesOpen)} 
+                      className={cn(
+                        "group flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-xl transition-all", 
+                        isActive || integracoesOpen ? "bg-indigo-50 dark:bg-indigo-900/10 text-indigo-700 dark:text-indigo-400" : "text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-950 hover:text-slate-900 dark:hover:text-zinc-100"
+                      )}
+                    >
                       <div className="flex items-center">
                         <item.icon className={cn("mr-3 h-5 w-5", isActive || integracoesOpen ? "text-indigo-600" : "text-slate-400")} />
                         {item.name}
@@ -118,7 +147,12 @@ export default function Layout() {
                     </button>
                     <AnimatePresence>
                       {integracoesOpen && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden pl-8 space-y-1">
+                        <motion.div 
+                          initial={{ height: 0, opacity: 0 }} 
+                          animate={{ height: "auto", opacity: 1 }} 
+                          exit={{ height: 0, opacity: 0 }} 
+                          className="overflow-hidden pl-8 space-y-1"
+                        >
                           {shortcutLinks.map((link) => (
                             <Link key={link.id} to={`/dashboard/links?id=${link.id}`} className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 dark:text-zinc-400 font-medium hover:text-indigo-600 transition-colors">
                               <div className={`w-1.5 h-1.5 rounded-full ${link.color || 'bg-slate-400'}`} />
@@ -142,11 +176,11 @@ export default function Layout() {
           </nav>
 
           <div className="mt-8 px-1">
-             <Link to="/dashboard/planos" className="flex items-center gap-3 p-4 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl shadow-lg transition-transform active:scale-95 group">
+             <Link to="/dashboard/planos" className="flex items-center gap-3 p-4 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl shadow-lg transition-transform active:scale-95 group text-left">
                 <div className="p-2 bg-white/10 rounded-xl backdrop-blur-md"><Crown className="w-5 h-5 text-amber-300" /></div>
-                <div>
+                <div className="min-w-0">
                    <p className="text-white text-[10px] font-black uppercase tracking-widest opacity-80">Plano Atual</p>
-                   <p className="text-white text-xs font-bold uppercase">{settings.subscription_plan || 'Acesso Exclusivo'}</p>
+                   <p className="text-white text-xs font-bold uppercase truncate">{settings.subscription_plan || 'Acesso Exclusivo'}</p>
                 </div>
              </Link>
           </div>
@@ -154,28 +188,28 @@ export default function Layout() {
           <div className="mt-6 pt-6 border-t border-slate-100 dark:border-zinc-800">
              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 mb-4">Acompanhamento</h3>
              <div className="space-y-3 px-1">
-                {['perda', 'critico', 'alerta'].map((key) => (
+                {(['perda', 'critico', 'alerta'] as const).map((key) => (
                    <div key={key} className={cn("rounded-2xl border overflow-hidden transition-all", key === 'perda' ? 'border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/20' : key === 'critico' ? 'border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-950/20' : 'border-amber-100 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/20')}>
                       <button onClick={() => setExpandedSections(p => ({ ...p, [key]: !p[key] }))} className="w-full flex items-center justify-between p-3.5 text-[10px] font-black uppercase">
                          <span className={cn(key === 'perda' ? 'text-red-900 dark:text-red-400' : key === 'critico' ? 'text-orange-900 dark:text-orange-400' : 'text-amber-900 dark:text-amber-400')}>
                             {key === 'perda' ? `Perda (${settings.perda_days}D+)` : key === 'critico' ? `Crítico (${settings.critico_days}D)` : `Alerta (${settings.alerta_days}D)`}
                          </span>
                          <div className="flex items-center gap-2">
-                            <span className={cn("text-[8px] px-2 py-0.5 rounded-lg", key === 'perda' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300' : key === 'critico' ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300' : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300')}>{stats[key as keyof typeof stats].length}</span>
-                            <ChevronDown className={cn("w-3 h-3 transition-transform", expandedSections[key as keyof typeof expandedSections] && "rotate-180")} />
+                            <span className={cn("text-[8px] px-2 py-0.5 rounded-lg", key === 'perda' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300' : key === 'critico' ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300' : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300')}>{stats[key].length}</span>
+                            <ChevronDown className={cn("w-3 h-3 transition-transform", expandedSections[key] && "rotate-180")} />
                          </div>
                       </button>
                       <AnimatePresence>
-                         {expandedSections[key as keyof typeof expandedSections] && (
+                         {expandedSections[key] && (
                             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden p-2 space-y-1.5 border-t border-black/5 dark:border-white/5">
-                               {stats[key as keyof typeof stats].length > 0 ? stats[key as keyof typeof stats].map((item, id) => (
+                               {stats[key].length > 0 ? stats[key].map((item, id) => (
                                   <div key={id} className="text-[10px] p-2 bg-white/60 dark:bg-zinc-900/60 rounded-xl shadow-sm">
                                      <p className="font-black uppercase truncate text-slate-800 dark:text-zinc-200">{item.category} ({item.days}d)</p>
                                      <p className="opacity-70 truncate font-medium">{item.clientName}</p>
                                   </div>
                                )) : (
                                   <p className="text-[10px] text-center py-2 text-slate-400 font-bold uppercase italic">Sem alertas</p>
-                               )}
+                                )}
                             </motion.div>
                          )}
                       </AnimatePresence>
@@ -231,10 +265,21 @@ export default function Layout() {
                     <h2 className="text-xl font-black uppercase tracking-tight">Alertas</h2>
                   </div>
                   <form onSubmit={async (e) => {
-                     e.preventDefault(); setIsSaving(true);
+                     e.preventDefault(); 
+                     setIsSaving(true);
                      const fd = new FormData(e.target as HTMLFormElement);
-                     await updateSettings({ alerta_days: Number(fd.get('a')), critico_days: Number(fd.get('c')), perda_days: Number(fd.get('p')) });
-                     setSaveSuccess(true); setTimeout(() => { setSaveSuccess(false); setSettingsOpen(false); setSettingsTab('menu'); }, 1000);
+                     await updateSettings({ 
+                       alerta_days: Number(fd.get('a')), 
+                       critico_days: Number(fd.get('c')), 
+                       perda_days: Number(fd.get('p')) 
+                     });
+                     setSaveSuccess(true); 
+                     setTimeout(() => { 
+                       setSaveSuccess(false); 
+                       setSettingsOpen(false); 
+                       setSettingsTab('menu'); 
+                     }, 1000);
+                     setIsSaving(false);
                   }} className="space-y-4">
                     <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-slate-400 ml-2">Alerta (Dias)</label><input name="a" type="number" defaultValue={settings.alerta_days} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl font-bold" /></div>
                     <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-slate-400 ml-2">Crítico (Dias)</label><input name="c" type="number" defaultValue={settings.critico_days} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl font-bold" /></div>
