@@ -6,13 +6,15 @@ import { supabase } from "../lib/supabase";
 import { toast } from "sonner";
 
 const Login = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(window.location.search.includes("signup=true") ? false : true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const queryParams = new URLSearchParams(window.location.search);
+  const isSignupParam = queryParams.get("signup") === "true";
 
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -218,10 +220,10 @@ const Login = () => {
               {isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}
             </span>
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => isLogin ? (window.location.href = "/#planos") : setIsLogin(true)}
               className="text-sm font-bold text-indigo-600 hover:text-indigo-700"
             >
-              {isLogin ? "Cadastre-se" : "Faça Login"}
+              {isLogin ? "Conheça nossos planos" : "Faça Login"}
             </button>
           </div>
 
