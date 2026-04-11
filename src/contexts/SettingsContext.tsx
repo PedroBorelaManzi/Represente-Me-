@@ -11,7 +11,6 @@ export interface Settings {
   has_completed_onboarding?: boolean;
   categories?: string[];
   revenue_ceiling?: number;
-  subscription_plan?: 'Acesso Exclusivo' | 'Profissional' | 'Master';
 }
 
 interface SettingsContextType {
@@ -29,7 +28,6 @@ const defaultSettings: Settings = {
   has_completed_onboarding: false,
   categories: [],
   revenue_ceiling: 1000000,
-  subscription_plan: 'Acesso Exclusivo',
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -49,6 +47,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     async function loadSettings() {
+      // Don't clear settings while user is still loading (refresh)
       if (!user) {
         setLoading(false);
         return;
@@ -71,9 +70,20 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           has_completed_onboarding: data.has_completed_onboarding ?? defaultSettings.has_completed_onboarding,
           categories: data.categories || [],
           revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
-          subscription_plan: (data.subscription_plan as any) || defaultSettings.subscription_plan,
         });
+      } else if (error) {
+        console.error("Error loading settings:", error);
       } else {
+        // No settings found, create them to ensure persistence works
+        try {
+          await supabase.from("user_settings").upsert({
+            user_id: user.id,
+            ...defaultSettings,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' });
+        } catch (e) {
+          console.error("Failed to Initialize settings:", e);
+        }
         setSettings(defaultSettings);
       }
       setLoading(false);
@@ -84,7 +94,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
   const updateSettings = async (newSettings: Partial<Settings>) => {
     if (!user) return;
+
     const updated = { ...settings, ...newSettings };
+
     const { error } = await supabase
       .from("user_settings")
       .upsert({
@@ -93,13 +105,25 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
 
-    if (!error) setSettings(updated);
+    if (!error) {
+      setSettings(updated);
+    } else {
+      console.error("Error updating settings:", error);
+      throw error;
+    }
   };
 
   useEffect(() => {
     const root = document.documentElement;
-    if (settings.theme === 'dark') root.classList.add('dark');
-    else root.classList.remove('dark');
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+
+    if (settings.theme === 'dark') {
+      root.classList.add('dark');
+      if (metaThemeColor) metaThemeColor.setAttribute('content', '#09090b');
+    } else {
+      root.classList.remove('dark');
+      if (metaThemeColor) metaThemeColor.setAttribute('content', '#f8fafc');
+    }
   }, [settings.theme]);
 
   return (

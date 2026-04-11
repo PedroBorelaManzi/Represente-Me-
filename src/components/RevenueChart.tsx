@@ -14,7 +14,7 @@ interface RevenueChartProps {
   loading?: boolean;
 }
 
-const RevenueChart: React.FC<RevenueChartProps> = ({ data = [], loading }) => {
+const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [ceilingInput, setCeilingInput] = useState('');
@@ -98,7 +98,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data = [], loading }) => {
               Teto de Faturamento
             </p>
             <p className="text-[9px] text-slate-400 dark:text-zinc-600 mb-3">
-              Atual: <strong>{formatShortCurrency(localCeiling)}</strong> — insira o novo valor máximo do eixo Y
+              Atual: <strong>{formatShortCurrency(localCeiling)}</strong> — insira o novo valor máximo do eixo Y
             </p>
             <div className="flex gap-2 items-center">
               <input

@@ -1,106 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, Trash2, ChevronRight, Check,
-  Sparkles, Building2, Sun, Moon 
-} from 'lucide-react';
-import { useSettings } from '../contexts/SettingsContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useState } from "react";
+import { Plus, Trash2, Sun, Moon, Check, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useSettings } from "../contexts/SettingsContext";
+
 
 export default function OnboardingModal() {
-  const { user } = useAuth();
-  const { settings, updateSettings, loading: settingsLoading } = useSettings();
-  const [isOpen, setIsOpen] = useState(false);
+  const { settings, loading, updateSettings } = useSettings();
   const [step, setStep] = useState(1);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [newCat, setNewCat] = useState('');
-  const [alerta, setAlerta] = useState(30);
-  const [critico, setCritico] = useState(45);
-  const [perda, setPerda] = useState(60);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-    useEffect(() => {
-    async function checkExperience() {
-      if (!settingsLoading && user) {
-        if (settings.has_completed_onboarding) {
-          setIsOpen(false);
-          return;
-        }
-        const { count } = await require('../lib/supabase').supabase
-          .from('companies')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-        
-        if (count && count > 0) {
-          await updateSettings({ has_completed_onboarding: true });
-          setIsOpen(false);
-          return;
-        }
-        setIsOpen(true);
-      }
-    }
-    checkExperience();
-  }, [settings, settingsLoading, user]);
+  
+  // Step 1: Categories
+  const [categories, setCategories] = useState<string[]>([]);
+  const [newCat, setNewCat] = useState("");
 
   const addCategory = () => {
     if (newCat.trim() && !categories.includes(newCat.trim())) {
       setCategories([...categories, newCat.trim()]);
-      setNewCat('');
+      setNewCat("");
     }
   };
 
-  const handleNextStep1 = () => {
-    if (categories.length > 0 || newCat.trim()) {
-      if (newCat.trim()) addCategory();
-      setStep(2);
-    }
+  // Step 2: Alerts
+  const [alerta, setAlerta] = useState(15);
+  const [critico, setCritico] = useState(30);
+  const [perda, setPerda] = useState(45);
+
+  // Step 3: Theme
+  const [theme, setTheme] = useState<'light' | 'dark'>(settings.theme || 'light');
+
+  const handleFinish = async () => {
+    await updateSettings({
+      categories,
+      alerta_days: alerta,
+      critico_days: critico,
+      perda_days: perda,
+      theme,
+      has_completed_onboarding: true,
+    });
   };
 
-    const handleFinish = async () => {
-    if (!user) return;
-    try {
-      if (categories.length > 0) {
-        const companiesToInsert = categories.map(cat => ({
-          user_id: user.id,
-          name: cat,
-          color: '#4f46e5'
-        }));
-        await require('../lib/supabase').supabase.from('companies').insert(companiesToInsert);
-      }
-      await updateSettings({
-        categories,
-        alerta_days: alerta,
-        critico_days: critico,
-        perda_days: perda,
-        theme,
-        has_completed_onboarding: true
-      });
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Erro ao salvar onboarding:', error);
-    }
-  };
-
-  if (!isOpen) return null;
+  if (loading || settings.has_completed_onboarding || (settings.categories && settings.categories.length > 0)) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.9, y: 30 }}
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-xl p-8 shadow-2xl relative overflow-hidden border border-slate-100 dark:border-zinc-800"
+        className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-8 w-full max-w-lg space-y-6"
       >
-        <div className="absolute top-0 right-0 p-8 opacity-5">
-          <Sparkles className="w-48 h-48 text-indigo-600" />
-        </div>
-
-        <div className="relative mb-8 flex justify-between items-center">
-          <div className="flex gap-2">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className={`h-1.5 w-8 rounded-full transition-all ${step >= s ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
-            ))}
-          </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Passo {step} de 3</span>
+        {/* Progress Bar */}
+        <div className="flex gap-2">
+          <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
+          <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
+          <div className={`h-1.5 flex-1 rounded-full ${step >= 3 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
         </div>
 
         <AnimatePresence mode="wait">
@@ -113,8 +65,8 @@ export default function OnboardingModal() {
               className="space-y-4"
             >
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 tracking-tight">Configure suas empresas</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Cadastre suas empresas</p>
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50">Vamos começar!</h2>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Primeiro, me fale quais empresas você vende ou representa que já vou criar as categorias para você.</p>
               </div>
 
               <div className="flex gap-2">
@@ -135,7 +87,7 @@ export default function OnboardingModal() {
                 </button>
               </div>
 
-              <div className="max-h-48 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+              <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
                 {categories.map((cat, index) => (
                   <motion.div 
                     key={index}
@@ -148,13 +100,13 @@ export default function OnboardingModal() {
                   </motion.div>
                 ))}
                 {categories.length === 0 && (
-                  <p className="text-center text-xs text-slate-400 dark:text-zinc-500 py-4">Nenhuma categoria cadastrada ainda.</p>
+                  <p className="text-center text-xs text-slate-400 dark:text-zinc-500 py-4">Nenhuma categoria adicionada.</p>
                 )}
               </div>
 
               <button 
-                onClick={handleNextStep1}
-                disabled={categories.length === 0 && !newCat.trim()}
+                onClick={() => setStep(2)}
+                disabled={categories.length === 0}
                 className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm tracking-wide disabled:opacity-50 flex items-center justify-center gap-1 mt-4"
               >
                 Próximo Passo <ChevronRight className="w-4 h-4" />
@@ -171,8 +123,8 @@ export default function OnboardingModal() {
               className="space-y-4"
             >
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 tracking-tight">Alertas de Inatividade</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Como você deseja acompanhar suas perdas, críticos e alertas de clientes sem compra?</p>
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50">Alertas de Inatividade</h2>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Como você deseja acompanhar suas perdas, crítico e alertas de clientes sem compra?</p>
               </div>
 
               <div className="space-y-3">
@@ -225,7 +177,7 @@ export default function OnboardingModal() {
               className="space-y-4"
             >
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 tracking-tight">Estilo Visual</h2>
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50">Estilo Visual</h2>
                 <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Escolha o tema que prefere usar no dia a dia.</p>
               </div>
 
@@ -258,3 +210,4 @@ export default function OnboardingModal() {
     </div>
   );
 }
+

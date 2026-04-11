@@ -1,172 +1,241 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import logo from '../assets/logo.png';
-import { 
-  ShieldCheck, 
-  ArrowRight, 
-  Mail, 
-  Lock, 
-  Loader2, 
-  Zap,
-  MapPin,
-  Globe
-} from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+﻿import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mail, Lock, User, LogIn, UserPlus, Heart, Boxes, ShieldCheck } from "lucide-react";
+import { supabase } from "../lib/supabase";
+import { toast } from "sonner";
 
-export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+const Login = () => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      await signIn(email, password);
-      navigate('/dashboard');
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      navigate("/dashboard");
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao processar sua solicitação');
+      toast.error(error.message || "Erro ao entrar");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      return toast.error("As senhas não coincidem");
+    }
+    setLoading(true);
+    try {
+      const { error, data } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
+      });
+      if (error) throw error;
+      if (data?.user) {
+        toast.success("Conta criada com sucesso! Faça login.");
+        setIsLogin(true);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao criar conta");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className='min-h-screen bg-white dark:bg-zinc-950 flex flex-col lg:flex-row relative overflow-hidden'>
-      {/* Background Ornaments */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-50/50 dark:bg-indigo-900/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-50/50 dark:bg-violet-900/10 rounded-full blur-[120px] pointer-events-none" />
-
-      {/* Hero Section */}
-      <div className='hidden lg:flex flex-1 flex-col justify-between p-16 relative z-10'>
-        <div className='flex items-center gap-3'>
-          <img src={logo} alt="Represente-Me!" className="h-44 w-auto object-contain" />
-        </div>
-
-        <div className='max-w-xl'>
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className='text-6xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none mb-8'
-          >
-            Venda mais com <br />
-            <span className='text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600'>Inteligência Digital</span>
-          </motion.h1>
+    <div className="min-h-screen w-full flex bg-[#F8FAFC]">
+      {/* Left Side: Branding */}
+      <div className="hidden lg:flex w-1/2 bg-indigo-600 p-12 flex-col justify-between relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500 rounded-full blur-3xl -mr-48 -mt-48 opacity-50" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-700 rounded-full blur-3xl -ml-48 -mb-48 opacity-50" />
+        
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 text-white mb-12">
+            <div className="p-2 bg-white/10 backdrop-blur-md rounded-xl">
+              <Boxes className="h-6 w-6" />
+            </div>
+            <span className="text-xl font-bold">Represente-Me!</span>
+          </div>
           
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className='grid grid-cols-2 gap-8'
-          >
-            <div className='space-y-2'>
-              <div className='flex items-center gap-3'>
-                <div className='p-2 bg-slate-50 dark:bg-zinc-900 rounded-xl'><Zap className='w-4 h-4 text-indigo-600' /></div>
-                <span className='text-xs font-black uppercase tracking-tight text-slate-900 dark:text-zinc-100'>IA Agentic</span>
-              </div>
-              <p className='text-[10px] font-bold text-slate-400 uppercase leading-relaxed'>Extração inteligente de pedidos e insights de mercado.</p>
-            </div>
-            <div className='space-y-2'>
-              <div className='flex items-center gap-3'>
-                <div className='p-2 bg-slate-50 dark:bg-zinc-900 rounded-xl'><MapPin className='w-4 h-4 text-indigo-600' /></div>
-                <span className='text-xs font-black uppercase tracking-tight text-slate-900 dark:text-zinc-100'>Geo-Mapeamento</span>
-              </div>
-              <p className='text-[10px] font-bold text-slate-400 uppercase leading-relaxed'>Mapeie sua região e nunca perca um cliente ativo no radar.</p>
-            </div>
-          </motion.div>
+          <h1 className="text-5xl font-extrabold text-white leading-tight mb-6">
+            Sua jornada para o <br />
+            <span className="text-indigo-200">sucesso começa aqui.</span>
+          </h1>
+          <p className="text-indigo-100 text-lg max-w-md">
+            Simplificamos a gestão da sua representação comercial para você focar no que importa: vender mais.
+          </p>
         </div>
 
-        <div className='flex items-center gap-6 text-[10px] font-black uppercase tracking-widest text-slate-400'>
-          <span className='flex items-center gap-2'><ShieldCheck className='w-3 h-3' /> Dados Protegidos</span>
-          <span className='w-1.5 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-full' />
-          <span className='flex items-center gap-2'><Globe className='w-3 h-3' /> Cloud Brasileira</span>
+        <div className="relative z-10 grid grid-cols-2 gap-6">
+          <div className="p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10">
+            <ShieldCheck className="h-6 w-6 text-white mb-3" />
+            <h3 className="text-white font-semibold mb-1">Backup Seguro</h3>
+            <p className="text-indigo-200 text-sm">Dados salvos em tempo real na nuvem.</p>
+          </div>
+          <div className="p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10">
+            <LogIn className="h-6 w-6 text-white mb-3" />
+            <h3 className="text-white font-semibold mb-1">Acesso Rápido</h3>
+            <p className="text-indigo-200 text-sm">Logon ágil em qualquer dispositivo.</p>
+          </div>
         </div>
       </div>
 
-      {/* Form Section */}
-      <div className='flex-1 flex flex-col justify-center items-center p-8 lg:p-16 relative z-10'>
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className='w-full max-w-[440px] bg-white dark:bg-zinc-900 p-10 lg:p-14 rounded-[48px] border border-slate-100 dark:border-zinc-800 shadow-2xl'
+      {/* Right Side: Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-white">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
         >
-          <div className='mb-12'>
-            <h2 className='text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2'>
-              Acessar CRM
+          <div className="mb-8">
+            <h2 className="text-3xl font-extrabold text-slate-900 mb-2">
+              {isLogin ? "Bem-vindo de volta!" : "Crie sua conta!"}
             </h2>
-            <p className='text-sm font-bold text-slate-400 uppercase tracking-tight'>
-              Digite suas credenciais para continuar.
+            <p className="text-slate-500">
+              {isLogin ? "Acesse sua conta para continuar." : "Comece a organizar suas representações hoje."}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className='space-y-6'>
-            <div className='space-y-4'>
-              <div className='relative group'>
-                <label className='text-[10px] font-black uppercase text-slate-400 ml-4 mb-1.5 block tracking-widest group-focus-within:text-indigo-600 transition-colors'>Seu E-mail</label>
-                <div className='relative'>
-                  <Mail className='absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-600 transition-all' />
-                  <input 
-                    type='email' 
-                    required 
-                    value={email} 
-                    onChange={e => setEmail(e.target.value)} 
-                    placeholder='nome@empresa.com.br' 
-                    className='w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-[20px] font-bold text-sm outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all dark:text-zinc-100' 
-                  />
-                </div>
-              </div>
+          <form onSubmit={isLogin ? handleLogin : handleSignup} className="space-y-4">
+            <AnimatePresence mode="popLayout">
+              {!isLogin && (
+                <motion.div
+                  key="name-field"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden mb-5"
+                >
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Nome Completo</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                      required={!isLogin}
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
+                      placeholder="Seu Nome"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-              <div className='relative group'>
-                <label className='text-[10px] font-black uppercase text-slate-400 ml-4 mb-1.5 block tracking-widest group-focus-within:text-indigo-600 transition-colors'>Sua Senha</label>
-                <div className='relative'>
-                  <Lock className='absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-600 transition-all' />
-                  <input 
-                    type='password' 
-                    required 
-                    value={password} 
-                    onChange={e => setPassword(e.target.value)} 
-                    placeholder='••••••••' 
-                    className='w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-[20px] font-bold text-sm outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all dark:text-zinc-100' 
-                  />
-                </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">E-mail</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <input
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
+                  placeholder="exemplo@email.com"
+                />
               </div>
             </div>
 
-            <div className='flex justify-end'>
-              <button type='button' className='text-[10px] font-black uppercase text-indigo-600 hover:text-indigo-700 transition-colors'>Recuperar Senha</button>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">Senha</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <input
+                  required
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
 
-            <button 
-              type='submit' 
-              disabled={loading} 
-              className='w-full py-5 bg-indigo-600 text-white rounded-[24px] font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-3 group'
+            <AnimatePresence mode="popLayout">
+              {!isLogin && (
+                <motion.div
+                  key="confirm-password-field"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden mb-5"
+                >
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Confirmar Senha</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                      required={!isLogin}
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <button
+              disabled={loading}
+              type="submit"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed group"
             >
-              {loading ? <Loader2 className='w-4 h-4 animate-spin' /> : (
+              {loading ? (
+                <div className="h-5 w-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : (
                 <>
-                  Entrar
-                  <ArrowRight className='w-4 h-4 group-hover:translate-x-1 transition-transform' />
+                  {isLogin ? "Entrar na Conta" : "Criar Minha Conta"}
+                  <ShieldCheck className="h-4 w-4 group-hover:translate-x-0.5 transition-transform text-white/70" />
                 </>
               )}
             </button>
           </form>
 
-          <div className='mt-10 text-center'>
-            <button 
-              onClick={() => window.location.href = '/#planos'}
-              className='text-[11px] font-bold text-slate-400 uppercase tracking-tight hover:text-slate-600 transition-colors'
+          <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center space-x-2">
+            <span className="text-sm text-slate-500">
+              {isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}
+            </span>
+            <button
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-sm font-bold text-indigo-600 hover:text-indigo-700"
             >
-              Não possui conta ainda? 
-              <span className='text-indigo-600 font-black ml-1'>Cadastre-se Já</span>
+              {isLogin ? "Cadastre-se" : "Faça Login"}
             </button>
+          </div>
+
+          <div className="mt-8 flex justify-center items-center gap-1.5 grayscale opacity-50 text-[10px] font-medium text-slate-400 uppercase tracking-widest">
+            <span>Powered by</span>
+            <Heart className="h-3 w-3 fill-red-400 text-red-400" />
+            <span>Success</span>
           </div>
         </motion.div>
       </div>
     </div>
   );
-}
+};
+
+export default Login;
+
+

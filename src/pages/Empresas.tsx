@@ -1,187 +1,648 @@
-import React, { useState, useEffect } from 'react';
-import { Building2, Plus, Search, MapPin, Phone, Mail, Globe, ChevronRight, LayoutGrid, List, Filter, Loader2, ArrowUpRight, TrendingUp, Briefcase } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '../lib/utils';
-import { toast } from 'sonner';
+﻿import React, { useState, useEffect } from "react";
+import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check, Loader2, Upload, Search, MapPin, AlertCircle, FileCheck, CheckCircle2, ShoppingBag } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
+import { useSettings } from "../contexts/SettingsContext";
+import { Link } from "react-router-dom";
+import { processOrderFile } from "../lib/orderProcessor";
+import { getHighPrecisionCoordinates } from "../lib/geminiGeocoding";
+import { toast } from "sonner";
 
-export default function Empresas() {
+interface ProcessedFile {
+  file: File;
+  clientName: string;
+  cnpj: string;
+  category: string;
+  value: number;
+  address?: string;
+  status: 'idle' | 'processing' | 'ready' | 'saving' | 'done' | 'error';
+  isNewClient: boolean;
+  error?: string;
+  matchedClientId?: string;
+}
+
+export default function EmpresasPage() {
   const { user } = useAuth();
-  const [companies, setCompanies] = useState<any[]>([]);
+  const { settings, updateSettings, loading: settingsLoading } = useSettings();
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [allOrders, setAllOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newCompany, setNewCompany] = useState({ name: '', cnpj: '', city: '', color: '#4f46e5' });
-  const [saving, setSaving] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [newCat, setNewCat] = useState("");
+  const [itemsLimit, setItemsLimit] = useState(15);
+  const [syncStatus, setSyncStatus] = useState<{current: number, total: number} | null>(null);
 
-  const loadCompanies = async () => {
+  // Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<string>("");
+  const [editNameInput, setEditNameInput] = useState<string>("");
+  
+  // Intelligent Upload Modal State
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadFiles, setUploadFiles] = useState<ProcessedFile[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const filteredOrders = (allOrders || []).filter(o => {
+    const matchesCategory = selectedCategory === "all" || o.category.toLowerCase() === selectedCategory.toLowerCase();
+    return matchesCategory;
+  });
+
+  const totalCategory = filteredOrders.reduce((sum, o) => sum + o.value, 0);
+
+  const loadOrders = async () => {
     if (!user) return;
-    setLoading(true);
-    const { data } = await supabase
-      .from('companies')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('name');
-    setCompanies(data || []);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*, clients(id, name)")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setAllOrders((data || []).map(o => ({
+        ...o,
+        clientName: o.clients?.name || "Cliente Desconhecido", clientId: o.clients?.id
+      })));
+    } catch (err) {
+      console.error("Load Orders Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const performDeepSync = async (isSilent = false) => {
+    if (!user) return;
+    try {
+      if (!isSilent) setLoading(true);
+      
+      // 1. Carrega todos os dados necessários em paralelo (Otimização de rede)
+      const [clientsRes, ordersRes] = await Promise.all([
+        supabase.from("clients").select("id, faturamento").eq("user_id", user.id),
+        supabase.from("orders").select("client_id, category, value").eq("user_id", user.id)
+      ]);
+
+      if (clientsRes.error) throw clientsRes.error;
+      const clients = clientsRes.data || [];
+      const orders = ordersRes.data || [];
+
+      if (clients.length === 0) {
+        await loadOrders();
+        return;
+      }
+
+      setSyncStatus({ current: 0, total: clients.length });
+
+      // 2. Processamento em Memória (O(N) em vez de rede no loop)
+      const faturamentosPorCliente: Record<string, any> = {};
+      
+      // Inicializa mapa
+      clients.forEach(c => faturamentosPorCliente[c.id] = {});
+      
+      // Agrega valores dos pedidos
+      orders.forEach(order => {
+        if (faturamentosPorCliente[order.client_id]) {
+          const cat = order.category;
+          faturamentosPorCliente[order.client_id][cat] = (faturamentosPorCliente[order.client_id][cat] || 0) + (order.value || 0);
+        }
+      });
+
+      // 3. Batched Updates (Apenas para clientes que mudaram)
+      const clientsToUpdate = clients.filter(c => {
+        const novo = JSON.stringify(faturamentosPorCliente[c.id]);
+        const antigo = JSON.stringify(c.faturamento || {});
+        return novo !== antigo;
+      });
+
+      if (clientsToUpdate.length > 0) {
+        // Usamos lotes para não sobrecarregar o Supabase em um único request gigante
+        const batchSize = 25;
+        for (let i = 0; i < clientsToUpdate.length; i += batchSize) {
+          const batch = clientsToUpdate.slice(i, i + batchSize);
+          await Promise.all(batch.map(c => 
+            supabase.from("clients")
+              .update({ faturamento: faturamentosPorCliente[c.id] })
+              .eq("id", c.id)
+          ));
+          setSyncStatus(prev => prev ? { ...prev, current: Math.min(i + batch.length, clients.length) } : null);
+        }
+      }
+
+      await loadOrders();
+    } catch (err) {
+      console.error("Optimization Sync Error:", err);
+    } finally {
+      setSyncStatus(null);
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    loadCompanies();
-  }, [user]);
-
-  const handleAddCompany = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-    setSaving(true);
-    const { error } = await supabase
-      .from('companies')
-      .insert([{ ...newCompany, user_id: user.id }]);
-
-    if (error) {
-      toast.error('Erro ao adicionar representada');
-    } else {
-      toast.success('Representada adicionada!');
-      setIsModalOpen(false);
-      setNewCompany({ name: '', cnpj: '', city: '', color: '#4f46e5' });
-      loadCompanies();
+    if (!settingsLoading && user) {
+       performDeepSync(true); 
     }
-    setSaving(false);
+  }, [user, settingsLoading]);
+
+  const handleUploadClick = () => {
+    setIsUploadModalOpen(true);
+    setUploadFiles([]);
   };
 
+  const processFiles = async (files: FileList) => {
+    setIsProcessing(true);
+    const newFiles: ProcessedFile[] = Array.from(files).map(f => ({
+      file: f,
+      clientName: "",
+      cnpj: "",
+      category: (settings.categories && settings.categories[0]) || "",
+      value: 0,
+      status: 'processing',
+      isNewClient: false
+    }));
+    
+    setUploadFiles(prev => [...prev, ...newFiles]);
+
+    for (let i = 0; i < newFiles.length; i++) {
+        const currentFile = newFiles[i].file;
+        try {
+            const result = await processOrderFile(currentFile, [], settings.categories || []);
+
+            if (result.status === 'ready') {
+                const cleanCnpj = result.cnpj.replace(/\D/g, "");
+                const cleanName = result.client?.trim();
+                let matchedClient = null;
+                
+                if (cleanCnpj) {
+                    const { data: clientByCnpj } = await supabase
+                        .from("clients")
+                        .select("id, name")
+                        .eq("cnpj", cleanCnpj)
+                        .eq("user_id", user?.id)
+                        .maybeSingle();
+                    matchedClient = clientByCnpj;
+                }
+                
+                if (!matchedClient && cleanName) {
+                    const { data: clientByName } = await supabase
+                        .from("clients")
+                        .select("id, name")
+                        .eq("name", cleanName)
+                        .eq("user_id", user?.id)
+                        .maybeSingle();
+                    matchedClient = clientByName;
+                }
+
+                setUploadFiles(prev => {
+                    const updated = [...prev];
+                    const idx = updated.length - newFiles.length + i;
+                    updated[idx] = {
+                        ...updated[idx],
+                        clientName: result.client,
+                        cnpj: result.cnpj,
+                        category: result.category,
+                        value: result.value,
+                        address: result.address,
+                        status: "ready",
+                        isNewClient: !matchedClient,
+                        matchedClientId: matchedClient?.id
+                    };
+                    return updated;
+                });
+            } else {
+                throw new Error(result.error || "Falha na extração");
+            }
+        } catch (err) {
+            console.error("Erro no processamento:", err);
+            setUploadFiles(prev => {
+                const updated = [...prev];
+                const idx = updated.length - newFiles.length + i;
+                updated[idx] = { 
+                    ...updated[idx], 
+                    status: 'error', 
+                    error: (err as any).message || "Falha ao processar arquivo" 
+                };
+                return updated;
+            });
+        }
+    }
+    setIsProcessing(false);
+  };
+
+  const confirmSingleUpload = async (index: number) => {
+      const item = uploadFiles[index];
+      setUploadFiles(prev => prev.map((f, idx) => idx === index ? { ...f, status: 'saving' } : f));
+
+      try {
+          let clientId = item.matchedClientId;
+
+          if (!clientId) {
+              const coords = await getHighPrecisionCoordinates(`${item.address}`, item.clientName, item.cnpj);
+              const { data: newClientRes, error: clientErr } = await supabase
+                  .from("clients")
+                  .insert([{
+                      user_id: user?.id,
+                      name: item.clientName,
+                      cnpj: item.cnpj?.replace(/\D/g, ""),
+                      address: item.address,
+                      latitude: coords?.lat || -23.5505,
+                      longitude: coords?.lng || -46.6333,
+                      status: 'Ativo'
+                  }])
+                  .select()
+                  .single();
+              
+              if (clientErr) throw clientErr;
+              clientId = newClientRes.id;
+              toast.success("Cliente cadastrado com sucesso!");
+          }
+
+          const cleanName = item.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
+          const formattedName = `${item.category}___VALOR_${item.value}___${cleanName}`;
+          const path = `${user?.id}/${formattedName}`;
+
+          const { error: uploadError } = await supabase.storage
+              .from("client_vault")
+              .upload(path, item.file, { upsert: true });
+
+          if (uploadError) throw uploadError;
+
+          await supabase.from("orders").upsert([{
+              user_id: user?.id,
+              client_id: clientId,
+              category: item.category,
+              value: item.value,
+              file_name: formattedName,
+              file_path: path
+          }], { onConflict: "client_id,file_path" });
+
+          const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", clientId).single();
+          const fat = clientData?.faturamento || {};
+          fat[item.category] = (Number(fat[item.category] || 0) + Number(item.value));
+          await supabase.from("clients").update({ faturamento: fat }).eq("id", clientId);
+
+          setUploadFiles(prev => prev.map((f, idx) => idx === index ? { ...f, status: 'done' } : f));
+          await loadOrders();
+      } catch (err) {
+          console.error("Erro no salvamento:", err);
+          toast.error("Erro ao salvar pedido.");
+          setUploadFiles(prev => prev.map((f, idx) => idx === index ? { ...f, status: 'error', error: "Falha ao salvar" } : f));
+      }
+  };
+
+  const addCategory = async () => {
+    if (newCat.trim() && !settings.categories?.some(c => c.toLowerCase() === newCat.trim().toLowerCase())) {
+      const updated = [...(settings?.categories || []), newCat.trim()];
+      await updateSettings({ categories: updated });
+      setNewCat("");
+      if (!selectedCategory) setSelectedCategory(newCat.trim());
+    } else if (newCat.trim()) {
+        alert("Esta empresa já existe!");
+        setNewCat("");
+    }
+  };
+
+  const openEditModal = (cat: string) => {
+      setEditingCategory(cat);
+      setEditNameInput(cat);
+      setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+      if (!editNameInput.trim() || editNameInput.trim() === editingCategory) {
+          setIsEditModalOpen(false);
+          return;
+      }
+      
+      const oldCat = editingCategory;
+      const newCatName = editNameInput.trim();
+      setLoading(true);
+
+      try {
+          const { data: clients } = await supabase.from("clients").select("id, faturamento, category_last_contact").eq("user_id", user?.id);
+          if (clients) {
+              for (const client of clients) {
+                  const { data: files } = await supabase.storage.from("client_vault").list(`${user?.id}/`);
+                  if (files) {
+                      for (const file of files) {
+                          const parts = file.name.split("___");
+                          if (parts.length > 0 && parts[0].toLowerCase() === oldCat.toLowerCase()) {
+                              const newName = file.name.replace(parts[0], newCatName);
+                              const oldPath = `${user?.id}/${file.name}`;
+                              const newPath = `${user?.id}/${newName}`;
+                              await supabase.storage.from("client_vault").copy(oldPath, newPath);
+                              await supabase.storage.from("client_vault").remove([oldPath]);
+                          }
+                      }
+                  }
+
+                  let needsUpdate = false;
+                  const fat = client.faturamento || {};
+                  const lastContact = client.category_last_contact || {};
+
+                  if (fat[oldCat] !== undefined) {
+                      const val = fat[oldCat];
+                      delete fat[oldCat];
+                      fat[newCatName] = val;
+                      needsUpdate = true;
+                  }
+
+                  if (lastContact[oldCat] !== undefined) {
+                      const val = lastContact[oldCat];
+                      delete lastContact[oldCat];
+                      lastContact[newCatName] = val;
+                      needsUpdate = true;
+                  }
+
+                  if (needsUpdate) {
+                      await supabase.from("clients").update({ faturamento: fat, category_last_contact: lastContact }).eq("id", client.id);
+                  }
+              }
+          }
+
+          const updated = (settings?.categories || []).map(c => c === oldCat ? newCatName : c);
+          await updateSettings({ categories: updated });
+          if (selectedCategory === oldCat) setSelectedCategory(newCatName);
+          await loadOrders();
+      } catch (err) {
+          console.error("Erro no rename:", err);
+      } finally {
+          setLoading(false);
+          setIsEditModalOpen(false);
+      }
+  };
+
+  const handleDeleteSub = async () => {
+    if (!editingCategory) return;
+    const cleanCategory = editingCategory.trim();
+
+    if (!window.confirm(`ATENÇÃO: Deseja realmente excluir a representada "${cleanCategory}"? \n\nISSO APAGARÁ DEFINITIVAMENTE: \n1. Todos os pedidos registrados dela.\n2. Todos os arquivos anexados desta empresa.\n3. Todo o histórico de faturamento acumulado.\n\nESTA AÇÃO É IRREVERSÍVEL.`)) return;
+    
+    setLoading(true);
+    try {
+        const { error: orderError } = await supabase.from("orders").delete().eq("category", cleanCategory).eq("user_id", user?.id);
+        if (orderError) throw orderError;
+
+        const { data: userFiles } = await supabase.rpc("list_user_files", { u_id: user.id });
+        
+        const clientsWithTargetFiles = new Set<string>();
+        if (userFiles) {
+            userFiles.forEach((f: any) => {
+                if (f.file_name?.startsWith(`${cleanCategory}___`)) {
+                    clientsWithTargetFiles.add(f.client_id);
+                }
+            });
+        }
+
+        for (const clientId of Array.from(clientsWithTargetFiles)) {
+             const { data: files } = await supabase.storage.from("client_vault").list(`${user?.id}/`);
+             if (files) {
+                 const filesToDelete = files
+                    .filter(f => f.name.startsWith(`${cleanCategory}___`))
+                    .map(f => `${user?.id}/${f.name}`);
+                 
+                 if (filesToDelete.length > 0) {
+                     await supabase.storage.from("client_vault").remove(filesToDelete);
+                 }
+             }
+        }
+
+        const { data: clientsToUpdate } = await supabase.from("clients").select("id, faturamento, category_last_contact").eq("user_id", user?.id);
+        
+        if (clientsToUpdate) {
+            for (const client of clientsToUpdate) {
+                let updated = false;
+                const newFat = { ...(client.faturamento || {}) };
+                const newLastC = { ...(client.category_last_contact || {}) };
+
+                if (newFat[cleanCategory]) { delete newFat[cleanCategory]; updated = true; }
+                if (newLastC[cleanCategory]) { delete newLastC[cleanCategory]; updated = true; }
+
+                if (updated) {
+                    await supabase.from("clients").update({
+                        faturamento: newFat,
+                        category_last_contact: newLastC
+                    }).eq("id", client.id);
+                }
+            }
+        }
+
+        const newGlobalCats = (settings.categories || []).filter(c => c !== editingCategory);
+        await updateSettings({ categories: newGlobalCats });
+        
+        toast.success(`Representada "${cleanCategory}" excluída com sucesso!`);
+        setIsEditModalOpen(false);
+        await loadOrders();
+    } catch (err: any) {
+        console.error("Delete Category Error:", err);
+        toast.error("Erro ao excluir.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+  };
+
+  const catTotals = (settings?.categories || []).reduce((acc: any, cat: string) => {
+      acc[cat] = allOrders
+          .filter(o => o.category.toLowerCase() === cat.toLowerCase())
+          .reduce((s, o) => s + o.value, 0);
+      return acc;
+  }, {});
+
+  const totalGeral = Object.values(catTotals).reduce((sum: number, val: any) => sum + Number(val), 0) as number;
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold mb-1">
-            <Building2 className="w-6 h-6" /> Gestão
-          </div>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Representadas</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
+            <Building2 className="w-7 h-7 text-indigo-600" /> Pedidos e Empresas
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Gerencie seus pedidos e faturamentos inteligentes.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex bg-white dark:bg-zinc-900 p-1 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm">
-             <button onClick={() => setViewMode('grid')} className={cn("p-2 rounded-lg transition-all", viewMode === 'grid' ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600" : "text-slate-400")}><LayoutGrid className="w-4 h-4" /></button>
-             <button onClick={() => setViewMode('list')} className={cn("p-2 rounded-lg transition-all", viewMode === 'list' ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600" : "text-slate-400")}><List className="w-4 h-4" /></button>
-          </div>
-          <button onClick={() => setIsModalOpen(true)} className="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black tracking-widest shadow-lg hover:bg-indigo-700 transition-all flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Nova Representada
-          </button>
+        
+        <div className="flex items-center gap-4">
+            <button 
+                onClick={handleUploadClick}
+                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-lg active:scale-95 group"
+            >
+                <Upload className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
+                Enviar Pedidos
+            </button>
+            
+            {syncStatus && (
+               <div className="flex items-center gap-3 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl animate-pulse">
+                  <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700 dark:text-indigo-400">
+                    sincronização: {Math.round((syncStatus.current / syncStatus.total) * 100)}%
+                  </span>
+               </div>
+            )}
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-        </div>
-      ) : (
-        <div className={cn(
-           "grid gap-6",
-           viewMode === 'grid' ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
-        )}>
-          {companies.map((company) => (
-            <motion.div
-              layout
-              key={company.id}
-              className={cn(
-                 "bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[32px] p-6 shadow-sm hover:shadow-xl transition-all group overflow-hidden relative",
-                 viewMode === 'list' && "flex items-center gap-6"
-              )}
-            >
-              <div 
-                className="absolute top-0 left-0 w-full h-1.5" 
-                style={{ backgroundColor: company.color }} 
-              />
-              
-              <div className={cn(
-                 "w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black uppercase text-white shadow-lg shrink-0",
-                 viewMode === 'list' ? "w-12 h-12" : "mb-6"
-              )} style={{ backgroundColor: company.color }}>
-                {company.name.substring(0, 1)}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight truncate mb-1">
-                   {company.name}
-                </h3>
-                <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                   <div className="flex items-center gap-1.5"><Briefcase className="w-3 h-3" /> {company.cnpj}</div>
-                   {company.city && <div className="flex items-center gap-1.5"><MapPin className="w-3 h-3" /> {company.city}</div>}
-                </div>
-              </div>
-
-              {viewMode === 'grid' && (
-                 <div className="mt-8 pt-6 border-t border-slate-50 dark:border-zinc-800 flex items-center justify-between">
-                    <div className="flex flex-col">
-                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Status</span>
-                       <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-lg">Ativa</span>
-                    </div>
-                    <button className="p-3 bg-slate-50 dark:bg-zinc-850 rounded-2xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all group/btn">
-                       <ArrowUpRight className="w-5 h-5 group-hover/btn:rotate-45 transition-transform" />
-                    </button>
-                 </div>
-              )}
-              
-              {viewMode === 'list' && (
-                 <button className="p-3 bg-slate-50 dark:bg-zinc-850 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all">
-                    <ChevronRight className="w-5 h-5" />
-                 </button>
-              )}
-            </motion.div>
-          ))}
-          
-          {companies.length === 0 && (
-            <div className="col-span-full text-center py-20 bg-slate-50 dark:bg-zinc-950/30 rounded-[32px] border-2 border-dashed border-slate-200 dark:border-zinc-800">
-              <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Nenhuma representada cadastrada.</p>
+      <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+         <div className="flex items-center gap-4">
+            <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 rounded-2xl border border-indigo-100 dark:border-indigo-900/40">
+               <TrendingUp className="w-8 h-8 text-indigo-600" />
             </div>
-          )}
+            <div>
+               <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">Faturamento geral</p>
+               <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-100 mt-1">{formatCurrency(totalGeral)}</h2>
+            </div>
+         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-1 space-y-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-5 shadow-sm space-y-4">
+             <h3 className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Faturamento por Empresas</h3>
+             
+             <div className="space-y-2 max-h-[calc(100vh-24rem)] overflow-y-auto pr-1">
+                <div 
+                  onClick={() => setSelectedCategory("all")}
+                  className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${selectedCategory === "all" ? "border-indigo-600 bg-indigo-50/50" : "border-slate-100"}`}
+                >
+                  <div className="flex items-center gap-2 font-bold text-sm">
+                    <FileText className={`w-4 h-4 ${selectedCategory === "all" ? "text-indigo-600" : "text-slate-400"}`} />
+                    <span>Faturamento geral</span>
+                  </div>
+                </div>
+
+                {(settings?.categories || []).map((cat: string) => (
+                   <div 
+                     key={cat}
+                     onClick={() => setSelectedCategory(cat)}
+                     className={`flex items-center justify-between p-3.5 rounded-xl border cursor-pointer transition-all ${selectedCategory === cat ? "border-indigo-600 bg-indigo-50/50" : "border-slate-100"}`}
+                   >
+                     <div className="flex flex-col truncate flex-1">
+                       <span className="font-bold text-sm truncate">{cat}</span>
+                       <span className="text-sm font-black text-indigo-600 dark:text-indigo-400 mt-1">
+                           {formatCurrency(catTotals[cat] || 0)}
+                       </span>
+                     </div>
+                     <button onClick={(e) => { e.stopPropagation(); openEditModal(cat); }} className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 rounded-lg">
+                       <Settings className="w-3.5 h-3.5" />
+                     </button>
+                   </div>
+                ))}
+             </div>
+
+             <div className="pt-4 border-t border-slate-100 dark:border-zinc-850 flex gap-2">
+                <input 
+                  type="text"
+                  value={newCat}
+                  onChange={(e) => setNewCat(e.target.value)}
+                  placeholder="Nova representada..."
+                  className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100"
+                />
+                <button onClick={addCategory} className="p-2 bg-indigo-600 text-white rounded-xl"><Plus className="w-5 h-5" /></button>
+             </div>
+          </div>
         </div>
-      )}
 
-      {/* Modal Nova Representada */}
+        <div className="md:col-span-2 space-y-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-6 h-[calc(100vh-16rem)] flex flex-col">
+             <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-zinc-850">
+                <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">{selectedCategory === "all" ? "Faturamento geral" : selectedCategory}</h2>
+                <div className="text-right">
+                   <span className="text-xs text-slate-500 dark:text-zinc-400 uppercase">TOTAL:</span>
+                   <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">{formatCurrency(totalCategory)}</p>
+                </div>
+             </div>
+
+             <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                {loading ? (
+                   <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 text-indigo-600 animate-spin" /></div>
+                ) : (
+                   filteredOrders.slice(0, itemsLimit).map((order) => (
+                      <div key={order.id} className="flex items-center justify-between p-4 border border-slate-100 dark:border-zinc-850 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-950 transition-colors group">
+                        <div className="flex items-center gap-3 truncate">
+                          <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl">
+                             <FileText className="w-5 h-5 text-indigo-600" />
+                          </div>
+                          <div>
+                             <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">{order.file_name}</h4>
+                             <Link to={`/dashboard/clientes/${order.clientId}`} className="text-xs text-indigo-600 hover:underline">{order.clientName}</Link>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                           <span className="text-[10px] text-slate-400 font-bold">{new Date(order.created_at).toLocaleDateString("pt-BR")}</span>
+                           <p className="text-sm font-black text-slate-800 dark:text-zinc-200">{formatCurrency(order.value)}</p>
+                        </div>
+                      </div>
+                   ))
+                )}
+             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Edit Modal */}
       <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-md p-8 shadow-2xl relative border border-slate-100 dark:border-zinc-800"
-            >
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Nova Representada</h2>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
-              </div>
+        {isEditModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-md space-y-4">
+                <div className="flex justify-between items-center">
+                   <h3 className="text-xl font-bold">Editar Representada</h3>
+                   <button onClick={() => setIsEditModalOpen(false)} className="p-2 text-slate-400"><X className="w-5 h-5"/></button>
+                </div>
+                <input type="text" value={editNameInput} onChange={(e) => setEditNameInput(e.target.value)} className="w-full px-3 py-2 border rounded-xl dark:bg-zinc-950" />
+                <div className="flex flex-col gap-2 pt-4">
+                    <button onClick={handleSaveEdit} className="w-full py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm">Salvar Alterações</button>
+                    <button onClick={handleDeleteSub} className="w-full py-2.5 bg-red-50 text-red-600 rounded-xl font-bold text-sm border border-red-100">Excluir permanentemente</button>
+                </div>
+             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-              <form onSubmit={handleAddCompany} className="space-y-4">
-                <div className="space-y-1.5">
-                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nome da Empresa</label>
-                   <input required value={newCompany.name} onChange={e => setNewCompany({...newCompany, name: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-600 transition-all text-sm" placeholder="Ex: Nome da Fábrica" />
+      {/* Upload Modal */}
+      <AnimatePresence>
+        {isUploadModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                <div className="p-8 border-b dark:border-zinc-850 flex justify-between items-center bg-indigo-50/30 dark:bg-indigo-950/20">
+                   <h3 className="text-2xl font-black">Portal de Envio Inteligente</h3>
+                   <button onClick={() => setIsUploadModalOpen(false)} className="p-2 text-slate-400"><X className="w-6 h-6"/></button>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">CNPJ</label>
-                      <input value={newCompany.cnpj} onChange={e => setNewCompany({...newCompany, cnpj: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-600 transition-all text-sm" placeholder="00.000.000/0000-00" />
-                   </div>
-                   <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Cidade Base</label>
-                      <input value={newCompany.city} onChange={e => setNewCompany({...newCompany, city: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-600 transition-all text-sm" placeholder="Cidade - UF" />
-                   </div>
+                <div className="flex-1 overflow-y-auto p-8">
+                    {uploadFiles.length === 0 ? (
+                        <div className="h-80 border-2 border-dashed border-slate-200 dark:border-zinc-800 rounded-[32px] flex flex-col items-center justify-center space-y-4 bg-slate-50/50 dark:bg-zinc-950/50">
+                            <Upload className="w-12 h-12 text-indigo-600" />
+                            <label className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm cursor-pointer shadow-lg active:scale-95 transition-all">
+                                Selecionar Arquivos
+                                <input type="file" multiple onChange={(e) => e.target.files && processFiles(e.target.files)} className="hidden" />
+                            </label>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {uploadFiles.map((item, idx) => (
+                                <div key={idx} className="p-5 rounded-3xl border border-slate-100 dark:border-zinc-850 bg-white dark:bg-zinc-900 flex items-center justify-between gap-6">
+                                    <div className="flex items-center gap-4 flex-1 truncate">
+                                        <div className="p-3 bg-slate-100 dark:bg-zinc-800 rounded-2xl"><FileText className="w-6 h-6" /></div>
+                                        <div className="truncate">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase">{item.file.name}</p>
+                                            {item.status === 'processing' ? <span className="text-xs text-indigo-600 animate-pulse">Analisando...</span> : (
+                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                                                    <span className="text-xs font-black text-indigo-700">{item.clientName}</span>
+                                                    <span className="text-xs font-bold text-slate-600">{item.category}</span>
+                                                    <span className="text-xs font-black text-emerald-700">{formatCurrency(item.value)}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {item.status === 'ready' && <button onClick={() => confirmSingleUpload(idx)} className="px-5 py-2.5 bg-indigo-600 text-white rounded-2xl font-black text-xs">Confirmar e Salvar</button>}
+                                    {item.status === 'saving' && <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />}
+                                    {item.status === 'done' && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
-                <div className="space-y-1.5">
-                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Cor de Identificação</label>
-                   <div className="flex gap-2 p-2 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl">
-                      {['#4f46e5', '#7c3aed', '#db2777', '#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#0891b2'].map(c => (
-                         <button key={c} type="button" onClick={() => setNewCompany({...newCompany, color: c})} className={cn("w-8 h-8 rounded-lg transition-transform", newCompany.color === c ? "scale-110 shadow-lg ring-2 ring-white" : "opacity-60 hover:opacity-100")} style={{ backgroundColor: c }} />
-                      ))}
-                   </div>
-                </div>
-                <button type="submit" disabled={saving} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-all disabled:opacity-50 mt-4">
-                   {saving ? 'Criando...' : 'Cadastrar Representada'}
-                </button>
-              </form>
-            </motion.div>
+             </motion.div>
           </div>
         )}
       </AnimatePresence>

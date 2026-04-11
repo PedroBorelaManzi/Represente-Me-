@@ -5,8 +5,6 @@ import { User } from "@supabase/supabase-js";
 type AuthContextType = {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, pass: string) => Promise<void>;
-  signUp: (email: string, pass: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -24,7 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch((err) => {
         console.error("Erro ao carregar sessão:", err);
-        setLoading(false);
+        setLoading(false); // Destrava o loading
       });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -37,22 +35,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = async (email: string, pass: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-    if (error) throw error;
-  };
-
-  const signUp = async (email: string, pass: string) => {
-    const { error } = await supabase.auth.signUp({ email, password: pass });
-    if (error) throw error;
-  };
-
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
@@ -65,3 +53,4 @@ export const useAuth = () => {
   }
   return context;
 };
+
