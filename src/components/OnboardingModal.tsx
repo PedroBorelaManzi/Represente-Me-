@@ -1,70 +1,83 @@
-﻿import { useState } from "react";
-import { Plus, Trash2, Sun, Moon, Check, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useSettings } from "../contexts/SettingsContext";
-
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Plus, Trash2, ChevronRight, Check, X, 
+  Sparkles, ShieldCheck, Mail, Building2, Sun, Moon 
+} from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function OnboardingModal() {
-  const { settings, loading, updateSettings } = useSettings();
+  const { user } = useAuth();
+  const { settings, updateSettings, loading: settingsLoading } = useSettings();
+  const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
-
-  
-  // Step 1: Categories
   const [categories, setCategories] = useState<string[]>([]);
-  const [newCat, setNewCat] = useState("");
+  const [newCat, setNewCat] = useState('');
+  const [alerta, setAlerta] = useState(30);
+  const [critico, setCritico] = useState(45);
+  const [perda, setPerda] = useState(60);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-  const handleNextStep1 = () => {
-    let currentCategories = [...categories];
-    if (newCat.trim() && !categories.includes(newCat.trim())) {
-      currentCategories.push(newCat.trim());
-      setCategories(currentCategories);
-      setNewCat("");
+  useEffect(() => {
+    if (!settingsLoading && user && !settings.onboarding_completed) {
+      setIsOpen(true);
     }
-    if (currentCategories.length > 0) {
-      setStep(2);
-    }
-  };
+  }, [settings, settingsLoading, user]);
 
   const addCategory = () => {
     if (newCat.trim() && !categories.includes(newCat.trim())) {
       setCategories([...categories, newCat.trim()]);
-      setNewCat("");
+      setNewCat('');
     }
   };
 
-  // Step 2: Alerts
-  const [alerta, setAlerta] = useState(15);
-  const [critico, setCritico] = useState(30);
-  const [perda, setPerda] = useState(45);
-
-  // Step 3: Theme
-  const [theme, setTheme] = useState<'light' | 'dark'>(settings.theme || 'light');
-
-  const handleFinish = async () => {
-    await updateSettings({
-      categories,
-      alerta_days: alerta,
-      critico_days: critico,
-      perda_days: perda,
-      theme,
-      has_completed_onboarding: true,
-    });
+  const handleNextStep1 = () => {
+    if (categories.length > 0 || newCat.trim()) {
+      if (newCat.trim()) addCategory();
+      setStep(2);
+    }
   };
 
-  if (loading || settings.has_completed_onboarding || (settings.categories && settings.categories.length > 0)) return null;
+  const handleFinish = async () => {
+    if (!user) return;
+    
+    try {
+      await updateSettings({
+        categories,
+        alerta_days: alerta,
+        critico_days: critico,
+        perda_days: perda,
+        theme,
+        onboarding_completed: true
+      });
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Erro ao salvar onboarding:', error);
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        initial={{ opacity: 0, scale: 0.9, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-8 w-full max-w-lg space-y-6"
+        className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-xl p-8 shadow-2xl relative overflow-hidden border border-slate-100 dark:border-zinc-800"
       >
-        {/* Progress Bar */}
-        <div className="flex gap-2">
-          <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
-          <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
-          <div className={`h-1.5 flex-1 rounded-full ${step >= 3 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
+        <div className="absolute top-0 right-0 p-8 opacity-5">
+          <Sparkles className="w-48 h-48 text-indigo-600" />
+        </div>
+
+        <div className="relative mb-8 flex justify-between items-center">
+          <div className="flex gap-2">
+            {[1, 2, 3].map((s) => (
+              <div key={s} className={`h-1.5 w-8 rounded-full transition-all ${step >= s ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
+            ))}
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Passo {step} de 3</span>
         </div>
 
         <AnimatePresence mode="wait">
@@ -77,8 +90,8 @@ export default function OnboardingModal() {
               className="space-y-4"
             >
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50">Vamos começar!</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Primeiro, me fale quais empresas você vende ou representa que já vou criar as categorias para você.</p>
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 tracking-tight">Configure suas Representadas</h2>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Olá! Vamos começar configurando as empresas que você representa para poder organizar seus pedidos.</p>
               </div>
 
               <div className="flex gap-2">
@@ -99,7 +112,7 @@ export default function OnboardingModal() {
                 </button>
               </div>
 
-              <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+              <div className="max-h-48 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                 {categories.map((cat, index) => (
                   <motion.div 
                     key={index}
@@ -112,7 +125,7 @@ export default function OnboardingModal() {
                   </motion.div>
                 ))}
                 {categories.length === 0 && (
-                  <p className="text-center text-xs text-slate-400 dark:text-zinc-500 py-4">Nenhuma categoria adicionada.</p>
+                  <p className="text-center text-xs text-slate-400 dark:text-zinc-500 py-4">Nenhuma categoria cadastrada ainda.</p>
                 )}
               </div>
 
@@ -135,8 +148,8 @@ export default function OnboardingModal() {
               className="space-y-4"
             >
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50">Alertas de Inatividade</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Como você deseja acompanhar suas perdas, crítico e alertas de clientes sem compra?</p>
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 tracking-tight">Alertas de Inatividade</h2>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Como você deseja acompanhar suas perdas, críticos e alertas de clientes sem compra?</p>
               </div>
 
               <div className="space-y-3">
@@ -189,7 +202,7 @@ export default function OnboardingModal() {
               className="space-y-4"
             >
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50">Estilo Visual</h2>
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 tracking-tight">Estilo Visual</h2>
                 <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Escolha o tema que prefere usar no dia a dia.</p>
               </div>
 
@@ -222,6 +235,3 @@ export default function OnboardingModal() {
     </div>
   );
 }
-
-
-
