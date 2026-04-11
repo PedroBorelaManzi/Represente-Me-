@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Building2, Phone, Mail, FileText, ChevronRight, Filter, Plus, Trash2, Clock, CheckCircle2, TrendingUp, AlertCircle, X, Download, UserPlus, MoreHorizontal, Settings, LayoutGrid, Info, Loader2, Upload, FileUp, Activity } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -7,7 +7,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { parseFileForCnpjs } from '../lib/clientImport';
-import { getHighPrecisionCoordinates } from '../lib/geminiGeocoding';
+import UpgradeModal from '../components/UpgradeModal';
 
 export default function CRMPage() {
   const { user } = useAuth();
@@ -17,19 +17,19 @@ export default function CRMPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState<'empresas' | 'importacao' | 'lote'>('importacao');
   
-  // Tab State for Alerts
-  const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Crítico' | 'Perda'>('Todos');
-  
-  // Import Modal/State
+  const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Cr�tico' | 'Perda'>('Todos');
   const [isImporting, setIsImporting] = useState(false);
   const [importStats, setImportStats] = useState({ current: 0, total: 0 });
+
+  const isBasicPlan = settings.subscription_plan === 'Acesso Exclusivo';
 
   const loadClients = async () => {
     if (!user) return;
     try {
       setLoading(true);
-      // Fetch Clients
       const { data: clientsData, error } = await supabase
         .from('clients')
         .select('*')
@@ -38,7 +38,6 @@ export default function CRMPage() {
 
       if (error) throw error;
 
-      // Fetch Files to calculate alerts (based on CRM.tsx.old logic)
       const { data: files } = await supabase.rpc("list_user_files", { u_id: user.id });
       const filesByClient: any = {};
       if (files) {
@@ -68,7 +67,7 @@ export default function CRMPage() {
         for (const [cat, date] of Object.entries(lastDates)) {
           const days = Math.floor((today - (date as number)) / (1000 * 60 * 60 * 24));
           if (days >= (settings.perda_days || 365)) alerts.push({ company: cat, type: "Perda", days });
-          else if (days >= (settings.critico_days || 90)) alerts.push({ company: cat, type: "Crítico", days });
+          else if (days >= (settings.critico_days || 90)) alerts.push({ company: cat, type: "Cr�tico", days });
           else if (days >= (settings.alerta_days || 45)) alerts.push({ company: cat, type: "Alerta", days });
         }
         return { ...client, alerts: alerts.sort((a, b) => b.days - a.days) };
@@ -76,112 +75,76 @@ export default function CRMPage() {
 
       setClients(clientsWithAlerts);
     } catch (err) {
-      console.error('Load Clients Error:', err);
+      console.error('CRM Load Error:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (user) {
-      loadClients();
-    }
+    if (user) loadClients();
   }, [user, settings.categories]);
 
-  // REFINED FILTER: Name, CNPJ, City (Ignore Address)
   const filteredClients = useMemo(() => {
     return clients.filter(c => {
       const lowerSearch = searchTerm.toLowerCase();
-      const nameMatch = c.name?.toLowerCase().includes(lowerSearch);
-      const cnpjMatch = c.cnpj?.includes(searchTerm);
-      const cityMatch = c.city?.toLowerCase().includes(lowerSearch);
-      
-      const searchMatch = nameMatch || cnpjMatch || cityMatch;
-      
-      if (!searchMatch) return false;
-      
-      // Alert Tab Filter
+      const match = c.name?.toLowerCase().includes(lowerSearch) || c.cnpj?.includes(searchTerm) || c.city?.toLowerCase().includes(lowerSearch);
+      if (!match) return false;
       if (activeTab === 'Todos') return true;
       return c.alerts?.some((a: any) => a.type === activeTab);
     }).sort((a, b) => a.name.localeCompare(b.name));
   }, [clients, searchTerm, activeTab]);
 
-  const handleDeleteClient = async (id: string) => {
-    if (!window.confirm('Deseja realmente excluir este cliente? Todos os pedidos associados serão mantidos, mas o vínculo será perdido.')) return;
-    
-    try {
-      const { error } = await supabase.from('clients').delete().eq('id', id).eq('user_id', user?.id);
-      if (error) throw error;
-      setClients(prev => prev.filter(c => c.id !== id));
-      toast.success('Cliente removido com sucesso.');
-    } catch (err) {
-      console.error('Delete Error:', err);
-      toast.error('Erro ao remover cliente.');
+  const handleImportClick = () => {
+    if (isBasicPlan && clients.length >= 50) {
+       setUpgradeFeature('importacao');
+       setIsUpgradeModalOpen(true);
+       return;
     }
+    fileInputRef.current?.click();
   };
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-
     setIsImporting(true);
-    const toastId = toast.loading('Processando arquivo via IA...');
+    const toastId = toast.loading('Processando arquivo...');
 
     try {
       const cnpjs = await parseFileForCnpjs(file);
       if (cnpjs.length === 0) {
-        toast.error('Nenhum CNPJ detectado no arquivo.');
+        toast.error('Nenhum CNPJ detectado.');
         setIsImporting(false);
         toast.dismiss(toastId);
         return;
       }
 
       setImportStats({ current: 0, total: cnpjs.length });
-      toast.loading(`Importando ${cnpjs.length} potenciais clientes...`, { id: toastId });
-
       let importedCount = 0;
 
       for (const cnpj of cnpjs) {
         setImportStats(prev => ({ ...prev, current: prev.current + 1 }));
+        if (clients.some(c => c.cnpj === cnpj)) continue;
+
+        const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+        const data = response.ok ? await response.json() : null;
         
-        const isDuplicate = clients.some(c => c.cnpj === cnpj);
-        if (isDuplicate) continue;
-
-        try {
-          const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
-          if (response.ok) {
-            const data = await response.json();
-            
-            const { error } = await supabase.from('clients').insert([{
-              user_id: user.id,
-              name: data.razao_social || data.nome_fantasia || 'Cliente Importado',
-              cnpj: cnpj,
-              city: data.municipio || "",
-              address: `${data.logradouro || ""}, ${data.numero || "S/N"} - ${data.bairro || ""}, ${data.municipio || ""} - ${data.uf || ""}`.trim(),
-              status: 'Ativo',
-              last_contact: new Date().toISOString().split('T')[0]
-            }]);
-
-            if (!error) importedCount++;
-          } else {
-             const { error } = await supabase.from('clients').insert([{
-               user_id: user.id,
-               name: `Cliente ${cnpj.substring(0, 4)}`,
-               cnpj: cnpj,
-               status: 'Ativo',
-               last_contact: new Date().toISOString().split('T')[0]
-             }]);
-             if (!error) importedCount++;
-          }
-        } catch (err) {
-          console.error('Import Step Error:', err);
-        }
+        await supabase.from('clients').insert([{
+          user_id: user.id,
+          name: data?.razao_social || data?.nome_fantasia || `Cliente ${cnpj.substring(0, 4)}`,
+          cnpj,
+          city: data?.municipio || "",
+          address: data ? `${data.logradouro}, ${data.numero} - ${data.bairro}, ${data.municipio} - ${data.uf}` : "",
+          status: 'Ativo',
+          last_contact: new Date().toISOString().split('T')[0]
+        }]);
+        importedCount++;
       }
 
-      toast.success(`Importação concluída! ${importedCount} novos clientes adicionados.`, { id: toastId });
+      toast.success(`Importa��o conclu�da! ${importedCount} novos clientes.`, { id: toastId });
       loadClients();
     } catch (err: any) {
-      toast.error('Erro na importação: ' + err.message, { id: toastId });
+      toast.error('Erro: ' + err.message, { id: toastId });
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -190,108 +153,51 @@ export default function CRMPage() {
 
   return (
     <div className='h-[calc(100vh-2rem)] flex flex-col gap-6'>
-      {/* Header */}
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
-        <div>
-          <h1 className='text-3xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 uppercase'>
-             Gestão de Clientes
-          </h1>
-        </div>
-        
+        <h1 className='text-3xl font-black text-slate-900 dark:text-zinc-100 uppercase'>Gest�o de Clientes</h1>
         <div className='flex items-center gap-3'>
            <div className='relative'>
              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400' />
-             <input 
-               type='text'
-               value={searchTerm}
-               onChange={(e) => setSearchTerm(e.target.value)}
-               placeholder='Buscar por nome, CNPJ ou cidade...'
-               className='pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs w-full md:w-80 outline-none focus:ring-2 focus:ring-indigo-500 font-bold'
-             />
+             <input type='text' value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder='Buscar...' className='pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs w-full md:w-80 font-bold outline-none' />
            </div>
-
            <input type="file" ref={fileInputRef} onChange={handleImportFile} className="hidden" accept=".pdf,.xlsx,.xls,.txt,image/*" />
-           
-           <button 
-             onClick={() => fileInputRef.current?.click()}
-             disabled={isImporting}
-             className='px-6 py-2.5 bg-indigo-600 text-white rounded-2xl text-xs font-black tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-2'
-           >
+           <button onClick={handleImportClick} disabled={isImporting} className='px-6 py-2.5 bg-indigo-600 text-white rounded-2xl text-xs font-black tracking-widest shadow-lg hover:bg-indigo-700 transition-all flex items-center gap-2'>
              {isImporting ? <Loader2 className='w-4 h-4 animate-spin' /> : <FileUp className='w-4 h-4' />}
-             {isImporting ? `Importando` : 'Importar Lista'}
+             {isImporting ? 'Importando' : 'Importar Lista'}
            </button>
         </div>
       </div>
 
-      {/* Main Content: Client List (Full Width) */}
-      <div className='flex-1 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 flex flex-col min-h-0 shadow-sm overflow-hidden relative'>
-        
-        {/* Tabs next to search matches filter */}
-        <div className='px-4 pt-4 border-b dark:border-zinc-850 bg-slate-50/50 dark:bg-zinc-950/20 flex items-center gap-4'>
-          {(['Todos', 'Alerta', 'Crítico', 'Perda'] as const).map(tab => (
-            <button 
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-3 px-2 text-xs font-black tracking-widest border-b-2 transition-all ${activeTab === tab ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
-            >
+      <div className='flex-1 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 flex flex-col overflow-hidden relative shadow-sm'>
+        <div className='px-4 pt-4 border-b dark:border-zinc-850 bg-slate-50/50 flex items-center gap-4'>
+          {(['Todos', 'Alerta', 'Cr�tico', 'Perda'] as const).map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} className={`pb-3 px-2 text-xs font-black tracking-widest border-b-2 transition-all ${activeTab === tab ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400"}`}>
               {tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: any) => a.type === tab)).length})</span>
             </button>
           ))}
         </div>
         
         <div className='flex-1 overflow-y-auto'>
-           {loading ? (
-              <div className='flex items-center justify-center h-40'><Loader2 className='w-6 h-6 text-indigo-600 animate-spin' /></div>
-           ) : (
+           {loading ? <div className='flex items-center justify-center h-40'><Loader2 className='w-6 h-6 animate-spin' /></div> : (
               <div className='divide-y divide-slate-100 dark:divide-zinc-850'>
                  {filteredClients.map((client) => (
-                    <div 
-                      key={client.id}
-                      onClick={() => navigate(`/dashboard/clientes/${client.id}`)}
-                      className="p-4 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-zinc-850/50 flex items-center gap-4 group"
-                    >
-                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black uppercase bg-slate-100 dark:bg-zinc-850 text-slate-500 dark:text-zinc-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                          {client.name?.substring(0, 2)}
-                       </div>
-                       
+                    <div key={client.id} onClick={() => navigate(`/dashboard/clientes/${client.id}`)} className="p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-850/50 flex items-center gap-4 group transition-all">
+                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black uppercase bg-slate-100 dark:bg-zinc-850 text-slate-500 group-hover:bg-indigo-600 group-hover:text-white transition-colors">{client.name?.substring(0, 2)}</div>
                        <div className='flex-1 min-w-0'>
                           <div className='flex items-center gap-2'>
-                             <p className='text-sm font-black text-slate-900 dark:text-zinc-100 uppercase truncate text-ellipsis overflow-hidden'>{client.name}</p>
-                             {client.alerts?.length > 0 && (
-                               <span className="flex gap-1">
-                                 {client.alerts.slice(0, 1).map((a: any, i: number) => (
-                                   <span key={i} className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase border ${a.type === 'Perda' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                                     {a.type}: {a.days}D
-                                   </span>
-                                 ))}
-                               </span>
-                             )}
+                             <p className='text-sm font-black text-slate-900 dark:text-zinc-100 uppercase truncate'>{client.name}</p>
+                             {client.alerts?.length > 0 && <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase border bg-amber-50 text-amber-600 border-amber-100`}>{client.alerts[0].type}: {client.alerts[0].days}D</span>}
                           </div>
-                          <div className='flex items-center gap-2 mt-0.5'>
-                             <span className='px-1.5 py-0.5 bg-slate-100 dark:bg-zinc-800 text-[8px] font-bold text-slate-500 dark:text-zinc-400 rounded-md uppercase whitespace-nowrap tracking-widest'>
-                                {client.cnpj || 'Sem CNPJ'}
-                             </span>
-                             <p className='text-[10px] text-slate-400 dark:text-zinc-500 truncate uppercase font-bold tracking-tight'>
-                                {client.city ? `🏙️ ${client.city}` : 'Cidade não informada'}
-                             </p>
-                          </div>
+                          <p className='text-[10px] text-slate-400 font-bold uppercase tracking-tight'>{client.cnpj} {client.city ? `??? ${client.city}` : ''}</p>
                        </div>
-
-                       <div className='flex items-center gap-2'>
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteClient(client.id); }} className='p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-all'>
-                             <Trash2 className='w-4 h-4' />
-                          </button>
-                          <ChevronRight className='w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors' />
-                       </div>
+                       <ChevronRight className='w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors' />
                     </div>
                  ))}
               </div>
            )}
         </div>
       </div>
+      <UpgradeModal isOpen={isUpgradeModalOpen} onClose={() => setIsUpgradeModalOpen(false)} feature={upgradeFeature} />
     </div>
   );
 }
-
-
-
