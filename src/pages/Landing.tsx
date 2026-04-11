@@ -1,10 +1,23 @@
-import React from "react";
+import React, { useEffect } from "react";
 import logo from "../assets/logo.png";
 import { Link } from "react-router-dom";
 import { MapPin, Link as LinkIcon, Users, Clock, ArrowRight, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Landing() {
+  // Handle smooth scroll to hash on load
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash) {
+      setTimeout(() => {
+        const element = document.querySelector(hash);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 500);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-500 selection:text-white">
       {/* Navbar */}
@@ -15,9 +28,8 @@ export default function Landing() {
             <div className="hidden md:flex items-center gap-8">
               <a href="#funcionalidades" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Funcionalidades</a>
               <a href="#planos" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Planos</a>
-              <Link to="/login" className="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">Login</Link>
               <Link to="/login" className="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">
-                Começar Agora
+                Acessar CRM
               </Link>
             </div>
           </div>
@@ -101,7 +113,7 @@ export default function Landing() {
               description="Ideal para prospectadores e representações locais que estão começando a criar a carteira de vendas."
               price="R$ 99,90"
               features={[
-                "Até 2 empresas cadastradas",
+                "Limite de até uma empresa cadastrada",
                 "Acesso ao Mapa e CRM Básico",
                 "Suporte por email"
               ]}
@@ -126,7 +138,7 @@ export default function Landing() {
               features={[
                 "Lojas + Links Ilimitados",
                 "Mapeamento Avançado",
-                "Mentoria Estratégica Inclusa"
+                "Gestão de Carteira Full"
               ]}
               buttonText="Assinar"
             />

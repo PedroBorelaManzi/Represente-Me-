@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
 import RevenueChart from "../components/RevenueChart";
 import MasterReport from "../components/MasterReport";
-import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../lib/googleSync";
+import { syncGoogleEvents } from "../lib/googleSync";
 import { getHolidays, formatDateLocal } from "../lib/holidayService";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -26,6 +26,7 @@ export default function Dashboard() {
     totalRevenue: 0,
     activeCompanies: 0,
   });
+  const [revenueData, setRevenueData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<any[]>([]);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -39,27 +40,44 @@ export default function Dashboard() {
       try {
         const [clientsRes, ordersRes, companiesRes] = await Promise.all([
           supabase.from("clients").select("id", { count: "exact" }).eq("user_id", user.id),
-          supabase.from("orders").select("total_amount", { count: "exact" }).eq("user_id", user.id),
-          supabase.from("companies").select("id", { count: "exact" }).eq("user_id", user.id),
+          supabase.from("orders").select("total_amount, company_id").eq("user_id", user.id),
+          supabase.from("companies").select("id, name").eq("user_id", user.id),
         ]);
 
         const totalRevenue = ordersRes.data?.reduce((acc: any, order: any) => acc + (order.total_amount || 0), 0) || 0;
 
+        // Process Revenue per Company
+        if (ordersRes.data && companiesRes.data) {
+           const revMap: Record<string, number> = {};
+           ordersRes.data.forEach(o => {
+              if (o.company_id) {
+                 revMap[o.company_id] = (revMap[o.company_id] || 0) + (o.total_amount || 0);
+              }
+           });
+           
+           const chartData = companiesRes.data.map(c => ({
+              name: c.name,
+              value: revMap[c.id] || 0
+           })).sort((a,b) => b.value - a.value).slice(0, 6);
+           
+           setRevenueData(chartData);
+        }
+
         setStats({
           totalClients: clientsRes.count || 0,
-          totalOrders: ordersRes.count || 0,
+          totalOrders: ordersRes.data?.length || 0,
           totalRevenue,
-          activeCompanies: companiesRes.count || 0,
+          activeCompanies: companiesRes.data?.length || 0,
         });
 
         // Load Local/Holiday Events
         const holidays = await getHolidays();
-        setEvents(holidays.map(h => ({
+        setEvents((holidays || []).map(h => ({
             id: h.name,
             title: h.name,
             date: h.date,
-            type: h.type === 'Feriado' ? 'holiday' : 'event',
-            description: h.location || 'Brasil'
+            type: (h as any).type === 'Feriado' ? 'holiday' : 'event',
+            description: (h as any).location || 'Brasil'
         })));
 
         // Check Google Connection
@@ -97,10 +115,9 @@ export default function Dashboard() {
         const gEvents = await syncGoogleEvents(user.id);
         if (gEvents) {
             toast.success("Agenda Google sincronizada!");
-            // Refresh list
             const holidays = await getHolidays();
              setEvents([
-                ...holidays.map(h => ({ id: h.name, title: h.name, date: h.date, type: 'holiday', description: h.location })),
+                ...(holidays || []).map(h => ({ id: h.name, title: h.name, date: h.date, type: 'holiday', description: (h as any).location })),
                 ...gEvents.map((ge: any) => ({
                     id: ge.id,
                     title: ge.summary,
@@ -197,9 +214,6 @@ export default function Dashboard() {
                         <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 transition-colors" />
                     </div>
                 ))}
-                {events.length === 0 && (
-                    <div className="text-center py-12 text-slate-400 italic">Nenhum evento próximo.</div>
-                )}
             </div>
         </div>
       </div>
@@ -212,18 +226,20 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white dark:bg-zinc-900 p-8 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-sm">
+        <div className="bg-white dark:bg-zinc-900 p-8 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-sm relative">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Faturamento Mensal</h2>
-              <p className="text-sm text-slate-500 font-medium">Visão geral dos últimos 6 meses</p>
+              <h2 className="text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Faturamento por Empresa</h2>
+              <p className="text-sm text-slate-500 font-medium">Resumo baseado nos pedidos lançados</p>
             </div>
             <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl"><TrendingUp className="w-6 h-6 text-indigo-600" /></div>
           </div>
-          <div className="h-[300px]"><RevenueChart /></div>
+          <div className="h-[350px]">
+            <RevenueChart data={revenueData} loading={loading} />
+          </div>
         </div>
 
-        {isMaster && (
+        {isMaster ? (
             <div className="bg-white dark:bg-zinc-900 p-8 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-sm">
                 <div className="flex items-center justify-between mb-8">
                     <div>
@@ -235,11 +251,9 @@ export default function Dashboard() {
                     </div>
                     <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-2xl"><BarChart3 className="w-6 h-6 text-amber-600" /></div>
                 </div>
-                <div className="h-[300px]"><MasterReport /></div>
+                <div className="h-[350px]"><MasterReport /></div>
             </div>
-        )}
-
-        {!isMaster && (
+        ) : (
              <div className="bg-gradient-to-br from-zinc-900 to-black p-8 rounded-[32px] border border-zinc-800 shadow-2xl relative overflow-hidden flex flex-col justify-center items-center text-center">
                 <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
                     <Star className="absolute top-10 left-10 w-20 h-20 text-white" />

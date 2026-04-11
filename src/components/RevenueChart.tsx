@@ -14,7 +14,7 @@ interface RevenueChartProps {
   loading?: boolean;
 }
 
-const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
+const RevenueChart: React.FC<RevenueChartProps> = ({ data = [], loading }) => {
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [ceilingInput, setCeilingInput] = useState('');
@@ -59,7 +59,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
     const parsed = parseFloat(normalized);
     
     if (isNaN(parsed) || parsed <= 0) {
-      alert('Por favor insira um valor numérico válido (ex: 5000000 ou 5.000.000)');
+      alert('Por favor insira um valor numÃ©rico vÃ¡lido (ex: 5000000 ou 5.000.000)');
       return;
     }
 
@@ -98,7 +98,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
               Teto de Faturamento
             </p>
             <p className="text-[9px] text-slate-400 dark:text-zinc-600 mb-3">
-              Atual: <strong>{formatShortCurrency(localCeiling)}</strong> — insira o novo valor máximo do eixo Y
+              Atual: <strong>{formatShortCurrency(localCeiling)}</strong> â€” insira o novo valor mÃ¡ximo do eixo Y
             </p>
             <div className="flex gap-2 items-center">
               <input
@@ -163,7 +163,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ data, loading }) => {
             </div>
           ) : data.length === 0 ? (
             <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-slate-400 dark:text-zinc-600 uppercase tracking-widest text-center px-6">
-              Nenhum dado disponível.
+              Nenhum dado disponÃ­vel.
             </div>
           ) : (
             <>

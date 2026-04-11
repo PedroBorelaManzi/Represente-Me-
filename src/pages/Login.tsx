@@ -31,7 +31,7 @@ export default function Login() {
       await signIn(email, password);
       navigate('/dashboard');
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao processar sua solicitação');
+      toast.error(error.message || 'Erro ao processar sua solicitaÃ§Ã£o');
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ export default function Login() {
             className='text-6xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none mb-8'
           >
             Venda mais com <br />
-            <span className='text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600'>Inteligência Digital</span>
+            <span className='text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600'>InteligÃªncia Digital</span>
           </motion.h1>
           
           <motion.div 
@@ -81,14 +81,14 @@ export default function Login() {
                 <div className='p-2 bg-slate-50 dark:bg-zinc-900 rounded-xl'><Zap className='w-4 h-4 text-indigo-600' /></div>
                 <span className='text-xs font-black uppercase tracking-tight text-slate-900 dark:text-zinc-100'>IA Agentic</span>
               </div>
-              <p className='text-[10px] font-bold text-slate-400 uppercase leading-relaxed'>Extração inteligente de pedidos e insights de mercado.</p>
+              <p className='text-[10px] font-bold text-slate-400 uppercase leading-relaxed'>ExtraÃ§Ã£o inteligente de pedidos e insights de mercado.</p>
             </div>
             <div className='space-y-2'>
               <div className='flex items-center gap-3'>
                 <div className='p-2 bg-slate-50 dark:bg-zinc-900 rounded-xl'><MapPin className='w-4 h-4 text-indigo-600' /></div>
                 <span className='text-xs font-black uppercase tracking-tight text-slate-900 dark:text-zinc-100'>Geo-Mapeamento</span>
               </div>
-              <p className='text-[10px] font-bold text-slate-400 uppercase leading-relaxed'>Mapeie sua região e nunca perca um cliente ativo no radar.</p>
+              <p className='text-[10px] font-bold text-slate-400 uppercase leading-relaxed'>Mapeie sua regiÃ£o e nunca perca um cliente ativo no radar.</p>
             </div>
           </motion.div>
         </div>
@@ -142,7 +142,7 @@ export default function Login() {
                     required 
                     value={password} 
                     onChange={e => setPassword(e.target.value)} 
-                    placeholder='••••••••' 
+                    placeholder='â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢' 
                     className='w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-[20px] font-bold text-sm outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all dark:text-zinc-100' 
                   />
                 </div>
@@ -173,7 +173,7 @@ export default function Login() {
               className='text-[11px] font-bold text-slate-400 uppercase tracking-tight hover:text-slate-600 transition-colors'
             >
               Nao possui conta ainda? 
-              <span className='text-indigo-600 font-black ml-1'>Cadastre-se Já</span>
+              <span className='text-indigo-600 font-black ml-1'>Cadastre-se JÃ¡</span>
             </button>
           </div>
         </motion.div>
