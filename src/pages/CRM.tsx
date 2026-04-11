@@ -15,7 +15,7 @@ import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import UpgradeModal from '../components/UpgradeModal';
-import { parseFileForCnpjs } from '../lib/fileParser';
+import { parseFileForCnpjs } from '../lib/clientImport';
 
 export default function CRM() {
   const { user } = useAuth();
@@ -183,7 +183,7 @@ export default function CRM() {
 
       <div className='flex-1 bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-200 dark:border-zinc-800 flex flex-col overflow-hidden relative shadow-sm'>
         <div className='px-6 pt-6 border-b dark:border-zinc-850 bg-slate-50/50 dark:bg-zinc-950/20 flex items-center gap-4'>
-          {(['Todos', 'Alerta', 'Crítico', 'Perda'] as const).map(tab => (
+           {(['Todos', 'Alerta', 'Crítico', 'Perda'] as const).map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)} className={cn("pb-4 px-2 text-xs font-black uppercase tracking-widest border-b-2 transition-all relative overflow-hidden", activeTab === tab ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600")}>
               {tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: any) => a.type === tab)).length})</span>
             </button>
