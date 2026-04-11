@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import logo from '../assets/logo.png';
 import { 
   ShieldCheck, 
   ArrowRight, 
   Mail, 
   Lock, 
   Loader2, 
-  Sparkles, 
-  Layout,
   Zap,
   MapPin,
   Globe
@@ -31,7 +30,7 @@ export default function Login() {
       await signIn(email, password);
       navigate('/dashboard');
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao processar sua solicitaÃ§Ã£o');
+      toast.error(error.message || 'Erro ao processar sua solicitação');
     } finally {
       setLoading(false);
     }
@@ -46,20 +45,10 @@ export default function Login() {
       {/* Hero Section */}
       <div className='hidden lg:flex flex-1 flex-col justify-between p-16 relative z-10'>
         <div className='flex items-center gap-3'>
-          <div className='w-12 h-12 bg-indigo-600 rounded-[18px] flex items-center justify-center shadow-indigo-200 shadow-xl'>
-            <Layout className='w-6 h-6 text-white' />
-          </div>
-          <span className='text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter'>Represente-Me</span>
+          <img src={logo} alt="Represente-Me!" className="h-44 w-auto object-contain" />
         </div>
 
         <div className='max-w-xl'>
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className='flex items-center gap-2 mb-6 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full w-fit text-[10px] font-black uppercase tracking-widest'
-          >
-            <Sparkles className='w-3 h-3 fill-current' /> IA Agentic para Representantes
-          </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -67,7 +56,7 @@ export default function Login() {
             className='text-6xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none mb-8'
           >
             Venda mais com <br />
-            <span className='text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600'>InteligÃªncia Digital</span>
+            <span className='text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600'>Inteligência Digital</span>
           </motion.h1>
           
           <motion.div 
@@ -81,14 +70,14 @@ export default function Login() {
                 <div className='p-2 bg-slate-50 dark:bg-zinc-900 rounded-xl'><Zap className='w-4 h-4 text-indigo-600' /></div>
                 <span className='text-xs font-black uppercase tracking-tight text-slate-900 dark:text-zinc-100'>IA Agentic</span>
               </div>
-              <p className='text-[10px] font-bold text-slate-400 uppercase leading-relaxed'>ExtraÃ§Ã£o inteligente de pedidos e insights de mercado.</p>
+              <p className='text-[10px] font-bold text-slate-400 uppercase leading-relaxed'>Extração inteligente de pedidos e insights de mercado.</p>
             </div>
             <div className='space-y-2'>
               <div className='flex items-center gap-3'>
                 <div className='p-2 bg-slate-50 dark:bg-zinc-900 rounded-xl'><MapPin className='w-4 h-4 text-indigo-600' /></div>
                 <span className='text-xs font-black uppercase tracking-tight text-slate-900 dark:text-zinc-100'>Geo-Mapeamento</span>
               </div>
-              <p className='text-[10px] font-bold text-slate-400 uppercase leading-relaxed'>Mapeie sua regiÃ£o e nunca perca um cliente ativo no radar.</p>
+              <p className='text-[10px] font-bold text-slate-400 uppercase leading-relaxed'>Mapeie sua região e nunca perca um cliente ativo no radar.</p>
             </div>
           </motion.div>
         </div>
@@ -142,7 +131,7 @@ export default function Login() {
                     required 
                     value={password} 
                     onChange={e => setPassword(e.target.value)} 
-                    placeholder='â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢' 
+                    placeholder='••••••••' 
                     className='w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-[20px] font-bold text-sm outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all dark:text-zinc-100' 
                   />
                 </div>
@@ -172,8 +161,8 @@ export default function Login() {
               onClick={() => window.location.href = '/#planos'}
               className='text-[11px] font-bold text-slate-400 uppercase tracking-tight hover:text-slate-600 transition-colors'
             >
-              Nao possui conta ainda? 
-              <span className='text-indigo-600 font-black ml-1'>Cadastre-se JÃ¡</span>
+              Não possui conta ainda? 
+              <span className='text-indigo-600 font-black ml-1'>Cadastre-se Já</span>
             </button>
           </div>
         </motion.div>

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Plus, Trash2, ChevronRight, Check, X, 
-  Sparkles, ShieldCheck, Mail, Building2, Sun, Moon 
+  Plus, Trash2, ChevronRight, Check,
+  Sparkles, Building2, Sun, Moon 
 } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function OnboardingModal() {
@@ -21,7 +20,7 @@ export default function OnboardingModal() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    if (!settingsLoading && user && !settings.onboarding_completed) {
+    if (!settingsLoading && user && !settings.has_completed_onboarding) {
       setIsOpen(true);
     }
   }, [settings, settingsLoading, user]);
@@ -50,7 +49,7 @@ export default function OnboardingModal() {
         critico_days: critico,
         perda_days: perda,
         theme,
-        onboarding_completed: true
+        has_completed_onboarding: true
       });
       setIsOpen(false);
     } catch (error) {
@@ -90,8 +89,8 @@ export default function OnboardingModal() {
               className="space-y-4"
             >
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 tracking-tight">Configure suas Representadas</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Olá! Vamos começar configurando as empresas que você representa para poder organizar seus pedidos.</p>
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 tracking-tight">Configure suas empresas</h2>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Cadastre suas empresas</p>
               </div>
 
               <div className="flex gap-2">
