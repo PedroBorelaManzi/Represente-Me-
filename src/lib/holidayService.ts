@@ -247,3 +247,21 @@ export async function getClientLocations(userId: string): Promise<{ city: string
       return true;
     });
 }
+
+export function formatDateLocal(date: string | Date): string {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export async function getHolidays(): Promise<Holiday[]> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  
+  const locations = await getClientLocations(user.id);
+  const year = new Date().getFullYear();
+  
+  return fetchHolidays(year, locations);
+}
