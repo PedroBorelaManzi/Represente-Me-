@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+﻿import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from "./supabase";
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || "");

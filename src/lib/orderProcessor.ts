@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+﻿import { GoogleGenerativeAI } from "@google/generative-ai";
 import { supabase } from "./supabase";
 
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || "");
@@ -15,7 +15,7 @@ export async function processOrderFile(file: File, userId: string): Promise<Proc
   try {
     const text = await readFileAsText(file);
     
-    // Extrao básica via Regex para ajudar a IA / Fallback
+    // Extração básica via Regex para ajudar a IA / Fallback
     const localCnpj = extractCnpj(text);
     const localValue = extractTotalValue(text);
 

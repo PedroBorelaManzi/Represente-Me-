@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { 
   Users, Building2, ShoppingCart, TrendingUp, AlertCircle, 
   Map as MapIcon, Calendar, ArrowUpRight, ArrowDownRight, 
@@ -15,6 +15,7 @@ import MasterReport from "../components/MasterReport";
 import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../lib/googleSync";
 import { getHolidays, formatDateLocal } from "../lib/holidayService";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const { user } = useAuth();

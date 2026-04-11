@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { 
   MapPin, Search, Filter, Layers, Navigation, 
   Map as MapIcon, Globe, Info, Clock, 
@@ -13,8 +13,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 
-// Mock de Leaflet / Componente de Mapa de Prospeco
-// Nota: Em produo, usar uma biblioteca como React-Leaflet
+// Mock de Leaflet / Componente de Mapa de Prospecção
+// Nota: Em produção, usar uma biblioteca como React-Leaflet
 export default function Map() {
   const { user } = useAuth();
   const { settings } = useSettings();
@@ -106,7 +106,7 @@ export default function Map() {
               </button>
            </div>
 
-           {/* Simulao de Pins */}
+           {/* Simulação de Pins */}
            {clients.map((c, i) => (
              <motion.div 
                key={c.id}
