@@ -19,10 +19,27 @@ export default function OnboardingModal() {
   const [perda, setPerda] = useState(60);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-  useEffect(() => {
-    if (!settingsLoading && user && !settings.has_completed_onboarding) {
-      setIsOpen(true);
+    useEffect(() => {
+    async function checkExperience() {
+      if (!settingsLoading && user) {
+        if (settings.has_completed_onboarding) {
+          setIsOpen(false);
+          return;
+        }
+        const { count } = await require('../lib/supabase').supabase
+          .from('companies')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        
+        if (count && count > 0) {
+          await updateSettings({ has_completed_onboarding: true });
+          setIsOpen(false);
+          return;
+        }
+        setIsOpen(true);
+      }
     }
+    checkExperience();
   }, [settings, settingsLoading, user]);
 
   const addCategory = () => {
@@ -39,10 +56,17 @@ export default function OnboardingModal() {
     }
   };
 
-  const handleFinish = async () => {
+    const handleFinish = async () => {
     if (!user) return;
-    
     try {
+      if (categories.length > 0) {
+        const companiesToInsert = categories.map(cat => ({
+          user_id: user.id,
+          name: cat,
+          color: '#4f46e5'
+        }));
+        await require('../lib/supabase').supabase.from('companies').insert(companiesToInsert);
+      }
       await updateSettings({
         categories,
         alerta_days: alerta,
