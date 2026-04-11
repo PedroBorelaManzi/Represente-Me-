@@ -15,8 +15,8 @@ export default function Landing() {
             <div className="hidden md:flex items-center gap-8">
               <a href="#funcionalidades" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Funcionalidades</a>
               <a href="#planos" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Planos</a>
-              <Link to="/login?signup=true" className="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">Login</Link>
-              <Link to="/login?signup=true" className="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">
+              <a href="#planos" className="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">Login</Link>
+              <a href="#planos" className="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">
                 Começar Agora
               </Link>
             </div>
@@ -43,7 +43,7 @@ export default function Landing() {
               Tenha acesso a um mapa inteligente para ter um controle mais eficiente de suas vendas, melhore a gestão de seus clientes, tenha seu próprio painel de integrações, conecte tudo em um só lugar e tenha uma base de prospecção implacável para o seu negócio.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/login?signup=true" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-0.5">
+              <a href="#planos" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-0.5">
                 Começar Gratuitamente <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
               <a href="#planos" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium rounded-full text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all hover:border-slate-300">
@@ -179,7 +179,7 @@ function PricingCard({ title, description, price, features, buttonText, popular 
           </li>
         ))}
       </ul>
-      <Link to="/login?signup=true" className={`block w-full py-3 px-4 rounded-xl text-center font-semibold transition-colors ${popular ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}>
+      <a href="#planos" className={`block w-full py-3 px-4 rounded-xl text-center font-semibold transition-colors ${popular ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'}`}>
         {buttonText}
       </Link>
     </div>

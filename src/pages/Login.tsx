@@ -1,21 +1,15 @@
-﻿import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Lock, User, LogIn, UserPlus, Heart, Boxes, ShieldCheck } from "lucide-react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Mail, Lock, LogIn, Boxes, ShieldCheck, Heart } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { toast } from "sonner";
 
 const Login = () => {
-  const [isLogin, setIsLogin] = useState(window.location.search.includes("signup=true") ? false : true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const queryParams = new URLSearchParams(window.location.search);
-  const isSignupParam = queryParams.get("signup") === "true";
-
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,34 +23,6 @@ const Login = () => {
       navigate("/dashboard");
     } catch (error: any) {
       toast.error(error.message || "Erro ao entrar");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirmPassword) {
-      return toast.error("As senhas não coincidem");
-    }
-    setLoading(true);
-    try {
-      const { error, data } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: name,
-          },
-        },
-      });
-      if (error) throw error;
-      if (data?.user) {
-        toast.success("Conta criada com sucesso! Faça login.");
-        setIsLogin(true);
-      }
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao criar conta");
     } finally {
       setLoading(false);
     }
@@ -108,41 +74,11 @@ const Login = () => {
           className="w-full max-w-md"
         >
           <div className="mb-8">
-            <h2 className="text-3xl font-extrabold text-slate-900 mb-2">
-              {isLogin ? "Bem-vindo de volta!" : "Crie sua conta!"}
-            </h2>
-            <p className="text-slate-500">
-              {isLogin ? "Acesse sua conta para continuar." : "Comece a organizar suas representações hoje."}
-            </p>
+            <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Bem-vindo de volta!</h2>
+            <p className="text-slate-500">Acesse sua conta para continuar.</p>
           </div>
 
-          <form onSubmit={isLogin ? handleLogin : handleSignup} className="space-y-4">
-            <AnimatePresence mode="popLayout">
-              {!isLogin && (
-                <motion.div
-                  key="name-field"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden mb-5"
-                >
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Nome Completo</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                    <input
-                      required={!isLogin}
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                      placeholder="Seu Nome"
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">E-mail</label>
               <div className="relative">
@@ -173,32 +109,6 @@ const Login = () => {
               </div>
             </div>
 
-            <AnimatePresence mode="popLayout">
-              {!isLogin && (
-                <motion.div
-                  key="confirm-password-field"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden mb-5"
-                >
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Confirmar Senha</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                    <input
-                      required={!isLogin}
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                      placeholder="••••••••"
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             <button
               disabled={loading}
               type="submit"
@@ -208,7 +118,7 @@ const Login = () => {
                 <div className="h-5 w-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  {isLogin ? "Entrar na Conta" : "Criar Minha Conta"}
+                  Entrar na Conta
                   <ShieldCheck className="h-4 w-4 group-hover:translate-x-0.5 transition-transform text-white/70" />
                 </>
               )}
@@ -216,14 +126,12 @@ const Login = () => {
           </form>
 
           <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center space-x-2">
-            <span className="text-sm text-slate-500">
-              {isLogin ? "Não tem uma conta?" : "Já tem uma conta?"}
-            </span>
+            <span className="text-sm text-slate-500">Não tem uma conta?</span>
             <button
-              onClick={() => isLogin ? (window.location.href = "/#planos") : setIsLogin(true)}
+              onClick={() => window.location.href = "/#planos"}
               className="text-sm font-bold text-indigo-600 hover:text-indigo-700"
             >
-              {isLogin ? "Conheça nossos planos" : "Faça Login"}
+              Conheça nossos planos
             </button>
           </div>
 
@@ -239,5 +147,3 @@ const Login = () => {
 };
 
 export default Login;
-
-
