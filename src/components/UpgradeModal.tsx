@@ -12,36 +12,36 @@ interface UpgradeModalProps {
 const features = {
   empresas: {
     title: 'Mais Representadas',
-    description: 'Você atingiu o limite de empresas do seu plano atual.',
-    benefit: 'Gerencie até 3 ou 10 empresas ao mesmo tempo.',
+    description: 'VocÃª atingiu o limite de empresas do seu plano atual.',
+    benefit: 'Gerencie atÃ© 3 ou 10 empresas ao mesmo tempo.',
     icon: Building2,
     plan: 'Profissional'
   },
   importacao: {
-    title: 'Importação Ilimitada',
-    description: 'O plano básico permite importar até 50 clientes.',
-    benefit: 'Importe listas inteiras via CSV ou Excel sem restrições.',
+    title: 'ImportaÃ§Ã£o Ilimitada',
+    description: 'O plano bÃ¡sico permite importar atÃ© 50 clientes.',
+    benefit: 'Importe listas inteiras via CSV ou Excel sem restriÃ§Ãµes.',
     icon: Upload,
     plan: 'Profissional'
   },
   lote: {
     title: 'Envio em Lote (IA)',
-    description: 'No plano básico você pode enviar 1 pedido por vez.',
-    benefit: 'Economize horas enviando até 10 pedidos em um único clique.',
+    description: 'No plano bÃ¡sico vocÃª pode enviar 1 pedido por vez.',
+    benefit: 'Economize horas enviando atÃ© 10 pedidos em um Ãºnico clique.',
     icon: ArrowRight,
     plan: 'Profissional'
   },
   relatorio: {
-    title: 'Relatório BI Master',
-    description: 'Entenda qual representada está performando melhor.',
-    benefit: 'Acesso a relatórios comparativos e tendências de crescimento.',
+    title: 'RelatÃ³rio BI Master',
+    description: 'Entenda qual representada estÃ¡ performando melhor.',
+    benefit: 'Acesso a relatÃ³rios comparativos e tendÃªncias de crescimento.',
     icon: BarChart3,
     plan: 'Master'
   }
 };
 
 export default function UpgradeModal({ isOpen, onClose, feature = 'empresas' }: UpgradeModalProps) {
-  const info = features[feature || 'empresas'];
+  const info = (features as any)[feature || 'empresas'];
   const Icon = info.icon;
 
   return (
