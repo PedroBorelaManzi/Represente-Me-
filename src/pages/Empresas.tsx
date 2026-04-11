@@ -55,14 +55,14 @@ export default function EmpresasPage() {
       setLoading(true);
       const { data, error } = await supabase
         .from("orders")
-        .select("*, clients(id, name)")
+        .select("*, client:clients(id, name)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
       setAllOrders((data || []).map(o => ({
         ...o,
-        clientName: o.clients?.name || "Cliente Desconhecido", clientId: o.clients?.id
+        clientName: o.client?.name || "Cliente Desconhecido", clientId: o.client?.id
       })));
     } catch (err) {
       console.error("Load Orders Error:", err);
