@@ -202,8 +202,8 @@ export default function PedidosPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-black flex items-center gap-3"><ShoppingBag className="w-10 h-10 text-indigo-600"/> PEDIDOS</h1>
         <div className="flex gap-3">
-          <button onClick={() => setIsBatchModalOpen(true)} className="px-6 py-3 bg-white dark:bg-zinc-900 border rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm">Lote IA</button>
-          <button onClick={() => setIsManualModalOpen(true)} className="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg">Novo Pedido</button>
+          <button onClick={() => setIsBatchModalOpen(true)} className="px-6 py-3 bg-white dark:bg-zinc-900 border rounded-2xl text-xs font-black tracking-widest shadow-sm">Lote IA</button>
+          <button onClick={() => setIsManualModalOpen(true)} className="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black tracking-widest shadow-lg">Novo Pedido</button>
         </div>
       </div>
 
@@ -314,6 +314,7 @@ export default function PedidosPage() {
     </div>
   );
 }
+
 
 
 

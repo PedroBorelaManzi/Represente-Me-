@@ -19,7 +19,7 @@ export default function CRMPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Tab State for Alerts
-  const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Critico' | 'Perda'>('Todos');
+  const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Crítico' | 'Perda'>('Todos');
   
   // Import Modal/State
   const [isImporting, setIsImporting] = useState(false);
@@ -68,7 +68,7 @@ export default function CRMPage() {
         for (const [cat, date] of Object.entries(lastDates)) {
           const days = Math.floor((today - (date as number)) / (1000 * 60 * 60 * 24));
           if (days >= (settings.perda_days || 365)) alerts.push({ company: cat, type: "Perda", days });
-          else if (days >= (settings.critico_days || 90)) alerts.push({ company: cat, type: "Critico", days });
+          else if (days >= (settings.critico_days || 90)) alerts.push({ company: cat, type: "Crítico", days });
           else if (days >= (settings.alerta_days || 45)) alerts.push({ company: cat, type: "Alerta", days });
         }
         return { ...client, alerts: alerts.sort((a, b) => b.days - a.days) };
@@ -215,7 +215,7 @@ export default function CRMPage() {
            <button 
              onClick={() => fileInputRef.current?.click()}
              disabled={isImporting}
-             className='px-6 py-2.5 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-2'
+             className='px-6 py-2.5 bg-indigo-600 text-white rounded-2xl text-xs font-black tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-2'
            >
              {isImporting ? <Loader2 className='w-4 h-4 animate-spin' /> : <FileUp className='w-4 h-4' />}
              {isImporting ? `Importando` : 'Importar Lista'}
@@ -228,11 +228,11 @@ export default function CRMPage() {
         
         {/* Tabs next to search matches filter */}
         <div className='px-4 pt-4 border-b dark:border-zinc-850 bg-slate-50/50 dark:bg-zinc-950/20 flex items-center gap-4'>
-          {(['Todos', 'Alerta', 'Critico', 'Perda'] as const).map(tab => (
+          {(['Todos', 'Alerta', 'Crítico', 'Perda'] as const).map(tab => (
             <button 
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 px-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
+              className={`pb-3 px-2 text-xs font-black tracking-widest border-b-2 transition-all ${activeTab === tab ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
             >
               {tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: any) => a.type === tab)).length})</span>
             </button>
@@ -292,4 +292,6 @@ export default function CRMPage() {
     </div>
   );
 }
+
+
 

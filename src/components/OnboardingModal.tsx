@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Plus, Trash2, Sun, Moon, Check, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSettings } from "../contexts/SettingsContext";
@@ -12,6 +12,18 @@ export default function OnboardingModal() {
   // Step 1: Categories
   const [categories, setCategories] = useState<string[]>([]);
   const [newCat, setNewCat] = useState("");
+
+  const handleNextStep1 = () => {
+    let currentCategories = [...categories];
+    if (newCat.trim() && !categories.includes(newCat.trim())) {
+      currentCategories.push(newCat.trim());
+      setCategories(currentCategories);
+      setNewCat("");
+    }
+    if (currentCategories.length > 0) {
+      setStep(2);
+    }
+  };
 
   const addCategory = () => {
     if (newCat.trim() && !categories.includes(newCat.trim())) {
@@ -105,8 +117,8 @@ export default function OnboardingModal() {
               </div>
 
               <button 
-                onClick={() => setStep(2)}
-                disabled={categories.length === 0}
+                onClick={handleNextStep1}
+                disabled={categories.length === 0 && !newCat.trim()}
                 className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm tracking-wide disabled:opacity-50 flex items-center justify-center gap-1 mt-4"
               >
                 Próximo Passo <ChevronRight className="w-4 h-4" />
@@ -210,4 +222,6 @@ export default function OnboardingModal() {
     </div>
   );
 }
+
+
 

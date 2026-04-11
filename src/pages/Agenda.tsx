@@ -232,7 +232,7 @@ export default function Agenda() {
             </div>
             <button 
               onClick={() => { setEditingEvent({ id: '', title: '', date: formatDateLocal(new Date()), time: '09:00 - 10:00' }); setIsModalOpen(true); }}
-              className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all shadow-lg shadow-indigo-100 dark:shadow-none uppercase tracking-wider"
+              className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all shadow-lg shadow-indigo-100 dark:shadow-none tracking-wider"
             >
               <Plus className="w-4 h-4" /> Novo
             </button>
@@ -377,4 +377,5 @@ export default function Agenda() {
     </div>
   );
 }
+
 

@@ -142,7 +142,7 @@ export default function Dashboard() {
   const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert("Erro: Client ID do Google não configurado.");
+      alert("Erro: Client ID do Google n�o configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -261,8 +261,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-tight">
-            <Home className="w-6 h-6 text-indigo-600" />
-            Incio
+            <Home className="w-6 h-6 text-indigo-600" />\n            In�cio
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Sua agenda semanal sincronizada e faturamento.</p>
         </div>
@@ -275,8 +274,7 @@ export default function Dashboard() {
         <div className="lg:col-span-3 bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden flex flex-col h-full min-h-[500px]">
           <div className="p-4 border-b border-slate-300 dark:border-zinc-700/50 flex flex-col sm:flex-row sm:items-center justify-between bg-slate-100 dark:bg-zinc-800/40 z-40 gap-4">
             <div className="flex items-center gap-4">
-              <h2 className="text-sm font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest leading-none">
-                {weekDays[0].toLocaleDateString('pt-BR', { month: 'long' })} {weekDays[0].getFullYear()}
+              <h2 className="text-sm font-black text-slate-800 dark:text-zinc-100 capitalize tracking-widest leading-none">`n                {weekDays[0].toLocaleDateString('pt-BR', { month: 'long' })} {weekDays[0].getFullYear()}
               </h2>
               <div className="flex items-center gap-2">
                 {googleConnected && (
@@ -309,7 +307,7 @@ export default function Dashboard() {
               </div>
               <button 
                 onClick={() => openNewEventModal(new Date())} 
-                className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all shadow-lg shadow-indigo-100 dark:shadow-none uppercase tracking-wider"
+                className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all shadow-lg shadow-indigo-100 dark:shadow-none tracking-wider"
               >
                 <Plus className="w-4 h-4" /> Novo
               </button>
@@ -406,3 +404,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+
