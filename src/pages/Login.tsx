@@ -7,13 +7,10 @@ import {
   Lock, 
   Loader2, 
   Sparkles, 
-  Star, 
-  Globe,
+  Layout,
   Zap,
-  Building2,
   MapPin,
-  TrendingUp,
-  Layout
+  Globe
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -23,8 +20,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,13 +28,8 @@ export default function Login() {
     setLoading(true);
 
     try {
-      if (isSignUp) {
-        await signUp(email, password);
-        toast.success('Conta criada com sucesso! Verifique seu e-mail.');
-      } else {
-        await signIn(email, password);
-        navigate('/dashboard');
-      }
+      await signIn(email, password);
+      navigate('/dashboard');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao processar sua solicitação');
     } finally {
@@ -118,10 +109,10 @@ export default function Login() {
         >
           <div className='mb-12'>
             <h2 className='text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2'>
-              {isSignUp ? 'Criar Nova Conta' : 'Acessar CRM'}
+              Acessar CRM
             </h2>
             <p className='text-sm font-bold text-slate-400 uppercase tracking-tight'>
-              {isSignUp ? 'Seja bem-vindo ao futuro das vendas.' : 'Digite suas credenciais para continuar.'}
+              Digite suas credenciais para continuar.
             </p>
           </div>
 
@@ -158,11 +149,9 @@ export default function Login() {
               </div>
             </div>
 
-            {!isSignUp && (
-              <div className='flex justify-end'>
-                <button type='button' className='text-[10px] font-black uppercase text-indigo-600 hover:text-indigo-700 transition-colors'>Recuperar Senha</button>
-              </div>
-            )}
+            <div className='flex justify-end'>
+              <button type='button' className='text-[10px] font-black uppercase text-indigo-600 hover:text-indigo-700 transition-colors'>Recuperar Senha</button>
+            </div>
 
             <button 
               type='submit' 
@@ -171,7 +160,7 @@ export default function Login() {
             >
               {loading ? <Loader2 className='w-4 h-4 animate-spin' /> : (
                 <>
-                  {isSignUp ? 'Criar Minha Conta' : 'Acessar Dashboard'}
+                  Entrar
                   <ArrowRight className='w-4 h-4 group-hover:translate-x-1 transition-transform' />
                 </>
               )}
@@ -180,11 +169,11 @@ export default function Login() {
 
           <div className='mt-10 text-center'>
             <button 
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => window.location.href = '/#planos'}
               className='text-[11px] font-bold text-slate-400 uppercase tracking-tight hover:text-slate-600 transition-colors'
             >
-              {isSignUp ? 'Ja possui conta? ' : 'Nao possui conta ainda? '}
-              <span className='text-indigo-600 font-black'>{isSignUp ? 'Entrar Agora' : 'Cadastre-se Gratuitamente'}</span>
+              Nao possui conta ainda? 
+              <span className='text-indigo-600 font-black ml-1'>Cadastre-se Já</span>
             </button>
           </div>
         </motion.div>
