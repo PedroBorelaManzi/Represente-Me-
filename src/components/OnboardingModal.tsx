@@ -28,6 +28,9 @@ export default function OnboardingModal() {
   // Step 3: Theme
   const [theme, setTheme] = useState<'light' | 'dark'>(settings.theme || 'light');
 
+  // Step 4: Revenue Ceiling
+  const [ceiling, setCeiling] = useState(1000000);
+
   const handleFinish = async () => {
     await updateSettings({
       categories,
@@ -35,6 +38,7 @@ export default function OnboardingModal() {
       critico_days: critico,
       perda_days: perda,
       theme,
+      revenue_ceiling: ceiling,
       has_completed_onboarding: true,
     });
   };
@@ -53,6 +57,7 @@ export default function OnboardingModal() {
           <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
           <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
           <div className={`h-1.5 flex-1 rounded-full ${step >= 3 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
+          <div className={`h-1.5 flex-1 rounded-full ${step >= 4 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
         </div>
 
         <AnimatePresence mode="wait">
@@ -65,8 +70,8 @@ export default function OnboardingModal() {
               className="space-y-4"
             >
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50">Vamos começar!</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Primeiro, me fale quais empresas você vende ou representa que já vou criar as categorias para você.</p>
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 uppercase tracking-tight">Configure suas empresas</h2>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Adicione as empresas que você trabalha hoje.</p>
               </div>
 
               <div className="flex gap-2">
@@ -100,7 +105,7 @@ export default function OnboardingModal() {
                   </motion.div>
                 ))}
                 {categories.length === 0 && (
-                  <p className="text-center text-xs text-slate-400 dark:text-zinc-500 py-4">Nenhuma categoria adicionada.</p>
+                  <p className="text-center text-xs text-slate-400 dark:text-zinc-500 py-4">Me dê o nome de todas as empresas que você trabalha hoje.</p>
                 )}
               </div>
 
@@ -123,7 +128,7 @@ export default function OnboardingModal() {
               className="space-y-4"
             >
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50">Alertas de Inatividade</h2>
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 uppercase tracking-tight">Alertas de Inatividade</h2>
                 <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Como você deseja acompanhar suas perdas, crítico e alertas de clientes sem compra?</p>
               </div>
 
@@ -177,7 +182,7 @@ export default function OnboardingModal() {
               className="space-y-4"
             >
               <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50">Estilo Visual</h2>
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 uppercase tracking-tight">Estilo Visual</h2>
                 <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Escolha o tema que prefere usar no dia a dia.</p>
               </div>
 
@@ -201,6 +206,55 @@ export default function OnboardingModal() {
 
               <div className="flex gap-3 mt-4">
                 <button onClick={() => setStep(2)} className="flex-1 py-3 bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300 rounded-xl font-bold text-sm">Voltar</button>
+                <button onClick={() => setStep(4)} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1">Próximo</button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 4 && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-4"
+            >
+              <div>
+                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 uppercase tracking-tight">Teto de Faturamento</h2>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Agora configure qual é o seu teto de faturamento hoje?</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="font-semibold text-slate-500">Valor do Teto Anual/Mensal</span>
+                    <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(ceiling)}
+                    </span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="100000" 
+                    max="10000000" 
+                    step="100000" 
+                    value={ceiling} 
+                    onChange={(e) => setCeiling(Number(e.target.value))} 
+                    className="w-full accent-indigo-600 h-2 bg-slate-100 dark:bg-zinc-800 rounded-full cursor-pointer" 
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400">
+                    <span>R$ 100k</span>
+                    <span>R$ 10M</span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl border border-indigo-100 dark:border-indigo-500/20">
+                  <p className="text-xs text-indigo-700 dark:text-indigo-300">
+                    Este valor será usado como limite máximo nos gráficos de faturamento por empresa. Você pode alterar isso depois nas configurações do gráfico.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-4">
+                <button onClick={() => setStep(3)} className="flex-1 py-3 bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300 rounded-xl font-bold text-sm">Voltar</button>
                 <button onClick={handleFinish} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Finalizar</button>
               </div>
             </motion.div>
@@ -210,4 +264,3 @@ export default function OnboardingModal() {
     </div>
   );
 }
-
