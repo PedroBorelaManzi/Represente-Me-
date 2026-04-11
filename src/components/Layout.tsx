@@ -88,13 +88,13 @@ export default function Layout() {
   }, [user, settings]);
 
   const navigation = [
-    { name: "Início", href: "/dashboard", icon: Home },
+    { name: "InÃ­cio", href: "/dashboard", icon: Home },
     { name: "Representadas", href: "/dashboard/empresas", icon: Building2 },
     { name: "Pedidos", href: "/dashboard/pedidos", icon: ShoppingCart },
     { name: "CRM Clientes", href: "/dashboard/clientes", icon: Users },
     { name: "Mapa de Cidades", href: "/dashboard/map", icon: MapPin },
     { name: "Agenda", href: "/dashboard/agenda", icon: Calendar },
-    { name: "Integrações", href: "/dashboard/links", icon: LinkIcon },
+    { name: "IntegraÃ§Ãµes", href: "/dashboard/links", icon: LinkIcon },
     { name: "Planos Premium", href: "/dashboard/planos", icon: Crown, premium: true },
   ];
 
@@ -129,7 +129,7 @@ export default function Layout() {
           <nav className="space-y-1">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
-              if (item.name === "Integrações") {
+              if (item.name === "IntegraÃ§Ãµes") {
                 return (
                   <div key={item.name} className="space-y-1">
                     <button 
@@ -192,7 +192,7 @@ export default function Layout() {
                    <div key={key} className={cn("rounded-2xl border overflow-hidden transition-all", key === 'perda' ? 'border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-950/20' : key === 'critico' ? 'border-orange-100 dark:border-orange-900/30 bg-orange-50/50 dark:bg-orange-950/20' : 'border-amber-100 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/20')}>
                       <button onClick={() => setExpandedSections(p => ({ ...p, [key]: !p[key] }))} className="w-full flex items-center justify-between p-3.5 text-[10px] font-black uppercase">
                          <span className={cn(key === 'perda' ? 'text-red-900 dark:text-red-400' : key === 'critico' ? 'text-orange-900 dark:text-orange-400' : 'text-amber-900 dark:text-amber-400')}>
-                            {key === 'perda' ? `Perda (${settings.perda_days}D+)` : key === 'critico' ? `Crítico (${settings.critico_days}D)` : `Alerta (${settings.alerta_days}D)`}
+                            {key === 'perda' ? `Perda (${settings.perda_days}D+)` : key === 'critico' ? `CrÃ­tico (${settings.critico_days}D)` : `Alerta (${settings.alerta_days}D)`}
                          </span>
                          <div className="flex items-center gap-2">
                             <span className={cn("text-[8px] px-2 py-0.5 rounded-lg", key === 'perda' ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300' : key === 'critico' ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300' : 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300')}>{stats[key].length}</span>
@@ -221,7 +221,7 @@ export default function Layout() {
 
         <div className="p-4 border-t border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
           <button onClick={() => setSettingsOpen(true)} className="w-full flex items-center px-3 py-3 text-sm font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-950 rounded-xl transition-all">
-            <Settings className="mr-3 h-5 w-5 text-slate-400" /> Configurações
+            <Settings className="mr-3 h-5 w-5 text-slate-400" /> ConfiguraÃ§Ãµes
           </button>
           <button onClick={signOut} className="w-full flex items-center px-3 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all">
             <LogOut className="mr-3 h-5 w-5 text-red-400" /> Sair
@@ -282,9 +282,9 @@ export default function Layout() {
                      setIsSaving(false);
                   }} className="space-y-4">
                     <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-slate-400 ml-2">Alerta (Dias)</label><input name="a" type="number" defaultValue={settings.alerta_days} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl font-bold" /></div>
-                    <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-slate-400 ml-2">Crítico (Dias)</label><input name="c" type="number" defaultValue={settings.critico_days} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl font-bold" /></div>
+                    <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-slate-400 ml-2">CrÃ­tico (Dias)</label><input name="c" type="number" defaultValue={settings.critico_days} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl font-bold" /></div>
                     <div className="space-y-1.5"><label className="text-[10px] font-black uppercase text-slate-400 ml-2">Perda (Dias)</label><input name="p" type="number" defaultValue={settings.perda_days} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl font-bold" /></div>
-                    <button type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-indigo-100 disabled:opacity-50">{isSaving ? 'Salvando...' : saveSuccess ? 'Salvo!' : 'Salvar Alterações'}</button>
+                    <button type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-indigo-100 disabled:opacity-50">{isSaving ? 'Salvando...' : saveSuccess ? 'Salvo!' : 'Salvar AlteraÃ§Ãµes'}</button>
                   </form>
                 </>
               )}
