@@ -1,225 +1,190 @@
-import React, { useState, useEffect } from "react";
-import { Building2, Plus, Trash2, FileText, ChevronRight, DollarSign, TrendingUp, Settings, X, Check, Loader2, Upload, Search, MapPin, AlertCircle, FileCheck, CheckCircle2, ShoppingBag } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "../lib/supabase";
-import { useAuth } from "../contexts/AuthContext";
-import { useSettings } from "../contexts/SettingsContext";
-import { Link } from "react-router-dom";
-import { processOrderFile } from "../lib/orderProcessor";
-import { getHighPrecisionCoordinates } from "../lib/geminiGeocoding";
-import { toast } from "sonner";
-import UpgradeModal from "../components/UpgradeModal";
+import React, { useState, useEffect } from 'react';
+import { Building2, Plus, Search, MapPin, Phone, Mail, Globe, ChevronRight, LayoutGrid, List, Filter, Loader2, ArrowUpRight, TrendingUp, Briefcase } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '../lib/utils';
+import { toast } from 'sonner';
 
-interface ProcessedFile {
-  file: File;
-  clientName: string;
-  cnpj: string;
-  category: string;
-  value: number;
-  address?: string;
-  status: 'idle' | 'processing' | 'ready' | 'saving' | 'done' | 'error';
-  isNewClient: boolean;
-  error?: string;
-  matchedClientId?: string;
-}
-
-export default function EmpresasPage() {
+export default function Empresas() {
   const { user } = useAuth();
-  const { settings, updateSettings, loading: settingsLoading } = useSettings();
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [allOrders, setAllOrders] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newCat, setNewCat] = useState("");
-  const [itemsLimit, setItemsLimit] = useState(15);
-  const [syncStatus, setSyncStatus] = useState<{current: number, total: number} | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newCompany, setNewCompany] = useState({ name: '', cnpj: '', city: '', color: '#4f46e5' });
+  const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<string>("");
-  const [editNameInput, setEditNameInput] = useState<string>("");
-  
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [uploadFiles, setUploadFiles] = useState<ProcessedFile[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
-  const [upgradeFeature, setUpgradeFeature] = useState<'empresas' | 'lote'>('empresas');
-
-  const plan = settings.subscription_plan || 'Acesso Exclusivo';
-
-  const loadOrders = async () => {
+  const loadCompanies = async () => {
     if (!user) return;
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.from("orders").select("*, clients(id, name)").eq("user_id", user.id).order("created_at", { ascending: false });
-      if (error) throw error;
-      setAllOrders((data || []).map(o => ({ ...o, clientName: o.clients?.name || "Cliente Desconhecido", clientId: o.clients?.id })));
-    } catch (err) { console.error(err); } finally { setLoading(false); }
+    setLoading(true);
+    const { data } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('name');
+    setCompanies(data || []);
+    setLoading(false);
   };
 
-  useEffect(() => { if (!settingsLoading && user) loadOrders(); }, [user, settingsLoading]);
+  useEffect(() => {
+    loadCompanies();
+  }, [user]);
 
-  const handleUploadClick = () => {
-    if (plan === 'Acesso Exclusivo') {
-       setUpgradeFeature('lote');
-       setIsUpgradeModalOpen(true);
-       return;
-    }
-    setIsUploadModalOpen(true);
-    setUploadFiles([]);
-  };
+  const handleAddCompany = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from('companies')
+      .insert([{ ...newCompany, user_id: user.id }]);
 
-  const addCategory = async () => {
-    if (!newCat.trim()) return;
-    
-    // Plan Limits
-    const currentCount = settings.categories?.length || 0;
-    if (plan === 'Acesso Exclusivo' && currentCount >= 1) {
-       setUpgradeFeature('empresas');
-       setIsUpgradeModalOpen(true);
-       return;
-    }
-    if (plan === 'Profissional' && currentCount >= 3) {
-       setUpgradeFeature('empresas');
-       setIsUpgradeModalOpen(true);
-       return;
-    }
-    if (plan === 'Master' && currentCount >= 10) {
-       toast.error("Limite máximo de 10 empresas atingido.");
-       return;
-    }
-
-    if (!settings.categories?.some(c => c.toLowerCase() === newCat.trim().toLowerCase())) {
-      const updated = [...(settings?.categories || []), newCat.trim()];
-      await updateSettings({ categories: updated });
-      setNewCat("");
+    if (error) {
+      toast.error('Erro ao adicionar representada');
     } else {
-        toast.error("Esta empresa já existe!");
+      toast.success('Representada adicionada!');
+      setIsModalOpen(false);
+      setNewCompany({ name: '', cnpj: '', city: '', color: '#4f46e5' });
+      loadCompanies();
     }
+    setSaving(false);
   };
-
-  const processFiles = async (files: FileList) => {
-    setIsProcessing(true);
-    const newFiles: ProcessedFile[] = Array.from(files).map(f => ({ file: f, clientName: "", cnpj: "", category: settings.categories?.[0] || "", value: 0, status: 'processing', isNewClient: false }));
-    setUploadFiles(prev => [...prev, ...newFiles]);
-
-    for (let i = 0; i < newFiles.length; i++) {
-        try {
-            const result = await processOrderFile(newFiles[i].file, [], settings.categories || []);
-            if (result.status === 'ready') {
-                const cleanCnpj = result.cnpj.replace(/\D/g, "");
-                const { data: matchedClient } = await supabase.from("clients").select("id, name").eq("cnpj", cleanCnpj).eq("user_id", user?.id).maybeSingle();
-                setUploadFiles(prev => {
-                    const u = [...prev]; const idx = u.length - newFiles.length + i;
-                    u[idx] = { ...u[idx], clientName: result.client, cnpj: result.cnpj, category: result.category, value: result.value, address: result.address, status: "ready", isNewClient: !matchedClient, matchedClientId: matchedClient?.id };
-                    return u;
-                });
-            }
-        } catch (err) {}
-    }
-    setIsProcessing(false);
-  };
-
-  const confirmSingleUpload = async (index: number) => {
-      const item = uploadFiles[index];
-      setUploadFiles(prev => prev.map((f, i) => i === index ? { ...f, status: 'saving' } : f));
-      try {
-          let clientId = item.matchedClientId;
-          if (!clientId) {
-              const coords = await getHighPrecisionCoordinates(`${item.address}`, item.clientName, item.cnpj);
-              const { data: n } = await supabase.from("clients").insert([{ user_id: user?.id, name: item.clientName, cnpj: item.cnpj?.replace(/\D/g, ""), address: item.address, latitude: coords?.lat || -23.5505, longitude: coords?.lng || -46.6333, status: 'Ativo' }]).select().single();
-              clientId = n?.id;
-          }
-          const cleanName = item.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
-          const formattedName = `${item.category}___VALOR_${item.value}___${cleanName}`;
-          const path = `${user?.id}/${formattedName}`;
-          await supabase.storage.from("client_vault").upload(path, item.file, { upsert: true });
-          await supabase.from("orders").upsert([{ user_id: user?.id, client_id: clientId, category: item.category, value: item.value, file_name: formattedName, file_path: path }], { onConflict: "client_id,file_path" });
-          setUploadFiles(prev => prev.map((f, i) => i === index ? { ...f, status: 'done' } : f));
-          loadOrders();
-      } catch (err) { setUploadFiles(prev => prev.map((f, i) => i === index ? { ...f, status: 'error' } : f)); }
-  };
-
-  const catTotals = (settings?.categories || []).reduce((acc: any, cat: string) => {
-      acc[cat] = allOrders.filter(o => o.category.toLowerCase() === cat.toLowerCase()).reduce((s, o) => s + o.value, 0);
-      return acc;
-  }, {});
-
-  const totalGeral = Object.values(catTotals).reduce((sum: number, val: any) => sum + Number(val), 0) as number;
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Building2 className="w-7 h-7 text-indigo-600" /> Empresas</h1>
-          <p className="text-xs text-slate-500">Gestão de representadas e faturamento inteligente.</p>
+          <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold mb-1">
+            <Building2 className="w-6 h-6" /> GestÃ£o
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Representadas</h1>
         </div>
-        <button onClick={handleUploadClick} className="px-6 py-2.5 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg flex items-center gap-2 transition-all active:scale-95"><Upload className="w-5 h-5" /> Enviar Arquivos</button>
-      </div>
-
-      <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border shadow-sm flex items-center gap-6">
-         <div className="p-5 bg-indigo-50 rounded-2xl"><TrendingUp className="w-8 h-8 text-indigo-600" /></div>
-         <div><p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Faturamento geral</p><h2 className="text-4xl font-black text-slate-900 dark:text-zinc-100">{new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(totalGeral)}</h2></div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="md:col-span-1 space-y-4">
-           <div className="bg-white dark:bg-zinc-900 rounded-3xl border p-6 shadow-sm space-y-4">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Empresas</h3>
-              <div className="space-y-2 max-h-80 overflow-y-auto">
-                 <div onClick={() => setSelectedCategory("all")} className={`p-4 rounded-2xl border cursor-pointer font-bold text-sm ${selectedCategory === "all" ? "bg-indigo-50 border-indigo-600" : "bg-slate-50 border-transparent"}`}>Categorias (Todas)</div>
-                 {(settings.categories || []).map(cat => (
-                    <div key={cat} onClick={() => setSelectedCategory(cat)} className={`p-4 rounded-2xl border cursor-pointer flex justify-between items-center ${selectedCategory === cat ? "bg-indigo-50 border-indigo-600" : "bg-slate-50 border-transparent"}`}>
-                       <span className="font-bold text-sm truncate max-w-[120px]">{cat}</span>
-                       <span className="font-black text-xs text-indigo-600 truncate">{new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(catTotals[cat]||0)}</span>
-                    </div>
-                 ))}
-              </div>
-              <div className="pt-4 border-t flex gap-2">
-                 <input type="text" value={newCat} onChange={e=>setNewCat(e.target.value)} placeholder="NOVA REPRESENTADA" className="flex-1 px-4 py-2 border rounded-xl text-[10px] font-black" />
-                 <button onClick={addCategory} className="p-2 bg-indigo-600 text-white rounded-xl"><Plus className="w-5 h-5"/></button>
-              </div>
-           </div>
-        </div>
-        <div className="md:col-span-2">
-           <div className="bg-white dark:bg-zinc-900 rounded-3xl border p-6 shadow-sm h-full flex flex-col min-h-[400px]">
-              <h3 className="text-sm font-black mb-6 uppercase tracking-widest">{selectedCategory === "all" ? "Histórico Geral" : selectedCategory}</h3>
-              <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-                 {allOrders.filter(o => selectedCategory === "all" || o.category === selectedCategory).slice(0, 20).map(o => (
-                    <div key={o.id} className="p-4 bg-slate-50 dark:bg-zinc-950 rounded-2xl flex justify-between items-center group">
-                       <div className="truncate"><p className="font-bold text-xs truncate max-w-[400px]">{o.file_name}</p><Link to={`/dashboard/clientes/${o.client_id}`} className="text-[10px] font-black text-indigo-600 uppercase">{o.clientName}</Link></div>
-                       <div className="text-right font-black text-xs">{new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(o.value)}</div>
-                    </div>
-                 ))}
-              </div>
-           </div>
+        <div className="flex items-center gap-3">
+          <div className="flex bg-white dark:bg-zinc-900 p-1 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+             <button onClick={() => setViewMode('grid')} className={cn("p-2 rounded-lg transition-all", viewMode === 'grid' ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600" : "text-slate-400")}><LayoutGrid className="w-4 h-4" /></button>
+             <button onClick={() => setViewMode('list')} className={cn("p-2 rounded-lg transition-all", viewMode === 'list' ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600" : "text-slate-400")}><List className="w-4 h-4" /></button>
+          </div>
+          <button onClick={() => setIsModalOpen(true)} className="px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black tracking-widest shadow-lg hover:bg-indigo-700 transition-all flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Nova Representada
+          </button>
         </div>
       </div>
 
-      {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xl">
-           <div className="bg-white dark:bg-zinc-900 rounded-[48px] w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col border p-12 shadow-2xl">
-              <div className="flex justify-between items-center mb-10"><h3 className="text-3xl font-black uppercase">ENVIO IA</h3><X onClick={()=>setIsUploadModalOpen(false)} className="cursor-pointer"/></div>
-              <div className="flex-1 overflow-y-auto pr-4">
-                 {uploadFiles.length === 0 ? (
-                    <div className="h-64 border-4 border-dashed rounded-[40px] flex items-center justify-center relative bg-slate-50"><input type="file" multiple onChange={e=>e.target.files && processFiles(e.target.files)} className="absolute inset-0 opacity-0 cursor-pointer"/><p className="font-black text-slate-400 uppercase tracking-widest text-center">SOLTE OS ARQUIVOS AQUI OU CLIQUE</p></div>
-                 ) : (
-                    <div className="space-y-4">
-                       {uploadFiles.map((item, idx) => (
-                          <div key={idx} className="p-6 rounded-3xl border bg-white flex items-center justify-between gap-4">
-                             <div className="flex-1 truncate"><p className="text-[10px] font-black text-slate-400 uppercase">{item.file.name}</p>
-                             {item.status === 'ready' && <div className="flex items-center gap-4 mt-1"><span className="text-xs font-black uppercase text-indigo-600">{item.clientName}</span><span className="text-xs font-black text-emerald-600">{new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(item.value)}</span></div>}
-                             {item.status === 'processing' && <span className="text-[10px] font-black text-indigo-600 animate-pulse uppercase italic">Analistando via inteligência artificial...</span>}</div>
-                             {item.status === 'ready' && <button onClick={()=>confirmSingleUpload(idx)} className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase">CONFIRMAR</button>}
-                             {item.status === 'done' && <CheckCircle2 className="w-5 h-5 text-emerald-500"/>}
-                          </div>
-                       ))}
-                    </div>
-                 )}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        </div>
+      ) : (
+        <div className={cn(
+           "grid gap-6",
+           viewMode === 'grid' ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
+        )}>
+          {companies.map((company) => (
+            <motion.div
+              layout
+              key={company.id}
+              className={cn(
+                 "bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[32px] p-6 shadow-sm hover:shadow-xl transition-all group overflow-hidden relative",
+                 viewMode === 'list' && "flex items-center gap-6"
+              )}
+            >
+              <div 
+                className="absolute top-0 left-0 w-full h-1.5" 
+                style={{ backgroundColor: company.color }} 
+              />
+              
+              <div className={cn(
+                 "w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black uppercase text-white shadow-lg shrink-0",
+                 viewMode === 'list' ? "w-12 h-12" : "mb-6"
+              )} style={{ backgroundColor: company.color }}>
+                {company.name.substring(0, 1)}
               </div>
-           </div>
+
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight truncate mb-1">
+                   {company.name}
+                </h3>
+                <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                   <div className="flex items-center gap-1.5"><Briefcase className="w-3 h-3" /> {company.cnpj}</div>
+                   {company.city && <div className="flex items-center gap-1.5"><MapPin className="w-3 h-3" /> {company.city}</div>}
+                </div>
+              </div>
+
+              {viewMode === 'grid' && (
+                 <div className="mt-8 pt-6 border-t border-slate-50 dark:border-zinc-800 flex items-center justify-between">
+                    <div className="flex flex-col">
+                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Status</span>
+                       <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-lg">Ativa</span>
+                    </div>
+                    <button className="p-3 bg-slate-50 dark:bg-zinc-850 rounded-2xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all group/btn">
+                       <ArrowUpRight className="w-5 h-5 group-hover/btn:rotate-45 transition-transform" />
+                    </button>
+                 </div>
+              )}
+              
+              {viewMode === 'list' && (
+                 <button className="p-3 bg-slate-50 dark:bg-zinc-850 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all">
+                    <ChevronRight className="w-5 h-5" />
+                 </button>
+              )}
+            </motion.div>
+          ))}
+          
+          {companies.length === 0 && (
+            <div className="col-span-full text-center py-20 bg-slate-50 dark:bg-zinc-950/30 rounded-[32px] border-2 border-dashed border-slate-200 dark:border-zinc-800">
+              <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Nenhuma representada cadastrada.</p>
+            </div>
+          )}
         </div>
       )}
-      <UpgradeModal isOpen={isUpgradeModalOpen} onClose={() => setIsUpgradeModalOpen(false)} feature={upgradeFeature} />
+
+      {/* Modal Nova Representada */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-md p-8 shadow-2xl relative border border-slate-100 dark:border-zinc-800"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Nova Representada</h2>
+                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors"><X className="w-5 h-5 text-slate-400" /></button>
+              </div>
+
+              <form onSubmit={handleAddCompany} className="space-y-4">
+                <div className="space-y-1.5">
+                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Nome da Empresa</label>
+                   <input required value={newCompany.name} onChange={e => setNewCompany({...newCompany, name: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-600 transition-all text-sm" placeholder="Ex: Nome da FÃ¡brica" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">CNPJ</label>
+                      <input value={newCompany.cnpj} onChange={e => setNewCompany({...newCompany, cnpj: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-600 transition-all text-sm" placeholder="00.000.000/0000-00" />
+                   </div>
+                   <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Cidade Base</label>
+                      <input value={newCompany.city} onChange={e => setNewCompany({...newCompany, city: e.target.value})} className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-indigo-600 transition-all text-sm" placeholder="Cidade - UF" />
+                   </div>
+                </div>
+                <div className="space-y-1.5">
+                   <label className="text-[10px] font-black uppercase text-slate-400 ml-2">Cor de IdentificaÃ§Ã£o</label>
+                   <div className="flex gap-2 p-2 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl">
+                      {['#4f46e5', '#7c3aed', '#db2777', '#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#0891b2'].map(c => (
+                         <button key={c} type="button" onClick={() => setNewCompany({...newCompany, color: c})} className={cn("w-8 h-8 rounded-lg transition-transform", newCompany.color === c ? "scale-110 shadow-lg ring-2 ring-white" : "opacity-60 hover:opacity-100")} style={{ backgroundColor: c }} />
+                      ))}
+                   </div>
+                </div>
+                <button type="submit" disabled={saving} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-all disabled:opacity-50 mt-4">
+                   {saving ? 'Criando...' : 'Cadastrar Representada'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
