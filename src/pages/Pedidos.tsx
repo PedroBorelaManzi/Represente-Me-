@@ -4,7 +4,7 @@ import {
   Loader2, ChevronRight, Building2, Calendar,
   TrendingDown, TrendingUp, DollarSign, Package,
   MoreVertical, Trash2, Eye, Download, Sparkles,
-  ArrowRight, CheckCircle2, AlertCircle, X, ShieldCheck
+  ArrowRight, CheckCircle2, AlertCircle, X, ShieldCheck, Clock
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';

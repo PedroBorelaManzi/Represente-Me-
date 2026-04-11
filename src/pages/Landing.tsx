@@ -25,7 +25,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-24 items-center">
             <img src={logo} alt="Represente-Me!" className="h-28 w-auto object-contain" />
-            <div className="hidden md:flex items-center gap-8">
+            <div className="flex items-center gap-4 md:gap-8 justify-end">
               <a href="#funcionalidades" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Funcionalidades</a>
               <a href="#planos" className="text-sm font-medium text-slate-300 hover:text-indigo-400 transition-colors">Planos</a>
               <Link to="/login" className="text-sm font-medium bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">

@@ -89,7 +89,7 @@ export default function Layout() {
 
   const navigation = [
     { name: "Início", href: "/dashboard", icon: Home },
-    { name: "Representadas", href: "/dashboard/empresas", icon: Building2 },
+    { name: "Empresas", href: "/dashboard/empresas", icon: Building2 },
     { name: "Pedidos", href: "/dashboard/pedidos", icon: ShoppingCart },
     { name: "CRM Clientes", href: "/dashboard/clientes", icon: Users },
     { name: "Mapa de Cidades", href: "/dashboard/map", icon: MapPin },
