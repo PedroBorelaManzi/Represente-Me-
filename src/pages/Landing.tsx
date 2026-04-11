@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import logo from "../assets/logo.png";
 import { Link } from "react-router-dom";
 import { MapPin, Link as LinkIcon, Users, Clock, ArrowRight, CheckCircle2 } from "lucide-react";
@@ -43,11 +43,11 @@ export default function Landing() {
               Tenha acesso a um mapa inteligente para ter um controle mais eficiente de suas vendas, melhore a gestão de seus clientes, tenha seu próprio painel de integrações, conecte tudo em um só lugar e tenha uma base de prospecção implacável para o seu negócio.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/login" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-0.5">
-                Começar Gratuitamente <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-              <a href="#planos" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium rounded-full text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all hover:border-slate-300">
-                Conheça nossos planos
+              <a href="#funcionalidades" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium rounded-full text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all hover:border-slate-300">
+                Funcionalidades
+              </a>
+              <a href="#planos" className="inline-flex items-center justify-center px-8 py-4 text-base font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-0.5">
+                Conheça nossos planos <ArrowRight className="ml-2 w-5 h-5" />
               </a>
             </div>
           </motion.div>
@@ -186,5 +186,3 @@ function PricingCard({ title, description, price, features, buttonText, popular 
     </div>
   );
 }
-
-

@@ -3,7 +3,7 @@ import {
   Users, Building2, ShoppingCart, TrendingUp, AlertCircle, 
   Map as MapIcon, Calendar, ArrowUpRight, ArrowDownRight, 
   Search, Filter, Plus, Home, ChevronRight, CheckCircle2,
-  Clock, CalendarDays, ExternalLink, RefreshCw
+  Clock, CalendarDays, ExternalLink, RefreshCw, Crown, BarChart3, Star
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -43,7 +43,7 @@ export default function Dashboard() {
           supabase.from("companies").select("id", { count: "exact" }).eq("user_id", user.id),
         ]);
 
-        const totalRevenue = ordersRes.data?.reduce((acc, order) => acc + (order.total_amount || 0), 0) || 0;
+        const totalRevenue = ordersRes.data?.reduce((acc: any, order: any) => acc + (order.total_amount || 0), 0) || 0;
 
         setStats({
           totalClients: clientsRes.count || 0,
