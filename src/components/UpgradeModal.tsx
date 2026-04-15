@@ -95,7 +95,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = 'empresas' }: 
                   <Link
                     to="/dashboard/planos"
                     onClick={onClose}
-                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-sm shadow-lg shadow-indigo-200"
+                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-sm "
                   >
                     Ver Planos e Desbloquear
                   </Link>

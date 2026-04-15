@@ -83,6 +83,7 @@ export default function CRMPage() {
   };
 
   useEffect(() => {
+    logAudit('ACCESS_CLIENT_LIST');
     if (user) {
       loadClients();
     }

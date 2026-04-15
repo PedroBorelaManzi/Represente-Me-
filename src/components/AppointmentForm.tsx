@@ -1,5 +1,5 @@
-﻿import React, { useState, useRef, useEffect } from "react";
-import { X, Clock } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { X, Clock, Plus, Trash2, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
 
@@ -50,7 +50,6 @@ function ScrollableTimePicker({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Automatic scroll when opening
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => {
@@ -68,31 +67,30 @@ function ScrollableTimePicker({
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <label className="block text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2 px-1">
+      <label className="block text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2 px-1">
         {label}
       </label>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/10 transition-all font-bold group"
+        className={cn(
+          "w-full flex items-center justify-between px-5 py-4 border rounded-[20px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 transition-all font-black text-sm group",
+          isOpen ? "border-indigo-600 ring-4 ring-indigo-500/10" : "border-slate-100 dark:border-zinc-800 hover:border-indigo-600"
+        )}
       >
-        <span className="text-sm">{value}</span>
-        <Clock className={cn("w-4 h-4 transition-colors", isOpen ? "text-indigo-500" : "text-slate-400 group-hover:text-indigo-500")} />
+        <span>{value}</span>
+        <Clock className={cn("w-4 h-4 transition-colors", isOpen ? "text-indigo-600" : "text-slate-400 group-hover:text-indigo-600")} />
       </button>
 
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: -10 }}
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -10 }}
-            className="absolute z-[100] mt-2 p-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-2xl flex gap-1 min-w-[180px] left-0 right-0 sm:left-auto sm:right-0 overflow-hidden"
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            className="absolute z-[100] mt-3 p-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] shadow-2xl flex gap-1 min-w-[200px] left-0 sm:left-auto sm:right-0 overflow-hidden ring-1 ring-black/5"
           >
-            {/* Hours Column */}
-            <div 
-              ref={hourRef}
-              className="flex-1 flex flex-col h-56 overflow-y-auto custom-scrollbar-visible snap-y snap-mandatory py-20"
-            >
+            <div ref={hourRef} className="flex-1 flex flex-col h-56 overflow-y-auto custom-scrollbar-visible snap-y snap-mandatory py-20">
               {hours.map((h) => (
                 <button
                   key={h}
@@ -100,24 +98,18 @@ function ScrollableTimePicker({
                   type="button"
                   onClick={() => handleSelect(h, minute)}
                   className={cn(
-                    "flex-shrink-0 h-10 flex items-center justify-center text-sm font-black transition-all snap-center mx-1 rounded-xl",
+                    "flex-shrink-0 h-10 flex items-center justify-center text-[11px] font-black transition-all snap-center mx-1 rounded-xl uppercase tracking-widest",
                     h === hour 
-                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none scale-105" 
+                      ? "bg-indigo-600 text-white  dark:shadow-none scale-105" 
                       : "text-slate-400 dark:text-zinc-500 hover:bg-slate-50 dark:hover:bg-zinc-800"
                   )}
                 >
-                  {h}
+                  {h}h
                 </button>
               ))}
             </div>
-
-            <div className="w-[1px] bg-slate-100 dark:bg-zinc-800 self-stretch my-4" />
-
-            {/* Minutes Column */}
-            <div 
-              ref={minRef}
-              className="flex-1 flex flex-col h-56 overflow-y-auto custom-scrollbar-visible snap-y snap-mandatory py-20"
-            >
+            <div className="w-[1px] bg-slate-100 dark:bg-zinc-800 self-stretch my-6" />
+            <div ref={minRef} className="flex-1 flex flex-col h-56 overflow-y-auto custom-scrollbar-visible snap-y snap-mandatory py-20">
               {minutes.map((m) => (
                 <button
                   key={m}
@@ -125,19 +117,16 @@ function ScrollableTimePicker({
                   type="button"
                   onClick={() => handleSelect(hour, m)}
                   className={cn(
-                    "flex-shrink-0 h-10 flex items-center justify-center text-sm font-black transition-all snap-center mx-1 rounded-xl",
+                    "flex-shrink-0 h-10 flex items-center justify-center text-[11px] font-black transition-all snap-center mx-1 rounded-xl uppercase tracking-widest",
                     m === minute 
-                      ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none scale-105" 
+                      ? "bg-indigo-600 text-white  dark:shadow-none scale-105" 
                       : "text-slate-400 dark:text-zinc-500 hover:bg-slate-50 dark:hover:bg-zinc-800"
                   )}
                 >
-                  {m}
+                  {m}m
                 </button>
               ))}
             </div>
-            
-            {/* Center selection indicator */}
-            <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 h-10 border-y border-indigo-500/20 bg-indigo-50/10 dark:bg-indigo-500/5 pointer-events-none" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -176,109 +165,119 @@ export default function AppointmentForm({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-8 w-full max-w-md mb-4 sm:mb-0 max-h-[90vh] overflow-y-auto custom-scrollbar">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">
-            {appointment.id ? "Editar Compromisso" : "Novo Compromisso"}
-          </h3>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-300">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-zinc-800 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.3)] w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]"
+      >
+        <div className="p-8 pb-4 flex justify-between items-center">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+               <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
+               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Escala de Tempo</span>
+            </div>
+            <h3 className="text-3xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-none">
+              {appointment.id ? "Editar Registro" : "Novo Agendamento"}
+            </h3>
+          </div>
           <button 
             type="button" 
             onClick={onClose} 
-            className="p-2 bg-slate-100 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-slate-900 transition-all shadow-sm"
+            className="p-4 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-slate-900 transition-all active:scale-90"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
         
-        <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="p-8 pt-4 space-y-8 overflow-y-auto custom-scrollbar">
           <div>
-            <label className="block text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2 px-1">
-              Título do Evento
-            </label>
+            <div className="hidden">
+              O que faremos?
+            </div>
             <input 
               type="text" 
               value={formData.title} 
+              autoFocus
               onChange={e => setFormData({...formData, title: e.target.value})} 
-              className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 font-bold transition-all" 
-              placeholder="Ex: Visita ao Cliente"
+              className="w-full px-5 py-4 border border-slate-100 dark:border-zinc-800 rounded-[24px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 focus:ring-4 focus:ring-indigo-600/10 focus:border-indigo-600 font-black text-lg transition-all outline-none" 
+              placeholder="Descreva o compromisso..."
               required 
             />
           </div>
 
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2 px-1">
-              Cliente Vinculado
-            </label>
-            <div className="relative group">
-              <select 
-                value={formData.client_id} 
-                onChange={e => setFormData({...formData, client_id: e.target.value})} 
-                className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 font-bold text-sm transition-all appearance-none outline-none"
-              >
-                <option value="">Nenhum cliente</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <Plus className="w-4 h-4 rotate-45" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-3 px-1">
+                Selecionar cliente
+              </label>
+              <div className="relative group">
+                <select 
+                  value={formData.client_id} 
+                  onChange={e => setFormData({...formData, client_id: e.target.value})} 
+                  className="w-full px-5 py-4 border border-slate-100 dark:border-zinc-800 rounded-[24px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 focus:ring-4 focus:ring-indigo-600/10 focus:border-indigo-600 font-black text-sm transition-all appearance-none outline-none cursor-pointer"
+                >
+                  <option value="">Nenhum cliente</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-indigo-600 transition-colors">
+                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-3 px-1">
+                Quando?
+              </label>
+              <input 
+                type="date" 
+                value={formData.date} 
+                onChange={e => setFormData({...formData, date: e.target.value})} 
+                className="w-full px-5 py-4 border border-slate-100 dark:border-zinc-800 rounded-[24px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 text-sm font-black transition-all focus:ring-4 focus:ring-indigo-600/10 focus:border-indigo-600 outline-none" 
+              />
             </div>
           </div>
 
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2 px-1">
-              Data do Compromisso
-            </label>
-            <input 
-              type="date" 
-              value={formData.date} 
-              onChange={e => setFormData({...formData, date: e.target.value})} 
-              className="w-full px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-950 dark:text-zinc-100 text-sm font-bold transition-all focus:ring-2 focus:ring-indigo-500 outline-none" 
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-8">
             <ScrollableTimePicker 
-              label="Início"
+              label="Check-in"
               value={formData.startTime}
               onChange={(val) => setFormData({...formData, startTime: val})}
             />
             <ScrollableTimePicker 
-              label="Término"
+              label="Check-out"
               value={formData.endTime}
               onChange={(val) => setFormData({...formData, endTime: val})}
             />
           </div>
 
-          <div className="pt-6 flex gap-3">
+          <div className="pt-4 flex flex-col sm:flex-row gap-4">
             {appointment.id && onDelete && (
               <button 
                 type="button" 
                 onClick={onDelete} 
                 disabled={isSaving}
-                className="flex-1 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 font-black py-4 rounded-2xl transition-all disabled:opacity-50 hover:bg-red-100 active:scale-95"
+                className="flex-1 px-8 py-5 rounded-[24px] bg-red-50 dark:bg-red-500/5 text-red-600 dark:text-red-400 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-600 hover:text-white transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 group"
               >
-                Excluir
+                <Trash2 className="w-4 h-4" /> Excluir
               </button>
             )}
             <button 
               type="submit" 
               disabled={isSaving}
-              className="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-indigo-100 dark:shadow-none transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center"
+              className="flex-[2] px-8 py-5 rounded-[24px] bg-slate-900 dark:bg-indigo-600 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 group"
             >
               {isSaving ? (
-                <>
-                  <Clock className="w-4 h-4 mr-2 animate-spin" />
-                  Salvando...
-                </>
-              ) : "Salvar Compromisso"}
+                <Clock className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {isSaving ? "Salvando..." : "Confirmar Alterações"}
             </button>
           </div>
-        </div>
-      </form>
+        </form>
+      </motion.div>
     </div>
   );
 }
-
-import { Plus } from "lucide-react";
-

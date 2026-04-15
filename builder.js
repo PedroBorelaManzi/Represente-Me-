@@ -1,1 +1,0 @@
-﻿const fs = require('fs'); const content = Buffer.from('Y29uc3QgZnMgPSByZXF1aXJlKCdmcycpOwpmcy53cml0ZUZpbGVTeW5jKCdzcmMvcGFnZXMvUGVkaWRvcy50c3gnLCAnJyk7', 'base64').toString(); fs.writeFileSync('builder.js', content);

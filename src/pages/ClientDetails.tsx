@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock } from "lucide-react";
+import { ArrowLeft, Phone, Mail, MapPin, Building2, Calendar, FileText, Upload, Trash2, Download, HardDrive, Plus, X, Loader2, Clock, Shield, Lock, Eye, EyeOff, Copy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -21,6 +21,9 @@ export default function ClientDetailsPage() {
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [clientAppointments, setClientAppointments] = useState<any[]>([]);
+  const [bankDetails, setBankDetails] = useState<any>(null);
+  const [showBankDetails, setShowBankDetails] = useState(false);
+  const [isSavingBank, setIsSavingBank] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Upload Modal State
@@ -52,6 +55,7 @@ export default function ClientDetailsPage() {
       navigate("/dashboard/clientes");
     } else {
       setClient(data);
+      import('../lib/supabase').then(({ logAudit }) => logAudit('ACCESS_CLIENT_DETAILS', { client_id: id, client_name: data.name }));
       setNotes(data.notes || "");
     }
     setLoading(false);
@@ -68,6 +72,12 @@ export default function ClientDetailsPage() {
     if (!error && data) {
       setFiles(data);
     }
+  };
+
+  const loadBankDetails = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("client_bank_details").select("*").eq("client_id", id).single();
+    setBankDetails(data);
   };
 
   const loadAppointments = async () => {

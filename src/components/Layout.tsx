@@ -1,6 +1,6 @@
 ﻿import { Outlet, Link, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
-import { MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar, ShoppingCart, Check } from "lucide-react";
+import { MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar, ShoppingCart, Check, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -13,6 +13,7 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const location = useLocation();
+  const isUserAdmin = user?.email === "pedroborelamanzi@gmail.com";
   const { signOut, user } = useAuth();
   const { settings, updateSettings } = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -96,6 +97,7 @@ export default function Layout() {
     { name: "Clientes", href: "/dashboard/clientes", icon: Users },
     { name: "Pedidos e Empresas", href: "/dashboard/empresas", icon: Building2 },
     { name: "Agenda", href: "/dashboard/agenda", icon: Calendar },
+    ...(isUserAdmin ? [{ name: "Auditoria", href: "/dashboard/auditoria", icon: Shield }] : []),
   ];
 
   const isIntegrationView = location.pathname.includes('/links') && location.search.includes('id=');

@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
+import { refreshGoogleToken } from './googleTokenExchange';
 
-const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_CALENDAR_API_URL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 
 async function getValidToken(userId: string) {
@@ -15,28 +15,15 @@ async function getValidToken(userId: string) {
   return { accessToken: tokenData.access_token, refreshToken: tokenData.refresh_token, tokenData };
 }
 
-async function refreshAccessToken(userId: string, refreshToken: string) {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
-
-  const response = await fetch(GOOGLE_TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-  });
-
-  const data = await response.json();
-  if (data.access_token) {
+async function refreshAccessToken(userId: string, refreshTokenStr: string) {
+  // Secure: refresh happens via Edge Function, client_secret never exposed
+  const newAccessToken = await refreshGoogleToken(refreshTokenStr);
+  if (newAccessToken) {
     await supabase.from('user_google_tokens').update({ 
-      access_token: data.access_token,
+      access_token: newAccessToken,
       updated_at: new Date().toISOString() 
     }).eq('user_id', userId);
-    return data.access_token;
+    return newAccessToken;
   }
   return null;
 }

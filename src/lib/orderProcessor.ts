@@ -1,6 +1,6 @@
-﻿import * as XLSX from "xlsx";
+import * as XLSX from "xlsx";
 import * as pdfjs from "pdfjs-dist";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { geminiWithSystem } from "./geminiProxy";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "https://unpkg.com/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
 
@@ -15,8 +15,6 @@ export interface OrderExtractionResult {
   method?: "local" | "ai";
 }
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 const SYSTEM_INSTRUCTION = `Você é um especialista em OCR de documentos fiscais brasileiros.
 Sua tarefa é extrair quatro informações fundamentais em formato JSON:
@@ -69,7 +67,7 @@ function extractValueLocally(text: string): number {
 }
 
 export async function processOrderFile(file: File, knownClients = [], categories = []) {
-  if (!apiKey || !genAI) throw new Error("Chave Gemini não configurada.");
+  // Gemini is called via secure server proxy
   
   try {
     const detected = await detectFileType(file);
@@ -89,13 +87,9 @@ export async function processOrderFile(file: File, knownClients = [], categories
       extractedText = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
     }
 
+
     const localCnpj = extractCNPJLocally(extractedText);
     const localValue = extractValueLocally(extractedText);
-
-    const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.0-flash-exp",
-        systemInstruction: SYSTEM_INSTRUCTION
-    }, { apiVersion: "v1beta" });
 
     const userPrompt = `Analise este documento:
     HINTS LOCAIS (Extraídos via Regex):
@@ -108,29 +102,24 @@ export async function processOrderFile(file: File, knownClients = [], categories
     ${extractedText.substring(0, 10000)}
     `;
 
-    let result;
+    let imageData: string | undefined;
+    let imageMimeType: string | undefined;
     if (detected.type === "image") {
        const reader = new FileReader();
        const base64Promise = new Promise((resolve) => {
           reader.onload = () => resolve((reader.result as string).split(",")[1]);
           reader.readAsDataURL(file);
        });
-       const base64 = await base64Promise;
-       result = await model.generateContent({
-         contents: [{ role: "user", parts: [
-            { text: userPrompt },
-            { inlineData: { data: base64 as string, mimeType: detected.mimeType } }
-         ]}],
-         generationConfig: { responseMimeType: "application/json" }
-       });
-    } else {
-       result = await model.generateContent({
-         contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-         generationConfig: { responseMimeType: "application/json" }
-       });
+       imageData = await base64Promise as string;
+       imageMimeType = detected.mimeType;
     }
 
-    let textResult = result.response.text();
+    let textResult = await geminiWithSystem(userPrompt, SYSTEM_INSTRUCTION, {
+      model: "gemini-2.0-flash-exp",
+      imageData,
+      imageMimeType,
+      generationConfig: { responseMimeType: "application/json" },
+    });
     if (textResult.includes("```")) {
         textResult = textResult.replace(/```(?:json)?\n?([\s\S]*?)```/g, '$1').trim();
     }

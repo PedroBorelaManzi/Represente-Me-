@@ -1,11 +1,12 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, ExternalLink, Trash2 } from "lucide-react";
+import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, ExternalLink, Trash2, Navigation2, Target, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { toast } from "sonner";
 
 // Fix for default marker icon in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -19,6 +20,7 @@ function ChangeView({ center, zoom }: { center: [number, number], zoom: number }
   const map = useMap();
   useEffect(() => {
     map.setView(center, zoom);
+    setTimeout(() => map.invalidateSize(), 150);
   }, [center, zoom, map]);
   return null;
 }
@@ -72,8 +74,9 @@ export default function MapPage() {
 
     if (!error) {
       setCompanies(prev => prev.map(c => c.id === id ? { ...c, lat: latlng.lat, lng: latlng.lng } : c));
+      toast.success("Localização atualizada!");
     } else {
-      alert("Erro ao salvar localização: " + error.message);
+      toast.error("Erro ao salvar localização");
     }
   };
 
@@ -81,23 +84,18 @@ export default function MapPage() {
     if (!window.confirm(`Deseja realmente excluir o cliente "${name}"? Esta ação não pode ser desfeita.`)) return;
 
     const { error } = await supabase.from("clients").delete().eq("id", id);
-    
     if (error) {
-       if (error.code === "23503") {
-         alert("Não é possível excluir este cliente pois ele possui pedidos ou compromissos vinculados. Exclua os vínculos primeiro.");
-       } else {
-         alert("Erro ao excluir cliente: " + error.message);
-       }
+       toast.error(error.code === "23503" ? "Cliente vinculado a pedidos/compromissos." : "Erro ao excluir.");
        return;
     }
-
     setCompanies(prev => prev.filter(c => c.id !== id));
+    toast.success("Cliente removido.");
   };
 
   const handleCnpjLookup = async () => {
     const cleanedCnpj = newLocation.cnpj.replace(/\D/g, "");
     if (!cleanedCnpj || cleanedCnpj.length !== 14) {
-      alert("Por favor, insira um CNPJ válido com 14 dígitos.");
+      toast.error("Insira um CNPJ válido.");
       return;
     }
 
@@ -120,25 +118,6 @@ export default function MapPage() {
         if (geoData && geoData.length > 0) {
           lat = parseFloat(geoData[0].lat);
           lng = parseFloat(geoData[0].lon);
-        } else {
-          // Fallback 1: Try without CEP for strict matching
-          const fallbackStr = `${streetType}${data.logradouro || ""}, ${data.numero || ""}, ${data.municipio || ""}, ${data.uf || ""}, Brasil`;
-          const fallbackRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackStr)}`);
-          const fallbackData = await fallbackRes.json();
-          
-          if (fallbackData && fallbackData.length > 0) {
-             lat = parseFloat(fallbackData[0].lat);
-             lng = parseFloat(fallbackData[0].lon);
-          } else {
-             // Fallback 2: City + State only
-             const cityQuery = `${data.municipio || ""}, ${data.uf || ""}, Brasil`;
-             const cityRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityQuery)}`);
-             const cityData = await cityRes.json();
-             if (cityData && cityData.length > 0) {
-                lat = parseFloat(cityData[0].lat);
-                lng = parseFloat(cityData[0].lon);
-             }
-          }
         }
       } catch {}
 
@@ -149,19 +128,18 @@ export default function MapPage() {
         lat,
         lng
       }));
+      toast.success("Dados recuperados com sucesso!");
     } catch (err) {
-      alert("Não foi possível buscar os dados do CNPJ. Preencha manualmente.");
+      toast.error("CNPJ não encontrado. Preencha manualmente.");
     } finally {
       setIsSearchingCnpj(false);
     }
   };
 
-  
   const handleMapSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
-    // Check if we have an exact or partial match in existing clients first
     const match = companies.find(c => 
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
       (c.cnpj && c.cnpj.includes(searchQuery))
@@ -173,22 +151,17 @@ export default function MapPage() {
       return;
     }
 
-    // If no client format match, search Nominatim to pan to new city/address
     setIsSearchingMap(true);
     try {
       const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`);
       const geoData = await geoResponse.json();
-      
       if (geoData && geoData.length > 0) {
         const result = geoData[0];
         setCenter([parseFloat(result.lat), parseFloat(result.lon)]);
-        // Zoom closer for specific addresses, wider for cities/states
         setZoom(result.class === "place" && (result.type === "city" || result.type === "state") ? 12 : 15);
-      } else {
-         console.log("Local não encontrado na base do mapa.");
       }
     } catch (err) {
-      console.error("Erro ao buscar local no mapa", err);
+      console.error(err);
     } finally {
       setIsSearchingMap(false);
     }
@@ -217,8 +190,9 @@ export default function MapPage() {
        setCenter([newLocation.lat, newLocation.lng]);
        setZoom(15);
        setNewLocation({ cnpj: "", name: "",  contact: "", address: "", lat: -23.5500, lng: -46.6340 });
+       toast.success("Ponto registrado no radar!");
     } else {
-       alert("Erro ao cadastrar: " + error.message);
+       toast.error("Erro ao cadastrar.");
     }
   };
 
@@ -228,73 +202,84 @@ export default function MapPage() {
 
   const getOffsetPositions = (list: any[]) => {
     const locCounts: Record<string, number> = {};
-    const OFFSET_LAT = 0.0008; // Maior distanciamento (aprox 90m)
+    const OFFSET_LAT = 0.0008;
     const OFFSET_LNG = 0.0008;
     
     return list.map(c => {
       const lat = c.lat || center[0];
       const lng = c.lng || center[1];
-      
-      // Agrupamos clientes num raio de aprox 250m com a chave de arredondamento
       const keyLat = Math.round(lat * 400); 
       const keyLng = Math.round(lng * 400);
       const key = `${keyLat},${keyLng}`;
-      
       const count = locCounts[key] || 0;
       locCounts[key] = count + 1;
-      
       if (count === 0) return { ...c, displayLat: lat, displayLng: lng };
-      
-      // Espiral circular (espalha para os lados antes de ir mais longe)
       const angle = count * (Math.PI / 3); 
       const radiusLat = OFFSET_LAT * Math.ceil(count / 6);
       const radiusLng = OFFSET_LNG * Math.ceil(count / 6);
-      
-      return {
-        ...c,
-        displayLat: lat + (Math.cos(angle) * radiusLat),
-        displayLng: lng + (Math.sin(angle) * radiusLng)
-      };
+      return { ...c, displayLat: lat + (Math.cos(angle) * radiusLat), displayLng: lng + (Math.sin(angle) * radiusLng) };
     });
   };
 
   const mapCompanies = getOffsetPositions(filteredCompanies);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="h-full flex flex-col gap-8 md:gap-10 pb-4">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100">Radar Territorial</h1>
-          <p className="text-sm text-slate-500 mt-1">Encontre clientes e os seus arquivos privados.</p>
+          <h1 className="text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-4 uppercase tracking-tight">
+            <div className="p-3 bg-indigo-600 rounded-[20px]">
+              <Navigation2 className="w-8 h-8 text-white" />
+            </div>
+            Radar <span className="text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-indigo-600">Territorial</span>
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Visualização geo-estratégica da sua carteira de clientes.</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-          <form onSubmit={handleMapSearch} className="relative w-full sm:w-80 group">
-            <button 
-              type="submit" 
-              className="absolute inset-y-0 left-0 pl-3 flex items-center hover:text-indigo-600 transition-colors cursor-pointer"
-            >
-              {isSearchingMap ? <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" /> : <Search className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />}
-            </button>
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+          <form onSubmit={handleMapSearch} className="relative w-full sm:w-96 group">
+            <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+              {isSearchingMap ? <Loader2 className="h-5 w-5 text-indigo-500 animate-spin" /> : <Search className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />}
+            </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
+              className="block w-full pl-14 pr-6 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] shadow-sm focus:ring-8 focus:ring-indigo-500/10 text-xs font-black uppercase tracking-widest transition-all placeholder:text-slate-300"
               placeholder="Buscar Cliente ou Endereço..."
             />
           </form>
-          <button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 font-medium text-sm transition-colors whitespace-nowrap">
-            <Plus className="w-4 h-4 mr-1.5" /> Novo Cliente
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-[0_20px_40px_-10px_rgba(99,102,241,0.4)] active:scale-95 group"
+          >
+            <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+            Expandir Radar
           </button>
         </div>
       </div>
 
-      <div className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative z-0">
-        <MapContainer center={center} zoom={zoom} style={{ height: "100%", width: "100%" }}>
+      <div className="flex-1 bg-white dark:bg-zinc-950 rounded-[48px] border border-slate-100 dark:border-zinc-850 shadow-sm overflow-hidden relative z-0 min-h-[700px]">
+        {/* Floating Mini Stats Overlay */}
+        <div className="absolute top-8 right-8 z-[1000] hidden lg:flex items-center gap-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl p-4 rounded-[32px] border border-white/40 dark:border-zinc-800 shadow-2xl">
+           <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
+              <Target className="w-4 h-4 text-indigo-600" />
+              <span className="text-[10px] font-black uppercase text-indigo-700 dark:text-indigo-400">{mapCompanies.length} Pontos</span>
+           </div>
+           <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
+              <Users className="w-4 h-4 text-emerald-600" />
+              <span className="text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-400">Ativos</span>
+           </div>
+        </div>
+
+        <MapContainer center={center} zoom={zoom} style={{ height: 'calc(100vh - 280px)', width: '100%' }} scrollWheelZoom={true}>
           <ChangeView center={center} zoom={zoom} />
-          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
-          {mapCompanies.map((company) => (
+          <TileLayer 
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' 
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
+          />
+          {mapCompanies.filter(c => c.displayLat && c.displayLng).map((company) => (
             <Marker 
               key={company.id} 
               position={[company.displayLat, company.displayLng]}
@@ -304,30 +289,48 @@ export default function MapPage() {
               }}
             >
               <Tooltip direction="top" offset={[0, -25]} opacity={1}>
-                <span className="font-bold text-slate-900 text-xs">{company.name}</span>
+                <span className="font-black uppercase tracking-tight text-[10px] px-2 py-1 text-slate-900">{company.name}</span>
               </Tooltip>
-              <Popup className="rounded-xl overflow-hidden">
-                <div className="p-1 min-w-[210px]">
-                  <h3 className="font-bold text-slate-900 text-base mb-0">{company.name}</h3>
-                  <p className="text-[9px] text-indigo-600 font-medium mb-1 flex items-center gap-1">📍 Arraste o pin para ajustar</p>
-                  <div className="flex items-center gap-1 text-xs text-slate-500 mb-2"><Building2 className="w-3.5 h-3.5" /><span>{company.cnpj || "N/A"}</span></div>
-                  <span className={`px-2 py-0.5 rounded-md text-xs font-semibold mb-3 inline-block border ${company.status === "Ativo" || company.status === "Cliente" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-indigo-50 text-indigo-700 border-indigo-100"}`}>{company.status}</span>
-                  <div className="space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-2 pb-2">
-                    <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-slate-400" /><span>{company.phone || "N/A"}</span></div>
-                    <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-slate-400" /><span className="truncate">{company.email || "N/A"}</span></div>
+              <Popup className="premium-popup">
+                <div className="p-4 min-w-[280px] bg-white dark:bg-zinc-900">
+                  <div className="flex items-center gap-3 mb-4">
+                     <div className="p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl">
+                        <Building2 className="w-6 h-6 text-indigo-600" />
+                     </div>
+                     <div>
+                        <h3 className="font-black text-slate-900 dark:text-zinc-100 text-lg uppercase tracking-tighter leading-none mb-1">{company.name}</h3>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{company.cnpj || "Sem CNPJ"}</p>
+                     </div>
                   </div>
-                  <Link 
-                    to={`/dashboard/clientes/${company.id}`}
-                    className="w-full inline-flex items-center justify-center px-3 py-1.5 border border-indigo-600 text-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-50 transition-colors mt-1"
-                  >
-                    Ver Ficha <ExternalLink className="w-3 h-3 ml-1" />
-                  </Link>
-                  <button 
-                    onClick={() => handleDeleteClient(company.id, company.name)}
-                    className="w-full inline-flex items-center justify-center px-3 py-1.5 bg-red-50 text-red-600 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors mt-2 border border-red-100"
-                  >
-                    Excluir Cliente <Trash2 className="w-3 h-3 ml-2" />
-                  </button>
+                  
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-center gap-3 text-xs font-bold text-slate-600 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-2xl">
+                      <MapPin className="w-4 h-4 text-slate-400" />
+                      <span className="truncate">{company.address || "Endereço não informado"}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <Link 
+                      to={`/dashboard/clientes/${company.id}`}
+                      className="flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg  active:scale-95"
+                    >
+                      Perfil
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </Link>
+                    <button 
+                      onClick={() => handleDeleteClient(company.id, company.name)}
+                      className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 dark:bg-zinc-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all active:scale-95"
+                    >
+                      Remover
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 justify-center py-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+                    <Info className="w-3.5 h-3.5 text-amber-600" />
+                    <span className="text-[9px] font-black uppercase tracking-tighter text-amber-700 dark:text-amber-500">Arraste para ajustar posição exata</span>
+                  </div>
                 </div>
               </Popup>
             </Marker>
@@ -335,44 +338,66 @@ export default function MapPage() {
         </MapContainer>
       </div>
 
+      {/* New Location Modal - Premium */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md relative z-10 overflow-hidden">
-               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="font-bold text-slate-900 text-lg">Adicionar Novo Cliente no Mapa</h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
-              </div>
-              <form onSubmit={handleCreateLocation} className="p-6 space-y-4">
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl" onClick={() => setIsModalOpen(false)} />
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.9, y: 40 }} 
+               animate={{ opacity: 1, scale: 1, y: 0 }} 
+               exit={{ opacity: 0, scale: 0.9, y: 40 }} 
+               className="bg-white dark:bg-zinc-900 rounded-[56px] border border-slate-200 dark:border-zinc-800 w-full max-w-xl relative z-[10001] overflow-hidden shadow-[0_64px_128px_-32px_rgba(0,0,0,0.5)]"
+            >
+               <div className="p-12 border-b dark:border-zinc-850 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-950/20">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">CNPJ</label>
-                  <div className="flex gap-2">
-                    <input required type="text" value={newLocation.cnpj} onChange={e => setNewLocation({...newLocation, cnpj: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm" placeholder="00000000000000" />
-                    <button type="button" onClick={handleCnpjLookup} disabled={isSearchingCnpj} className="p-2 border border-slate-200 rounded-xl text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors flex items-center justify-center min-w-[38px]">{isSearchingCnpj ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-5 h-5" />}</button>
+                  <h3 className="font-black text-slate-900 dark:text-zinc-100 text-3xl uppercase tracking-tighter">Expandir Radar</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Sincronização com o Ecossistema Territorial</p>
+                </div>
+                <button onClick={() => setIsModalOpen(false)} className="p-5 bg-white dark:bg-zinc-800 rounded-[24px] shadow-sm text-slate-400 hover:text-red-500 transition-all"><X className="w-8 h-8" /></button>
+              </div>
+
+              <form onSubmit={handleCreateLocation} className="p-12 space-y-10">
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Assinatura Digital (CNPJ)</label>
+                  <div className="flex gap-4">
+                    <input 
+                      required 
+                      type="text" 
+                      value={newLocation.cnpj} 
+                      onChange={e => setNewLocation({...newLocation, cnpj: e.target.value})} 
+                      className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-indigo-500/10 transition-all" 
+                      placeholder="00.000.000/0000-00" 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={handleCnpjLookup} 
+                      disabled={isSearchingCnpj} 
+                      className="p-5 bg-indigo-600 text-white rounded-[24px]  active:scale-95 transition-all flex items-center justify-center min-w-[70px]"
+                    >
+                      {isSearchingCnpj ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}
+                    </button>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Nome do Local / Razão Social</label>
-                  <input required type="text" value={newLocation.name} onChange={e => setNewLocation({...newLocation, name: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm" placeholder="Nome Fantasia" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Nome de Contato</label>
-                  <input type="text" value={newLocation.contact} onChange={e => setNewLocation({...newLocation, contact: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm" />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Observações / Endereço</label>
-                  <textarea value={newLocation.address} onChange={e => setNewLocation({...newLocation, address: e.target.value})} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 text-sm resize-none h-16" placeholder="Rua exemplo, 123..." />
+
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Identificação do Ponto</label>
+                  <input required type="text" value={newLocation.name} onChange={e => setNewLocation({...newLocation, name: e.target.value})} className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-indigo-500/10 transition-all" placeholder="Razão Social ou Nome Fantasia" />
                 </div>
 
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-start gap-2">
-                  <Info className="w-4 h-4 text-indigo-600 mt-0.5" />
-                  <p className="text-xs text-slate-600 leading-normal">O pin será posicionado no mapa com base no endereço encontrado.</p>
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Localização Territorial</label>
+                  <textarea 
+                    value={newLocation.address} 
+                    onChange={e => setNewLocation({...newLocation, address: e.target.value})} 
+                    className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-indigo-500/10 transition-all resize-none h-32" 
+                    placeholder="Rua, Número, Bairro, Cidade..." 
+                  />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 text-sm font-medium">Cancelar</button>
-                  <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 text-sm font-medium">Adicionar Cliente</button>
+                <div className="flex justify-end gap-4">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-10 py-6 bg-slate-50 dark:bg-zinc-800 rounded-[32px] text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-zinc-300 hover:bg-slate-100 transition-all">Cancelar</button>
+                  <button type="submit" className="px-10 py-6 bg-indigo-600 text-white rounded-[32px] text-[11px] font-black uppercase tracking-widest shadow-2xl shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 transition-all">Ativar no Radar</button>
                 </div>
               </form>
             </motion.div>

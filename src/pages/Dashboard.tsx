@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo } from "react";
 import { Plus, ChevronLeft, ChevronRight, Clock, X, Home, Loader2, Users, Globe, RefreshCw } from "lucide-react";
-import { supabase } from "../lib/supabase";
+import { supabase, logAudit } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
 import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../lib/googleSync";
@@ -102,7 +102,8 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => { loadData(); }, [user, currentDate.getFullYear()]);
+  useEffect(() => {
+    logAudit('ACCESS_DASHBOARD'); loadData(); }, [user, currentDate.getFullYear()]);
 
   // Aggregate revenue data for the chart with dynamic categories
   const revenueChartData = useMemo(() => {
@@ -158,7 +159,7 @@ export default function Dashboard() {
   const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert("Erro: Client ID do Google não configurado.");
+      alert("Erro: Client ID do Google nÃ£o configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -268,7 +269,7 @@ export default function Dashboard() {
       const startMin = parseInt(start[0]) * 60 + parseInt(start[1] || "0");
       const endMin = parseInt(end[0]) * 60 + parseInt(end[1] || "0");
       const duration = endMin - startMin;
-      return Math.max(duration, 24); // Mínimo de 24px para visibilidade
+      return Math.max(duration, 24); // MÃ­nimo de 24px para visibilidade
     } catch { return 48; }
   };
 
@@ -278,7 +279,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-tight">
             <Home className="w-6 h-6 text-indigo-600" />
-            Início
+            InÃ­cio
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Sua agenda semanal sincronizada e faturamento.</p>
         </div>

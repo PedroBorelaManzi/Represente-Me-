@@ -1,11 +1,25 @@
-﻿import React, { useState, useEffect } from "react";
-import { Plus, ChevronLeft, ChevronRight, X, Calendar as CalendarIcon, Loader2, Globe, RefreshCw, AlertCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Calendar as CalendarIcon,
+  Loader2,
+  Globe,
+  RefreshCw,
+  AlertCircle,
+  Sparkles,
+  Navigation, Activity
+} from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import AppointmentForm from "../components/AppointmentForm";
 import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../lib/googleSync";
 import { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
 import { cn } from "../lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 type Appointment = {
   id: string;
@@ -13,6 +27,7 @@ type Appointment = {
   date: string;
   time: string;
   client_id?: string;
+  google_event_id?: string;
 };
 
 const formatDateLocal = (date: Date) => {
@@ -50,7 +65,6 @@ export default function Agenda() {
     const { data: clientsData } = await supabase.from("clients").select("id, name, city, state").order("name");
     setClients(clientsData || []);
 
-    // Fetch Holidays for all client cities
     const locations = (clientsData || []).filter(c => c.city).map(c => ({ city: c.city, state: c.state }));
     const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
     setHolidays(fetchedHolidays);
@@ -60,11 +74,7 @@ export default function Agenda() {
       .select("*")
       .eq("user_id", user.id);
 
-    if (error) {
-      console.error("Erro ao buscar eventos:", error);
-    } else {
-      setEvents(data || []);
-    }
+    if (!error) setEvents(data || []);
     setLoading(false);
   };
 
@@ -73,10 +83,13 @@ export default function Agenda() {
   const handleSync = async () => {
     if (!user) return;
     setIsSyncing(true);
+    const toastId = toast.loading("Sincronizando com Google Agenda...");
     const res = await syncGoogleEvents(user.id);
-    alert(res.message);
     if (res.success) {
+      toast.success(res.message, { id: toastId });
       await fetchEvents();
+    } else {
+      toast.error(res.message, { id: toastId });
     }
     setIsSyncing(false);
   };
@@ -96,6 +109,7 @@ export default function Agenda() {
     if (!dbResult.error && dbResult.data) {
       await pushEventToGoogle(user.id, dbResult.data);
       await fetchEvents();
+      toast.success("Evento orquestrado com sucesso!");
     }
     
     setIsSaving(false);
@@ -110,7 +124,10 @@ export default function Agenda() {
     if (!error && editingEvent.google_event_id) {
       await deleteEventFromGoogle(user.id, editingEvent.google_event_id);
     }
-    if (!error) await fetchEvents();
+    if (!error) {
+      await fetchEvents();
+      toast.success("Evento removido.");
+    }
     setIsSaving(false);
     setIsModalOpen(false);
     setEditingEvent(null);
@@ -119,7 +136,7 @@ export default function Agenda() {
   const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert("Erro: Client ID do Google não configurado.");
+      toast.error("Google Client ID não configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -133,19 +150,10 @@ export default function Agenda() {
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
     const days = [];
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, month, i));
-    }
-    
-    // Ensure we always have 6 rows (42 cells) to keep layout stable
-    while (days.length < 42) {
-      days.push(null);
-    }
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= daysInMonth; i++) days.push(new Date(year, month, i));
+    while (days.length < 42) days.push(null);
     return days;
   };
 
@@ -167,7 +175,6 @@ export default function Agenda() {
     const eventToMove = events.find(ev => ev.id === id);
     if (!eventToMove || eventToMove.date === targetDate) return;
 
-    // Local update for immediate feedback
     setEvents(events.map(ev => ev.id === id ? { ...ev, date: targetDate } : ev));
 
     const { data, error } = await supabase
@@ -180,84 +187,98 @@ export default function Agenda() {
     if (!error && data) {
       await pushEventToGoogle(user.id, data);
       await fetchEvents();
+      toast.success("Data reordenada via radar.");
     }
   };
 
   return (
-    <div className="space-y-6 h-full flex flex-col">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="h-full flex flex-col gap-8 md:gap-10 pb-10">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-tight">
-            <CalendarIcon className="w-6 h-6 text-indigo-600" />
-            Agenda
+          <h1 className="text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-4 uppercase tracking-tight">
+            <div className="p-3 bg-indigo-600 rounded-[20px] ">
+              <CalendarIcon className="w-8 h-8 text-white" />
+            </div>
+            Agenda <span className="text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-indigo-600">Sincronizada</span>
           </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Gerencie seus compromissos mensais.</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Orquestração de visitas e monitoramento de feriados locais.</p>
         </div>
-      </div>
-
-      <div className="bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden flex flex-col flex-1 min-h-[500px]">
-        <div className="p-4 border-b border-slate-300 dark:border-zinc-700/50 flex flex-col sm:flex-row sm:items-center justify-between bg-slate-100 dark:bg-zinc-800/40 z-20 gap-4">
-          <div className="flex items-center gap-4">
-            <h2 className="text-base font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest leading-none">
-              {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-            </h2>
-            <div className="flex items-center gap-2">
-              {googleConnected && (
-                <button 
-                  onClick={handleSync}
-                  disabled={isSyncing}
-                  className="p-2 rounded-xl text-indigo-600 hover:bg-indigo-50 transition-all disabled:opacity-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
-                  title="Sincronizar Agora"
-                >
-                   <RefreshCw className={cn("w-5 h-5", isSyncing && "animate-spin")} />
-                </button>
-              )}
-              <button 
+        
+        <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-900 p-2 rounded-[24px] border border-slate-100 dark:border-zinc-800">
+               {googleConnected && (
+                  <button 
+                    onClick={handleSync}
+                    disabled={isSyncing}
+                    className="p-4 bg-white dark:bg-zinc-800 rounded-2xl text-indigo-600 shadow-sm active:scale-95 transition-all"
+                  >
+                     <RefreshCw className={cn("w-6 h-6", isSyncing && "animate-spin")} />
+                  </button>
+               )}
+               <button 
                 onClick={handleGoogleConnect}
                 className={cn(
-                  "p-2 rounded-xl transition-all",
-                  googleConnected ? "text-emerald-500" : "text-slate-400 hover:text-indigo-600"
+                  "px-6 py-4 rounded-2xl transition-all font-black uppercase text-[10px] tracking-widest flex items-center gap-3 shadow-sm",
+                  googleConnected ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-white dark:bg-zinc-800 text-slate-400 hover:text-indigo-600 border border-slate-100 dark:border-zinc-800"
                 )}
-                title={googleConnected ? "Google Conectado" : "Conectar Google Agenda"}
-              >
-                <Globe className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-slate-100 dark:bg-zinc-800 p-1.5 rounded-xl">
-              <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-zinc-400 transition-all"><ChevronLeft className="w-4 h-4" /></button>
-              <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-zinc-400 transition-all"><ChevronRight className="w-4 h-4" /></button>
+               >
+                <Globe className="w-5 h-5 text-indigo-600" />
+                {googleConnected ? "G-Agenda Ativa" : "Conectar Calendário"}
+               </button>
             </div>
             <button 
               onClick={() => { setEditingEvent({ id: '', title: '', date: formatDateLocal(new Date()), time: '09:00 - 10:00' }); setIsModalOpen(true); }}
-              className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all shadow-lg shadow-indigo-100 dark:shadow-none uppercase tracking-wider"
+              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-[0_20px_40px_-10px_rgba(99,102,241,0.4)] active:scale-95 flex items-center gap-3 group"
             >
-              <Plus className="w-4 h-4" /> Novo
+              <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+              Agendar Visita
             </button>
+        </div>
+      </div>
+
+      <div className="flex-1 bg-white dark:bg-zinc-950 rounded-[48px] border border-slate-100 dark:border-zinc-850 shadow-sm overflow-hidden flex flex-col min-h-[600px] relative">
+        <div className="p-8 border-b border-slate-200 dark:border-zinc-700/50 flex items-center justify-between bg-indigo-600/5 dark:bg-indigo-900/10">
+          <div className="flex items-center gap-6">
+             <div className="flex items-center bg-white dark:bg-zinc-900 p-2 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm">
+                <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))} className="p-3 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl text-slate-400 transition-all active:scale-90"><ChevronLeft className="w-5 h-5" /></button>
+                <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))} className="p-3 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl text-slate-400 transition-all active:scale-90"><ChevronRight className="w-5 h-5" /></button>
+             </div>
+             <h2 className="text-2xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">
+                {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+             </h2>
+          </div>
+
+          <div className="hidden md:flex items-center gap-2">
+            <span className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/40 rounded-full text-[9px] font-black uppercase tracking-widest text-indigo-600 border border-indigo-100 dark:border-indigo-900/40 shadow-sm">
+               <Activity className="w-3.5 h-3.5" />
+               {events.length} Compromissos
+            </span>
           </div>
         </div>
 
         <div className="flex-1 flex flex-col overflow-x-auto custom-scrollbar">
-          <div className="grid grid-cols-7 border-b border-slate-300 dark:border-zinc-700/50 bg-slate-100/30 dark:bg-zinc-950/80 sticky top-0 z-10 min-w-[800px]">
+          <div className="grid grid-cols-7 border-b border-slate-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-900 sticky top-0 z-10 min-w-[900px]">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-              <div key={day} className="p-4 text-center text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">{day}</div>
+              <div key={day} className="py-6 text-center text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em]">{day}</div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 flex-1 bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 min-w-[800px]">
+          <div className="grid grid-cols-7 flex-1 min-w-[900px] divide-x divide-y divide-slate-200 dark:divide-zinc-700/50">
             {daysArray.map((date, i) => {
               const dateIso = date ? formatDateLocal(date) : null;
               const isToday = dateIso === formatDateLocal(new Date());
               const dayEvents = dateIso ? events.filter(e => e.date === dateIso) : [];
+              const dayHolidays = holidays.filter(h => h.date === dateIso);
+
               return (
                 <div 
                   key={i} 
                   className={cn(
-                    "border-r border-b border-slate-300 dark:border-zinc-700/50/50 p-2 flex flex-col h-40 overflow-hidden transition-all relative group",
-                    date ? 'bg-white/60 dark:bg-zinc-900/40' : 'bg-slate-100/20 dark:bg-zinc-950/10',
-                    isToday && 'ring-1 ring-inset ring-indigo-500/20 bg-indigo-50/20 dark:bg-indigo-500/10',
+                    "p-4 flex flex-col h-44 overflow-hidden transition-all relative group h-full",
+                    date ? 'bg-white dark:bg-zinc-900' : 'bg-slate-50/20 dark:bg-zinc-950/10',
+                    isToday && 'bg-indigo-50/20 dark:bg-indigo-500/5',
+                    i % 7 === 0 || i % 7 === 6 ? 'bg-slate-50/10 dark:bg-zinc-950/5' : ''
                   )}
                   onDragOver={onDragOver}
                   onDrop={(e) => dateIso && onDrop(e, dateIso)}
@@ -265,41 +286,41 @@ export default function Agenda() {
                 >
                   {date && (
                     <>
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-3">
                         <span className={cn(
-                          "text-[10px] font-black px-1.5 py-0.5 rounded-md transition-all",
-                          isToday ? "bg-indigo-600 text-white shadow-sm" : "text-slate-400 dark:text-zinc-500 group-hover:text-indigo-600"
+                          "text-xs font-black w-8 h-8 rounded-xl flex items-center justify-center transition-all",
+                          isToday ? "bg-indigo-600 text-white shadow-lg  dark:shadow-none" : "text-slate-400 dark:text-zinc-500 group-hover:text-indigo-600"
                         )}>
                           {date.getDate()}
                         </span>
+                        {dayHolidays.length > 0 && (
+                          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-sm shadow-amber-200" />
+                        )}
                       </div>
                       
-                      {/* Internal scrollable area for events and holidays */}
-                      <div className="flex-1 overflow-y-scroll custom-scrollbar-visible space-y-1">
-                        {/* Holidays */}
-                        {holidays.filter(h => h.date === dateIso).map((h, idx) => (
+                      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 max-h-[148px] pr-1">
+                        {dayHolidays.map((h, idx) => (
                           <div 
                             key={idx} 
                             onClick={(e) => { e.stopPropagation(); setSelectedHoliday(h); }}
-                            className="px-1.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-[9px] font-black text-amber-700 dark:text-amber-400 rounded-lg border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm cursor-help hover:scale-[1.02] transition-transform active:scale-95" 
-                            title={h.name}
+                            className="px-3 py-2 bg-amber-50 dark:bg-amber-900/20 text-[8px] font-black text-amber-700 dark:text-amber-400 rounded-xl border border-amber-100 dark:border-amber-800/20 flex items-center gap-2 shadow-sm cursor-help hover:scale-105 transition-all" 
                           >
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
-                            <span className="truncate flex-1 min-w-0">{h.name}</span>
+                             <div className="w-1 h-1 rounded-full bg-amber-500" />
+                             <span className="truncate flex-1 uppercase tracking-tighter">{h.name}</span>
                           </div>
                         ))}
 
-                        {/* Events */}
                         {dayEvents.map(event => (
                           <div 
                             key={event.id}
                             onClick={(e) => { e.stopPropagation(); setEditingEvent(event); setIsModalOpen(true); }}
                             draggable
                             onDragStart={(e) => onDragStart(e, event.id)}
-                            className="text-[10px] font-bold p-1.5 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 truncate shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group/item flex items-center"
+                            className="text-[9px] font-black p-3 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40 hover:border-indigo-300 transition-all cursor-pointer shadow-sm group/item flex flex-col gap-1 relative overflow-hidden"
                           >
-                            <span className="text-indigo-600 dark:text-indigo-400 mr-1 opacity-50 flex-shrink-0">•</span>
-                            <span className="truncate">{event.title}</span>
+                            <div className="absolute top-0 right-0 w-8 h-8 bg-indigo-500/10 rounded-full -mr-4 -mt-4" />
+                            <span className="truncate uppercase tracking-tight relative z-10">{event.title}</span>
+                            <span className="text-[7px] text-indigo-400/80 dark:text-indigo-500/60 font-bold relative z-10 uppercase">{event.time}</span>
                           </div>
                         ))}
                       </div>
@@ -312,69 +333,65 @@ export default function Agenda() {
         </div>
       </div>
 
-      {isModalOpen && (
-        <AppointmentForm
-          appointment={editingEvent}
-          onClose={() => { setIsModalOpen(false); setEditingEvent(null); }}
-          onSaved={fetchEvents}
-          clients={clients}
-          onSave={handleSave}
-          onDelete={handleDelete}
-          isSaving={isSaving}
-        />
-      )}
+      <AnimatePresence>
+        {isModalOpen && (
+           <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setIsModalOpen(false); setEditingEvent(null); }} className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" />
+              <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 40 }} className="relative z-[10001] w-full max-w-lg">
+                <AppointmentForm
+                  appointment={editingEvent}
+                  onClose={() => { setIsModalOpen(false); setEditingEvent(null); }}
+                  onSaved={fetchEvents}
+                  clients={clients}
+                  onSave={handleSave}
+                  onDelete={handleDelete}
+                  isSaving={isSaving}
+                />
+              </motion.div>
+           </div>
+        )}
+      </AnimatePresence>
 
-      {/* Holiday Details Modal */}
-      {selectedHoliday && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-2xl">
-                    <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight leading-tight">
-                      {selectedHoliday.name}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] font-black px-2 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-full uppercase tracking-widest">
-                        {selectedHoliday.type === "national" ? "Feriado Nacional" : `Feriado Municipal - ${selectedHoliday.city}`}
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500">
-                        {new Date(selectedHoliday.date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "long" })}
-                      </span>
-                    </div>
-                  </div>
+      {/* Holiday Premium Modal */}
+      <AnimatePresence>
+        {selectedHoliday && (
+          <div className="fixed inset-0 z-[11000] flex items-center justify-center p-4">
+             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedHoliday(null)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" />
+             <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 40 }} className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-[48px] shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden relative z-[11001]">
+                <div className="p-10">
+                   <div className="flex justify-between items-start mb-8">
+                     <div className="flex items-center gap-4">
+                        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-[24px]">
+                           <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                           <h3 className="text-2xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-none mb-2">{selectedHoliday.name}</h3>
+                           <div className="flex items-center gap-2">
+                             <span className="text-[10px] font-black px-3 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-full uppercase tracking-widest">
+                               {selectedHoliday.type === "national" ? "Nacional" : "Municipal"}
+                             </span>
+                           </div>
+                        </div>
+                     </div>
+                     <button onClick={() => setSelectedHoliday(null)} className="p-4 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-red-500 transition-all"><X className="w-6 h-6"/></button>
+                   </div>
+                   
+                   <div className="p-6 bg-slate-50 dark:bg-zinc-800/10 rounded-[32px] border border-slate-100 dark:border-zinc-800 mb-8">
+                      <div className="flex items-center gap-3 mb-4 text-slate-400">
+                         <Navigation className="w-4 h-4" />
+                         <span className="text-[10px] font-black uppercase tracking-widest">{selectedHoliday.city || "Território Nacional"}</span>
+                      </div>
+                      <p className="text-sm font-medium text-slate-600 dark:text-zinc-400 leading-relaxed">
+                        Este é um feriado oficial. Fique atento às alterações nos seus compromissos e planeje-se com antecedência para otimizar suas visitas a clientes nesta região.
+                      </p>
+                   </div>
+
+                   <button onClick={() => setSelectedHoliday(null)} className="w-full py-6 bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-2xl active:scale-[0.98] transition-all">Entendido</button>
                 </div>
-                <button 
-                  onClick={() => setSelectedHoliday(null)}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-slate-400 dark:text-zinc-500"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="mt-6 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-2xl border border-slate-100 dark:border-zinc-800">
-                <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed font-medium">
-                  {selectedHoliday.description || "Este é um feriado oficial. Fique atento às alterações nos seus compromissos e planeje-se com antecedência para otimizar suas visitas a clientes nesta região."}
-                </p>
-              </div>
-
-              <div className="mt-8">
-                <button 
-                  onClick={() => setSelectedHoliday(null)}
-                  className="w-full bg-slate-900 dark:bg-zinc-100 text-white dark:text-zinc-900 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:opacity-90 transition-opacity active:scale-[0.98]"
-                >
-                  Fechar
-                </button>
-              </div>
-            </div>
+             </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-

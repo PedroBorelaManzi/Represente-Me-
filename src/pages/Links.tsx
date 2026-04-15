@@ -1,8 +1,31 @@
-﻿import { useState, useEffect } from "react";
+import {
+  useState,
+  useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Link as LinkIcon, Plus, ExternalLink, MoreVertical, Search, MessageSquare, Mail, FileText, Briefcase, X, Trash2, HardDrive, Calendar, Maximize2, Minimize2 } from "lucide-react";
+import { Link as LinkIcon,
+  Plus,
+  ExternalLink,
+  Search,
+  Mail,
+  FileText,
+  Briefcase,
+  X,
+  Trash2,
+  HardDrive,
+  Calendar,
+  Maximize2,
+  Minimize2,
+  Globe,
+  ShieldCheck,
+  Zap,
+  Layers,
+  Sparkles,
+  Navigation,
+  ArrowUpRight
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../lib/utils";
+import { toast } from "sonner";
 
 const initialLinks = [
   { id: "1", title: "WhatsApp Web", url: "https://web.whatsapp.com", icon: "MessageSquare", color: "bg-emerald-500" },
@@ -12,13 +35,13 @@ const initialLinks = [
 ];
 
 const iconMap: Record<string, any> = {
-  MessageSquare,
   Mail,
   FileText,
   Briefcase,
   LinkIcon,
   HardDrive,
-  Calendar
+  Calendar,
+  Globe
 };
 
 const colorOptions = [
@@ -63,30 +86,20 @@ export default function LinksPage() {
 
   const handleAddLink = () => {
     if (!title || !url) return;
-
     let formattedUrl = url;
-    if (!/^https?:\/\//i.test(url)) {
-      formattedUrl = `https://${url}`;
-    }
-
-    const newLink = {
-      id: crypto.randomUUID(),
-      title,
-      url: formattedUrl,
-      icon,
-      color
-    };
-
+    if (!/^https?:\/\//i.test(url)) formattedUrl = `https://${url}`;
+    const newLink = { id: crypto.randomUUID(), title, url: formattedUrl, icon, color };
     const updated = [...links, newLink];
     saveToStorage(updated);
+    toast.success("Shortcut vinculado com sucesso.");
     resetForm();
   };
 
   const handleDeleteLink = (id: string) => {
-    if (!window.confirm("Deseja realmente excluir este atalho?")) return;
+    if (!window.confirm("Desvincular este atalho permanentemente?")) return;
     const updated = links.filter(l => l.id !== id);
     saveToStorage(updated);
-    setActiveMenuId(null);
+    toast.success("Atalho removido.");
   };
 
   const resetForm = () => {
@@ -98,7 +111,6 @@ export default function LinksPage() {
   };
 
   const filteredLinks = links.filter(l => l.title.toLowerCase().includes(searchQuery.toLowerCase()));
-
   const activeLink = links.find(l => l.id === activeLinkId);
 
   if (activeLink) {
@@ -108,73 +120,70 @@ export default function LinksPage() {
       activeLink.url.includes("docs.google.com") ||
       activeLink.url.includes("drive.google.com") ||
       activeLink.url.includes("calendar.google.com");
-
     const IconComponent = iconMap[activeLink.icon] || LinkIcon;
 
     return (
       <div className={cn(
-        "flex flex-col space-y-4 transition-all duration-300",
-        isFullScreen 
-          ? "fixed inset-0 z-[60] bg-white dark:bg-zinc-950 p-2 md:p-4" 
-          : "h-[calc(100vh-10rem)]"
+        "flex flex-col gap-6 h-full transition-all duration-500",
+        isFullScreen ? "fixed inset-0 z-[6000] bg-white dark:bg-zinc-950 p-4" : "min-h-[600px]"
       )}>
-        <div className="flex items-center justify-between bg-white dark:bg-zinc-900 p-3 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm mb-2">
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => { setSearchParams({}); setIsFullScreen(false); }}
-              className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl text-slate-600 dark:text-zinc-400 transition-colors flex items-center gap-1 text-sm font-medium"
-            >
-              <X className="w-5 h-5" /> {isFullScreen ? "Sair" : "Voltar para o Hub"}
-            </button>
-            <div className="w-1 h-6 bg-slate-200 dark:bg-zinc-800" />
-            <h1 className="text-lg font-bold text-slate-900 dark:text-zinc-100 truncate max-w-[150px] md:max-w-none">{activeLink.title}</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setIsFullScreen(!isFullScreen)}
-              className="p-2 bg-indigo-50 dark:bg-indigo-900/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-xl text-indigo-600 dark:text-indigo-400 transition-colors flex items-center gap-1.5 text-xs font-bold ring-1 ring-indigo-200 dark:ring-indigo-800"
-              title={isFullScreen ? "Contrair" : "Expandir Tela Cheia"}
-            >
-              {isFullScreen ? (
-                <><Minimize2 className="w-4 h-4" /> Contrair</>
-              ) : (
-                <><Maximize2 className="w-4 h-4" /> Expandir</>
-              )}
-            </button>
-            <div className="hidden md:block w-px h-4 bg-slate-200 dark:bg-zinc-800 mx-1" />
-            <a 
-            href={activeLink.url} 
-            target="_blank" 
-            rel="noreferrer" 
-            className="hidden md:flex p-2 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl text-slate-500 dark:text-zinc-400 hover:text-indigo-600 transition-colors items-center gap-1 text-xs"
-          >
-            Abrir original <ExternalLink className="w-4 h-4" />
-          </a>
-          </div>
+        <div className="flex items-center justify-between bg-white dark:bg-zinc-900 p-6 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-sm">
+           <div className="flex items-center gap-6">
+              <button 
+                onClick={() => { setSearchParams({}); setIsFullScreen(false); }}
+                className="p-4 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all active:scale-95"
+              >
+                 <X className="w-6 h-6" />
+              </button>
+              <div>
+                 <h2 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-none mb-1">{activeLink.title}</h2>
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{activeLink.url}</p>
+              </div>
+           </div>
+
+           <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setIsFullScreen(!isFullScreen)}
+                className="px-6 py-4 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 border border-indigo-100 dark:border-indigo-900/40"
+              >
+                 {isFullScreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                 {isFullScreen ? "Janela" : "Full Screen"}
+              </button>
+              <a 
+                href={activeLink.url} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="px-6 py-4 bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-800 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 text-slate-400 hover:text-indigo-600 transition-all"
+              >
+                 Original <ExternalLink className="w-5 h-5" />
+              </a>
+           </div>
         </div>
-        
+
         {isBlockedIframe ? (
-          <div className="flex-1 border border-slate-200 rounded-2xl shadow-sm bg-white flex flex-col items-center justify-center p-8 text-center">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-md mb-4 ${activeLink.color || 'bg-indigo-500'}`}>
-               <IconComponent className="w-8 h-8" />
-            </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Este aplicativo não permite exibição interna</h2>
-            <p className="text-sm text-slate-500 max-w-md mb-6 leading-relaxed">
-              Por motivos de segurança (bloqueio do Google/WhatsApp), este serviço precisa ser aberto em uma nova aba para funcionar corretamente.
-            </p>
-            <a 
-              href={activeLink.url} 
-              target="_blank" 
-              rel="noreferrer" 
-              className="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md font-medium text-sm transition-all gap-2"
-            >
-               Abrir {activeLink.title} <ExternalLink className="w-4 h-4" />
-            </a>
+          <div className="flex-1 bg-white dark:bg-zinc-900 rounded-[48px] border border-slate-100 dark:border-zinc-800 flex flex-col items-center justify-center p-20 text-center gap-8 shadow-sm">
+             <div className={cn("w-24 h-24 rounded-[32px] flex items-center justify-center text-white shadow-2xl", activeLink.color || 'bg-indigo-600')}>
+                <IconComponent className="w-12 h-12" />
+             </div>
+             <div>
+                <h3 className="text-2xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mb-4">Ambiente Externo Detectado</h3>
+                <p className="text-sm font-medium text-slate-500 max-w-md mx-auto leading-relaxed uppercase tracking-tight">
+                   Por motivos de segurança e políticas de CORS, este hub deve ser acessado em uma nova aba prioritária.
+                </p>
+             </div>
+             <a 
+               href={activeLink.url} 
+               target="_blank" 
+               rel="noreferrer" 
+               className="px-12 py-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-[0_24px_48px_-12px_rgba(99,102,241,0.5)] active:scale-95 transition-all flex items-center gap-4"
+             >
+                Inaugurar {activeLink.title} <ExternalLink className="w-5 h-5" />
+             </a>
           </div>
         ) : (
           <iframe 
             src={activeLink.url} 
-            className="w-full flex-1 border border-slate-200 rounded-2xl shadow-sm bg-white" 
+            className="w-full flex-1 bg-white dark:bg-zinc-900 rounded-[48px] border border-slate-100 dark:border-zinc-800 shadow-sm" 
             title={activeLink.title}
           />
         )}
@@ -183,186 +192,160 @@ export default function LinksPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="h-full flex flex-col gap-8 md:gap-10 pb-20">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100">Painel Atalho Hub</h1>
-          <p className="text-sm text-slate-500 mt-1">Acesse todas as suas ferramentas em um só lugar.</p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="relative w-full sm:w-64">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-slate-400" />
+          <h1 className="text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-4 uppercase tracking-tight">
+            <div className="p-3 bg-indigo-600 rounded-[20px]">
+              <Layers className="w-8 h-8 text-white" />
             </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white shadow-sm transition-colors"
-              placeholder="Buscar atalho..."
-            />
-          </div>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-colors whitespace-nowrap"
-          >
-            <Plus className="w-4 h-4 mr-2" /> Novo Atalho
-          </button>
+            Shortcut <span className="text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-indigo-600">Hub</span>
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Ecossistema centralizado de ferramentas operacionais.</p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+            <div className="relative group max-w-md">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
+              <input 
+                type="text" 
+                placeholder="Rastrear atalhos..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-12 pr-6 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-indigo-500/10 transition-all shadow-sm"
+              />
+            </div>
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-[0_20px_40px_-10px_rgba(99,102,241,0.4)] active:scale-95 flex items-center gap-3 group"
+            >
+              <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+              Novo Atalho
+            </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredLinks.map((link, i) => {
-          const IconComponent = iconMap[link.icon] || LinkIcon;
-          const isMenuOpen = activeMenuId === link.id;
-
-          return (
-            <motion.div
-              key={link.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.05, duration: 0.3 }}
-              className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all group relative overflow-visible"
-            >
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-sm ${link.color}`}>
-                    <IconComponent className="w-6 h-6" />
-                  </div>
-                  
-                  <div className="relative">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <AnimatePresence mode="popLayout">
+          {filteredLinks.map((link, i) => {
+            const IconComponent = iconMap[link.icon] || LinkIcon;
+            return (
+              <motion.div
+                key={link.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="group relative bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-zinc-850 p-10 shadow-sm hover:shadow-2xl hover:/30 dark:hover:shadow-none hover:border-indigo-200 transition-all flex flex-col h-full"
+              >
+                 <div className="flex items-start justify-between mb-8">
+                    <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform", link.color)}>
+                       <IconComponent className="w-8 h-8" />
+                    </div>
                     <button 
-                      onClick={() => setActiveMenuId(isMenuOpen ? null : link.id)}
-                      className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-50"
+                      onClick={() => handleDeleteLink(link.id)}
+                      className="p-3 bg-slate-50 dark:bg-zinc-800 rounded-xl text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all active:scale-95"
                     >
-                      <MoreVertical className="w-5 h-5" />
+                       <Trash2 className="w-4 h-4" />
                     </button>
+                 </div>
 
-                    <AnimatePresence>
-                      {isMenuOpen && (
-                        <>
-                          <div className="fixed inset-0 z-10" onClick={() => setActiveMenuId(null)} />
-                          <motion.div 
-                            initial={{ opacity: 0, y: -5, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -5, scale: 0.95 }}
-                            className="absolute right-0 mt-1 w-36 bg-white rounded-xl border border-slate-200 shadow-lg z-20 py-1 overflow-hidden"
-                          >
-                            <button 
-                              onClick={() => handleDeleteLink(link.id)}
-                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
-                            >
-                              <Trash2 className="w-4 h-4" /> Excluir
-                            </button>
-                          </motion.div>
-                        </>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
+                 <div className="flex-1 mb-10">
+                    <h3 className="text-lg font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-tight mb-2 group-hover:text-indigo-600 transition-colors">{link.title}</h3>
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest truncate">{link.url}</p>
+                 </div>
 
-                <h3 className="text-lg font-bold text-slate-900 mb-1 truncate">{link.title}</h3>
-                <p className="text-sm text-slate-500 truncate mb-6">{link.url}</p>
-                
-                <button 
-                  onClick={() => setSearchParams({ id: link.id })}
-                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-slate-200 text-sm font-medium rounded-xl text-slate-700 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 transition-colors group-hover:bg-indigo-50 group-hover:text-indigo-700 group-hover:border-indigo-200"
-                >
-                  Acessar <ExternalLink className="ml-2 w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
-          )
-        })}
-        
-        {/* Add New Card */}
-        <motion.button
-          onClick={() => setIsModalOpen(true)}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: filteredLinks.length * 0.05, duration: 0.3 }}
-          className="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all flex flex-col items-center justify-center p-6 min-h-[200px] text-slate-500 hover:text-indigo-600 group"
-        >
-          <div className="w-12 h-12 rounded-full bg-white border border-slate-200 flex items-center justify-center mb-4 group-hover:border-indigo-200 group-hover:bg-indigo-100 transition-colors">
-            <Plus className="w-6 h-6" />
-          </div>
-          <span className="font-medium">Adicionar novo atalho</span>
-        </motion.button>
+                 <button 
+                   onClick={() => setSearchParams({ id: link.id })}
+                   className="w-full py-5 bg-slate-50 dark:bg-zinc-800 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white rounded-[24px] font-black uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-3 border border-transparent shadow-sm "
+                 >
+                    Acessar <ArrowUpRight className="w-4 h-4" />
+                 </button>
+              </motion.div>
+            )
+          })}
+
+          <motion.div
+            layout
+            onClick={() => setIsModalOpen(true)}
+            className="bg-slate-50 dark:bg-zinc-950/20 rounded-[40px] border-4 border-dashed border-slate-100 dark:border-zinc-850 flex flex-col items-center justify-center p-10 group hover:bg-slate-100 dark:hover:bg-zinc-900/40 hover:border-indigo-200 transition-all cursor-pointer min-h-[320px]"
+          >
+             <div className="w-20 h-20 rounded-[32px] bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 flex items-center justify-center text-slate-300 group-hover:text-indigo-600 group-hover:scale-110 transition-all shadow-sm">
+                <Plus className="w-10 h-10" />
+             </div>
+             <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-6 group-hover:text-indigo-600">Criar Novo Atalho</span>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      {/* Modal Novo Atalho */}
+      {/* Modal Premium Link */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl border border-slate-200 shadow-xl p-6 w-full max-w-md space-y-4"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-xl font-bold text-slate-900">Novo Atalho</h2>
-                <button onClick={resetForm} className="p-2 text-slate-400 hover:bg-slate-100 rounded-xl"><X className="w-5 h-5"/></button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Título</label>
-                  <input 
-                    type="text" 
-                    value={title} 
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Ex: Meu Portal"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                  />
+          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4">
+             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetForm} className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" />
+             <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 40 }} className="bg-white dark:bg-zinc-900 rounded-[56px] border border-slate-200 dark:border-zinc-800 shadow-2xl w-full max-w-xl relative z-[5001] overflow-hidden">
+                <div className="p-10 border-b dark:border-zinc-850 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-950/20">
+                   <div>
+                      <h3 className="text-2xl font-black uppercase tracking-tighter">Vincular Atalho</h3>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 text-indigo-600">Personalização de Ecossistema Externo</p>
+                   </div>
+                   <button onClick={resetForm} className="p-4 bg-white dark:bg-zinc-800 rounded-2xl text-slate-300 hover:text-red-500 transition-all shadow-sm"><X className="w-6 h-6" /></button>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">URL / Link</label>
-                  <input 
-                    type="text" 
-                    value={url} 
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="Ex: portal.com"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Cor do Card</label>
-                  <div className="grid grid-cols-6 gap-2 mt-1">
-                    {colorOptions.map((opt) => (
-                      <button 
-                        key={opt.value}
-                        onClick={() => setColor(opt.value)}
-                        className={`w-8 h-8 rounded-full ${opt.value} border-2 ${color === opt.value ? 'border-slate-800' : 'border-transparent'} shadow-sm`}
+                <div className="p-12 space-y-10">
+                   <div className="space-y-4">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">Nome da Aplicação</label>
+                      <input 
+                        type="text" 
+                        value={title} 
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="Ex: ERP Corporate"
+                        className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black uppercase tracking-widest outline-none focus:ring-8 focus:ring-indigo-500/10 transition-all"
                       />
-                    ))}
-                  </div>
-                </div>
-              </div>
+                   </div>
 
-              <div className="pt-4 flex justify-end gap-3 mt-4 border-t border-slate-100">
-                <button 
-                  onClick={resetForm}
-                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-medium text-sm"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={handleAddLink}
-                  disabled={!title || !url}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 font-medium text-sm disabled:opacity-50"
-                >
-                  Salvar
-                </button>
-              </div>
-            </motion.div>
+                   <div className="space-y-4">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">Endereço Web (URL)</label>
+                      <input 
+                        type="text" 
+                        value={url} 
+                        onChange={(e) => setUrl(e.target.value)}
+                        placeholder="dominio.com.br"
+                        className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black uppercase tracking-widest outline-none focus:ring-8 focus:ring-indigo-500/10 transition-all"
+                      />
+                   </div>
+
+                   <div className="space-y-6">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">IdCliente Visual</label>
+                      <div className="grid grid-cols-6 gap-4">
+                        {colorOptions.map((opt) => (
+                          <button 
+                            key={opt.value}
+                            onClick={() => setColor(opt.value)}
+                            className={cn(
+                              "w-12 h-12 rounded-2xl transition-all shadow-sm active:scale-90",
+                              opt.value,
+                              color === opt.value ? 'ring-4 ring-indigo-500/30 border-4 border-white dark:border-zinc-800 scale-110' : 'opacity-80'
+                            )}
+                          />
+                        ))}
+                      </div>
+                   </div>
+
+                   <button 
+                     onClick={handleAddLink}
+                     disabled={!title || !url}
+                     className="w-full py-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-4 disabled:opacity-50"
+                   >
+                      <ShieldCheck className="w-6 h-6" />
+                      Sincronizar Atalho
+                   </button>
+                </div>
+             </motion.div>
           </div>
         )}
       </AnimatePresence>
     </div>
   );
 }
-

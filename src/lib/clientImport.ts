@@ -1,11 +1,9 @@
 import * as XLSX from 'xlsx';
 import * as pdfjs from 'pdfjs-dist';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { callGeminiProxy } from "./geminiProxy";
 
 pdfjs.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 export function extractCnpjs(text: string): string[] {
   const cnpjRegex = /\d{2}[\.\s]*\d{3}[\.\s]*\d{3}[\/\s]*\d{4}[\-\s]*\d{2}/g;
@@ -39,20 +37,21 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+
+
 async function processWithGemini(file: File): Promise<string[]> {
-  if (!apiKey || !genAI) throw new Error("VITE_GEMINI_API_KEY não configurada.");
-  
-  const prompt = `ATENÇÃO: Extraia os números de CNPJ (14 dígitos) apenas dos CLIENTES/COMPRADORES contidos neste documento. Ignore o CNPJ da Fábrica/Emissor.
-  Retorne APENAS um Array JSON puro: ["12345678000199", "98765432000111"]`;
+  const prompt = "ATENÇÃO: Extraia os números de CNPJ (14 dígitos) apenas dos CLIENTES/COMPRADORES contidos neste documento. Ignore o CNPJ da Fábrica/Emissor.\n  Retorne APENAS um Array JSON puro: [\"12345678000199\", \"98765432000111\"]";
 
   const detected = await detectFileType(file);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }, { apiVersion: "v1" });
 
   try {
-    let result;
+    let imageData: string | undefined;
+    let imageMimeType: string | undefined;
+    let fullPrompt = prompt;
+
     if (detected.type === 'image') {
-      const base64 = await fileToBase64(file);
-      result = await model.generateContent([prompt, { inlineData: { data: base64, mimeType: detected.mimeType || 'image/jpeg' } }]);
+      imageData = await fileToBase64(file);
+      imageMimeType = detected.mimeType || 'image/jpeg';
     } else {
       let text = "";
       if (detected.type === 'excel') {
@@ -65,19 +64,27 @@ async function processWithGemini(file: File): Promise<string[]> {
       } else {
         text = await file.text();
       }
-      result = await model.generateContent(prompt + "\n\nConteúdo:\n" + text.substring(0, 30000));
+      fullPrompt = prompt + "\n\nConteúdo:\n" + text.substring(0, 30000);
     }
 
-    let resText = result.response.text();
-    resText = resText.replace(/```json/g, "").replace(/```/g, "").trim();
-    const cnpjs = JSON.parse(resText);
+    const parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }> = [{ text: fullPrompt }];
+    if (imageData && imageMimeType) {
+      parts.push({ inlineData: { data: imageData, mimeType: imageMimeType } });
+    }
+
+    const resText = await callGeminiProxy({
+      contents: [{ role: "user", parts }],
+      model: "gemini-2.0-flash",
+    });
+    const cleaned = resText.replace(/```json/g, "").replace(/```/g, "").trim();
+    const cnpjs = JSON.parse(cleaned);
     return Array.isArray(cnpjs) ? cnpjs.map(String).map(s => s.replace(/\D/g, '')).filter(s => s.length === 14) : [];
   } catch (error) {
-    console.error("Erro no Gemini:", error);
     if (detected.type === 'pdf') return extractCnpjsFallbackFromPDF(file);
     return [];
   }
 }
+
 
 async function extractTextFromPDF(file: File): Promise<string[]> {
   try {
