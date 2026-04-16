@@ -54,7 +54,7 @@ export default function Dashboard() {
     return d;
   });
 
-  const isSameDay = (d1: Date, d2: string) => formatDateLocal(d1) === d2;
+  const isSameDay = (d1: Date, d2: string) => { if (!d1 || !d2) return false; return formatDateLocal(d1) === d2; };
 
   const loadData = async () => {
     if (!user) return;
@@ -75,7 +75,7 @@ export default function Dashboard() {
         .select("categories")
         .eq("user_id", user.id)
         .maybeSingle();
-      setUserCategories(settingsData?.categories || []);
+      const cats = settingsData?.categories; setUserCategories(Array.isArray(cats) ? cats : []);
 
       const { data: clientsData } = await supabase
         .from("clients")
@@ -106,7 +106,7 @@ export default function Dashboard() {
     logAudit('ACCESS_DASHBOARD'); loadData(); }, [user, currentDate.getFullYear()]);
 
   // Aggregate revenue data for the chart with dynamic categories
-  const revenueChartData = useMemo(() => {
+  const revenueChartData = useMemo(() => { try {
     if (!clients.length) return [];
     
     // 1. Start with categories defined in settings
@@ -142,7 +142,7 @@ export default function Dashboard() {
     return categoriesArray.map(cat => ({
       name: cat,
       value: totals[cat]
-    })).filter(item => item.value > 0);
+    })).filter(item => item.value > 0); } catch (e) { console.error("Chart Logic Error:", e); return []; }
   }, [userCategories, clients]);
 
   const handleSync = async () => {

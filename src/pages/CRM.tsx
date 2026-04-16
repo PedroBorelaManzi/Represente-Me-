@@ -52,7 +52,7 @@ export default function CRMPage() {
       const clientsWithAlerts = (clientsData || []).map((client: any) => {
         const clientFiles = filesByClient[client.id] || [];
         const lastDates: any = {};
-        clientFiles.forEach((f: any) => {
+        if (!clientFiles) return; clientFiles.forEach((f: any) => {
           const parts = f.file_name.split("___");
           if (parts.length > 1) {
             const rawCat = parts[0];
@@ -65,7 +65,7 @@ export default function CRMPage() {
 
         const alerts: any[] = [];
         const today = new Date().getTime();
-        for (const [cat, date] of Object.entries(lastDates)) {
+        if (lastDates) for (const [cat, date] of Object.entries(lastDates)) {
           const days = Math.floor((today - (date as number)) / (1000 * 60 * 60 * 24));
           if (days >= (settings.perda_days || 365)) alerts.push({ company: cat, type: "Perda", days });
           else if (days >= (settings.critico_days || 90)) alerts.push({ company: cat, type: "Critico", days });
