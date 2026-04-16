@@ -75,7 +75,7 @@ export default function CRMPage() {
       });
 
       setClients(clientsWithAlerts);
-    } catch (err) {
+    } catch (err) { console.error("ERRO CRITICAL NO CRM:", err);
       console.error('Load Clients Error:', err);
     } finally {
       setLoading(false);
@@ -115,7 +115,7 @@ export default function CRMPage() {
       if (error) throw error;
       setClients(prev => prev.filter(c => c.id !== id));
       toast.success('Cliente removido com sucesso.');
-    } catch (err) {
+    } catch (err) { console.error("ERRO CRITICAL NO CRM:", err);
       console.error('Delete Error:', err);
       toast.error('Erro ao remover cliente.');
     }
@@ -174,7 +174,7 @@ export default function CRMPage() {
              }]);
              if (!error) importedCount++;
           }
-        } catch (err) {
+        } catch (err) { console.error("ERRO CRITICAL NO CRM:", err);
           console.error('Import Step Error:', err);
         }
       }
