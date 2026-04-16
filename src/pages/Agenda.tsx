@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   ChevronLeft,
@@ -214,9 +214,9 @@ export default function Agenda() {
                 onChange={(e) => setSearchFilter(e.target.value)} 
                 placeholder="Filtrar compromissos..." 
                 className="pl-10 pr-4 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] text-[10px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-indigo-500/10 w-64" 
-              \/>
-              <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" \/>
-            <\/div>
+              />
+              <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" />
+            </div>
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-900 p-2 rounded-[24px] border border-slate-100 dark:border-zinc-800">
                {googleConnected && (
                   <button 
@@ -379,9 +379,9 @@ export default function Agenda() {
                 onChange={(e) => setSearchFilter(e.target.value)} 
                 placeholder="Filtrar compromissos..." 
                 className="pl-10 pr-4 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] text-[10px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-indigo-500/10 w-64" 
-              \/>
-              <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" \/>
-            <\/div>
+              />
+              <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" />
+            </div>
                         <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-[24px]">
                            <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
                         </div>
@@ -416,4 +416,5 @@ export default function Agenda() {
     </div>
   );
 }
+
 
