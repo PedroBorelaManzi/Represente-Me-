@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import {
   Plus,
   ChevronLeft,
@@ -50,6 +50,7 @@ export default function Agenda() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [selectedHoliday, setSelectedHoliday] = useState<Holiday | null>(null);
+  const [searchFilter, setSearchFilter] = useState('');
 
   const fetchEvents = async () => {
     if (!user) return;
@@ -83,7 +84,7 @@ export default function Agenda() {
   const handleSync = async () => {
     if (!user) return;
     setIsSyncing(true);
-    const toastId = toast.loading("Sincronizando com Google Agenda...");
+    const toastId = toast.loading("Sincronizando com o Calendário Google...");
     const res = await syncGoogleEvents(user.id);
     if (res.success) {
       toast.success(res.message, { id: toastId });
@@ -206,6 +207,16 @@ export default function Agenda() {
         </div>
         
         <div className="flex items-center gap-4">
+            <div className="relative">
+              <input 
+                type="text" 
+                value={searchFilter} 
+                onChange={(e) => setSearchFilter(e.target.value)} 
+                placeholder="Filtrar compromissos..." 
+                className="pl-10 pr-4 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] text-[10px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-indigo-500/10 w-64" 
+              \/>
+              <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" \/>
+            <\/div>
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-900 p-2 rounded-[24px] border border-slate-100 dark:border-zinc-800">
                {googleConnected && (
                   <button 
@@ -224,7 +235,7 @@ export default function Agenda() {
                 )}
                >
                 <Globe className="w-5 h-5 text-indigo-600" />
-                {googleConnected ? "G-Agenda Ativa" : "Conectar Calendário"}
+                {googleConnected ? "Google Calendar Ativo" : "Conectar Calendário"}
                </button>
             </div>
             <button 
@@ -268,7 +279,7 @@ export default function Agenda() {
             {daysArray.map((date, i) => {
               const dateIso = date ? formatDateLocal(date) : null;
               const isToday = dateIso === formatDateLocal(new Date());
-              const dayEvents = dateIso ? events.filter(e => e.date === dateIso) : [];
+              const dayEvents = dateIso ? events.filter(e => e.date === dateIso && (e.title.toLowerCase().includes(searchFilter.toLowerCase()) || clients.find(c => c.id === e.client_id)?.name.toLowerCase().includes(searchFilter.toLowerCase()))) : [];
               const dayHolidays = holidays.filter(h => h.date === dateIso);
 
               return (
@@ -361,6 +372,16 @@ export default function Agenda() {
                 <div className="p-10">
                    <div className="flex justify-between items-start mb-8">
                      <div className="flex items-center gap-4">
+            <div className="relative">
+              <input 
+                type="text" 
+                value={searchFilter} 
+                onChange={(e) => setSearchFilter(e.target.value)} 
+                placeholder="Filtrar compromissos..." 
+                className="pl-10 pr-4 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] text-[10px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-indigo-500/10 w-64" 
+              \/>
+              <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" \/>
+            <\/div>
                         <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-[24px]">
                            <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
                         </div>
@@ -395,3 +416,4 @@ export default function Agenda() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -6,10 +6,26 @@ import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, Externa
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { useSettings } from "../contexts/SettingsContext";
 import { toast } from "sonner";
 
 // Fix for default marker icon in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
+
+const createCustomIcon = (color: string) => {
+  return L.divIcon({
+    className: 'custom-pin',
+    html: `<div style="position: relative; width: 25px; height: 41px;"><svg viewBox="0 0 24 24" fill="" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"\/><\/svg><\/div>`,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    tooltipAnchor: [16, -28],
+  });
+};
+
+const defaultIcon = createCustomIcon('#6366f1'); // Indigo
+const inactiveIcon = createCustomIcon('#94a3b8'); // Slate-400 (Gray)
+
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
   iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
@@ -26,6 +42,7 @@ function ChangeView({ center, zoom }: { center: [number, number], zoom: number }
 }
 
 export default function MapPage() {
+  const { settings } = useSettings();
   const [companies, setCompanies] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchingMap, setIsSearchingMap] = useState(false);
@@ -407,3 +424,4 @@ export default function MapPage() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo } from "react";
 import { 
   Building2, 
   Plus, 
@@ -373,3 +373,4 @@ export default function EmpresasPage() {
     </div>
   );
 }
+

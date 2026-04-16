@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+﻿import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { Settings, TrendingUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -38,7 +38,9 @@ const RevenueChart = ({ data, loading, currentDate, onPrevMonth, onNextMonth }) 
   };
 
   return (
-    <div className="flex flex-col h-full relative" style={{ minHeight: '350px' }}>
+    
+<div className="bg-white dark:bg-zinc-900 rounded-[32px] border-2 border-indigo-600/20 p-6 shadow-xl">
+<div className="flex flex-col h-full relative" style={{ minHeight: '350px' }}>
       <AnimatePresence>
         {showSettings && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute inset-x-0 top-0 z-[100] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] p-6 shadow-2xl">
@@ -125,7 +127,9 @@ const RevenueChart = ({ data, loading, currentDate, onPrevMonth, onNextMonth }) 
         </div>
       </div>
     </div>
+  </div>
   );
 };
 
 export default RevenueChart;
+

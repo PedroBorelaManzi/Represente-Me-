@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo } from "react";
 import { Plus, ChevronLeft, ChevronRight, Clock, X, Home, Loader2, Users, Globe, RefreshCw } from "lucide-react";
 import { supabase, logAudit } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -41,6 +41,18 @@ export default function Dashboard() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [userCategories, setUserCategories] = useState<string[]>([]);
+
+  const handlePrevMonth = () => {
+    const next = new Date(currentDate);
+    next.setMonth(next.getMonth() - 1);
+    setCurrentDate(next);
+  };
+
+  const handleNextMonth = () => {
+    const next = new Date(currentDate);
+    next.setMonth(next.getMonth() + 1);
+    setCurrentDate(next);
+  };
 
     const weekDays = useMemo(() => { 
     try { 
@@ -111,7 +123,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    logAudit('ACCESS_DASHBOARD'); loadData(); }, [user, currentDate.getFullYear()]);
+    logAudit('ACCESS_DASHBOARD'); loadData(); }, [user, currentDate.getFullYear(), currentDate.getMonth()]);
 
   // Aggregate revenue data for the chart with dynamic categories
   const revenueChartData = useMemo(() => { try {
@@ -409,7 +421,7 @@ export default function Dashboard() {
         {/* Right Column: Revenue Chart (~40% - 2/5 Width, 50% Height) */}
         <div className="lg:col-span-2 h-full flex flex-col gap-6">
            <div className="h-1/2 min-h-[300px]">
-              <RevenueChart data={revenueChartData} loading={loading} />
+              <RevenueChart data={revenueChartData} loading={loading} currentDate={currentDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} />
            </div>
            {/* Space below for layout balance */}
            <div className="hidden lg:block h-1/2" />
@@ -431,3 +443,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+

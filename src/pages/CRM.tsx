@@ -52,7 +52,7 @@ export default function CRMPage() {
       const clientsWithAlerts = (clientsData || []).map((client: any) => {
         const clientFiles = filesByClient[client.id] || [];
         const lastDates: any = {};
-        if (!clientFiles) return; clientFiles.forEach((f: any) => {
+        if (!clientFiles) return client; clientFiles.forEach((f: any) => {
           const parts = f.file_name.split("___");
           if (parts.length > 1) {
             const rawCat = parts[0];
@@ -84,10 +84,10 @@ export default function CRMPage() {
 
   useEffect(() => {
     logAudit('ACCESS_CLIENT_LIST');
-    if (user) {
+    if (user && settings) {
       loadClients();
     }
-  }, [user, settings.categories]);
+  }, [user, settings?.categories]);
 
   // REFINED FILTER: Name, CNPJ, City (Ignore Address)
   const filteredClients = useMemo(() => {
@@ -293,4 +293,5 @@ export default function CRMPage() {
     </div>
   );
 }
+
 

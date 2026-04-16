@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Plus, Trash2, Sun, Moon, Check, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSettings } from "../contexts/SettingsContext";
@@ -24,6 +24,7 @@ export default function OnboardingModal() {
   const [alerta, setAlerta] = useState(15);
   const [critico, setCritico] = useState(30);
   const [perda, setPerda] = useState(45);
+  const [inativo, setInativo] = useState(90);
 
   // Step 3: Theme
   const [theme, setTheme] = useState<'light' | 'dark'>(settings.theme || 'light');
@@ -37,6 +38,7 @@ export default function OnboardingModal() {
       alerta_days: alerta,
       critico_days: critico,
       perda_days: perda,
+      inativo_days: inativo,
       theme,
       revenue_ceiling: ceiling,
       has_completed_onboarding: true,
@@ -143,6 +145,7 @@ export default function OnboardingModal() {
                     setAlerta(val);
                     if (critico <= val) setCritico(val + 5);
                     if (perda <= val + 5) setPerda(val + 10);
+                    if (inativo <= val + 10) setInativo(val + 15);
                   }} className="w-full accent-amber-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
                 </div>
 
@@ -155,6 +158,7 @@ export default function OnboardingModal() {
                     const val = Number(e.target.value);
                     setCritico(val);
                     if (perda <= val) setPerda(val + 5);
+                    if (inativo <= val + 5) setInativo(val + 10);
                   }} className="w-full accent-orange-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
                 </div>
 
@@ -163,7 +167,7 @@ export default function OnboardingModal() {
                     <span className="font-semibold text-red-600">Dias para Perda</span>
                     <span className="font-bold text-slate-700 dark:text-zinc-300">{perda} dias</span>
                   </div>
-                  <input type="range" min={critico + 5} max="180" step="5" value={perda} onChange={(e) => setPerda(Number(e.target.value))} className="w-full accent-red-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
+                  <input type="range" min={critico + 5} max="180" step="5" value={perda} onChange={(e) => setPerda(Number(e.target.value)); if (inativo <= Number(e.target.value)) setInativo(Number(e.target.value) + 5); } className="w-full accent-red-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
                 </div>
               </div>
 
@@ -264,3 +268,4 @@ export default function OnboardingModal() {
     </div>
   );
 }
+

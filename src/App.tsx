@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./pages/LandingPitch";
 import Login from "./pages/Login";
 import Layout from "./components/Layout";
@@ -10,7 +10,6 @@ import ClientDetailsPage from "./pages/ClientDetails";
 import EmpresasPage from "./pages/Empresas";
 import AgendaPage from "./pages/Agenda";
 import PedidosPage from "./pages/Pedidos";
-import AuditLogs from "./pages/AuditLogs";
 import GoogleCallback from "./pages/GoogleCallback";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
@@ -38,7 +37,6 @@ export default function App() {
               <Route path="empresas" element={<EmpresasPage />} />
               <Route path="agenda" element={<AgendaPage />} />
               <Route path="pedidos" element={<PedidosPage />} />
-              <Route path="auditoria" element={<AuditLogs />} />
             </Route>
           </Route>
 
