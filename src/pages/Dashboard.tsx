@@ -41,20 +41,27 @@ export default function Dashboard() {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [userCategories, setUserCategories] = useState<string[]>([]);
 
-  const startOfWeek = new Date(currentDate);
-  const day = startOfWeek.getDay(); 
-  // Sunday is 0, Monday is 1... We start exactly at Sunday
-  const diff = startOfWeek.getDate() - day; 
-  startOfWeek.setDate(diff);
-  startOfWeek.setHours(0, 0, 0, 0);
+    const weekDays = useMemo(() => { 
+    try { 
+      const start = new Date(currentDate); 
+      const day = start.getDay(); 
+      start.setDate(start.getDate() - day); 
+      start.setHours(0,0,0,0); 
+      return Array.from({ length: 7 }).map((_, i) => { 
+        const d = new Date(start); 
+        d.setDate(d.getDate() + i); 
+        return d; 
+      }); 
+    } catch(e) { 
+      console.error("weekDays error:", e); 
+      return []; 
+    } 
+  }, [currentDate]);
 
-  const weekDays = useMemo(() => { try { const start = new Date(currentDate); const day = start.getDay(); start.setDate(start.getDate() - day); start.setHours(0,0,0,0); return Array.from({ length: 7 }).map((_, i) => { const d = new Date(start); d.setDate(d.getDate() + i); return d; }); } catch(e) { console.error("weekDays error:", e); return []; } }, [currentDate]);
-    const d = new Date(startOfWeek);
-    d.setDate(d.getDate() + i);
-    return d;
-  });
-
-  const isSameDay = (d1: Date, d2: string) => { if (!d1 || !d2) return false; return formatDateLocal(d1) === d2; };
+  const isSameDay = (d1: Date, d2: string) => { 
+    if (!d1 || !d2) return false; 
+    return formatDateLocal(d1) === d2; 
+  };
 
   const loadData = async () => {
     if (!user) return;
