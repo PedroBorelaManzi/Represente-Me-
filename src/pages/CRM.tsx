@@ -28,7 +28,6 @@ export default function CRMPage() {
   const loadClients = async () => {
     if (!user) return;
     try {
-      console.log("LOG: Iniciando CRM...");
       setLoading(true);
       // Fetch Clients
       const { data: clientsData, error } = await supabase
@@ -112,7 +111,6 @@ export default function CRMPage() {
     if (!window.confirm('Deseja realmente excluir este cliente? Todos os pedidos associados serão mantidos, mas o vínculo será perdido.')) return;
     
     try {
-      console.log("LOG: Iniciando CRM...");
       const { error } = await supabase.from('clients').delete().eq('id', id).eq('user_id', user?.id);
       if (error) throw error;
       setClients(prev => prev.filter(c => c.id !== id));
@@ -131,7 +129,6 @@ export default function CRMPage() {
     const toastId = toast.loading('Processando arquivo via IA...');
 
     try {
-      console.log("LOG: Iniciando CRM...");
       const cnpjs = await parseFileForCnpjs(file);
       if (cnpjs.length === 0) {
         toast.error('Nenhum CNPJ detectado no arquivo.');
@@ -152,7 +149,6 @@ export default function CRMPage() {
         if (isDuplicate) continue;
 
         try {
-      console.log("LOG: Iniciando CRM...");
           const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
           if (response.ok) {
             const data = await response.json();

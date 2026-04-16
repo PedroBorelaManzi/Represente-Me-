@@ -1,6 +1,5 @@
 ﻿import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./pages/LandingPitch";
-import ErrorBoundary from "./components/ErrorBoundary";
 import Login from "./pages/Login";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -20,7 +19,6 @@ import { Toaster } from "sonner";
 
 export default function App() {
   return (
-    <ErrorBoundary>
     <AuthProvider>
       <Toaster position="top-right" expand={false} richColors />
       <SettingsProvider>
@@ -51,7 +49,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
       </SettingsProvider>
-        </AuthProvider>
-    </ErrorBoundary>
+    </AuthProvider>
   );
 }
