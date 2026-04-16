@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Plus, ChevronLeft, ChevronRight, Clock, X, Home, Loader2, Users, Globe, RefreshCw } from "lucide-react";
 import { supabase, logAudit } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -166,7 +166,7 @@ export default function Dashboard() {
   const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert("Erro: Client ID do Google nÃ£o configurado.");
+      alert("Erro: Client ID do Google não configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -264,7 +264,7 @@ export default function Dashboard() {
       const hour = parseInt(start.split(":")[0]);
       const minute = parseInt(start.split(":")[1] || "0");
       if (hour < 7 || hour > 22) return null;
-      if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="p-8 text-center text-slate-500">Erro ao processar calendário.</div>; if (loading) return <div className="flex items-center justify-center h-full bg-slate-50 dark:bg-zinc-950"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="flex items-center justify-center h-full text-slate-500">Erro ao carregar calendǭrio.</div>; return (hour - 7) * 60 + minute;
+          return (hour - 7) * 60 + minute;
     } catch { return null; }
   };
 
@@ -276,17 +276,17 @@ export default function Dashboard() {
       const startMin = parseInt(start[0]) * 60 + parseInt(start[1] || "0");
       const endMin = parseInt(end[0]) * 60 + parseInt(end[1] || "0");
       const duration = endMin - startMin;
-      return Math.max(duration, 24); // MÃ­nimo de 24px para visibilidade
+      return Math.max(duration, 24); // Mínimo de 24px para visibilidade
     } catch { return 48; }
   };
 
-  if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="p-8 text-center text-slate-500">Erro ao processar calendário.</div>; if (loading) return <div className="flex items-center justify-center h-full bg-slate-50 dark:bg-zinc-950"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="flex items-center justify-center h-full text-slate-500">Erro ao carregar calendǭrio.</div>; return (
+      return (
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-tight">
             <Home className="w-6 h-6 text-indigo-600" />
-            InÃ­cio
+            Início
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Sua agenda semanal sincronizada e faturamento.</p>
         </div>
@@ -348,7 +348,7 @@ export default function Dashboard() {
                   <div className="flex-1 grid grid-cols-7 divide-x divide-slate-300 dark:divide-zinc-700/50">
                     {weekDays.map((date, i) => {
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
-                      if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="p-8 text-center text-slate-500">Erro ao processar calendário.</div>; if (loading) return <div className="flex items-center justify-center h-full bg-slate-50 dark:bg-zinc-950"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="flex items-center justify-center h-full text-slate-500">Erro ao carregar calendǭrio.</div>; return (
+                          return (
                         <div key={i} className={cn("py-2 text-center", isToday ? "bg-indigo-50/50 dark:bg-indigo-500/10" : "")}>
                           <div className={cn("text-[6px] font-black uppercase tracking-widest", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-zinc-500")}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
                           <div className={cn("text-[10px] font-black", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-zinc-100")}>{date.getDate()}</div>
@@ -376,7 +376,7 @@ export default function Dashboard() {
                     {weekDays.map((date, dayIdx) => {
                       const dayEvents = (events || []).filter(e => e && isSameDay(date, e.date));
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
-                      if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="p-8 text-center text-slate-500">Erro ao processar calendário.</div>; if (loading) return <div className="flex items-center justify-center h-full bg-slate-50 dark:bg-zinc-950"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="flex items-center justify-center h-full text-slate-500">Erro ao carregar calendǭrio.</div>; return (
+                          return (
                         <div key={dayIdx} className={cn("relative h-full", isToday ? "bg-indigo-50/5" : "")}>
                           {HOURS.map(hour => (
                             <div key={hour} className={cn("h-[60px] border-b border-slate-300 dark:border-zinc-700/50 cursor-pointer transition-colors", dragOverInfo?.dayIndex === dayIdx && dragOverInfo?.hour === hour ? "bg-indigo-500/10" : "hover:bg-slate-50/30")} onDragOver={(e) => onDragOver(e, dayIdx, hour)} onDrop={(e) => onDrop(e, date, hour)} onClick={() => openNewEventModal(date, hour)} />
@@ -387,7 +387,7 @@ export default function Dashboard() {
                               const height = getEventHeight(event.time);
                               if (top === null) return null;
                               const clientName = clients.find(c => c.id === event.client_id)?.name;
-                              if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="p-8 text-center text-slate-500">Erro ao processar calendário.</div>; if (loading) return <div className="flex items-center justify-center h-full bg-slate-50 dark:bg-zinc-950"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="flex items-center justify-center h-full text-slate-500">Erro ao carregar calendǭrio.</div>; return (
+                                  return (
                                 <div key={event.id} draggable onDragStart={(e) => onDragStart(e, event.id)} onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }} className="absolute left-0.5 right-0.5 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm rounded-lg p-1 transition-all cursor-grab active:cursor-grabbing z-10 overflow-hidden ring-1 ring-slate-900/5" style={{ top: `${top}px`, height: `${height}px` }}>
                                   <div className="text-[8px] font-black text-slate-900 dark:text-zinc-100 mb-0.5 truncate leading-tight">{event.title}</div>
                                   {clientName && <div className="text-[6px] font-black text-indigo-600 dark:text-indigo-400 uppercase truncate">@{clientName}</div>}
