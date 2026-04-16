@@ -48,7 +48,7 @@ export default function Dashboard() {
   startOfWeek.setDate(diff);
   startOfWeek.setHours(0, 0, 0, 0);
 
-  const weekDays = Array.from({ length: 7 }).map((_, i) => {
+  const weekDays = useMemo(() => { try { const start = new Date(currentDate); const day = start.getDay(); start.setDate(start.getDate() - day); start.setHours(0,0,0,0); return Array.from({ length: 7 }).map((_, i) => { const d = new Date(start); d.setDate(d.getDate() + i); return d; }); } catch(e) { console.error("weekDays error:", e); return []; } }, [currentDate]);
     const d = new Date(startOfWeek);
     d.setDate(d.getDate() + i);
     return d;
@@ -257,7 +257,7 @@ export default function Dashboard() {
       const hour = parseInt(start.split(":")[0]);
       const minute = parseInt(start.split(":")[1] || "0");
       if (hour < 7 || hour > 22) return null;
-      return (hour - 7) * 60 + minute;
+      if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="p-8 text-center text-slate-500">Erro ao processar calendário.</div>; return (hour - 7) * 60 + minute;
     } catch { return null; }
   };
 
@@ -273,7 +273,7 @@ export default function Dashboard() {
     } catch { return 48; }
   };
 
-  return (
+  if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="p-8 text-center text-slate-500">Erro ao processar calendário.</div>; return (
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -341,13 +341,13 @@ export default function Dashboard() {
                   <div className="flex-1 grid grid-cols-7 divide-x divide-slate-300 dark:divide-zinc-700/50">
                     {weekDays.map((date, i) => {
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
-                      return (
+                      if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="p-8 text-center text-slate-500">Erro ao processar calendário.</div>; return (
                         <div key={i} className={cn("py-2 text-center", isToday ? "bg-indigo-50/50 dark:bg-indigo-500/10" : "")}>
                           <div className={cn("text-[6px] font-black uppercase tracking-widest", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-zinc-500")}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
                           <div className={cn("text-[10px] font-black", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-zinc-100")}>{date.getDate()}</div>
 
                           {/* Holidays for this day */}
-                          {holidays.filter(h => h.date === formatDateLocal(date)).map((h, idx) => (
+                          { (holidays || []).filter(h => h && h.date === formatDateLocal(date)).map((h, idx) => (
                             <div key={idx} className="mt-1 px-1 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-[6px] font-black text-amber-700 dark:text-amber-400 rounded-md border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm" title={h.name}>
                               <span className="w-0.5 h-0.5 rounded-full bg-amber-500 flex-shrink-0" />
                               <span className="truncate flex-1 min-w-0">{h.name}</span>
@@ -367,9 +367,9 @@ export default function Dashboard() {
                   </div>
                   <div className="flex-1 grid grid-cols-7 divide-x divide-slate-300 dark:divide-zinc-700/50 relative">
                     {weekDays.map((date, dayIdx) => {
-                      const dayEvents = events.filter(e => isSameDay(date, e.date));
+                      const dayEvents = (events || []).filter(e => e && isSameDay(date, e.date));
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
-                      return (
+                      if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="p-8 text-center text-slate-500">Erro ao processar calendário.</div>; return (
                         <div key={dayIdx} className={cn("relative h-full", isToday ? "bg-indigo-50/5" : "")}>
                           {HOURS.map(hour => (
                             <div key={hour} className={cn("h-[60px] border-b border-slate-300 dark:border-zinc-700/50 cursor-pointer transition-colors", dragOverInfo?.dayIndex === dayIdx && dragOverInfo?.hour === hour ? "bg-indigo-500/10" : "hover:bg-slate-50/30")} onDragOver={(e) => onDragOver(e, dayIdx, hour)} onDrop={(e) => onDrop(e, date, hour)} onClick={() => openNewEventModal(date, hour)} />
@@ -380,7 +380,7 @@ export default function Dashboard() {
                               const height = getEventHeight(event.time);
                               if (top === null) return null;
                               const clientName = clients.find(c => c.id === event.client_id)?.name;
-                              return (
+                              if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>; if (!weekDays || weekDays.length === 0) return <div className="p-8 text-center text-slate-500">Erro ao processar calendário.</div>; return (
                                 <div key={event.id} draggable onDragStart={(e) => onDragStart(e, event.id)} onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }} className="absolute left-0.5 right-0.5 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm rounded-lg p-1 transition-all cursor-grab active:cursor-grabbing z-10 overflow-hidden ring-1 ring-slate-900/5" style={{ top: `${top}px`, height: `${height}px` }}>
                                   <div className="text-[8px] font-black text-slate-900 dark:text-zinc-100 mb-0.5 truncate leading-tight">{event.title}</div>
                                   {clientName && <div className="text-[6px] font-black text-indigo-600 dark:text-indigo-400 uppercase truncate">@{clientName}</div>}
