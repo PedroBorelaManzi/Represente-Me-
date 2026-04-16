@@ -167,7 +167,7 @@ export default function OnboardingModal() {
                     <span className="font-semibold text-red-600">Dias para Perda</span>
                     <span className="font-bold text-slate-700 dark:text-zinc-300">{perda} dias</span>
                   </div>
-                  <input type="range" min={critico + 5} max="180" step="5" value={perda} onChange={(e) => setPerda(Number(e.target.value)); if (inativo <= Number(e.target.value)) setInativo(Number(e.target.value) + 5); } className="w-full accent-red-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
+                  <input type="range" min={critico + 5} max="180" step="5" value={perda} onChange={(e) => { setPerda(Number(e.target.value)); if (inativo <= Number(e.target.value)) setInativo(Number(e.target.value) + 5); }} className="w-full accent-red-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
                 </div>
               </div>
 
