@@ -8,27 +8,29 @@ interface LogoProps {
 export const Logo: React.FC<LogoProps> = ({ className = "h-8", showText = true }) => {
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      {/* O "R" com a Flecha Estilizada */}
-      <svg 
-        viewBox="0 0 100 100" 
+      {/* O Novo "R" Estilizado Moderno Premium */}
+      <svg
+        viewBox="0 0 100 100"
         className="h-full w-auto drop-shadow-[0_0_15px_rgba(16,185,129,0.2)]"
-        fill="none" 
+        fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <rect width="100" height="100" rx="24" fill="currentColor" className="text-emerald-600" />
-        <path 
-          d="M35 70V30H55C63.2843 30 70 36.7157 70 45C70 53.2843 63.2843 60 55 60H35M35 60L55 80" 
-          stroke="white" 
-          strokeWidth="10" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
+        {/* Usamos o stroke esmeralda para os traços, sem o fundo fechado */}
+         <path
+            d="M30 65 L30 35 C30 25 45 25 55 25 C65 25 75 35 65 45 C55 55 45 45 30 45"
+            stroke="currentColor"
+            className="text-emerald-600"
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeLinejoin="round"
         />
-        <path 
-          d="M65 35L75 25M75 25V35M75 25H65" 
-          stroke="white" 
-          strokeWidth="6" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
+        <path
+            d="M45 45 L65 70"
+            stroke="currentColor"
+            className="text-emerald-500"
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeLinejoin="round"
         />
       </svg>
       {showText && (
