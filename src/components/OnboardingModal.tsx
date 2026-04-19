@@ -56,10 +56,10 @@ export default function OnboardingModal() {
       >
         {/* Progress Bar */}
         <div className="flex gap-2">
-          <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
-          <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
-          <div className={`h-1.5 flex-1 rounded-full ${step >= 3 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
-          <div className={`h-1.5 flex-1 rounded-full ${step >= 4 ? "bg-indigo-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
+          <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? "bg-emerald-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
+          <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? "bg-emerald-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
+          <div className={`h-1.5 flex-1 rounded-full ${step >= 3 ? "bg-emerald-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
+          <div className={`h-1.5 flex-1 rounded-full ${step >= 4 ? "bg-emerald-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
         </div>
 
         <AnimatePresence mode="wait">
@@ -82,13 +82,13 @@ export default function OnboardingModal() {
                   value={newCat}
                   onChange={(e) => setNewCat(e.target.value)}
                   placeholder="Ex: Nestle, Coca-Cola..."
-                  className="flex-1 px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100"
+                  className="flex-1 px-4 py-3 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100"
                   onKeyDown={(e) => e.key === 'Enter' && addCategory()}
                 />
                 <button 
                   onClick={addCategory}
                   disabled={!newCat.trim()}
-                  className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:opacity-50 transition-colors"
+                  className="px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl disabled:opacity-50 transition-colors"
                 >
                   <Plus className="w-5 h-5" />
                 </button>
@@ -114,7 +114,7 @@ export default function OnboardingModal() {
               <button 
                 onClick={() => setStep(2)}
                 disabled={categories.length === 0}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm tracking-wide disabled:opacity-50 flex items-center justify-center gap-1 mt-4"
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm tracking-wide disabled:opacity-50 flex items-center justify-center gap-1 mt-4"
               >
                 Próximo Passo <ChevronRight className="w-4 h-4" />
               </button>
@@ -173,7 +173,7 @@ export default function OnboardingModal() {
 
               <div className="flex gap-3 mt-4">
                 <button onClick={() => setStep(1)} className="flex-1 py-3 bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300 rounded-xl font-bold text-sm">Voltar</button>
-                <button onClick={() => setStep(3)} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1">Próximo</button>
+                <button onClick={() => setStep(3)} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1">Próximo</button>
               </div>
             </motion.div>
           )}
@@ -193,24 +193,24 @@ export default function OnboardingModal() {
               <div className="grid grid-cols-2 gap-4">
                 <button 
                   onClick={() => setTheme('light')}
-                  className={`p-5 rounded-2xl border flex flex-col items-center gap-3 transition-all ${theme === 'light' ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20" : "border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"}`}
+                  className={`p-5 rounded-2xl border flex flex-col items-center gap-3 transition-all ${theme === 'light' ? "border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20" : "border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"}`}
                 >
-                  <Sun className={`w-8 h-8 ${theme === 'light' ? "text-indigo-600" : "text-slate-400"}`} />
+                  <Sun className={`w-8 h-8 ${theme === 'light' ? "text-emerald-600" : "text-slate-400"}`} />
                   <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">Tema Claro</span>
                 </button>
 
                 <button 
                   onClick={() => setTheme('dark')}
-                  className={`p-5 rounded-2xl border flex flex-col items-center gap-3 transition-all ${theme === 'dark' ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20" : "border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"}`}
+                  className={`p-5 rounded-2xl border flex flex-col items-center gap-3 transition-all ${theme === 'dark' ? "border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20" : "border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950"}`}
                 >
-                  <Moon className={`w-8 h-8 ${theme === 'dark' ? "text-indigo-600" : "text-slate-400"}`} />
+                  <Moon className={`w-8 h-8 ${theme === 'dark' ? "text-emerald-600" : "text-slate-400"}`} />
                   <span className="text-sm font-bold text-slate-800 dark:text-zinc-200">Tema Escuro</span>
                 </button>
               </div>
 
               <div className="flex gap-3 mt-4">
                 <button onClick={() => setStep(2)} className="flex-1 py-3 bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300 rounded-xl font-bold text-sm">Voltar</button>
-                <button onClick={() => setStep(4)} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1">Próximo</button>
+                <button onClick={() => setStep(4)} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1">Próximo</button>
               </div>
             </motion.div>
           )}
@@ -231,7 +231,7 @@ export default function OnboardingModal() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs">
                     <span className="font-semibold text-slate-500">Valor do Teto Anual/Mensal</span>
-                    <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(ceiling)}
                     </span>
                   </div>
@@ -242,7 +242,7 @@ export default function OnboardingModal() {
                     step="100000" 
                     value={ceiling} 
                     onChange={(e) => setCeiling(Number(e.target.value))} 
-                    className="w-full accent-indigo-600 h-2 bg-slate-100 dark:bg-zinc-800 rounded-full cursor-pointer" 
+                    className="w-full accent-emerald-600 h-2 bg-slate-100 dark:bg-zinc-800 rounded-full cursor-pointer" 
                   />
                   <div className="flex justify-between text-[10px] text-slate-400">
                     <span>R$ 100k</span>
@@ -250,8 +250,8 @@ export default function OnboardingModal() {
                   </div>
                 </div>
 
-                <div className="p-4 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl border border-indigo-100 dark:border-indigo-500/20">
-                  <p className="text-xs text-indigo-700 dark:text-indigo-300">
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl border border-emerald-100 dark:border-emerald-500/20">
+                  <p className="text-xs text-emerald-700 dark:text-emerald-300">
                     Este valor será usado como limite máximo nos gráficos de faturamento por empresa. Você pode alterar isso depois nas configurações do gráfico.
                   </p>
                 </div>
@@ -259,7 +259,7 @@ export default function OnboardingModal() {
 
               <div className="flex gap-3 mt-4">
                 <button onClick={() => setStep(3)} className="flex-1 py-3 bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300 rounded-xl font-bold text-sm">Voltar</button>
-                <button onClick={handleFinish} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Finalizar</button>
+                <button onClick={handleFinish} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Finalizar</button>
               </div>
             </motion.div>
           )}

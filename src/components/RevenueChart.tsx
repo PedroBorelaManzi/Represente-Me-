@@ -39,7 +39,7 @@ const RevenueChart = ({ data, loading, currentDate, onPrevMonth, onNextMonth }) 
 
   return (
     
-<div className="bg-white dark:bg-zinc-900 rounded-[32px] border-2 border-indigo-600/20 p-6 shadow-xl">
+<div className="bg-white dark:bg-zinc-900 rounded-[32px] border-2 border-emerald-600/20 p-6 shadow-xl">
 <div className="flex flex-col h-full relative" style={{ minHeight: '350px' }}>
       <AnimatePresence>
         {showSettings && (
@@ -61,14 +61,14 @@ const RevenueChart = ({ data, loading, currentDate, onPrevMonth, onNextMonth }) 
       <div className="flex items-center justify-between mb-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-             <TrendingUp className="w-4 h-4 text-indigo-600" />
+             <TrendingUp className="w-4 h-4 text-emerald-600" />
              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Faturamento por empresa</h2>
           </div>
           <div className="flex items-center gap-2 mt-1">
             <button onClick={onPrevMonth} className="p-1 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-lg transition-colors">
               <ChevronLeft className="w-3 h-3 text-slate-400" />
             </button>
-            <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest min-w-[100px] text-center">
+            <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest min-w-[100px] text-center">
               {currentDate?.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }) || '---'}
             </span>
             <button onClick={onNextMonth} className="p-1 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-lg transition-colors">
@@ -96,7 +96,7 @@ const RevenueChart = ({ data, loading, currentDate, onPrevMonth, onNextMonth }) 
                 <motion.div 
                   initial={{ height: 0 }} 
                   animate={{ height: h + '%' }} 
-                  className={cn("w-full max-w-[64px] rounded-t-xl transition-all relative flex flex-col items-center justify-start pt-2", isSelected ? "bg-indigo-600 shadow-[0_0_20px_rgba(79,70,229,0.3)]" : "bg-indigo-500/80")}
+                  className={cn("w-full max-w-[64px] rounded-t-xl transition-all relative flex flex-col items-center justify-start pt-2", isSelected ? "bg-emerald-600 shadow-[0_0_20px_rgba(79,70,229,0.3)]" : "bg-emerald-500/80")}
                 >
                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-t-xl" />
                    
@@ -119,7 +119,7 @@ const RevenueChart = ({ data, loading, currentDate, onPrevMonth, onNextMonth }) 
                    </AnimatePresence>
                 </motion.div>
                 <div className="absolute bottom-0 left-0 right-0 h-8 flex items-center justify-center">
-                  <p className={cn("text-[8px] font-black uppercase truncate px-1", isSelected ? "text-indigo-600" : "text-slate-900 dark:text-zinc-100")}>{item.name}</p>
+                  <p className={cn("text-[8px] font-black uppercase truncate px-1", isSelected ? "text-emerald-600" : "text-slate-900 dark:text-zinc-100")}>{item.name}</p>
                 </div>
               </div>
             );

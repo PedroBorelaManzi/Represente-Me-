@@ -82,13 +82,13 @@ export default function Planos() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-3 px-6 py-3 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-black uppercase tracking-[0.2em] mb-8 border border-indigo-100 dark:border-indigo-900/40"
+          className="inline-flex items-center gap-3 px-6 py-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-black uppercase tracking-[0.2em] mb-8 border border-emerald-100 dark:border-emerald-900/40"
         >
           <Sparkles className="w-5 h-5 fill-current" /> Ecossistema & Investimento
         </motion.div>
         
         <h1 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-8 leading-[0.9]">
-            Escolha o seu <span className="text-indigo-600">nível de jogo</span>
+            Escolha o seu <span className="text-emerald-600">nível de jogo</span>
         </h1>
         <p className="text-slate-500 dark:text-zinc-400 max-w-2xl mx-auto font-black uppercase tracking-tight text-sm leading-relaxed mb-12">
             Aumente sua produtividade com ferramentas agentic e inteligência brasileira de ponta.
@@ -107,7 +107,7 @@ export default function Planos() {
               className={cn(
                 "relative flex flex-col p-12 rounded-[56px] border transition-all duration-700 hover:scale-[1.02]",
                 plan.featured 
-                  ? "bg-indigo-600 border-indigo-700 shadow-[0_48px_96px_-24px_rgba(99,102,241,0.4)] dark:shadow-none translate-y-[-20px]" 
+                  ? "bg-emerald-600 border-emerald-700 shadow-[0_48px_96px_-24px_rgba(99,102,241,0.4)] dark:shadow-none translate-y-[-20px]" 
                   : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 shadow-2xl"
               )}
             >
@@ -122,7 +122,7 @@ export default function Planos() {
                    <h3 className={cn("text-2xl font-black uppercase tracking-tighter mb-2", plan.featured ? "text-white" : "text-slate-900 dark:text-white")}>
                      {plan.name}
                    </h3>
-                   <p className={cn("text-[10px] font-black uppercase tracking-widest leading-relaxed", plan.featured ? "text-indigo-100" : "text-slate-400 dark:text-zinc-500")}>
+                   <p className={cn("text-[10px] font-black uppercase tracking-widest leading-relaxed", plan.featured ? "text-emerald-100" : "text-slate-400 dark:text-zinc-500")}>
                      {plan.description}
                    </p>
                 </div>
@@ -130,9 +130,9 @@ export default function Planos() {
               </div>
 
               <div className="flex items-baseline gap-2 mb-12">
-                <span className={cn("text-xs font-black uppercase tracking-widest", plan.featured ? "text-indigo-200" : "text-slate-400")}>R$</span>
+                <span className={cn("text-xs font-black uppercase tracking-widest", plan.featured ? "text-emerald-200" : "text-slate-400")}>R$</span>
                 <span className={cn("text-7xl font-black tracking-tighter", plan.featured ? "text-white" : "text-slate-900 dark:text-white")}>{plan.price}</span>
-                <span className={cn("text-xs font-black uppercase tracking-widest", plan.featured ? "text-indigo-200" : "text-slate-400")}>{plan.period}</span>
+                <span className={cn("text-xs font-black uppercase tracking-widest", plan.featured ? "text-emerald-200" : "text-slate-400")}>{plan.period}</span>
               </div>
 
               <div className="flex-1 space-y-6 mb-12">
@@ -140,11 +140,11 @@ export default function Planos() {
                   <div key={fIndex} className="flex items-center gap-4 group">
                     <div className={cn(
                         "shrink-0 p-2.5 rounded-2xl transition-all group-hover:scale-110", 
-                        plan.featured ? "bg-white/20 text-white" : "bg-slate-50 dark:bg-zinc-800 text-indigo-600 shadow-sm"
+                        plan.featured ? "bg-white/20 text-white" : "bg-slate-50 dark:bg-zinc-800 text-emerald-600 shadow-sm"
                     )}>
                       <feature.icon className="w-4 h-4" />
                     </div>
-                    <span className={cn("text-xs font-black uppercase tracking-tight", plan.featured ? "text-indigo-50" : "text-slate-700 dark:text-zinc-300")}>
+                    <span className={cn("text-xs font-black uppercase tracking-tight", plan.featured ? "text-emerald-50" : "text-slate-700 dark:text-zinc-300")}>
                       {feature.text}
                     </span>
                   </div>
@@ -154,8 +154,8 @@ export default function Planos() {
               <button className={cn(
                 "w-full py-7 rounded-[32px] font-black uppercase tracking-[0.2em] text-[11px] transition-all flex items-center justify-center gap-4 group active:scale-[0.98]",
                 plan.featured 
-                  ? "bg-white text-indigo-600 hover:bg-slate-50 shadow-2xl" 
-                  : "bg-slate-900 text-white dark:bg-indigo-600 shadow-xl"
+                  ? "bg-white text-emerald-600 hover:bg-slate-50 shadow-2xl" 
+                  : "bg-slate-900 text-white dark:bg-emerald-600 shadow-xl"
               )}>
                 {plan.buttonText}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
@@ -174,7 +174,7 @@ export default function Planos() {
       >
          <div className="flex items-center gap-10 flex-1">
             <div className="w-24 h-24 bg-white dark:bg-zinc-900 rounded-[40px] flex items-center justify-center shadow-2xl border border-slate-100 dark:border-zinc-800">
-                <Users2 className="w-12 h-12 text-indigo-600" />
+                <Users2 className="w-12 h-12 text-emerald-600" />
             </div>
             <div>
                <h4 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2">Precisa de um plano personalizado?</h4>
@@ -182,7 +182,7 @@ export default function Planos() {
             </div>
          </div>
          <button className="px-16 py-8 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] font-black uppercase tracking-[0.2em] text-xs hover:bg-slate-50 hover:scale-105 transition-all flex items-center gap-4 shadow-2xl active:scale-95">
-            Falar com Especialista <ArrowRight className="w-5 h-5 text-indigo-600" />
+            Falar com Especialista <ArrowRight className="w-5 h-5 text-emerald-600" />
          </button>
       </motion.div>
     </div>

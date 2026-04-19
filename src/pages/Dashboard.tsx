@@ -298,7 +298,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-tight">
-            <Home className="w-6 h-6 text-indigo-600" />
+            <Home className="w-6 h-6 text-emerald-600" />
             Início
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Sua agenda semanal sincronizada e faturamento.</p>
@@ -320,7 +320,7 @@ export default function Dashboard() {
                   <button 
                     onClick={handleSync}
                     disabled={isSyncing}
-                    className="p-2 rounded-xl text-indigo-600 hover:bg-indigo-50 transition-all disabled:opacity-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10"
+                    className="p-2 rounded-xl text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
                     title="Sincronizar Agora"
                   >
                     <RefreshCw className={cn("w-5 h-5", isSyncing && "animate-spin")} />
@@ -330,7 +330,7 @@ export default function Dashboard() {
                   onClick={handleGoogleConnect}
                   className={cn(
                     "p-2 rounded-xl transition-all",
-                    googleConnected ? "text-emerald-500" : "text-slate-400 hover:text-indigo-600"
+                    googleConnected ? "text-emerald-500" : "text-slate-400 hover:text-emerald-600"
                   )}
                   title={googleConnected ? "Google Conectado" : "Conectar Google Agenda"}
                 >
@@ -346,7 +346,7 @@ export default function Dashboard() {
               </div>
               <button 
                 onClick={() => openNewEventModal(new Date())} 
-                className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all shadow-lg shadow-indigo-100 dark:shadow-none uppercase tracking-wider"
+                className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all shadow-lg shadow-emerald-100 dark:shadow-none uppercase tracking-wider"
               >
                 <Plus className="w-4 h-4" /> Novo
               </button>
@@ -362,9 +362,9 @@ export default function Dashboard() {
                     {weekDays.map((date, i) => {
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
                           return (
-                        <div key={i} className={cn("py-2 text-center", isToday ? "bg-indigo-50/50 dark:bg-indigo-500/10" : "")}>
-                          <div className={cn("text-[6px] font-black uppercase tracking-widest", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-zinc-500")}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
-                          <div className={cn("text-[10px] font-black", isToday ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-zinc-100")}>{date.getDate()}</div>
+                        <div key={i} className={cn("py-2 text-center", isToday ? "bg-emerald-50/50 dark:bg-emerald-500/10" : "")}>
+                          <div className={cn("text-[6px] font-black uppercase tracking-widest", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500")}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
+                          <div className={cn("text-[10px] font-black", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-zinc-100")}>{date.getDate()}</div>
 
                           {/* Holidays for this day */}
                           { (holidays || []).filter(h => h && h.date === formatDateLocal(date)).map((h, idx) => (
@@ -390,9 +390,9 @@ export default function Dashboard() {
                       const dayEvents = (events || []).filter(e => e && isSameDay(date, e.date));
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
                           return (
-                        <div key={dayIdx} className={cn("relative h-full", isToday ? "bg-indigo-50/5" : "")}>
+                        <div key={dayIdx} className={cn("relative h-full", isToday ? "bg-emerald-50/5" : "")}>
                           {HOURS.map(hour => (
-                            <div key={hour} className={cn("h-[60px] border-b border-slate-300 dark:border-zinc-700/50 cursor-pointer transition-colors", dragOverInfo?.dayIndex === dayIdx && dragOverInfo?.hour === hour ? "bg-indigo-500/10" : "hover:bg-slate-50/30")} onDragOver={(e) => onDragOver(e, dayIdx, hour)} onDrop={(e) => onDrop(e, date, hour)} onClick={() => openNewEventModal(date, hour)} />
+                            <div key={hour} className={cn("h-[60px] border-b border-slate-300 dark:border-zinc-700/50 cursor-pointer transition-colors", dragOverInfo?.dayIndex === dayIdx && dragOverInfo?.hour === hour ? "bg-emerald-500/10" : "hover:bg-slate-50/30")} onDragOver={(e) => onDragOver(e, dayIdx, hour)} onDrop={(e) => onDrop(e, date, hour)} onClick={() => openNewEventModal(date, hour)} />
                           ))}
                           <div className="absolute inset-0 pointer-events-none p-0.5">
                             {dayEvents.map(event => {
@@ -403,7 +403,7 @@ export default function Dashboard() {
                                   return (
                                 <div key={event.id} draggable onDragStart={(e) => onDragStart(e, event.id)} onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }} className="absolute left-0.5 right-0.5 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm rounded-lg p-1 transition-all cursor-grab active:cursor-grabbing z-10 overflow-hidden ring-1 ring-slate-900/5" style={{ top: `${top}px`, height: `${height}px` }}>
                                   <div className="text-[8px] font-black text-slate-900 dark:text-zinc-100 mb-0.5 truncate leading-tight">{event.title}</div>
-                                  {clientName && <div className="text-[6px] font-black text-indigo-600 dark:text-indigo-400 uppercase truncate">@{clientName}</div>}
+                                  {clientName && <div className="text-[6px] font-black text-emerald-600 dark:text-emerald-400 uppercase truncate">@{clientName}</div>}
                                 </div>
                               );
                             })}

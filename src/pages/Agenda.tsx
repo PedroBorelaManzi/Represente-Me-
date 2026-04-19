@@ -198,10 +198,10 @@ export default function Agenda() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-4 uppercase tracking-tight">
-            <div className="p-3 bg-indigo-600 rounded-[20px] ">
+            <div className="p-3 bg-emerald-600 rounded-[20px] ">
               <CalendarIcon className="w-8 h-8 text-white" />
             </div>
-            Agenda <span className="text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-indigo-600">Sincronizada</span>
+            Agenda <span className="text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-emerald-600">Sincronizada</span>
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Orquestração de visitas e monitoramento de feriados locais.</p>
         </div>
@@ -213,16 +213,16 @@ export default function Agenda() {
                 value={searchFilter} 
                 onChange={(e) => setSearchFilter(e.target.value)} 
                 placeholder="Filtrar compromissos..." 
-                className="pl-10 pr-4 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] text-[10px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-indigo-500/10 w-64" 
+                className="pl-10 pr-4 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] text-[10px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-emerald-500/10 w-64" 
               />
-              <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" />
+              <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
             </div>
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-900 p-2 rounded-[24px] border border-slate-100 dark:border-zinc-800">
                {googleConnected && (
                   <button 
                     onClick={handleSync}
                     disabled={isSyncing}
-                    className="p-4 bg-white dark:bg-zinc-800 rounded-2xl text-indigo-600 shadow-sm active:scale-95 transition-all"
+                    className="p-4 bg-white dark:bg-zinc-800 rounded-2xl text-emerald-600 shadow-sm active:scale-95 transition-all"
                   >
                      <RefreshCw className={cn("w-6 h-6", isSyncing && "animate-spin")} />
                   </button>
@@ -231,16 +231,16 @@ export default function Agenda() {
                 onClick={handleGoogleConnect}
                 className={cn(
                   "px-6 py-4 rounded-2xl transition-all font-black uppercase text-[10px] tracking-widest flex items-center gap-3 shadow-sm",
-                  googleConnected ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-white dark:bg-zinc-800 text-slate-400 hover:text-indigo-600 border border-slate-100 dark:border-zinc-800"
+                  googleConnected ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-white dark:bg-zinc-800 text-slate-400 hover:text-emerald-600 border border-slate-100 dark:border-zinc-800"
                 )}
                >
-                <Globe className="w-5 h-5 text-indigo-600" />
+                <Globe className="w-5 h-5 text-emerald-600" />
                 {googleConnected ? "Google Calendar Ativo" : "Conectar Calendário"}
                </button>
             </div>
             <button 
               onClick={() => { setEditingEvent({ id: '', title: '', date: formatDateLocal(new Date()), time: '09:00 - 10:00' }); setIsModalOpen(true); }}
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-[0_20px_40px_-10px_rgba(99,102,241,0.4)] active:scale-95 flex items-center gap-3 group"
+              className="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-[0_20px_40px_-10px_rgba(99,102,241,0.4)] active:scale-95 flex items-center gap-3 group"
             >
               <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
               Agendar Visita
@@ -249,7 +249,7 @@ export default function Agenda() {
       </div>
 
       <div className="flex-1 bg-white dark:bg-zinc-950 rounded-[48px] border border-slate-100 dark:border-zinc-850 shadow-sm overflow-hidden flex flex-col min-h-[600px] relative">
-        <div className="p-8 border-b border-slate-200 dark:border-zinc-700/50 flex items-center justify-between bg-indigo-600/5 dark:bg-indigo-900/10">
+        <div className="p-8 border-b border-slate-200 dark:border-zinc-700/50 flex items-center justify-between bg-emerald-600/5 dark:bg-emerald-900/10">
           <div className="flex items-center gap-6">
              <div className="flex items-center bg-white dark:bg-zinc-900 p-2 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm">
                 <button onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))} className="p-3 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl text-slate-400 transition-all active:scale-90"><ChevronLeft className="w-5 h-5" /></button>
@@ -261,7 +261,7 @@ export default function Agenda() {
           </div>
 
           <div className="hidden md:flex items-center gap-2">
-            <span className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/40 rounded-full text-[9px] font-black uppercase tracking-widest text-indigo-600 border border-indigo-100 dark:border-indigo-900/40 shadow-sm">
+            <span className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-full text-[9px] font-black uppercase tracking-widest text-emerald-600 border border-emerald-100 dark:border-emerald-900/40 shadow-sm">
                <Activity className="w-3.5 h-3.5" />
                {events.length} Compromissos
             </span>
@@ -288,7 +288,7 @@ export default function Agenda() {
                   className={cn(
                     "p-4 flex flex-col h-44 overflow-hidden transition-all relative group h-full",
                     date ? 'bg-white dark:bg-zinc-900' : 'bg-slate-50/20 dark:bg-zinc-950/10',
-                    isToday && 'bg-indigo-50/20 dark:bg-indigo-500/5',
+                    isToday && 'bg-emerald-50/20 dark:bg-emerald-500/5',
                     i % 7 === 0 || i % 7 === 6 ? 'bg-slate-50/10 dark:bg-zinc-950/5' : ''
                   )}
                   onDragOver={onDragOver}
@@ -300,7 +300,7 @@ export default function Agenda() {
                       <div className="flex items-center justify-between mb-3">
                         <span className={cn(
                           "text-xs font-black w-8 h-8 rounded-xl flex items-center justify-center transition-all",
-                          isToday ? "bg-indigo-600 text-white shadow-lg  dark:shadow-none" : "text-slate-400 dark:text-zinc-500 group-hover:text-indigo-600"
+                          isToday ? "bg-emerald-600 text-white shadow-lg  dark:shadow-none" : "text-slate-400 dark:text-zinc-500 group-hover:text-emerald-600"
                         )}>
                           {date.getDate()}
                         </span>
@@ -327,11 +327,11 @@ export default function Agenda() {
                             onClick={(e) => { e.stopPropagation(); setEditingEvent(event); setIsModalOpen(true); }}
                             draggable
                             onDragStart={(e) => onDragStart(e, event.id)}
-                            className="text-[9px] font-black p-3 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40 hover:border-indigo-300 transition-all cursor-pointer shadow-sm group/item flex flex-col gap-1 relative overflow-hidden"
+                            className="text-[9px] font-black p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 hover:border-emerald-300 transition-all cursor-pointer shadow-sm group/item flex flex-col gap-1 relative overflow-hidden"
                           >
-                            <div className="absolute top-0 right-0 w-8 h-8 bg-indigo-500/10 rounded-full -mr-4 -mt-4" />
+                            <div className="absolute top-0 right-0 w-8 h-8 bg-emerald-500/10 rounded-full -mr-4 -mt-4" />
                             <span className="truncate uppercase tracking-tight relative z-10">{event.title}</span>
-                            <span className="text-[7px] text-indigo-400/80 dark:text-indigo-500/60 font-bold relative z-10 uppercase">{event.time}</span>
+                            <span className="text-[7px] text-emerald-400/80 dark:text-emerald-500/60 font-bold relative z-10 uppercase">{event.time}</span>
                           </div>
                         ))}
                       </div>
@@ -378,9 +378,9 @@ export default function Agenda() {
                 value={searchFilter} 
                 onChange={(e) => setSearchFilter(e.target.value)} 
                 placeholder="Filtrar compromissos..." 
-                className="pl-10 pr-4 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] text-[10px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-indigo-500/10 w-64" 
+                className="pl-10 pr-4 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] text-[10px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-emerald-500/10 w-64" 
               />
-              <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" />
+              <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
             </div>
                         <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-[24px]">
                            <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-400" />

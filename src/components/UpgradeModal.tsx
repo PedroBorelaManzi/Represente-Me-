@@ -54,7 +54,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = 'empresas' }: 
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="bg-white dark:bg-zinc-900 rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl relative border border-slate-100 dark:border-zinc-800"
           >
-            <div className="h-32 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 relative overflow-hidden">
+            <div className="h-32 bg-gradient-to-br from-emerald-600 via-violet-600 to-purple-600 relative overflow-hidden">
                <button 
                   onClick={onClose}
                   className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors z-10"
@@ -69,7 +69,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = 'empresas' }: 
             </div>
 
             <div className="p-8 text-center">
-               <span className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest rounded-full mb-4">
+               <span className="inline-block px-3 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-full mb-4">
                   Recurso Premium
                </span>
                <h3 className="text-2xl font-black text-slate-900 dark:text-zinc-100 mb-2">
@@ -95,7 +95,7 @@ export default function UpgradeModal({ isOpen, onClose, feature = 'empresas' }: 
                   <Link
                     to="/dashboard/planos"
                     onClick={onClose}
-                    className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-sm "
+                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-sm "
                   >
                     Ver Planos e Desbloquear
                   </Link>

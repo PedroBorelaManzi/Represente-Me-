@@ -304,15 +304,15 @@ export default function ClientDetailsPage() {
     }
   }, [allAvailableCategories]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-emerald-600" /></div>;
   if (!client) return null;
 
   return (
     <div className="space-y-8">
       {/* HEADER SECTION WITH NAVIGATION AND DELETE BUTTON */}
       <div className="flex items-center justify-between bg-slate-50 dark:bg-zinc-950 p-4 rounded-2xl border border-slate-200 dark:border-zinc-900">
-        <Link to="/dashboard/clientes" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-zinc-400 hover:text-indigo-600 transition-colors">
-          <ArrowLeft className="w-5 h-5 text-indigo-500" /> Voltar para Clientes
+        <Link to="/dashboard/clientes" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-zinc-400 hover:text-emerald-600 transition-colors">
+          <ArrowLeft className="w-5 h-5 text-emerald-500" /> Voltar para Clientes
         </Link>
         
         <button 
@@ -330,7 +330,7 @@ export default function ClientDetailsPage() {
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 shadow-sm dark:shadow-none">
             <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100 dark:border-zinc-900">
-              <div className="h-14 w-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xl uppercase">
+              <div className="h-14 w-14 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xl uppercase">
                 {client.name.charAt(0)}
               </div>
               <div>
@@ -361,18 +361,18 @@ export default function ClientDetailsPage() {
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 shadow-sm dark:shadow-none space-y-6">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 mb-3">
-                <FileText className="w-4 h-4 text-indigo-500" /> Observações Gerais
+                <FileText className="w-4 h-4 text-emerald-500" /> Observações Gerais
               </h3>
               <textarea 
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Digite aqui observações sobre este cliente..."
-                className="w-full h-32 px-3 py-2 text-sm border border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
+                className="w-full h-32 px-3 py-2 text-sm border border-slate-200 dark:border-zinc-800 rounded-xl bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-600 focus:ring-2 focus:ring-emerald-500 outline-none transition-all resize-none"
               />
               <button 
                 onClick={handleSaveNotes}
                 disabled={isSavingNotes}
-                className="mt-2 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors"
+                className="mt-2 w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-colors"
               >
                 {isSavingNotes ? "Salvando..." : "Salvar Observações"}
               </button>
@@ -380,7 +380,7 @@ export default function ClientDetailsPage() {
 
             <div className="pt-6 border-t border-slate-100 dark:border-zinc-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 mb-4">
-                <Calendar className="w-4 h-4 text-indigo-500" /> Compromissos na Agenda
+                <Calendar className="w-4 h-4 text-emerald-500" /> Compromissos na Agenda
               </h3>
               <div className="space-y-3">
                 {clientAppointments.length === 0 ? (
@@ -390,7 +390,7 @@ export default function ClientDetailsPage() {
                     <div key={app.id} className="p-3 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-900 rounded-xl flex flex-col gap-1">
                       <div className="text-xs font-bold text-slate-800 dark:text-zinc-200">{app.title}</div>
                       <div className="flex items-center gap-2 text-[10px] text-slate-500 font-medium">
-                        <Clock className="w-3 h-3 text-indigo-500" />
+                        <Clock className="w-3 h-3 text-emerald-500" />
                         {new Date(app.date).toLocaleDateString('pt-BR')} | {app.time}
                       </div>
                     </div>
@@ -405,13 +405,13 @@ export default function ClientDetailsPage() {
         <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm dark:shadow-none p-6 flex flex-col h-[calc(100vh-14rem)]">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5"><HardDrive className="w-5 h-5 text-indigo-500" /> Nuvem de Arquivos</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-1.5"><HardDrive className="w-5 h-5 text-emerald-500" /> Nuvem de Arquivos</h2>
               <p className="text-xs text-slate-500 dark:text-zinc-400">Armazenamento privado de documentos e pedidos.</p>
             </div>
             
             <button 
               onClick={() => setIsUploadModalOpen(true)}
-              className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-xl shadow-sm hover:bg-indigo-700 font-bold text-sm transition-all whitespace-nowrap"
+              className="inline-flex items-center justify-center px-4 py-2 bg-emerald-600 text-white rounded-xl shadow-sm hover:bg-emerald-700 font-bold text-sm transition-all whitespace-nowrap"
             >
               <Upload className="w-4 h-4 mr-1.5" /> Subir Arquivo
             </button>
@@ -435,8 +435,8 @@ export default function ClientDetailsPage() {
                     className="flex items-center justify-between p-4 border border-slate-50 dark:border-zinc-950 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-900 transition-all group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-indigo-50 dark:bg-zinc-900 rounded-xl">
-                        <FileText className="w-6 h-6 text-indigo-600" />
+                      <div className="p-3 bg-emerald-50 dark:bg-zinc-900 rounded-xl">
+                        <FileText className="w-6 h-6 text-emerald-600" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
@@ -457,7 +457,7 @@ export default function ClientDetailsPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button onClick={() => handleDownload(file.file_name, file.file_path)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><Download className="w-4 h-4" /></button>
+                      <button onClick={() => handleDownload(file.file_name, file.file_path)} className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"><Download className="w-4 h-4" /></button>
                       <button onClick={() => handleFileDelete(file.file_name, file.file_path, file.id)} className="p-2 text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </motion.div>
@@ -484,8 +484,8 @@ export default function ClientDetailsPage() {
                     className="flex items-center justify-between p-4 border border-slate-50 dark:border-zinc-950 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-900 transition-all group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-indigo-50 dark:bg-zinc-900 rounded-xl">
-                        <FileText className="w-6 h-6 text-indigo-600" />
+                      <div className="p-3 bg-emerald-50 dark:bg-zinc-900 rounded-xl">
+                        <FileText className="w-6 h-6 text-emerald-600" />
                       </div>
                       <div>
                         <span className="px-2 py-0.5 text-[10px] font-black uppercase bg-slate-200 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300 rounded-md">
@@ -499,7 +499,7 @@ export default function ClientDetailsPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button onClick={() => handleDownload(file.name)} className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"><Download className="w-4 h-4" /></button>
+                      <button onClick={() => handleDownload(file.name)} className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"><Download className="w-4 h-4" /></button>
                       <button onClick={() => handleFileDelete(file.name)} className="p-2 text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </motion.div>
@@ -540,7 +540,7 @@ export default function ClientDetailsPage() {
                       <select 
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-900 dark:text-zinc-100"
+                        className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm bg-white dark:bg-zinc-900 dark:text-zinc-100"
                         required
                       >
                         {allAvailableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
@@ -556,10 +556,10 @@ export default function ClientDetailsPage() {
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         placeholder="Nome da empresa..."
-                        className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-900"
+                        className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm bg-white dark:bg-zinc-900"
                         autoFocus
                       />
-                      <button onClick={saveNewCategory} className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold text-sm">Salvar</button>
+                      <button onClick={saveNewCategory} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-bold text-sm">Salvar</button>
                     </div>
                   )}
                 </div>
@@ -569,7 +569,7 @@ export default function ClientDetailsPage() {
                   <input 
                     type="file" 
                     onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
                   />
                 </div>
 
@@ -581,7 +581,7 @@ export default function ClientDetailsPage() {
                       value={orderValue}
                       onChange={(e) => setOrderValue(e.target.value.replace(/[^0-9.]/g, ''))}
                       placeholder="0.00"
-                      className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-900"
+                      className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm bg-white dark:bg-zinc-900"
                     />
                     {isAnalyzing && <div className="flex items-center gap-1.5 text-purple-600 text-xs font-bold animate-pulse"><Loader2 className="w-4 h-4 animate-spin" /> IA LENDO...</div>}
                   </div>
@@ -593,7 +593,7 @@ export default function ClientDetailsPage() {
                 <button 
                   onClick={submitUpload}
                   disabled={!selectedFile || isUploading || !selectedCategory}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm disabled:opacity-50 flex items-center transition-all"
+                  className="px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold text-sm disabled:opacity-50 flex items-center transition-all"
                 >
                   {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 mr-1.5" />}
                   ANEXAR ARQUIVO

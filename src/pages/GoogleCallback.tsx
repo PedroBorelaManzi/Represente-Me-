@@ -68,7 +68,7 @@ export default function GoogleCallback() {
         if (upsertError) throw upsertError;
 
         setStatus("success");
-        setMessage("Google Agenda sincronizado com o Ecossistema Represente-Me!.");
+        setMessage("Google Agenda sincronizado com o Ecossistema Represente-se.");
         
         setTimeout(() => {
           navigate("/dashboard/agenda");
@@ -88,7 +88,7 @@ export default function GoogleCallback() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-zinc-950 p-8">
       {/* Background Decorative Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-20 dark:opacity-5">
-         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-indigo-400 rounded-full blur-[160px]" />
+         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-emerald-400 rounded-full blur-[160px]" />
          <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-purple-400 rounded-full blur-[160px]" />
       </div>
 
@@ -107,8 +107,8 @@ export default function GoogleCallback() {
               className="space-y-10"
             >
               <div className="relative inline-block">
-                 <div className="absolute inset-0 bg-indigo-500 rounded-full blur-2xl opacity-20 animate-pulse" />
-                 <Loader2 className="w-20 h-20 text-indigo-600 animate-spin mx-auto relative z-10" />
+                 <div className="absolute inset-0 bg-emerald-500 rounded-full blur-2xl opacity-20 animate-pulse" />
+                 <Loader2 className="w-20 h-20 text-emerald-600 animate-spin mx-auto relative z-10" />
               </div>
               <div>
                  <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mb-4">Sincronizando</h2>
@@ -124,17 +124,17 @@ export default function GoogleCallback() {
               animate={{ opacity: 1, scale: 1 }}
               className="space-y-10"
             >
-              <div className="w-24 h-24 bg-indigo-600 rounded-[32px] flex items-center justify-center mx-auto ">
+              <div className="w-24 h-24 bg-emerald-600 rounded-[32px] flex items-center justify-center mx-auto ">
                 <CheckCircle2 className="w-12 h-12 text-white" />
               </div>
               <div>
-                 <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mb-4 text-indigo-600">Integrado com Sucesso</h2>
+                 <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mb-4 text-emerald-600">Integrado com Sucesso</h2>
                  <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{message}</p>
               </div>
               <div className="flex justify-center gap-2">
-                 <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce" />
-                 <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:-.3s]" />
-                 <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:-.5s]" />
+                 <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce" />
+                 <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce [animation-delay:-.3s]" />
+                 <div className="w-2 h-2 bg-emerald-600 rounded-full animate-bounce [animation-delay:-.5s]" />
               </div>
             </motion.div>
           )}
@@ -157,7 +157,7 @@ export default function GoogleCallback() {
               <div className="flex flex-col gap-4 pt-6">
                 <button 
                   onClick={() => navigate("/dashboard/agenda")}
-                  className="w-full py-6 bg-indigo-600 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-[24px] hover:bg-indigo-700 transition-all shadow-2xl active:scale-95"
+                  className="w-full py-6 bg-emerald-600 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-[24px] hover:bg-emerald-700 transition-all shadow-2xl active:scale-95"
                 >
                   Tentar Novamente
                 </button>

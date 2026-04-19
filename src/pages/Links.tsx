@@ -30,7 +30,7 @@ import { toast } from "sonner";
 const initialLinks = [
   { id: "1", title: "WhatsApp Web", url: "https://web.whatsapp.com", icon: "MessageSquare", color: "bg-emerald-500" },
   { id: "2", title: "Gmail", url: "https://mail.google.com", icon: "Mail", color: "bg-red-500" },
-  { id: "3", title: "Google Drive", url: "https://drive.google.com", icon: "HardDrive", color: "bg-blue-500" },
+  { id: "3", title: "Google Drive", url: "https://drive.google.com", icon: "HardDrive", color: "bg-emerald-500" },
   { id: "4", title: "Google Agenda", url: "https://calendar.google.com", icon: "Calendar", color: "bg-orange-500" },
 ];
 
@@ -47,8 +47,8 @@ const iconMap: Record<string, any> = {
 const colorOptions = [
   { name: "Verde", value: "bg-emerald-500" },
   { name: "Vermelho", value: "bg-red-500" },
-  { name: "Azul", value: "bg-blue-500" },
-  { name: "Indigo", value: "bg-indigo-500" },
+  { name: "Azul", value: "bg-emerald-500" },
+  { name: "Indigo", value: "bg-emerald-500" },
   { name: "Roxo", value: "bg-purple-500" },
   { name: "Laranja", value: "bg-orange-500" },
 ];
@@ -64,7 +64,7 @@ export default function LinksPage() {
   // Form State
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
-  const [color, setColor] = useState("bg-indigo-500");
+  const [color, setColor] = useState("bg-emerald-500");
   const [icon, setIcon] = useState("LinkIcon");
   const [isFullScreen, setIsFullScreen] = useState(false);
 
@@ -105,7 +105,7 @@ export default function LinksPage() {
   const resetForm = () => {
     setTitle("");
     setUrl("");
-    setColor("bg-indigo-500");
+    setColor("bg-emerald-500");
     setIcon("LinkIcon");
     setIsModalOpen(false);
   };
@@ -131,7 +131,7 @@ export default function LinksPage() {
            <div className="flex items-center gap-6">
               <button 
                 onClick={() => { setSearchParams({}); setIsFullScreen(false); }}
-                className="p-4 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all active:scale-95"
+                className="p-4 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-emerald-600 transition-all active:scale-95"
               >
                  <X className="w-6 h-6" />
               </button>
@@ -144,7 +144,7 @@ export default function LinksPage() {
            <div className="flex items-center gap-4">
               <button 
                 onClick={() => setIsFullScreen(!isFullScreen)}
-                className="px-6 py-4 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 border border-indigo-100 dark:border-indigo-900/40"
+                className="px-6 py-4 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 border border-emerald-100 dark:border-emerald-900/40"
               >
                  {isFullScreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
                  {isFullScreen ? "Janela" : "Full Screen"}
@@ -153,7 +153,7 @@ export default function LinksPage() {
                 href={activeLink.url} 
                 target="_blank" 
                 rel="noreferrer" 
-                className="px-6 py-4 bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-800 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 text-slate-400 hover:text-indigo-600 transition-all"
+                className="px-6 py-4 bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-800 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 text-slate-400 hover:text-emerald-600 transition-all"
               >
                  Original <ExternalLink className="w-5 h-5" />
               </a>
@@ -162,7 +162,7 @@ export default function LinksPage() {
 
         {isBlockedIframe ? (
           <div className="flex-1 bg-white dark:bg-zinc-900 rounded-[48px] border border-slate-100 dark:border-zinc-800 flex flex-col items-center justify-center p-20 text-center gap-8 shadow-sm">
-             <div className={cn("w-24 h-24 rounded-[32px] flex items-center justify-center text-white shadow-2xl", activeLink.color || 'bg-indigo-600')}>
+             <div className={cn("w-24 h-24 rounded-[32px] flex items-center justify-center text-white shadow-2xl", activeLink.color || 'bg-emerald-600')}>
                 <IconComponent className="w-12 h-12" />
              </div>
              <div>
@@ -175,7 +175,7 @@ export default function LinksPage() {
                href={activeLink.url} 
                target="_blank" 
                rel="noreferrer" 
-               className="px-12 py-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-[0_24px_48px_-12px_rgba(99,102,241,0.5)] active:scale-95 transition-all flex items-center gap-4"
+               className="px-12 py-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-[0_24px_48px_-12px_rgba(99,102,241,0.5)] active:scale-95 transition-all flex items-center gap-4"
              >
                 Inaugurar {activeLink.title} <ExternalLink className="w-5 h-5" />
              </a>
@@ -197,28 +197,28 @@ export default function LinksPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-4 uppercase tracking-tight">
-            <div className="p-3 bg-indigo-600 rounded-[20px]">
+            <div className="p-3 bg-emerald-600 rounded-[20px]">
               <Layers className="w-8 h-8 text-white" />
             </div>
-            Shortcut <span className="text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-indigo-600">Hub</span>
+            Shortcut <span className="text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-emerald-600">Hub</span>
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Ecossistema centralizado de ferramentas operacionais.</p>
         </div>
         
         <div className="flex items-center gap-3">
             <div className="relative group max-w-md">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
               <input 
                 type="text" 
                 placeholder="Rastrear atalhos..." 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="pl-12 pr-6 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-indigo-500/10 transition-all shadow-sm"
+                className="pl-12 pr-6 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all shadow-sm"
               />
             </div>
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-[0_20px_40px_-10px_rgba(99,102,241,0.4)] active:scale-95 flex items-center gap-3 group"
+              className="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-[0_20px_40px_-10px_rgba(99,102,241,0.4)] active:scale-95 flex items-center gap-3 group"
             >
               <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
               Novo Atalho
@@ -237,7 +237,7 @@ export default function LinksPage() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="group relative bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-zinc-850 p-10 shadow-sm hover:shadow-2xl hover:/30 dark:hover:shadow-none hover:border-indigo-200 transition-all flex flex-col h-full"
+                className="group relative bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-zinc-850 p-10 shadow-sm hover:shadow-2xl hover:/30 dark:hover:shadow-none hover:border-emerald-200 transition-all flex flex-col h-full"
               >
                  <div className="flex items-start justify-between mb-8">
                     <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform", link.color)}>
@@ -252,13 +252,13 @@ export default function LinksPage() {
                  </div>
 
                  <div className="flex-1 mb-10">
-                    <h3 className="text-lg font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-tight mb-2 group-hover:text-indigo-600 transition-colors">{link.title}</h3>
+                    <h3 className="text-lg font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-tight mb-2 group-hover:text-emerald-600 transition-colors">{link.title}</h3>
                     <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest truncate">{link.url}</p>
                  </div>
 
                  <button 
                    onClick={() => setSearchParams({ id: link.id })}
-                   className="w-full py-5 bg-slate-50 dark:bg-zinc-800 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white rounded-[24px] font-black uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-3 border border-transparent shadow-sm "
+                   className="w-full py-5 bg-slate-50 dark:bg-zinc-800 text-slate-400 group-hover:bg-emerald-600 group-hover:text-white rounded-[24px] font-black uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-3 border border-transparent shadow-sm "
                  >
                     Acessar <ArrowUpRight className="w-4 h-4" />
                  </button>
@@ -269,12 +269,12 @@ export default function LinksPage() {
           <motion.div
             layout
             onClick={() => setIsModalOpen(true)}
-            className="bg-slate-50 dark:bg-zinc-950/20 rounded-[40px] border-4 border-dashed border-slate-100 dark:border-zinc-850 flex flex-col items-center justify-center p-10 group hover:bg-slate-100 dark:hover:bg-zinc-900/40 hover:border-indigo-200 transition-all cursor-pointer min-h-[320px]"
+            className="bg-slate-50 dark:bg-zinc-950/20 rounded-[40px] border-4 border-dashed border-slate-100 dark:border-zinc-850 flex flex-col items-center justify-center p-10 group hover:bg-slate-100 dark:hover:bg-zinc-900/40 hover:border-emerald-200 transition-all cursor-pointer min-h-[320px]"
           >
-             <div className="w-20 h-20 rounded-[32px] bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 flex items-center justify-center text-slate-300 group-hover:text-indigo-600 group-hover:scale-110 transition-all shadow-sm">
+             <div className="w-20 h-20 rounded-[32px] bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 flex items-center justify-center text-slate-300 group-hover:text-emerald-600 group-hover:scale-110 transition-all shadow-sm">
                 <Plus className="w-10 h-10" />
              </div>
-             <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-6 group-hover:text-indigo-600">Criar Novo Atalho</span>
+             <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-6 group-hover:text-emerald-600">Criar Novo Atalho</span>
           </motion.div>
         </AnimatePresence>
       </div>
@@ -288,7 +288,7 @@ export default function LinksPage() {
                 <div className="p-10 border-b dark:border-zinc-850 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-950/20">
                    <div>
                       <h3 className="text-2xl font-black uppercase tracking-tighter">Vincular Atalho</h3>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 text-indigo-600">Personalização de Ecossistema Externo</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 text-emerald-600">Personalização de Ecossistema Externo</p>
                    </div>
                    <button onClick={resetForm} className="p-4 bg-white dark:bg-zinc-800 rounded-2xl text-slate-300 hover:text-red-500 transition-all shadow-sm"><X className="w-6 h-6" /></button>
                 </div>
@@ -301,7 +301,7 @@ export default function LinksPage() {
                         value={title} 
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="Ex: ERP Corporate"
-                        className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black uppercase tracking-widest outline-none focus:ring-8 focus:ring-indigo-500/10 transition-all"
+                        className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black uppercase tracking-widest outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all"
                       />
                    </div>
 
@@ -312,7 +312,7 @@ export default function LinksPage() {
                         value={url} 
                         onChange={(e) => setUrl(e.target.value)}
                         placeholder="dominio.com.br"
-                        className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black uppercase tracking-widest outline-none focus:ring-8 focus:ring-indigo-500/10 transition-all"
+                        className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black uppercase tracking-widest outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all"
                       />
                    </div>
 
@@ -326,7 +326,7 @@ export default function LinksPage() {
                             className={cn(
                               "w-12 h-12 rounded-2xl transition-all shadow-sm active:scale-90",
                               opt.value,
-                              color === opt.value ? 'ring-4 ring-indigo-500/30 border-4 border-white dark:border-zinc-800 scale-110' : 'opacity-80'
+                              color === opt.value ? 'ring-4 ring-emerald-500/30 border-4 border-white dark:border-zinc-800 scale-110' : 'opacity-80'
                             )}
                           />
                         ))}
@@ -336,7 +336,7 @@ export default function LinksPage() {
                    <button 
                      onClick={handleAddLink}
                      disabled={!title || !url}
-                     className="w-full py-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-4 disabled:opacity-50"
+                     className="w-full py-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-4 disabled:opacity-50"
                    >
                       <ShieldCheck className="w-6 h-6" />
                       Sincronizar Atalho

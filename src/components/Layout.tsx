@@ -1,5 +1,5 @@
 ﻿import { Outlet, Link, useLocation } from "react-router-dom";
-import logo from "../assets/logo.png";
+import { Logo } from './Logo';
 import { MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar, ShoppingCart, Check, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -117,7 +117,7 @@ export default function Layout() {
       )}>
         <div className="flex-shrink-0 flex items-center justify-between pt-8 px-6 border-b border-slate-100 dark:border-zinc-900">
           <Link to="/" className="flex items-center justify-center p-2 mb-6">
-            <img src={logo} alt="Represente-Me!" className="h-32 w-auto mx-auto object-contain" />
+            <Logo className='h-8 mx-auto' />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
             <X className="w-6 h-6" />
@@ -138,7 +138,7 @@ export default function Layout() {
                       className={cn(
                         "group flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-xl transition-all",
                         isActive || integracoesOpen
-                          ? "bg-indigo-50 text-indigo-700"
+                          ? "bg-emerald-50 text-emerald-700"
                           : "text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 hover:text-slate-900 dark:text-zinc-100"
                       )}
                     >
@@ -146,7 +146,7 @@ export default function Layout() {
                         <item.icon
                           className={cn(
                             "mr-3 flex-shrink-0 h-5 w-5 transition-colors",
-                            isActive || integracoesOpen ? "text-indigo-600" : "text-slate-400 dark:text-zinc-500 group-hover:text-slate-500 dark:text-zinc-400"
+                            isActive || integracoesOpen ? "text-emerald-600" : "text-slate-400 dark:text-zinc-500 group-hover:text-slate-500 dark:text-zinc-400"
                           )}
                         />
                         {item.name}
@@ -164,7 +164,7 @@ export default function Layout() {
                         >
                           <Link
                             to="/dashboard/links"
-                            className="flex items-center px-3 py-1.5 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-indigo-600 rounded-lg hover:bg-slate-50 dark:bg-zinc-950 transition-colors"
+                            className="flex items-center px-3 py-1.5 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-emerald-600 rounded-lg hover:bg-slate-50 dark:bg-zinc-950 transition-colors"
                           >
                              Ver Todos
                           </Link>
@@ -172,7 +172,7 @@ export default function Layout() {
                             <Link
                               key={link.id}
                               to={`/dashboard/links?id=${link.id}`}
-                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 dark:text-zinc-400 hover:text-indigo-600 rounded-lg hover:bg-slate-50 dark:bg-zinc-950 transition-colors"
+                              className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 dark:text-zinc-400 hover:text-emerald-600 rounded-lg hover:bg-slate-50 dark:bg-zinc-950 transition-colors"
                             >
                               <div className={`w-1.5 h-1.5 rounded-full ${link.color || 'bg-slate-400'}`} />
                               <span className="truncate">{link.title}</span>
@@ -192,14 +192,14 @@ export default function Layout() {
                   className={cn(
                     "group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all",
                     isActive
-                      ? "bg-indigo-50 text-indigo-700"
+                      ? "bg-emerald-50 text-emerald-700"
                       : "text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 hover:text-slate-900 dark:text-zinc-100"
                   )}
                 >
                   <item.icon
                     className={cn(
                       "mr-3 flex-shrink-0 h-5 w-5 transition-colors",
-                      isActive ? "text-indigo-600" : "text-slate-400 dark:text-zinc-500 group-hover:text-slate-500 dark:text-zinc-400"
+                      isActive ? "text-emerald-600" : "text-slate-400 dark:text-zinc-500 group-hover:text-slate-500 dark:text-zinc-400"
                     )}
                   />
                   {item.name}
@@ -325,7 +325,7 @@ export default function Layout() {
 
         <div className="flex-shrink-0 p-4 border-t border-slate-100 dark:border-zinc-900 bg-white dark:bg-zinc-900">
           <div className="flex items-center gap-3 px-3 py-2">
-            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold">
               {user?.email?.charAt(0).toUpperCase() || "U"}
             </div>
             <div className="flex-1 min-w-0">
@@ -351,8 +351,8 @@ export default function Layout() {
           <button onClick={() => setSidebarOpen(true)} className="text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
             <Menu className="w-6 h-6" />
           </button>
-          <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-zinc-100">Represente-Me!</span>
-          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm">
+          <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-zinc-100">Represente-se</span>
+          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
              {user?.email?.charAt(0).toUpperCase() || "U"}
           </div>
         </div>
@@ -418,15 +418,15 @@ export default function Layout() {
                   }} className="space-y-4">
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Alerta (dias)</label>
-                      <input name="alerta" type="number" step="1" min="0" defaultValue={settings.alerta_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
+                      <input name="alerta" type="number" step="1" min="0" defaultValue={settings.alerta_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Cr�tico (dias)</label>
-                      <input name="critico" type="number" step="1" min="0" defaultValue={settings.critico_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
+                      <input name="critico" type="number" step="1" min="0" defaultValue={settings.critico_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Perda (dias)</label>
-                      <input name="perda" type="number" step="1" min="0" defaultValue={settings.perda_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
+                      <input name="perda" type="number" step="1" min="0" defaultValue={settings.perda_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div className="flex items-center gap-3 pt-2">
                       <button type="button" onClick={() => setSettingsTab('menu')} className="flex-1 px-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:bg-zinc-950 font-medium text-sm">Voltar</button>
@@ -435,7 +435,7 @@ export default function Layout() {
                         disabled={isSaving}
                         className={cn(
                           "flex-1 px-4 py-2 rounded-xl shadow-sm font-medium text-sm transition-all flex items-center justify-center gap-2",
-                          saveSuccess ? "bg-emerald-500 text-white" : "bg-indigo-600 text-white hover:bg-indigo-700",
+                          saveSuccess ? "bg-emerald-500 text-white" : "bg-emerald-600 text-white hover:bg-emerald-700",
                           isSaving && !saveSuccess && "opacity-70 cursor-not-allowed"
                         )}
                       >
@@ -460,11 +460,11 @@ export default function Layout() {
                     <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Escolher Tema</h2>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <button onClick={async () => { await updateSettings({ theme: 'light' }); setSettingsOpen(false); setSettingsTab('menu'); }} className={`p-4 border rounded-xl flex flex-col items-center gap-2 ${settings.theme === 'light' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 dark:border-zinc-800'}`}>
+                    <button onClick={async () => { await updateSettings({ theme: 'light' }); setSettingsOpen(false); setSettingsTab('menu'); }} className={`p-4 border rounded-xl flex flex-col items-center gap-2 ${settings.theme === 'light' ? 'border-emerald-600 bg-emerald-50/50' : 'border-slate-200 dark:border-zinc-800'}`}>
                        <Sun className="w-6 h-6 text-slate-600 dark:text-zinc-400" />
                        <span className="text-sm font-medium text-slate-800 dark:text-zinc-200">Claro</span>
                     </button>
-                    <button onClick={async () => { await updateSettings({ theme: 'dark' }); setSettingsOpen(false); setSettingsTab('menu'); }} className={`p-4 border rounded-xl flex flex-col items-center gap-2 ${settings.theme === 'dark' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 dark:border-zinc-800'}`}>
+                    <button onClick={async () => { await updateSettings({ theme: 'dark' }); setSettingsOpen(false); setSettingsTab('menu'); }} className={`p-4 border rounded-xl flex flex-col items-center gap-2 ${settings.theme === 'dark' ? 'border-emerald-600 bg-emerald-50/50' : 'border-slate-200 dark:border-zinc-800'}`}>
                        <Moon className="w-6 h-6 text-slate-600 dark:text-zinc-400" />
                        <span className="text-sm font-medium text-slate-800 dark:text-zinc-200">Escuro</span>
                     </button>

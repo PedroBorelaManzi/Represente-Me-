@@ -195,7 +195,7 @@ export default function PedidosPage() {
   }, [monthlyOrders, searchTerm]);
 
   const stats = useMemo(() => [
-    { label: "Faturamento Total Mês", val: monthlyOrders.reduce((a,b)=>a+(b.value||0),0), icon: DollarSign, color: "text-indigo-600", bg: "bg-indigo-50", suffix: "BRL" },
+    { label: "Faturamento Total Mês", val: monthlyOrders.reduce((a,b)=>a+(b.value||0),0), icon: DollarSign, color: "text-emerald-600", bg: "bg-emerald-50", suffix: "BRL" },
     { label: "Total de Pedidos Mês", val: monthlyOrders.length, icon: ShoppingBag, color: "text-emerald-600", bg: "bg-emerald-50", suffix: "Pedidos" },
     { label: "Média por Pedido", val: monthlyOrders.length > 0 ? (monthlyOrders.reduce((a,b)=>a+(b.value||0),0) / monthlyOrders.length) : 0, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50", suffix: "BRL" },
   ], [monthlyOrders]);
@@ -207,10 +207,10 @@ export default function PedidosPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-4 uppercase tracking-tight">
-            <div className="p-3 bg-indigo-600 rounded-[20px] ">
+            <div className="p-3 bg-emerald-600 rounded-[20px] ">
               <ShoppingBag className="w-8 h-8 text-white" />
             </div>
-            Gestão <span className="text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-indigo-600">Pedidos</span>
+            Gestão <span className="text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-emerald-600">Pedidos</span>
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Monitoramento de faturamento e orquestração de registros via IA.</p>
         </div>
@@ -218,14 +218,14 @@ export default function PedidosPage() {
         <div className="flex items-center gap-3">
             <button 
               onClick={() => setIsBatchModalOpen(true)}
-              className="px-6 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-all shadow-sm flex items-center gap-3 active:scale-95"
+              className="px-6 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-all shadow-sm flex items-center gap-3 active:scale-95"
             >
               <Zap className="w-5 h-5" />
               Processar Lote
             </button>
             <button 
               onClick={() => setIsManualModalOpen(true)}
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-[0_20px_40px_-10px_rgba(99,102,241,0.4)] active:scale-95 flex items-center gap-3 group"
+              className="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-[0_20px_40px_-10px_rgba(99,102,241,0.4)] active:scale-95 flex items-center gap-3 group"
             >
               <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
               Novo Registro
@@ -244,7 +244,7 @@ export default function PedidosPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
             key={i} 
-            className="p-8 bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-zinc-850 shadow-sm group hover:border-indigo-200 transition-all"
+            className="p-8 bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-zinc-850 shadow-sm group hover:border-emerald-200 transition-all"
           >
              <div className="flex items-center justify-between mb-4">
                 <div className={cn("p-4 rounded-2xl group-hover:scale-110 transition-transform", item.bg)}>
@@ -272,19 +272,19 @@ export default function PedidosPage() {
         {/* Table Controls */}
         <div className="p-8 border-b border-slate-50 dark:border-zinc-850 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50/30 dark:bg-zinc-950/20">
           <div className="relative group flex-1 max-w-md">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
             <input 
               type="text" 
               placeholder="Rastrear registros financeiros..." 
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-14 pr-8 py-5 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[28px] text-xs font-black uppercase tracking-widest text-slate-900 dark:text-zinc-100 focus:ring-8 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
+              className="w-full pl-14 pr-8 py-5 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[28px] text-xs font-black uppercase tracking-widest text-slate-900 dark:text-zinc-100 focus:ring-8 focus:ring-emerald-500/10 outline-none transition-all placeholder:text-slate-300 shadow-sm"
             />
           </div>
           
           <div className="flex items-center gap-4">
              <div className="h-14 px-6 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-2xl flex items-center gap-3 shadow-sm">
-                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Ativos:</span>
+                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Ativos:</span>
                 <span className="text-sm font-black text-slate-900 dark:text-zinc-100">{filteredOrders.length}</span>
              </div>
           </div>
@@ -319,12 +319,12 @@ export default function PedidosPage() {
                        <div className="col-span-4 flex items-center gap-5">
                           <div className={cn(
                             "w-14 h-14 rounded-2xl border flex items-center justify-center text-sm font-black uppercase transition-all shadow-sm",
-                            i % 2 === 0 ? "bg-white dark:bg-zinc-800 border-slate-100 dark:border-zinc-700 text-slate-300" : "bg-indigo-50 dark:bg-indigo-500/10 border-indigo-100 dark:border-indigo-900/40 text-indigo-600"
+                            i % 2 === 0 ? "bg-white dark:bg-zinc-800 border-slate-100 dark:border-zinc-700 text-slate-300" : "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-900/40 text-emerald-600"
                           )}>
                              {order.client?.name?.charAt(0)}
                           </div>
                           <div className="min-w-0">
-                             <Link to={`/dashboard/clientes/${order.client_id}`} className="text-sm font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight truncate hover:text-indigo-600 transition-colors flex items-center gap-2 group/link">
+                             <Link to={`/dashboard/clientes/${order.client_id}`} className="text-sm font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight truncate hover:text-emerald-600 transition-colors flex items-center gap-2 group/link">
                                 {order.client?.name || "Cliente Desconhecida"}
                                 <ArrowUpRight className="w-3.5 h-3.5 opacity-0 group-hover/link:opacity-100 transition-all" />
                              </Link>
@@ -378,7 +378,7 @@ export default function PedidosPage() {
                  <div className="p-10 border-b dark:border-zinc-850 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-950/20">
                     <div>
                        <h3 className="text-2xl font-black uppercase tracking-tighter">Novo Pedido</h3>
-                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 text-indigo-600">Sincronização Manual de Registro</p>
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 text-emerald-600">Sincronização Manual de Registro</p>
                     </div>
                     <button onClick={() => setIsManualModalOpen(false)} className="p-4 bg-white dark:bg-zinc-800 rounded-2xl text-slate-300 hover:text-red-500 transition-all shadow-sm"><X className="w-6 h-6" /></button>
                  </div>
@@ -391,7 +391,7 @@ export default function PedidosPage() {
                          className="absolute inset-0 opacity-0 cursor-pointer z-10" 
                        />
                        <div className="border-4 border-dashed border-slate-100 dark:border-zinc-850 rounded-[40px] p-12 text-center group-hover:bg-slate-50 dark:group-hover:bg-zinc-950 transition-all flex flex-col items-center gap-6">
-                          <div className="p-6 bg-white dark:bg-zinc-900 rounded-[32px] shadow-xl text-indigo-600 group-hover:rotate-12 transition-transform">
+                          <div className="p-6 bg-white dark:bg-zinc-900 rounded-[32px] shadow-xl text-emerald-600 group-hover:rotate-12 transition-transform">
                              <Upload className="w-8 h-8" />
                           </div>
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{selectedFile ? selectedFile.name : "Solte o arquivo do pedido aqui"}</p>
@@ -399,9 +399,9 @@ export default function PedidosPage() {
                     </div>
 
                     {isAnalyzingManual && (
-                       <div className="flex items-center justify-center gap-3 p-6 bg-indigo-50 dark:bg-indigo-950/40 rounded-[32px] border border-indigo-100 dark:border-indigo-900/40 animate-pulse">
-                          <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
-                          <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">IA Analisando Metadados...</span>
+                       <div className="flex items-center justify-center gap-3 p-6 bg-emerald-50 dark:bg-emerald-950/40 rounded-[32px] border border-emerald-100 dark:border-emerald-900/40 animate-pulse">
+                          <Loader2 className="w-5 h-5 text-emerald-600 animate-spin" />
+                          <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">IA Analisando Metadados...</span>
                        </div>
                     )}
 
@@ -426,7 +426,7 @@ export default function PedidosPage() {
                             value={selectedCategory} 
                             onChange={e=>setSelectedCategory(e.target.value)} 
                             required 
-                            className="w-full p-6 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[28px] text-[10px] font-black uppercase tracking-widest outline-none focus:ring-8 focus:ring-indigo-500/10 transition-all"
+                            className="w-full p-6 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[28px] text-[10px] font-black uppercase tracking-widest outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all"
                           >
                              <option value="">SELECIONAR</option>
                              {(settings.categories||[]).map((c: string)=>(<option key={c} value={c}>{c}</option>))}
@@ -440,7 +440,7 @@ export default function PedidosPage() {
                                value={orderValue} 
                                onChange={e=>setOrderValue(e.target.value)} 
                                required 
-                               className="w-full p-6 pl-14 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[28px] text-xl font-black text-indigo-600 outline-none focus:ring-8 focus:ring-indigo-500/10 transition-all"
+                               className="w-full p-6 pl-14 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[28px] text-xl font-black text-emerald-600 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all"
                              />
                              <div className="absolute left-6 top-1/2 -translate-y-1/2 text-xs font-black text-slate-300">R$</div>
                           </div>
@@ -449,7 +449,7 @@ export default function PedidosPage() {
 
                     <button 
                       disabled={isSaving} 
-                      className="w-full py-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-4 disabled:opacity-50"
+                      className="w-full py-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-4 disabled:opacity-50"
                     >
                        {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <ShieldCheck className="w-6 h-6" />}
                        {isSaving ? "Sincronizando..." : "Efetivar Registro"}
@@ -469,7 +469,7 @@ export default function PedidosPage() {
                  <div className="p-12 border-b dark:border-zinc-850 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-950/20">
                     <div>
                        <h3 className="text-3xl font-black uppercase tracking-tighter">Processamento em Lote</h3>
-                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 text-indigo-600">Automação de Alto Desempenho via IA Gemini</p>
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 text-emerald-600">Automação de Alto Desempenho via IA Gemini</p>
                     </div>
                     <button onClick={() => setIsBatchModalOpen(false)} className="p-6 bg-white dark:bg-zinc-800 rounded-2xl text-slate-300 hover:text-red-500 transition-all shadow-sm"><X className="w-8 h-8" /></button>
                  </div>
@@ -478,7 +478,7 @@ export default function PedidosPage() {
                    {batchResults.length === 0 ? (
                       <div className="h-96 border-4 border-dashed border-slate-100 dark:border-zinc-850 rounded-[56px] flex flex-col items-center justify-center relative group hover:bg-slate-50 dark:hover:bg-zinc-950 transition-all cursor-pointer">
                          <input type="file" multiple onChange={handleBatchUpload} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                         <div className="p-10 bg-white dark:bg-zinc-900 rounded-[48px] shadow-2xl text-indigo-600 mb-8 rotate-12 group-hover:rotate-0 transition-transform">
+                         <div className="p-10 bg-white dark:bg-zinc-900 rounded-[48px] shadow-2xl text-emerald-600 mb-8 rotate-12 group-hover:rotate-0 transition-transform">
                             <Sparkles className="w-16 h-16" />
                          </div>
                          <p className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Solte Múltiplos Arquivos</p>
@@ -491,11 +491,11 @@ export default function PedidosPage() {
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             key={i} 
-                            className="p-10 bg-slate-50 dark:bg-zinc-950/20 rounded-[48px] border border-slate-100 dark:border-zinc-850 flex flex-col gap-8 shadow-sm group hover:border-indigo-200 transition-all"
+                            className="p-10 bg-slate-50 dark:bg-zinc-950/20 rounded-[48px] border border-slate-100 dark:border-zinc-850 flex flex-col gap-8 shadow-sm group hover:border-emerald-200 transition-all"
                           >
                              <div className="flex items-center gap-5">
                                 <div className="p-4 bg-white dark:bg-zinc-900 rounded-[24px] shadow-sm">
-                                   <FileText className="w-8 h-8 text-indigo-600" />
+                                   <FileText className="w-8 h-8 text-emerald-600" />
                                 </div>
                                 <div className="min-w-0 flex-1">
                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Cliente Detectada</p>
@@ -517,7 +517,7 @@ export default function PedidosPage() {
                              <div className="pt-2">
                                 <button 
                                   onClick={() => confirmBatchOrder(r)}
-                                  className="w-full py-5 bg-indigo-600 text-white rounded-[28px] font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3"
+                                  className="w-full py-5 bg-emerald-600 text-white rounded-[28px] font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3"
                                 >
                                    <ShieldCheck className="w-4 h-4" />
                                    Efetivar
@@ -530,11 +530,11 @@ export default function PedidosPage() {
                  </div>
 
                  {isProcessingBatch && (
-                    <div className="p-10 bg-indigo-600 flex items-center justify-center gap-6">
+                    <div className="p-10 bg-emerald-600 flex items-center justify-center gap-6">
                        <Loader2 className="w-8 h-8 text-white animate-spin" />
                        <div className="flex flex-col">
                           <p className="text-white font-black uppercase tracking-[0.2em] text-sm italic">Inteligência Artificial Ativa</p>
-                          <p className="text-indigo-200 text-[10px] font-black uppercase tracking-widest">Digitalizando registros financeiros em tempo real</p>
+                          <p className="text-emerald-200 text-[10px] font-black uppercase tracking-widest">Digitalizando registros financeiros em tempo real</p>
                        </div>
                     </div>
                  )}

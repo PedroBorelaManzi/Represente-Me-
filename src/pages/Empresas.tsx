@@ -137,10 +137,10 @@ export default function EmpresasPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-4 uppercase tracking-tight">
-            <div className="p-3 bg-indigo-600 rounded-[20px]">
+            <div className="p-3 bg-emerald-600 rounded-[20px]">
               <Building2 className="w-8 h-8 text-white" />
             </div>
-            Empresas <span className="text-slate-200 ml-2">/</span> <span className="text-indigo-600">Pedidos</span>
+            Empresas <span className="text-slate-200 ml-2">/</span> <span className="text-emerald-600">Pedidos</span>
           </h1>
         </div>
         
@@ -149,7 +149,7 @@ export default function EmpresasPage() {
             <button onClick={prevMonth} className="p-2 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-90">
               <ChevronLeft className="w-4 h-4 text-slate-400" />
             </button>
-            <div className="text-[10px] font-black uppercase text-indigo-600 tracking-widest min-w-[120px] text-center">
+            <div className="text-[10px] font-black uppercase text-emerald-600 tracking-widest min-w-[120px] text-center">
               {viewDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
             </div>
             <button onClick={nextMonth} className="p-2 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl transition-all active:scale-90">
@@ -157,7 +157,7 @@ export default function EmpresasPage() {
             </button>
           </div>
 
-          <button onClick={() => setIsUploadModalOpen(true)} className="flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-xl active:scale-95 group h-14">
+          <button onClick={() => setIsUploadModalOpen(true)} className="flex items-center gap-3 px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-xl active:scale-95 group h-14">
             <Upload className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
             Enviar Pedidos
           </button>
@@ -167,8 +167,8 @@ export default function EmpresasPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white dark:bg-zinc-900 p-8 rounded-[40px] border border-slate-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group">
           <div className="flex items-center gap-5">
-            <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 rounded-3xl group-hover:scale-110 transition-transform">
-              <TrendingUp className="w-8 h-8 text-indigo-600" />
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-3xl group-hover:scale-110 transition-transform">
+              <TrendingUp className="w-8 h-8 text-emerald-600" />
             </div>
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Faturamento Mês</p>
@@ -209,7 +209,7 @@ export default function EmpresasPage() {
           </div>
           
           <div className="space-y-3">
-            <button onClick={() => setIsAddModalOpen(true)} className="w-full text-left p-6 rounded-[32px] bg-indigo-600 text-white shadow-xl flex items-center justify-between group mb-4  transition-all active:scale-95">
+            <button onClick={() => setIsAddModalOpen(true)} className="w-full text-left p-6 rounded-[32px] bg-emerald-600 text-white shadow-xl flex items-center justify-between group mb-4  transition-all active:scale-95">
               <span className="text-[14px] font-black uppercase tracking-tight">Nova Empresa</span>
               <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform" />
             </button>
@@ -220,16 +220,16 @@ export default function EmpresasPage() {
                 "w-full text-left p-7 rounded-[35px] border transition-all relative group overflow-hidden active:scale-[0.98]",
                 selectedCategory === "all" 
                   ? "bg-slate-900 dark:bg-zinc-800 border-slate-900 text-white shadow-[0_20px_40px_rgba(0,0,0,0.1)]" 
-                  : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-indigo-200 shadow-sm"
+                  : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-emerald-200 shadow-sm"
               )}
             >
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[12px] font-black uppercase tracking-widest text-indigo-500">Visão Consolidada</h4>
+                <h4 className="text-[12px] font-black uppercase tracking-widest text-emerald-500">Visão Consolidada</h4>
                 <LayoutGrid className="w-5 h-5 opacity-40 group-hover:scale-110 transition-transform" />
               </div>
               <div className="flex items-end justify-between">
                 <p className="text-2xl font-black tracking-tighter">Todas as Empresas</p>
-                <div className="text-[10px] font-black bg-indigo-500/20 text-indigo-500 px-3 py-1 rounded-full">{monthlyOrders.length} Pedidos</div>
+                <div className="text-[10px] font-black bg-emerald-500/20 text-emerald-500 px-3 py-1 rounded-full">{monthlyOrders.length} Pedidos</div>
               </div>
             </button>
 
@@ -242,7 +242,7 @@ export default function EmpresasPage() {
                     "w-full text-left p-6 rounded-[32px] border transition-all relative group overflow-hidden active:scale-[0.98]",
                     selectedCategory === cat
                       ? "bg-slate-900 dark:bg-zinc-800 border-slate-900 text-white shadow-xl scale-[1.02]" 
-                      : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-indigo-200"
+                      : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-emerald-200"
                   )}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -259,7 +259,7 @@ export default function EmpresasPage() {
         <div className="lg:col-span-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
               {loading ? (
-                 <div className="col-span-full h-40 flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-indigo-600 opacity-20"/></div>
+                 <div className="col-span-full h-40 flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-emerald-600 opacity-20"/></div>
               ) : filteredOrders.length === 0 ? (
                 <div className="col-span-full h-80 border-4 border-dashed border-slate-100 dark:border-zinc-800 rounded-[48px] flex flex-col items-center justify-center text-slate-300">
                   <ShoppingBag className="w-20 h-20 mb-6 opacity-5" />
@@ -267,8 +267,8 @@ export default function EmpresasPage() {
                 </div>
               ) : (
                 filteredOrders.map(order => (
-                  <div key={order.id} className="bg-white dark:bg-zinc-900 p-9 rounded-[45px] border border-slate-100 dark:border-zinc-800 hover:border-indigo-300 hover:shadow-[0_30px_60px_-15px_rgba(79,70,229,0.15)] transition-all group relative overflow-hidden active:scale-[0.98]">
-                    <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-600/5 rounded-full -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-700" />
+                  <div key={order.id} className="bg-white dark:bg-zinc-900 p-9 rounded-[45px] border border-slate-100 dark:border-zinc-800 hover:border-emerald-300 hover:shadow-[0_30px_60px_-15px_rgba(79,70,229,0.15)] transition-all group relative overflow-hidden active:scale-[0.98]">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-600/5 rounded-full -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-700" />
                     
                     <div className="flex justify-between items-start mb-6 relative z-10">
                       <div>
@@ -282,9 +282,9 @@ export default function EmpresasPage() {
                     </div>
                     
                     <div className="relative z-10 mb-8">
-                      <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest leading-none mb-2">Cliente Adquirente</p>
+                      <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest leading-none mb-2">Cliente Adquirente</p>
                       <Link to={'/dashboard/clientes/' + order.client_id} className="block">
-                        <h4 className="text-base font-black uppercase text-slate-900 dark:text-zinc-100 truncate hover:text-indigo-600 transition-colors leading-tight">
+                        <h4 className="text-base font-black uppercase text-slate-900 dark:text-zinc-100 truncate hover:text-emerald-600 transition-colors leading-tight">
                           {order.client?.name || "Cliente Desconhecida"}
                         </h4>
                       </Link>
@@ -292,12 +292,12 @@ export default function EmpresasPage() {
 
                     <div className="pt-7 border-t border-slate-50 dark:border-zinc-800/50 flex justify-between items-center relative z-10">
                       <div className="flex items-center gap-3">
-                        <span className="px-5 py-2 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-[0.15em] rounded-full /50 group-hover:bg-slate-900 transition-colors">
+                        <span className="px-5 py-2 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-[0.15em] rounded-full /50 group-hover:bg-slate-900 transition-colors">
                           {order.category}
                         </span>
                       </div>
-                      <Link to={'/dashboard/clientes/' + order.client_id} className="p-3 bg-slate-50 dark:bg-zinc-800 rounded-2xl hover:bg-indigo-50 transition-colors group/arrow">
-                         <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover/arrow:text-indigo-600 transition-colors" />
+                      <Link to={'/dashboard/clientes/' + order.client_id} className="p-3 bg-slate-50 dark:bg-zinc-800 rounded-2xl hover:bg-emerald-50 transition-colors group/arrow">
+                         <ArrowUpRight className="w-5 h-5 text-slate-400 group-hover/arrow:text-emerald-600 transition-colors" />
                       </Link>
                     </div>
                   </div>
@@ -319,9 +319,9 @@ export default function EmpresasPage() {
                 <div className="space-y-6">
                   <div>
                     <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Razão Social / Fantasia</label>
-                    <input placeholder="EX: COZIMAX" value={newCat} onChange={e => setNewCat(e.target.value)} className="w-full p-6 bg-slate-50 dark:bg-zinc-850 rounded-[28px] font-black uppercase text-sm outline-none border border-slate-100 dark:border-zinc-800 focus:border-indigo-500 transition-all shadow-inner" />
+                    <input placeholder="EX: COZIMAX" value={newCat} onChange={e => setNewCat(e.target.value)} className="w-full p-6 bg-slate-50 dark:bg-zinc-850 rounded-[28px] font-black uppercase text-sm outline-none border border-slate-100 dark:border-zinc-800 focus:border-emerald-500 transition-all shadow-inner" />
                   </div>
-                  <button onClick={addCategory} className="w-full py-6 bg-indigo-600 text-white rounded-[32px] font-black uppercase tracking-widest text-xs shadow-[0_20px_40px_rgba(79,70,229,0.3)] hover:bg-indigo-700 transition-all active:scale-95">Efetivar Cadastro</button>
+                  <button onClick={addCategory} className="w-full py-6 bg-emerald-600 text-white rounded-[32px] font-black uppercase tracking-widest text-xs shadow-[0_20px_40px_rgba(79,70,229,0.3)] hover:bg-emerald-700 transition-all active:scale-95">Efetivar Cadastro</button>
                 </div>
              </motion.div>
           </div>
@@ -331,7 +331,7 @@ export default function EmpresasPage() {
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsUploadModalOpen(false)} className="absolute inset-0 bg-slate-900/90 backdrop-blur-2xl" />
              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white dark:bg-zinc-900 p-14 rounded-[70px] shadow-2xl relative z-10 w-full max-w-5xl h-[85vh] flex flex-col border border-white/10 overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-purple-500 to-pink-500" />
                 <div className="flex justify-between items-center mb-14">
                    <div>
                       <h3 className="text-4xl font-black uppercase text-slate-900 dark:text-zinc-100 tracking-tighter mb-1">Upload de Faturamento</h3>
@@ -342,9 +342,9 @@ export default function EmpresasPage() {
                    </div>
                    <button onClick={() => setIsUploadModalOpen(false)} className="p-5 bg-slate-50 dark:bg-zinc-800 rounded-3xl text-slate-400 hover:text-red-500 transition-all shadow-sm active:scale-90"><X className="w-7 h-7"/></button>
                 </div>
-                <div onClick={() => { setIsUploadModalOpen(false); navigate("/dashboard/pedidos"); }} className="flex-1 border-4 border-dashed border-slate-100 dark:border-zinc-800 rounded-[60px] flex flex-col items-center justify-center text-center p-16 hover:bg-indigo-50/10 transition-all cursor-pointer group relative overflow-hidden">
-                   <div className="absolute inset-0 bg-indigo-600/0 group-hover:bg-indigo-600/[0.02] transition-colors" />
-                   <div className="p-14 bg-white dark:bg-zinc-900 rounded-[50px] shadow-[0_30px_100px_rgba(0,0,0,0.1)] text-indigo-600 mb-10 group-hover:scale-110 group-hover:-translate-y-4 transition-all duration-500 relative z-10">
+                <div onClick={() => { setIsUploadModalOpen(false); navigate("/dashboard/pedidos"); }} className="flex-1 border-4 border-dashed border-slate-100 dark:border-zinc-800 rounded-[60px] flex flex-col items-center justify-center text-center p-16 hover:bg-emerald-50/10 transition-all cursor-pointer group relative overflow-hidden">
+                   <div className="absolute inset-0 bg-emerald-600/0 group-hover:bg-emerald-600/[0.02] transition-colors" />
+                   <div className="p-14 bg-white dark:bg-zinc-900 rounded-[50px] shadow-[0_30px_100px_rgba(0,0,0,0.1)] text-emerald-600 mb-10 group-hover:scale-110 group-hover:-translate-y-4 transition-all duration-500 relative z-10">
                       <Upload className="w-20 h-20" />
                    </div>
                    <div className="relative z-10">
@@ -353,16 +353,16 @@ export default function EmpresasPage() {
                    </div>
                 </div>
                 <div className="mt-14 grid grid-cols-3 gap-8">
-                  <div className="p-8 bg-slate-50 dark:bg-zinc-800/50 rounded-[40px] flex items-center gap-5 border border-transparent hover:border-indigo-100 transition-all">
-                    <div className="p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm"><FileText className="text-indigo-600 w-6 h-6"/></div>
+                  <div className="p-8 bg-slate-50 dark:bg-zinc-800/50 rounded-[40px] flex items-center gap-5 border border-transparent hover:border-emerald-100 transition-all">
+                    <div className="p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm"><FileText className="text-emerald-600 w-6 h-6"/></div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Suporte PDF/Img</span>
                   </div>
                   <div className="p-8 bg-slate-50 dark:bg-zinc-800/50 rounded-[40px] flex items-center gap-5 border border-transparent hover:border-emerald-100 transition-all">
                     <div className="p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm"><Check className="text-emerald-600 w-6 h-6"/></div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">99% de Precisão IA</span>
                   </div>
-                  <div className="p-8 bg-slate-50 dark:bg-zinc-800/50 rounded-[40px] flex items-center gap-5 border border-transparent hover:border-indigo-100 transition-all">
-                    <div className="p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm"><Settings className="text-indigo-600 w-6 h-6"/></div>
+                  <div className="p-8 bg-slate-50 dark:bg-zinc-800/50 rounded-[40px] flex items-center gap-5 border border-transparent hover:border-emerald-100 transition-all">
+                    <div className="p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm"><Settings className="text-emerald-600 w-6 h-6"/></div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Autocompleta CRM</span>
                   </div>
                 </div>

@@ -84,7 +84,7 @@ export default function Map({ clients, onClientSelect, selectedClientId }: MapPr
                         <span>{company.cnpj || "S/ CNPJ"}</span>
                     </div>
                     
-                    <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-tighter inline-block border ${company.status === "Ativo" || company.status === "Cliente" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-indigo-50 text-indigo-700 border-indigo-100"}`}>
+                    <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-tighter inline-block border ${company.status === "Ativo" || company.status === "Cliente" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"}`}>
                         {company.status}
                     </span>
                     

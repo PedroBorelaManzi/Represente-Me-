@@ -207,7 +207,7 @@ export default function CRMPage() {
                value={searchTerm}
                onChange={(e) => setSearchTerm(e.target.value)}
                placeholder='Buscar por nome, CNPJ ou cidade...'
-               className='pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs w-full md:w-80 outline-none focus:ring-2 focus:ring-indigo-500 font-bold'
+               className='pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs w-full md:w-80 outline-none focus:ring-2 focus:ring-emerald-500 font-bold'
              />
            </div>
 
@@ -216,7 +216,7 @@ export default function CRMPage() {
            <button 
              onClick={() => fileInputRef.current?.click()}
              disabled={isImporting}
-             className='px-6 py-2.5 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 active:scale-95 transition-all flex items-center gap-2'
+             className='px-6 py-2.5 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 active:scale-95 transition-all flex items-center gap-2'
            >
              {isImporting ? <Loader2 className='w-4 h-4 animate-spin' /> : <FileUp className='w-4 h-4' />}
              {isImporting ? `Importando` : 'Importar Lista'}
@@ -233,7 +233,7 @@ export default function CRMPage() {
             <button 
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 px-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? "border-indigo-600 text-indigo-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
+              className={`pb-3 px-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all ${activeTab === tab ? "border-emerald-600 text-emerald-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
             >
               {tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: any) => a.type === tab)).length})</span>
             </button>
@@ -242,7 +242,7 @@ export default function CRMPage() {
         
         <div className='flex-1 overflow-y-auto'>
            {loading ? (
-              <div className='flex items-center justify-center h-40'><Loader2 className='w-6 h-6 text-indigo-600 animate-spin' /></div>
+              <div className='flex items-center justify-center h-40'><Loader2 className='w-6 h-6 text-emerald-600 animate-spin' /></div>
            ) : (
               <div className='divide-y divide-slate-100 dark:divide-zinc-850'>
                  {filteredClients.map((client) => (
@@ -251,7 +251,7 @@ export default function CRMPage() {
                       onClick={() => navigate(`/dashboard/clientes/${client.id}`)}
                       className="p-4 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-zinc-850/50 flex items-center gap-4 group"
                     >
-                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black uppercase bg-slate-100 dark:bg-zinc-850 text-slate-500 dark:text-zinc-400 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black uppercase bg-slate-100 dark:bg-zinc-850 text-slate-500 dark:text-zinc-400 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                           {client.name?.substring(0, 2)}
                        </div>
                        
@@ -282,7 +282,7 @@ export default function CRMPage() {
                           <button onClick={(e) => { e.stopPropagation(); handleDeleteClient(client.id); }} className='p-2 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-all'>
                              <Trash2 className='w-4 h-4' />
                           </button>
-                          <ChevronRight className='w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition-colors' />
+                          <ChevronRight className='w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition-colors' />
                        </div>
                     </div>
                  ))}

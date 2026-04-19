@@ -75,11 +75,11 @@ function ScrollableTimePicker({
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "w-full flex items-center justify-between px-5 py-4 border rounded-[20px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 transition-all font-black text-sm group",
-          isOpen ? "border-indigo-600 ring-4 ring-indigo-500/10" : "border-slate-100 dark:border-zinc-800 hover:border-indigo-600"
+          isOpen ? "border-emerald-600 ring-4 ring-emerald-500/10" : "border-slate-100 dark:border-zinc-800 hover:border-emerald-600"
         )}
       >
         <span>{value}</span>
-        <Clock className={cn("w-4 h-4 transition-colors", isOpen ? "text-indigo-600" : "text-slate-400 group-hover:text-indigo-600")} />
+        <Clock className={cn("w-4 h-4 transition-colors", isOpen ? "text-emerald-600" : "text-slate-400 group-hover:text-emerald-600")} />
       </button>
 
       <AnimatePresence>
@@ -100,7 +100,7 @@ function ScrollableTimePicker({
                   className={cn(
                     "flex-shrink-0 h-10 flex items-center justify-center text-[11px] font-black transition-all snap-center mx-1 rounded-xl uppercase tracking-widest",
                     h === hour 
-                      ? "bg-indigo-600 text-white  dark:shadow-none scale-105" 
+                      ? "bg-emerald-600 text-white  dark:shadow-none scale-105" 
                       : "text-slate-400 dark:text-zinc-500 hover:bg-slate-50 dark:hover:bg-zinc-800"
                   )}
                 >
@@ -119,7 +119,7 @@ function ScrollableTimePicker({
                   className={cn(
                     "flex-shrink-0 h-10 flex items-center justify-center text-[11px] font-black transition-all snap-center mx-1 rounded-xl uppercase tracking-widest",
                     m === minute 
-                      ? "bg-indigo-600 text-white  dark:shadow-none scale-105" 
+                      ? "bg-emerald-600 text-white  dark:shadow-none scale-105" 
                       : "text-slate-400 dark:text-zinc-500 hover:bg-slate-50 dark:hover:bg-zinc-800"
                   )}
                 >
@@ -174,7 +174,7 @@ export default function AppointmentForm({
         <div className="p-8 pb-4 flex justify-between items-center">
           <div>
             <div className="flex items-center gap-2 mb-1">
-               <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
+               <div className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Escala de Tempo</span>
             </div>
             <h3 className="text-3xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-none">
@@ -200,7 +200,7 @@ export default function AppointmentForm({
               value={formData.title} 
               autoFocus
               onChange={e => setFormData({...formData, title: e.target.value})} 
-              className="w-full px-5 py-4 border border-slate-100 dark:border-zinc-800 rounded-[24px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 focus:ring-4 focus:ring-indigo-600/10 focus:border-indigo-600 font-black text-lg transition-all outline-none" 
+              className="w-full px-5 py-4 border border-slate-100 dark:border-zinc-800 rounded-[24px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 focus:ring-4 focus:ring-emerald-600/10 focus:border-emerald-600 font-black text-lg transition-all outline-none" 
               placeholder="Descreva o compromisso..."
               required 
             />
@@ -215,12 +215,12 @@ export default function AppointmentForm({
                 <select 
                   value={formData.client_id} 
                   onChange={e => setFormData({...formData, client_id: e.target.value})} 
-                  className="w-full px-5 py-4 border border-slate-100 dark:border-zinc-800 rounded-[24px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 focus:ring-4 focus:ring-indigo-600/10 focus:border-indigo-600 font-black text-sm transition-all appearance-none outline-none cursor-pointer"
+                  className="w-full px-5 py-4 border border-slate-100 dark:border-zinc-800 rounded-[24px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 focus:ring-4 focus:ring-emerald-600/10 focus:border-emerald-600 font-black text-sm transition-all appearance-none outline-none cursor-pointer"
                 >
                   <option value="">Nenhum cliente</option>
                   {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-indigo-600 transition-colors">
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-emerald-600 transition-colors">
                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </div>
@@ -234,7 +234,7 @@ export default function AppointmentForm({
                 type="date" 
                 value={formData.date} 
                 onChange={e => setFormData({...formData, date: e.target.value})} 
-                className="w-full px-5 py-4 border border-slate-100 dark:border-zinc-800 rounded-[24px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 text-sm font-black transition-all focus:ring-4 focus:ring-indigo-600/10 focus:border-indigo-600 outline-none" 
+                className="w-full px-5 py-4 border border-slate-100 dark:border-zinc-800 rounded-[24px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 text-sm font-black transition-all focus:ring-4 focus:ring-emerald-600/10 focus:border-emerald-600 outline-none" 
               />
             </div>
           </div>
@@ -266,7 +266,7 @@ export default function AppointmentForm({
             <button 
               type="submit" 
               disabled={isSaving}
-              className="flex-[2] px-8 py-5 rounded-[24px] bg-slate-900 dark:bg-indigo-600 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl hover:bg-indigo-600 dark:hover:bg-indigo-500 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 group"
+              className="flex-[2] px-8 py-5 rounded-[24px] bg-slate-900 dark:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 group"
             >
               {isSaving ? (
                 <Clock className="w-4 h-4 animate-spin" />
