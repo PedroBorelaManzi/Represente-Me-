@@ -23,7 +23,7 @@ import { Link } from "react-router-dom";
 
 const industries = [
   { name: "Materiais de Construção", icon: Building2, color: "bg-orange-50 text-orange-600" },
-  { name: "Supermercados", icon: ShoppingCart, color: "bg-blue-50 text-emerald-600" },
+  { name: "Supermercados", icon: ShoppingCart, color: "bg-emerald-50 text-emerald-600" },
   { name: "Farmácias", icon: PlusIcon, color: "bg-red-50 text-red-600" },
   { name: "Saúde", icon: Stethoscope, color: "bg-green-50 text-green-600" },
   { name: "Serviços", icon: Briefcase, color: "bg-emerald-50 text-emerald-600" },
@@ -105,7 +105,7 @@ export default function LandingPitch() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link to="/login" className="px-6 py-3 rounded-2xl bg-slate-900 text-white hover-emerald-glow text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-slate-200 hover:">
+            <Link to="/login" className="px-6 py-3 rounded-2xl bg-slate-900 text-white hover-emerald-glow text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-slate-200">
               Entrar
             </Link>
           </div>
@@ -152,7 +152,7 @@ export default function LandingPitch() {
 
       {/* Industry Selection */}
       <section id="industrias" className="py-32 bg-white border-y border-slate-100 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(99,102,241,0.03),transparent)] pointer-events-none" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.03),transparent)] pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6 relative">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter mb-4">Adaptável à sua realidade</h2>
@@ -204,7 +204,7 @@ export default function LandingPitch() {
                     <p className="text-xs text-slate-400 font-bold leading-tight">Gemini lê e categoriza seus e-mails.</p>
                  </div>
                  <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-emerald-600 flex items-center justify-center mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
                        <Check className="w-4 h-4" />
                     </div>
                     <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 mb-1">Histórico Real</p>
@@ -311,8 +311,8 @@ export default function LandingPitch() {
             ].map((faq, fidx) => (
               <div key={fidx} className="p-8 rounded-3xl bg-white border border-slate-100 shadow-sm hover:border-emerald-100 transition-all">
                 <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-3 flex items-center gap-3">
-                  <HelpCircle className="w-4 h-4 text-emerald-500" />
-                  {faq.q}
+                   <HelpCircle className="w-4 h-4 text-emerald-500" />
+                   {faq.q}
                 </h4>
                 <p className="text-xs text-slate-500 font-medium leading-relaxed">{faq.a}</p>
               </div>
@@ -341,8 +341,8 @@ export default function LandingPitch() {
 
       {/* Footer */}
       <footer className="py-12 border-t border-slate-100 bg-white">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:row items-center justify-between gap-8">
-          <img src={logo} alt="Represente-se" className="h-8 md:h-10 w-auto opacity-50" />
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
+          <Logo className="opacity-50 h-8 md:h-10" showText={true} />
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
             © 2026 Represente-se — Tecnologia para Representações Comerciais
           </p>

@@ -124,7 +124,7 @@ const Login = () => {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-4 text-emerald-600 mb-20"
             >
-              <div className="p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl /50 dark:shadow-none border border-emerald-50 dark:border-zinc-800">
+              <div className="p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl dark:shadow-none dark:shadow-none border border-emerald-50 dark:border-zinc-800">
                 <Boxes className="h-8 w-8" />
               </div>
               <Logo showText={true} />
