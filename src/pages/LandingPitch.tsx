@@ -94,7 +94,7 @@ export default function LandingPitch() {
       >
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between gap-4">
           <div className="flex-shrink-0 flex items-center gap-3">
-            <Logo className='h-10' />
+            <Logo size=" lg\ showText={true} />
           </div>
           
           <div className="hidden lg:flex items-center gap-10">

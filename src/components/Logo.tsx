@@ -10,25 +10,24 @@ interface LogoProps {
 export const Logo: React.FC<LogoProps> = ({ 
   className = "", 
   showText = false,
-  size = "md" 
+  size = "lg" 
 }) => {
-  // Mapeamento de tamanhos para a marca
   const sizeClasses = {
-    sm: "h-6",
-    md: "h-10",
-    lg: "h-14",
-    xl: "h-20"
+    sm: "h-14",
+    md: "h-20",
+    lg: "h-32",
+    xl: "h-48"
   };
 
   const iconSize = sizeClasses[size];
 
   return (
-    <div className={`flex items-center gap-4 ${className}`}>
+    <div className={`flex items-center gap-8 ${className}`}>
       {/* 
-        Ícone 3D com Máscara de Luminância (Remove o fundo preto)
+        Ícone 3D com Brilho Neon Emerald e Máscara de Transparência
       */}
       <div 
-        className={`${iconSize} aspect-square bg-emerald-600 relative shrink-0`}
+        className={`${iconSize} aspect-square bg-emerald-600 relative shrink-0 drop-shadow-[0_0_25px_rgba(16,185,129,0.5)]`}
         style={{
           maskImage: `url(${logoUrl})`,
           WebkitMaskImage: `url(${logoUrl})`,
@@ -40,13 +39,14 @@ export const Logo: React.FC<LogoProps> = ({
           WebkitMaskMode: 'luminance'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400 to-emerald-600 opacity-90 shadow-lg shadow-emerald-500/20" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400 to-emerald-600 opacity-95" />
       </div>
 
       {showText && (
-        <span className="font-bold text-2xl tracking-tighter text-slate-900 dark:text-white">
-          Represente<span className="text-emerald-500">-se!</span>
-        </span>
+        <h1 className="font-black text-6xl md:text-7xl tracking-tighter flex items-center leading-none">
+          <span className="text-slate-900 border-none">Represente</span>
+          <span className="text-emerald-500 font-black">-se!</span>
+        </h1>
       )}
     </div>
   );
