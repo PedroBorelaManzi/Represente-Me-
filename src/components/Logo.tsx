@@ -7,15 +7,18 @@ interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({ className = "h-8", showText = false }) => {
-  // O showText fica off por padrão pois a logo do usuário já contém "Represente-se" na imagem
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      <img src={logoUrl} alt="Represente-se" className="h-full w-auto drop-shadow-md" />
-      {showText && (
-        <span className="font-black text-2xl tracking-tighter text-slate-900 dark:text-zinc-100">
-          Represente<span className="text-emerald-600">-se</span>
-        </span>
-      )}
+      {/* 
+        Utilizando CSS puro para ignorar pixels pretos e preservar apenas brilhos/cores! 
+        Isso torna o fundo "preto" em fundo "transparente", e mescla o logo com 
+        os temas escuros perfeitamente.
+      */}
+      <img 
+        src={logoUrl} 
+        alt="Represente-se" 
+        className="h-full w-auto mix-blend-screen drop-shadow-emerald filter brightness-110 saturate-150" 
+      />
     </div>
   );
 };
