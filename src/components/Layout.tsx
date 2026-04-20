@@ -1,4 +1,4 @@
-﻿import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation } from "react-router-dom";
 import { Logo } from './Logo';
 import { MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar, ShoppingCart, Check, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -23,7 +23,7 @@ export default function Layout() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   
   const [shortcutLinks, setShortcutLinks] = useState<any[]>([]);
-  const [expandedSections, setExpandedSections] = useState<{perda: boolean, critico: boolean, alerta: boolean}>({ perda: false, critico: false, alerta: true });
+  const [expandedSections, setExpandedSections] = useState<{perda: boolean, critico: boolean, alerta: boolean}>({ perda: false, critico: false, alerta: false });
   type AlertItem = { clientName: string, category: string, days: number };
   const [stats, setStats] = useState<{alerta: AlertItem[], critico: AlertItem[], perda: AlertItem[]}>({ alerta: [], critico: [], perda: [] });
 
@@ -82,18 +82,10 @@ export default function Layout() {
     };
   }, [user, settings]);
 
-  // Reset success state when modal opens/closes
-  useEffect(() => {
-    if (!settingsOpen) {
-      setSaveSuccess(false);
-      setIsSaving(false);
-    }
-  }, [settingsOpen]);
-
   const navigation = [
-    { name: "In�cio", href: "/dashboard", icon: Home },
+    { name: "Início", href: "/dashboard", icon: Home },
     { name: "Mapa", href: "/dashboard/map", icon: MapPin },
-    { name: "Integra��es", href: "/dashboard/links", icon: LinkIcon },
+    { name: "Integrações", href: "/dashboard/links", icon: LinkIcon },
     { name: "Clientes", href: "/dashboard/clientes", icon: Users },
     { name: "Pedidos e Empresas", href: "/dashboard/empresas", icon: Building2 },
     { name: "Agenda", href: "/dashboard/agenda", icon: Calendar },
@@ -126,9 +118,9 @@ export default function Layout() {
 
         <div className="flex-1 py-6 px-4">
           <nav className="space-y-1">
-{navigation.map((item) => {
+            {navigation.map((item) => {
               const isActive = location.pathname === item.href;
-              const isIntegracoes = item.name === "Integra��es";
+              const isIntegracoes = item.name === "Integrações";
 
               if (isIntegracoes) {
                 return (
@@ -223,7 +215,7 @@ export default function Layout() {
                   >
                     <div className="flex items-center gap-2">
                        <div className="w-2 h-2 rounded-full bg-red-500" />
-                       <span className="text-xs font-bold text-red-900">Perda ({settings.perda_days}D+)</span>
+                       <span className="text-xs font-bold text-red-900">Perda ({settings?.perda_days}D+)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-bold px-1.5 py-0.5 bg-red-100 text-red-700 rounded-md">{stats.perda.length}</span>
@@ -249,7 +241,7 @@ export default function Layout() {
                   </AnimatePresence>
                 </div>
 
-                {/* Cr�tico Section */}
+                {/* Crítico Section */}
                 <div className="rounded-xl border border-orange-100 bg-orange-50/50 overflow-hidden transition-all duration-300">
                   <button 
                     type="button"
@@ -258,7 +250,7 @@ export default function Layout() {
                   >
                     <div className="flex items-center gap-2">
                        <div className="w-2 h-2 rounded-full bg-orange-500" />
-                       <span className="text-xs font-bold text-orange-900">Cr�tico ({settings.critico_days}D)</span>
+                       <span className="text-xs font-bold text-orange-900">Crítico ({settings?.critico_days}D)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded-md">{stats.critico.length}</span>
@@ -293,7 +285,7 @@ export default function Layout() {
                   >
                     <div className="flex items-center gap-2">
                        <div className="w-2 h-2 rounded-full bg-amber-500" />
-                       <span className="text-xs font-bold text-amber-900">Alerta ({settings.alerta_days}D)</span>
+                       <span className="text-xs font-bold text-amber-900">Alerta ({settings?.alerta_days}D)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-md">{stats.alerta.length}</span>
@@ -329,14 +321,14 @@ export default function Layout() {
               {user?.email?.charAt(0).toUpperCase() || "U"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 dark:text-zinc-100 truncate">Usu�rio Ativo</p>
+              <p className="text-sm font-medium text-slate-900 dark:text-zinc-100 truncate">Usuário Ativo</p>
               <p className="text-xs text-slate-500 dark:text-zinc-400 truncate">{user?.email}</p>
             </div>
           </div>
           <div className="mt-4 space-y-1">
             <button onClick={() => setSettingsOpen(true)} className="w-full group flex items-center px-3 py-2 text-sm font-medium text-slate-600 dark:text-zinc-400 rounded-xl hover:bg-slate-50 dark:bg-zinc-950 transition-colors mb-1">
               <Settings className="mr-3 flex-shrink-0 h-5 w-5 text-slate-400 dark:text-zinc-500 group-hover:text-slate-500 dark:text-zinc-400" />
-              Configura��es
+              Configurações
             </button>
             <button onClick={signOut} className="w-full group flex items-center px-3 py-2 text-sm font-medium text-red-600 rounded-xl hover:bg-red-50 transition-colors">
               <LogOut className="mr-3 flex-shrink-0 h-5 w-5 text-red-500 group-hover:text-red-600" />
@@ -373,7 +365,7 @@ export default function Layout() {
               {settingsTab === 'menu' && (
                 <>
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Configura��es</h2>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">Configurações</h2>
                     <button onClick={() => setSettingsOpen(false)} className="text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300">
                       <X className="w-5 h-5" />
                     </button>
@@ -421,7 +413,7 @@ export default function Layout() {
                       <input name="alerta" type="number" step="1" min="0" defaultValue={settings.alerta_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Cr�tico (dias)</label>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-zinc-300 mb-1">Crítico (dias)</label>
                       <input name="critico" type="number" step="1" min="0" defaultValue={settings.critico_days} className="block w-full px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm bg-white dark:bg-zinc-950 dark:text-zinc-100" required />
                     </div>
                     <div>
@@ -483,6 +475,3 @@ export default function Layout() {
     </div>
   );
 }
-
-
-

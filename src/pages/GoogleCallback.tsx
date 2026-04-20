@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
-import { exchangeGoogleCode } from "../lib/googleTokenExchange";
 import { useAuth } from "../contexts/AuthContext";
-import { Loader2, AlertCircle, CheckCircle2, Sparkles, Globe, ShieldCheck } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Globe, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function GoogleCallback() {

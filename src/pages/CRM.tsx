@@ -1,7 +1,7 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Building2, Phone, Mail, FileText, ChevronRight, Filter, Plus, Trash2, Clock, CheckCircle2, TrendingUp, AlertCircle, X, Download, UserPlus, MoreHorizontal, Settings, LayoutGrid, Info, Loader2, Upload, FileUp, Activity } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, logAudit } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,24 +39,29 @@ export default function CRMPage() {
       if (error) throw error;
 
       // Fetch Files to calculate alerts (based on CRM.tsx.old logic)
-      const { data: files } = await supabase.rpc("list_user_files", { u_id: user.id });
-      const filesByClient: any = {};
-      if (files) {
-        files.forEach((f: any) => {
-          const cId = f.client_id;
-          if (!filesByClient[cId]) filesByClient[cId] = [];
-          filesByClient[cId].push({ file_name: f.file_name, created_at: f.created_at });
-        });
+      let files: any[] = [];
+      try {
+        const { data: filesData } = await supabase.rpc("list_user_files", { u_id: user.id });
+        files = filesData || [];
+      } catch (err) {
+        console.error("RPC Error:", err);
       }
+      
+      const filesByClient: any = {};
+      files.forEach((f: any) => {
+        const cId = f.client_id;
+        if (!filesByClient[cId]) filesByClient[cId] = [];
+        filesByClient[cId].push({ file_name: f.file_name, created_at: f.created_at });
+      });
 
       const clientsWithAlerts = (clientsData || []).map((client: any) => {
         const clientFiles = filesByClient[client.id] || [];
         const lastDates: any = {};
-        if (!clientFiles) return client; clientFiles.forEach((f: any) => {
+        clientFiles.forEach((f: any) => {
           const parts = f.file_name.split("___");
           if (parts.length > 1) {
             const rawCat = parts[0];
-            const matchedCat = settings.categories?.find(c => c.toLowerCase() === rawCat.toLowerCase());
+            const matchedCat = settings?.categories?.find((c: string) => c.toLowerCase() === rawCat.toLowerCase());
             const cat = matchedCat || rawCat;
             const date = new Date(f.created_at).getTime();
             if (!lastDates[cat] || date > lastDates[cat]) lastDates[cat] = date;
@@ -65,11 +70,11 @@ export default function CRMPage() {
 
         const alerts: any[] = [];
         const today = new Date().getTime();
-        if (lastDates) for (const [cat, date] of Object.entries(lastDates)) {
+        for (const [cat, date] of Object.entries(lastDates)) {
           const days = Math.floor((today - (date as number)) / (1000 * 60 * 60 * 24));
-          if (days >= (settings.perda_days || 365)) alerts.push({ company: cat, type: "Perda", days });
-          else if (days >= (settings.critico_days || 90)) alerts.push({ company: cat, type: "Critico", days });
-          else if (days >= (settings.alerta_days || 45)) alerts.push({ company: cat, type: "Alerta", days });
+          if (days >= (settings?.perda_days || 365)) alerts.push({ company: cat, type: "Perda", days });
+          else if (days >= (settings?.critico_days || 90)) alerts.push({ company: cat, type: "Critico", days });
+          else if (days >= (settings?.alerta_days || 45)) alerts.push({ company: cat, type: "Alerta", days });
         }
         return { ...client, alerts: alerts.sort((a, b) => b.days - a.days) };
       });
@@ -77,6 +82,7 @@ export default function CRMPage() {
       setClients(clientsWithAlerts);
     } catch (err) {
       console.error('Load Clients Error:', err);
+      toast.error('Erro ao carregar clientes');
     } finally {
       setLoading(false);
     }
@@ -91,11 +97,11 @@ export default function CRMPage() {
 
   // REFINED FILTER: Name, CNPJ, City (Ignore Address)
   const filteredClients = useMemo(() => {
-    return clients.filter(c => {
+    return (clients || []).filter(c => {
       const lowerSearch = searchTerm.toLowerCase();
-      const nameMatch = c.name?.toLowerCase().includes(lowerSearch);
-      const cnpjMatch = c.cnpj?.includes(searchTerm);
-      const cityMatch = c.city?.toLowerCase().includes(lowerSearch);
+      const nameMatch = (c.name || "").toLowerCase().includes(lowerSearch);
+      const cnpjMatch = (c.cnpj || "").includes(searchTerm);
+      const cityMatch = (c.city || "").toLowerCase().includes(lowerSearch);
       
       const searchMatch = nameMatch || cnpjMatch || cityMatch;
       
@@ -104,7 +110,7 @@ export default function CRMPage() {
       // Alert Tab Filter
       if (activeTab === 'Todos') return true;
       return c.alerts?.some((a: any) => a.type === activeTab);
-    }).sort((a, b) => a.name.localeCompare(b.name));
+    }).sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [clients, searchTerm, activeTab]);
 
   const handleDeleteClient = async (id: string) => {
@@ -293,5 +299,3 @@ export default function CRMPage() {
     </div>
   );
 }
-
-
