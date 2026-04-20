@@ -5,16 +5,18 @@ interface LogoProps {
   className?: string;
   showText?: boolean;
   size?: "sm" | "md" | "lg" | "xl";
+  iconOnly?: boolean; // Nova prop para esconder o texto interno da imagem
 }
 
 export const Logo: React.FC<LogoProps> = ({ 
   className = "", 
   showText = false,
-  size = "md" 
+  size = "md",
+  iconOnly = false
 }) => {
   const sizeClasses = {
     sm: "h-8",
-    md: "h-11", // Perfeito para a Navbar (44px)
+    md: "h-11",
     lg: "h-20",
     xl: "h-32"
   };
@@ -24,22 +26,37 @@ export const Logo: React.FC<LogoProps> = ({
   return (
     <div className={`flex items-center gap-4 ${className}`}>
       {/* 
-        Ícone com Nitidez Máxima e Cores Vibrantes
+        Ícone com Corte Estratégico
+        Se iconOnly for true, cortamos a parte inferior (onde fica o texto da imagem)
       */}
       <div 
-        className={`${iconSize} aspect-square bg-emerald-500 relative shrink-0 drop-shadow-[0_0_15px_rgba(16,185,129,0.4)] brightness-110 contrast-125 saturate-150`}
+        className={`${iconSize} aspect-square relative shrink-0 overflow-hidden group`}
         style={{
           maskImage: `url(${logoUrl})`,
           WebkitMaskImage: `url(${logoUrl})`,
-          maskSize: 'contain',
-          WebkitMaskSize: 'contain',
-          maskRepeat: 'no-repeat',
-          WebkitMaskRepeat: 'no-repeat',
           maskMode: 'luminance',
-          WebkitMaskMode: 'luminance'
+          WebkitMaskMode: 'luminance',
+          maskSize: iconOnly ? '100% 160%' : 'contain', // Ajuste para esconder o texto
+          WebkitMaskSize: iconOnly ? '100% 160%' : 'contain',
+          maskPosition: 'top center',
+          WebkitMaskPosition: 'top center',
+          maskRepeat: 'no-repeat',
+          WebkitMaskRepeat: 'no-repeat'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400 via-emerald-500 to-emerald-300 opacity-100" />
+        <img 
+          src={logoUrl}
+          alt="Logo Icon"
+          className={`w-full h-full object-cover contrast-150 saturate-[1.8] brightness-125`}
+          style={{
+            objectPosition: iconOnly ? 'top center' : 'center',
+            transform: iconOnly ? 'scale(1.4)' : 'none', // Foca no "R"
+            transformOrigin: 'top center'
+          }}
+        />
+        
+        {/* Camada de Brilho Extra para "Vibrar" a cor */}
+        <div className="absolute inset-0 bg-emerald-500/10 mix-blend-overlay pointer-events-none" />
       </div>
 
       {showText && (
