@@ -4,18 +4,31 @@ import logoUrl from "../assets/logo.png";
 interface LogoProps {
   className?: string;
   showText?: boolean;
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
-export const Logo: React.FC<LogoProps> = ({ className = "h-8", showText = false }) => {
+export const Logo: React.FC<LogoProps> = ({ 
+  className = "", 
+  showText = false,
+  size = "md" 
+}) => {
+  // Mapeamento de tamanhos para a marca
+  const sizeClasses = {
+    sm: "h-6",
+    md: "h-10",
+    lg: "h-14",
+    xl: "h-20"
+  };
+
+  const iconSize = sizeClasses[size];
+
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
+    <div className={`flex items-center gap-4 ${className}`}>
       {/* 
-        Técnica de Remoção de Fundo Preto via CSS Puro:
-        Usamos mask-image em conjunto com luminância para fazer o preto ser transparente 
-        e o resto (verde) ser opaco. Isso funciona perfeitamente para sua imagem.
+        Ícone 3D com Máscara de Luminância (Remove o fundo preto)
       */}
       <div 
-        className="h-full w-auto min-w-[32px] bg-emerald-600 relative group"
+        className={`${iconSize} aspect-square bg-emerald-600 relative shrink-0`}
         style={{
           maskImage: `url(${logoUrl})`,
           WebkitMaskImage: `url(${logoUrl})`,
@@ -26,15 +39,13 @@ export const Logo: React.FC<LogoProps> = ({ className = "h-8", showText = false 
           maskMode: 'luminance',
           WebkitMaskMode: 'luminance'
         }}
-        title="Represente-se"
       >
-        {/* Camada de brilho esmeralda para dar o efeito 3D premium */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400 to-emerald-600 opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400 to-emerald-600 opacity-90 shadow-lg shadow-emerald-500/20" />
       </div>
 
       {showText && (
-        <span className="font-bold text-xl tracking-tight text-slate-900 dark:text-white">
-          Represente<span className="text-emerald-500">-se</span>
+        <span className="font-bold text-2xl tracking-tighter text-slate-900 dark:text-white">
+          Represente<span className="text-emerald-500">-se!</span>
         </span>
       )}
     </div>
