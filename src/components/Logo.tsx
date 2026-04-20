@@ -10,24 +10,24 @@ interface LogoProps {
 export const Logo: React.FC<LogoProps> = ({ 
   className = "", 
   showText = false,
-  size = "lg" 
+  size = "md" 
 }) => {
   const sizeClasses = {
-    sm: "h-14",
-    md: "h-20",
-    lg: "h-32",
-    xl: "h-48"
+    sm: "h-8",
+    md: "h-11", // Perfeito para a Navbar (44px)
+    lg: "h-20",
+    xl: "h-32"
   };
 
   const iconSize = sizeClasses[size];
 
   return (
-    <div className={`flex items-center gap-8 ${className}`}>
+    <div className={`flex items-center gap-4 ${className}`}>
       {/* 
-        Ícone 3D com Brilho Neon Emerald e Máscara de Transparência
+        Ícone com Nitidez Máxima e Cores Vibrantes
       */}
       <div 
-        className={`${iconSize} aspect-square bg-emerald-600 relative shrink-0 drop-shadow-[0_0_25px_rgba(16,185,129,0.5)]`}
+        className={`${iconSize} aspect-square bg-emerald-500 relative shrink-0 drop-shadow-[0_0_15px_rgba(16,185,129,0.4)] brightness-110 contrast-125 saturate-150`}
         style={{
           maskImage: `url(${logoUrl})`,
           WebkitMaskImage: `url(${logoUrl})`,
@@ -39,14 +39,14 @@ export const Logo: React.FC<LogoProps> = ({
           WebkitMaskMode: 'luminance'
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400 to-emerald-600 opacity-95" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-emerald-400 via-emerald-500 to-emerald-300 opacity-100" />
       </div>
 
       {showText && (
-        <h1 className="font-black text-6xl md:text-7xl tracking-tighter flex items-center leading-none">
-          <span className="text-slate-900 border-none">Represente</span>
-          <span className="text-emerald-500 font-black">-se!</span>
-        </h1>
+        <span className="font-black text-2xl md:text-3xl tracking-tighter flex items-center leading-none select-none">
+          <span className="text-slate-900">Represente</span>
+          <span className="text-emerald-500 font-extrabold">-se!</span>
+        </span>
       )}
     </div>
   );
