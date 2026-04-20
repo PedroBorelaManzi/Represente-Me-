@@ -17,44 +17,49 @@ export const Logo: React.FC<LogoProps> = ({
 }) => {
   const sizeMap = {
     sm: 'h-8 w-8',
-    md: 'h-10 w-10', // Ajustado para alinhar perfeitamente com o texto do cabeçalho
+    md: 'h-11 w-11', // Tamanho calibrado para o cabeçalho
     lg: 'h-24 w-24',
     xl: 'h-40 w-40'
   };
 
   const finalIconOnly = iconOnly || !showText;
 
+  // Mask sync logic to ensure background removal matches the image transform
+  const maskStyle: React.CSSProperties = {
+    maskImage: `url(${logoUrl})`,
+    maskMode: "luminance",
+    WebkitMaskImage: `url(${logoUrl})`,
+    WebkitMaskMode: "luminance",
+    maskSize: "140% auto", // Zoom para focar no R e esconder o texto
+    WebkitMaskSize: "140% auto",
+    maskPosition: "top center",
+    WebkitMaskPosition: "top center",
+    maskRepeat: "no-repeat",
+    WebkitMaskRepeat: "no-repeat"
+  };
+
   return (
     <div className={cn("flex items-center gap-3 group shrink-0", className)}>
-      <div className={cn("relative flex items-center justify-center overflow-hidden shrink-0", sizeMap[size])}>
-        {/* Logo 3D Icon with high-precision cropping to isolate the 'R' */}
+      <div className={cn("relative flex items-center justify-center overflow-hidden shrink-0 rounded-xl", sizeMap[size])}>
+        {/* The 'R' Icon - Preserving original aspect ratio using auto-height and top-crop */}
         <div 
-          className="relative w-full h-full overflow-hidden"
-          style={{
-            maskImage: `url(${logoUrl})`,
-            maskMode: "luminance",
-            WebkitMaskImage: `url(${logoUrl})`,
-            WebkitMaskMode: "luminance",
-            // We use a larger vertical scale to "crop" the sub-text from the image assets
-            maskSize: "100% 170%",
-            WebkitMaskSize: "100% 170%",
-            maskPosition: "top center",
-            WebkitMaskPosition: "top center",
-            maskRepeat: "no-repeat",
-            WebkitMaskRepeat: "no-repeat"
-          }}
+          className="absolute inset-0 transition-transform duration-500 group-hover:scale-110"
+          style={maskStyle}
         >
           <img 
             src={logoUrl}
             alt="Represente-se"
             className={cn(
-              "w-full h-full object-cover transition-all duration-500",
-              "filter contrast-[1.4] saturate-[1.8] brightness-[1.1]",
-              "group-hover:scale-110"
+              "w-full h-auto object-contain transition-all duration-500",
+              "filter contrast-[1.3] saturate-[1.6] brightness-[1.1]",
             )}
             style={{
-              objectPosition: "top center",
-              transformOrigin: "top center"
+              width: '140%', // Combina com o maskSize para manter fidelidade
+              maxWidth: 'none',
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              transform: 'translateX(-50%)'
             }}
           />
         </div>
