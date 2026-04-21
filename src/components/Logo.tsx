@@ -27,30 +27,15 @@ export const Logo: React.FC<LogoProps> = ({
   return (
     <div className={cn("flex items-center gap-3 group shrink-0", className)}>
       <div className={cn("relative flex items-center justify-center shrink-0", sizeMap[size])}>
-        {/* SVG Filter to remove white background while keeping everything else OPAQUE */}
-        <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
-          <filter id="chroma-white" colorInterpolationFilters="sRGB">
-            {/* 
-              This matrix is tuned to target pure white (#FFFFFF) 
-              It converts high luminance (white) to transparency (alpha = 0)
-              but keeps everything else (darker tones) solid.
-            */}
-            <feColorMatrix type="matrix" values="1 0 0 0 0 
-                                                 0 1 0 0 0 
-                                                 0 0 1 0 0 
-                                                 -3 -3 -3 1 8" /> 
-          </filter>
-        </svg>
-
+        {/* 
+          Vibrant 3D Logo 
+          The background of the image is perfectly matched to the page background (#f8fafc)
+          to ensure a seamless, high-fidelity look without complex CSS filters.
+        */}
         <img 
           src={logoUrl}
           alt="Represente-se"
-          className={cn(
-            "w-full h-full object-contain transition-transform duration-500 group-hover:scale-110",
-          )}
-          style={{
-            filter: 'url(#chroma-white) contrast(1.1) saturate(1.2)'
-          }}
+          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
         />
       </div>
       
