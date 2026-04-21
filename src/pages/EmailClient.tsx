@@ -65,6 +65,21 @@ export default function EmailClient() {
     }
   }
 
+  async function deleteAccount(id: string) {
+    if (!confirm("Tem certeza que deseja remover esta conta de e-mail?")) return;
+    
+    const { error } = await supabase
+      .from('user_email_tokens')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+       setAccounts(prev => prev.filter(acc => acc.id !== id));
+    } else {
+       alert("Erro ao remover: " + error.message);
+    }
+  }
+
   // 2. Fetch Emails
   useEffect(() => {
     if (selectedAccount && user) {
@@ -100,7 +115,6 @@ export default function EmailClient() {
         // Populate rich contacts
         setContacts(prev => {
            const map = new Map<string, string>();
-           // Initialize with prev
            prev.forEach(c => map.set(c.email, c.name));
            
            newEmails.forEach(e => {
@@ -181,7 +195,17 @@ export default function EmailClient() {
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Gmail</p>
                     <p className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">{acc.email}</p>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center absolute right-6 top-1/2 -translate-y-1/2 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
+                  
+                  {/* Botão de Exclusão (X vermelho) no Hover */}
+                  <div 
+                    onClick={(e) => { e.stopPropagation(); deleteAccount(acc.id); }}
+                    className="absolute top-4 right-4 p-2.5 bg-red-50 text-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 hover:text-white shadow-sm z-10 scale-90 group-hover:scale-100"
+                    title="Remover conta"
+                  >
+                    <X className="w-4 h-4" />
+                  </div>
+
+                  <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center absolute right-6 top-12 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
                     <ChevronRight className="w-4 h-4" />
                   </div>
                 </button>
@@ -439,7 +463,6 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts }: { isOpe
     if (!to || !subject || !body || !provider) return;
     setIsSending(true);
     try {
-      // If "Name <email>" format, extract just the email for the API or leave as is if Gmail supports it (it usually does)
       const res = await sendEmailViaApi(userId, provider, to, subject, body);
       if (res.success) {
         onClose();
