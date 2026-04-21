@@ -10,6 +10,7 @@ import ClientDetailsPage from "./pages/ClientDetails";
 import EmpresasPage from "./pages/Empresas";
 import AgendaPage from "./pages/Agenda";
 import EmailClient from "./pages/EmailClient";
+import EmailCallback from "./pages/EmailCallback";
 import PedidosPage from "./pages/Pedidos";
 import GoogleCallback from "./pages/GoogleCallback";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -44,6 +45,7 @@ export default function App() {
 
           {/* Google OAuth Callback */}
           <Route path="/auth/callback/google" element={<GoogleCallback />} />
+          <Route path="/auth/callback/email" element={<EmailCallback />} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

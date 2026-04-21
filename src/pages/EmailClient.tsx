@@ -1,7 +1,8 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { getGoogleEmailAuthUrl, getMicrosoftEmailAuthUrl } from "../lib/emailSync";
 
 type EmailProvider = "google" | "microsoft";
 
@@ -34,8 +35,9 @@ export default function EmailClient() {
 
   // Authentication Mock Handler
   const handleConnectProvider = (provider: EmailProvider) => {
-    alert(`Redirecionando para o login seguro... (Escopos de e-mail ativados)`);
-  };
+  if (provider === 'google') window.location.href = getGoogleEmailAuthUrl();
+  else window.location.href = getMicrosoftEmailAuthUrl();
+};
 
   // 1. SELECT ACCOUNT SCREEN
   if (!selectedAccount) {
@@ -132,17 +134,17 @@ export default function EmailClient() {
         <div className="hidden lg:flex w-56 flex-col gap-2">
            <div className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] p-4 flex flex-col">
               <nav className="space-y-1">
-                 <button onClick={() => setCurrentFolder('inbox')} className={cn("w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all", currentFolder === 'inbox' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-zinc-800/50")}>
+                 <button onClick={() => { setCurrentFolder('inbox'); setSelectedEmail(null); }} className={cn("w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all", currentFolder === 'inbox' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-zinc-800/50")}>
                    <div className="flex items-center gap-3"><Inbox className="w-4 h-4" /> P. Entrada</div>
                    <span className="bg-emerald-600 text-white px-2 py-0.5 rounded-full text-[9px]">4</span>
                  </button>
-                 <button onClick={() => setCurrentFolder('sent')} className={cn("w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all", currentFolder === 'sent' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-zinc-800/50")}>
+                 <button onClick={() => { setCurrentFolder('sent'); setSelectedEmail(null); }} className={cn("w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all", currentFolder === 'sent' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-zinc-800/50")}>
                    <div className="flex items-center gap-3"><Send className="w-4 h-4" /> Enviados</div>
                  </button>
-                 <button onClick={() => setCurrentFolder('drafts')} className={cn("w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all", currentFolder === 'drafts' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-zinc-800/50")}>
+                 <button onClick={() => { setCurrentFolder('drafts'); setSelectedEmail(null); }} className={cn("w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all", currentFolder === 'drafts' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-zinc-800/50")}>
                    <div className="flex items-center gap-3"><Edit className="w-4 h-4" /> Rascunhos</div>
                  </button>
-                 <button onClick={() => setCurrentFolder('trash')} className={cn("w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all", currentFolder === 'trash' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-zinc-800/50")}>
+                 <button onClick={() => { setCurrentFolder('trash'); setSelectedEmail(null); }} className={cn("w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all", currentFolder === 'trash' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-zinc-800/50")}>
                    <div className="flex items-center gap-3"><Trash2 className="w-4 h-4" /> Lixeira</div>
                  </button>
               </nav>
@@ -172,7 +174,7 @@ export default function EmailClient() {
           
           {/* The List (Mocked) */}
           <div className="flex-1 overflow-y-auto custom-scrollbar">
-             {MOCK_EMAILS.map(email => (
+             {MOCK_EMAILS.filter(e => e.folder === currentFolder).map(email => (
                <button 
                  key={email.id}
                  onClick={() => setSelectedEmail(email)}
