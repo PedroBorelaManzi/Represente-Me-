@@ -5,6 +5,7 @@ export type EmailProvider = 'google' | 'microsoft';
 export interface EmailMessage {
   id: string;
   from: string;
+  fromEmail?: string;
   subject: string;
   preview: string;
   time: string;
@@ -12,6 +13,7 @@ export interface EmailMessage {
   folder: string;
   fullBody?: string;
   to?: string;
+  toEmail?: string;
 }
 
 // 1. GERAÇÃO DE URLS DE AUTENTICAÇÃO
@@ -20,6 +22,7 @@ export function getGoogleEmailAuthUrl() {
   if (!clientId) throw new Error("VITE_GOOGLE_CLIENT_ID não configurado.");
   
   const redirectUri = `${window.location.origin}/auth/callback/email`;
+  // ESCOPOS ESSENCIAIS PARA LEITURA E ENVIO
   const scopes = [
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.send",
@@ -146,11 +149,7 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      if (!listRes.ok) {
-        const errorText = await listRes.text();
-        console.error("Erro na API do Gmail (list):", errorText);
-        throw new Error("Erro ao listar mensagens");
-      }
+      if (!listRes.ok) throw new Error("Erro ao listar mensagens");
       const listData = await listRes.json();
       
       if (!listData.messages || listData.messages.length === 0) {
@@ -167,6 +166,15 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
            const headers = detail.payload.headers;
            const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || "";
            
+           const parseEmailHeader = (raw: string) => {
+             const match = raw.match(/^(.*?)\s*<([^>]+)>$/);
+             if (match) return { name: match[1].replace(/"/g, "").trim(), email: match[2].trim() };
+             return { name: raw.split("@")[0].replace(/"/g, "").trim(), email: raw.trim() };
+           };
+
+           const fromInfo = parseEmailHeader(getHeader("From"));
+           const toInfo = parseEmailHeader(getHeader("To"));
+
            const dateStr = getHeader("Date");
            const date = dateStr ? new Date(dateStr) : new Date();
            const formattedTime = date.toLocaleDateString() === new Date().toLocaleDateString() 
@@ -175,8 +183,10 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
 
            return {
              id: detail.id,
-             from: getHeader("From").split("<")[0].replace(/"/g, "").trim() || getHeader("From"),
-             to: getHeader("To").split("<")[0].replace(/"/g, "").trim() || getHeader("To"),
+             from: fromInfo.name || fromInfo.email,
+             fromEmail: fromInfo.email,
+             to: toInfo.name || toInfo.email,
+             toEmail: toInfo.email,
              subject: getHeader("Subject") || "(Sem Assunto)",
              preview: detail.snippet || "",
              time: formattedTime,
@@ -184,52 +194,48 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
              folder: folder,
              fullBody: detail.snippet 
            };
-         } catch (e) {
-           return null;
-         }
+         } catch (e) { return null; }
       }));
 
-      return { 
-        success: true, 
-        emails: emailDetails.filter(e => e !== null), 
-        nextPageToken: listData.nextPageToken || null 
-      };
-
+      return { success: true, emails: emailDetails.filter(e => e !== null), nextPageToken: listData.nextPageToken || null };
     } catch (err) {
-      console.error("Erro no fluxo do Gmail:", err);
       return { success: false, error: "Falha ao buscar e-mails" };
     }
   }
-
   return { success: true, emails: [], nextPageToken: null }; 
 }
 
 export async function sendEmailViaApi(userId: string, provider: EmailProvider, to: string, subject: string, text: string) {
   const token = await getValidEmailToken(userId, provider);
-  if (!token) return { success: false, error: "Token inválido ou expirado" };
+  if (!token) return { success: false, error: "Token não disponível. Reautentique-se." };
 
   if (provider === 'google') {
     try {
-      // 1. MONTAR O MIME CORRETAMENTE COM UTF-8
-      const mimeMessage = [
+      // 1. ESTRUTURA MIME COMPLETA
+      const mime = [
         `To: ${to}`,
         `Subject: ${subject}`,
         'Content-Type: text/plain; charset="UTF-8"',
         'MIME-Version: 1.0',
-        'Content-Transfer-Encoding: 7bit',
+        'Content-Transfer-Encoding: 8bit',
         '',
         text
       ].join('\r\n');
 
-      // 2. ENCODER ROBUSTO PARA BASE64URL
-      const utf8Encoder = new TextEncoder();
-      const bytes = utf8Encoder.encode(mimeMessage);
-      const base64 = btoa(String.fromCharCode(...bytes))
+      // 2. CONVERSÃO SEGURA PARA BASE64URL
+      const encoder = new TextEncoder();
+      const u8a = encoder.encode(mime);
+      let binary = "";
+      for (let i = 0; i < u8a.length; i++) {
+        binary += String.fromCharCode(u8a[i]);
+      }
+      
+      const base64 = btoa(binary)
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '');
 
-      const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, {
+      const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -238,18 +244,20 @@ export async function sendEmailViaApi(userId: string, provider: EmailProvider, t
         body: JSON.stringify({ raw: base64 })
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        console.error("Erro API Gmail Send:", errorData);
-        throw new Error(errorData.error?.message || "Erro ao enviar e-mail");
+      if (!response.ok) {
+        const err = await response.json();
+        const msg = err.error?.message || "Erro desconhecido na API";
+        // Se o erro for de escopo, avisamos claramente
+        if (msg.includes("insufficient permissions") || response.status === 403) {
+          return { success: false, error: "Permissões insuficientes. Clique em 'Nova Conta Gmail' para autorizar o envio." };
+        }
+        return { success: false, error: msg };
       }
       
       return { success: true };
     } catch (err: any) {
-      console.error("Erro Técnico Envio:", err);
-      return { success: false, error: err.message || "Falha no envio" };
+      return { success: false, error: err.message || "Erro de conexão ao enviar." };
     }
   }
-  
-  return { success: false, error: "Provedor não suportado para envio" };
+  return { success: false, error: "Provedor não suportado." };
 }

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2, X, Minimize2, Maximize2, Loader2, RefreshCw, Clock, Info, ShieldAlert, Layers, Bookmark, PartyPopper, Users, Zap } from "lucide-react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,6 +15,11 @@ type ConnectedAccount = {
 type EmailFolder = "inbox" | "sent" | "drafts" | "trash" | "starred" | "important" | "spam" | "snoozed" | "all";
 type GmailCategory = "" | "CATEGORY_PERSONAL" | "CATEGORY_SOCIAL" | "CATEGORY_PROMOTIONS" | "CATEGORY_UPDATES";
 
+interface Contact {
+  name: string;
+  email: string;
+}
+
 export default function EmailClient() {
   const { user } = useAuth();
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
@@ -30,8 +35,8 @@ export default function EmailClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
 
-  // Contacts for autocomplete
-  const [contacts, setContacts] = useState<string[]>([]);
+  // Rich Contacts for autocomplete
+  const [contacts, setContacts] = useState<Contact[]>([]);
 
   // Pagination
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
@@ -92,14 +97,18 @@ export default function EmailClient() {
           setEmails(newEmails);
         }
         
-        // Populate contacts from emails
+        // Populate rich contacts
         setContacts(prev => {
-           const allContactSet = new Set([...prev]);
+           const map = new Map<string, string>();
+           // Initialize with prev
+           prev.forEach(c => map.set(c.email, c.name));
+           
            newEmails.forEach(e => {
-             if (e.from && e.from.includes("@")) allContactSet.add(e.from);
-             if (e.to && e.to.includes("@")) allContactSet.add(e.to);
+             if (e.fromEmail) map.set(e.fromEmail, e.from);
+             if (e.toEmail) map.set(e.toEmail, e.to || e.toEmail);
            });
-           return Array.from(allContactSet);
+           
+           return Array.from(map.entries()).map(([email, name]) => ({ name, email }));
         });
 
         setNextPageToken(result.nextPageToken || null);
@@ -397,23 +406,40 @@ export default function EmailClient() {
   );
 }
 
-function ComposeBalloon({ isOpen, onClose, userId, provider, contacts }: { isOpen: boolean, onClose: () => void, userId: string, provider?: EmailProvider, contacts: string[] }) {
+function ComposeBalloon({ isOpen, onClose, userId, provider, contacts }: { isOpen: boolean, onClose: () => void, userId: string, provider?: EmailProvider, contacts: Contact[] }) {
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const filteredContacts = useMemo(() => {
     if (!to) return [];
-    return contacts.filter(c => c.toLowerCase().includes(to.toLowerCase())).slice(0, 5);
+    const search = to.toLowerCase();
+    return contacts.filter(c => 
+      c.name.toLowerCase().includes(search) || 
+      c.email.toLowerCase().includes(search)
+    ).slice(0, 8);
   }, [to, contacts]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   async function handleSend() {
     if (!to || !subject || !body || !provider) return;
     setIsSending(true);
     try {
+      // If "Name <email>" format, extract just the email for the API or leave as is if Gmail supports it (it usually does)
       const res = await sendEmailViaApi(userId, provider, to, subject, body);
       if (res.success) {
         onClose();
@@ -428,10 +454,17 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts }: { isOpe
     }
   }
 
+  const avatarColors = ["bg-blue-500", "bg-emerald-500", "bg-purple-500", "bg-orange-500", "bg-pink-500", "bg-red-500"];
+  const getAvatarColor = (name: string) => {
+    const charCode = name.charCodeAt(0) || 0;
+    return avatarColors[charCode % avatarColors.length];
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div 
+          ref={containerRef}
           initial={{ y: 500, opacity: 0, scale: 0.95 }}
           animate={{ y: isMinimized ? 400 : 0, opacity: 1, scale: 1 }}
           exit={{ y: 500, opacity: 0, scale: 0.95 }}
@@ -454,27 +487,44 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts }: { isOpe
              <div className="space-y-1 relative">
                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Para</p>
                <input 
-                 type="email" 
-                 placeholder="email@exemplo.com" 
+                 type="text" 
+                 placeholder="Destinatário" 
                  value={to} 
                  onChange={(e) => { setTo(e.target.value); setShowSuggestions(true); }}
                  onFocus={() => setShowSuggestions(true)}
                  className="w-full bg-transparent border-b border-slate-100 dark:border-zinc-800 py-3 text-sm font-bold outline-none focus:border-emerald-500 transition-colors dark:text-zinc-100 placeholder:text-slate-300"
                />
                
-               {showSuggestions && filteredContacts.length > 0 && (
-                 <div className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 shadow-xl rounded-2xl z-[110] mt-1 overflow-hidden">
-                    {filteredContacts.map(contact => (
-                      <button 
-                        key={contact}
-                        onClick={() => { setTo(contact); setShowSuggestions(false); }}
-                        className="w-full text-left px-5 py-3 text-xs font-bold text-slate-600 dark:text-zinc-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 hover:text-emerald-600 transition-colors border-b border-slate-50 last:border-none"
-                      >
-                        {contact}
-                      </button>
-                    ))}
-                 </div>
-               )}
+               <AnimatePresence>
+                {showSuggestions && filteredContacts.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-full left-0 w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-3xl z-[120] mt-2 overflow-hidden py-2"
+                  >
+                      {filteredContacts.map(contact => (
+                        <button 
+                          key={contact.email}
+                          onClick={() => { setTo(contact.email); setShowSuggestions(false); }}
+                          className="w-full text-left px-6 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors group"
+                        >
+                          <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm uppercase shadow-sm", getAvatarColor(contact.name))}>
+                            {contact.name.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate group-hover:text-emerald-600 transition-colors">
+                              {contact.name}
+                            </p>
+                            <p className="text-xs font-medium text-slate-400 truncate">
+                              {contact.email}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                  </motion.div>
+                )}
+               </AnimatePresence>
              </div>
 
              <div className="space-y-1">
