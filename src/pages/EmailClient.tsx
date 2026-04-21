@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,10 +18,10 @@ const MOCK_ACCOUNTS: ConnectedAccount[] = [
 ];
 
 const MOCK_EMAILS = [
-  { id: "101", from: "João Silva", subject: "Dúvida sobre o Pedido #8482", preview: "Olá Pedro, gostaria de saber se o meu pedido já foi faturado e se temos...", time: "10:30", unread: true },
-  { id: "102", from: "Carlos Distribuidora", subject: "Nova Tabela de Preços", preview: "Segue em anexo a nova tabela de preços acordada...", time: "09:15", unread: false },
-  { id: "103", from: "Maria Souza", subject: "Reagendamento de Visita", preview: "Podemos remarcar nossa visita para a próxima quarta-feira?", time: "Ontem", unread: false },
-  { id: "104", from: "Sistema Represente", subject: "Relatório Semanal", preview: "Aqui estão os seus números da semana passada. Faturado: R$ 45.000", time: "Seg", unread: false }
+  { id: "101", from: "JoÃ£o Silva", subject: "DÃºvida sobre o Pedido #8482", preview: "OlÃ¡ Pedro, gostaria de saber se o meu pedido jÃ¡ foi faturado e se temos...", time: "10:30", unread: true },
+  { id: "102", from: "Carlos Distribuidora", subject: "Nova Tabela de PreÃ§os", preview: "Segue em anexo a nova tabela de preÃ§os acordada...", time: "09:15", unread: false },
+  { id: "103", from: "Maria Souza", subject: "Reagendamento de Visita", preview: "Podemos remarcar nossa visita para a prÃ³xima quarta-feira?", time: "Ontem", unread: false },
+  { id: "104", from: "Sistema Represente", subject: "RelatÃ³rio Semanal", preview: "Aqui estÃ£o os seus nÃºmeros da semana passada. Faturado: R$ 45.000", time: "Seg", unread: false }
 ];
 
 export default function EmailClient() {
@@ -34,7 +34,7 @@ export default function EmailClient() {
 
   // Authentication Mock Handler
   const handleConnectProvider = (provider: EmailProvider) => {
-    alert(\Redirecionando para o login seguro do \... (Escopos de e-mail ativados)\);
+    alert(`Redirecionando para o login seguro... (Escopos de e-mail ativados)`);
   };
 
   // 1. SELECT ACCOUNT SCREEN
@@ -50,7 +50,7 @@ export default function EmailClient() {
             Caixa de Entrada <span className="text-emerald-600">Universal</span>
           </h1>
           <p className="text-slate-500 dark:text-zinc-400 font-medium text-lg max-w-xl mx-auto leading-relaxed">
-            Centralize sua comunicação com clientes. Selecione uma conta vinculada ou conecte um novo provedor.
+            Centralize sua comunicaÃ§Ã£o com clientes. Selecione uma conta vinculada ou conecte um novo provedor.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-12 text-left">
@@ -239,9 +239,9 @@ export default function EmailClient() {
 
                 <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-zinc-300 text-sm leading-relaxed space-y-4">
                    <p>{selectedEmail.preview}</p>
-                   <p>Abaixo temos um editor pronto para respondermos com assinatura automática.</p>
+                   <p>Abaixo temos um editor pronto para respondermos com assinatura automÃ¡tica.</p>
                    <div className="my-6 p-4 border border-slate-200 dark:border-zinc-800 rounded-[16px] bg-slate-50 dark:bg-zinc-950 font-mono text-xs text-slate-500">
-                     [Anexos vão renderizar aqui se existirem]
+                     [Anexos vÃ£o renderizar aqui se existirem]
                    </div>
                 </div>
              </div>
