@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Logo } from './Logo';
-import { MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar, ShoppingCart, Check, Shield } from "lucide-react";
+import { MapPin, Home, Link as LinkIcon, Users, Settings, Building2, LogOut, Menu, X, ChevronDown, ChevronUp, Sun, Moon, ChevronLeft, Calendar, ShoppingCart, Check, Shield, Mail } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "../lib/utils";
@@ -89,6 +89,7 @@ export default function Layout() {
     { name: "Clientes", href: "/dashboard/clientes", icon: Users },
     { name: "Pedidos e Empresas", href: "/dashboard/empresas", icon: Building2 },
     { name: "Agenda", href: "/dashboard/agenda", icon: Calendar },
+    { name: "E-mail", href: "/dashboard/email", icon: Mail },
     
   ];
 
@@ -475,3 +476,4 @@ export default function Layout() {
     </div>
   );
 }
+

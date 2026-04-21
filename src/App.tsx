@@ -9,6 +9,7 @@ import CRMPage from "./pages/CRM";
 import ClientDetailsPage from "./pages/ClientDetails";
 import EmpresasPage from "./pages/Empresas";
 import AgendaPage from "./pages/Agenda";
+import EmailClient from "./pages/EmailClient";
 import PedidosPage from "./pages/Pedidos";
 import GoogleCallback from "./pages/GoogleCallback";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -36,6 +37,7 @@ export default function App() {
               <Route path="clientes/:id" element={<ClientDetailsPage />} />
               <Route path="empresas" element={<EmpresasPage />} />
               <Route path="agenda" element={<AgendaPage />} />
+              <Route path="email" element={<EmailClient />} />
               <Route path="pedidos" element={<PedidosPage />} />
             </Route>
           </Route>
@@ -50,3 +52,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+
