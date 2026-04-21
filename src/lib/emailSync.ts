@@ -48,10 +48,14 @@ export async function getValidEmailToken(userId: string, provider: EmailProvider
     .eq('provider', provider)
     .maybeSingle();
 
-  if (error || !tokenData) return null;
+  if (error || !tokenData) {
+    console.error("Token não encontrado para o usuário:", userId);
+    return null;
+  }
 
   const isExpired = new Date(tokenData.expires_at).getTime() < Date.now();
   if (isExpired && tokenData.refresh_token) {
+     console.log("Token expirado, renovando...");
      return await refreshEmailToken(userId, provider, tokenData.refresh_token);
   }
   return tokenData.access_token;
@@ -113,21 +117,26 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
 
   if (provider === 'google') {
     try {
-      const folderMap: Record<string, string> = {
-        'inbox': 'label:INBOX',
-        'sent': 'label:SENT',
-        'drafts': 'label:DRAFT',
-        'trash': 'label:TRASH'
+      const folderToLabel: Record<string, string> = {
+        'inbox': 'INBOX',
+        'sent': 'SENT',
+        'drafts': 'DRAFT',
+        'trash': 'TRASH'
       };
       
-      const query = folderMap[folder] || 'label:INBOX';
-      const listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20&q=${encodeURIComponent(query)}${pageToken ? `&pageToken=${pageToken}` : ''}`;
+      const labelId = folderToLabel[folder] || 'INBOX';
+      const listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20&labelIds=${labelId}${pageToken ? `&pageToken=${pageToken}` : ''}`;
       
+      console.log(`Buscando e-mails da pasta ${labelId}...`);
       const listRes = await fetch(listUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      if (!listRes.ok) throw new Error("Erro ao listar mensagens");
+      if (!listRes.ok) {
+        const errorText = await listRes.text();
+        console.error("Erro na API do Gmail (list):", errorText);
+        throw new Error("Erro ao listar mensagens");
+      }
       const listData = await listRes.json();
       
       if (!listData.messages || listData.messages.length === 0) {
@@ -158,9 +167,10 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
              time: formattedTime,
              unread: detail.labelIds?.includes("UNREAD") || false,
              folder: folder,
-             fullBody: detail.snippet // Para o preview simplificado
+             fullBody: detail.snippet 
            };
          } catch (e) {
+           console.error("Erro ao processar detalhe de mensagem:", msg.id, e);
            return null;
          }
       }));
@@ -172,7 +182,7 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
       };
 
     } catch (err) {
-      console.error(err);
+      console.error("Erro no fluxo do Gmail:", err);
       return { success: false, error: "Falha ao buscar e-mails" };
     }
   }
@@ -182,23 +192,27 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
 
 export async function sendEmailViaApi(userId: string, provider: EmailProvider, to: string, subject: string, text: string) {
   const token = await getValidEmailToken(userId, provider);
-  if (!token) return { success: false, error: "Token inválido" };
+  if (!token) return { success: false, error: "Token inválido ou expirado" };
 
   if (provider === 'google') {
     try {
-      const rawMessage = [
+      // Formato RFC 2822 mais completo para evitar rejeição
+      const mimeMessage = [
         `To: ${to}`,
         `Subject: ${subject}`,
+        'MIME-Version: 1.0',
         'Content-Type: text/plain; charset="UTF-8"',
+        'Content-Transfer-Encoding: 7bit',
         '',
         text
       ].join('\r\n');
 
-      const encodedMessage = btoa(unescape(encodeURIComponent(rawMessage)))
+      const encodedMessage = btoa(unescape(encodeURIComponent(mimeMessage)))
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '');
 
+      console.log("Enviando e-mail via Gmail API...");
       const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, {
         method: 'POST',
         headers: {
@@ -210,11 +224,14 @@ export async function sendEmailViaApi(userId: string, provider: EmailProvider, t
 
       if (!res.ok) {
         const errorData = await res.json();
+        console.error("Erro no envio (Gmail API):", errorData);
         throw new Error(errorData.error?.message || "Erro ao enviar e-mail");
       }
+      
+      console.log("E-mail enviado com sucesso!");
       return { success: true };
     } catch (err: any) {
-      console.error(err);
+      console.error("Falha no envio:", err);
       return { success: false, error: err.message || "Falha no envio" };
     }
   }

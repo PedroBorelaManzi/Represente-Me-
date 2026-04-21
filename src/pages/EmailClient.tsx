@@ -22,11 +22,9 @@ export default function EmailClient() {
   const [emails, setEmails] = useState<EmailMessage[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   // Pagination
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
-  const [historyTokens, setHistoryTokens] = useState<string[]>([]);
 
   // Compose State
   const [isComposing, setIsComposing] = useState(false);
@@ -52,9 +50,11 @@ export default function EmailClient() {
     }
   }
 
-  // 2. Fetch Emails when account/folder/page changes
+  // 2. Fetch Emails when account/folder changes
   useEffect(() => {
     if (selectedAccount && user) {
+      setEmails([]); // Reset list on folder change
+      setNextPageToken(null);
       fetchEmails();
     }
   }, [selectedAccount, currentFolder]);
@@ -67,7 +67,13 @@ export default function EmailClient() {
     
     if (result.success) {
       if (pageToken) {
-        setEmails(prev => [...prev, ...(result.emails || [])]);
+        // Filtro para evitar duplicatas caso a API retorne algo repetido
+        setEmails(prev => {
+          const newEmails = result.emails || [];
+          const existingIds = new Set(prev.map(e => e.id));
+          const filtered = newEmails.filter(e => !existingIds.has(e.id));
+          return [...prev, ...filtered];
+        });
       } else {
         setEmails(result.emails || []);
       }
@@ -82,7 +88,7 @@ export default function EmailClient() {
   };
 
   const handleLoadMore = () => {
-    if (nextPageToken) {
+    if (nextPageToken && !isLoading) {
       fetchEmails(nextPageToken);
     }
   };
@@ -188,7 +194,7 @@ export default function EmailClient() {
            <div className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] p-4 flex flex-col">
               <nav className="space-y-1">
                  <button onClick={() => { setCurrentFolder('inbox'); setSelectedEmail(null); }} className={cn("w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all", currentFolder === 'inbox' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-zinc-800/50")}>
-                   <div className="flex items-center gap-3"><Inbox className="w-4 h-4" /> P. Entrada</div>
+                   <div className="flex items-center gap-3"><Inbox className="w-4 h-4" /> Caixa de Entrada</div>
                  </button>
                  <button onClick={() => { setCurrentFolder('sent'); setSelectedEmail(null); }} className={cn("w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all", currentFolder === 'sent' ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-zinc-800/50")}>
                    <div className="flex items-center gap-3"><Send className="w-4 h-4" /> Enviados</div>
@@ -225,7 +231,7 @@ export default function EmailClient() {
              {isLoading && emails.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 opacity-50">
                    <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
-                   <p className="text-[10px] font-black uppercase tracking-widest">Buscando Mensagens...</p>
+                   <p className="text-[10px] font-black uppercase tracking-widest text-center px-4">Conectando ao Gmail...</p>
                 </div>
              ) : emails.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 opacity-30">
@@ -262,9 +268,10 @@ export default function EmailClient() {
                     <button 
                       onClick={handleLoadMore}
                       disabled={isLoading}
-                      className="w-full py-6 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                      className="w-full py-6 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      {isLoading ? "Carregando..." : "Carregar mais 20 mensagens"}
+                      {isLoading ? <Loader2 className="w-3 h-3 animate-spin"/> : null}
+                      {isLoading ? "Buscando mais..." : "Carregar mais 20 mensagens"}
                     </button>
                   )}
                 </>
@@ -342,13 +349,13 @@ export default function EmailClient() {
         isOpen={isComposing} 
         onClose={() => setIsComposing(false)} 
         userId={user?.id || ""} 
-        provider={selectedAccount.provider}
+        provider={selectedAccount?.provider}
       />
     </div>
   );
 }
 
-function ComposeBalloon({ isOpen, onClose, userId, provider }: { isOpen: boolean, onClose: () => void, userId: string, provider: EmailProvider }) {
+function ComposeBalloon({ isOpen, onClose, userId, provider }: { isOpen: boolean, onClose: () => void, userId: string, provider?: EmailProvider }) {
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -356,7 +363,7 @@ function ComposeBalloon({ isOpen, onClose, userId, provider }: { isOpen: boolean
   const [isMinimized, setIsMinimized] = useState(false);
 
   async function handleSend() {
-    if (!to || !subject || !body) return;
+    if (!to || !subject || !body || !provider) return;
     setIsSending(true);
     const res = await sendEmailViaApi(userId, provider, to, subject, body);
     setIsSending(false);
@@ -377,7 +384,7 @@ function ComposeBalloon({ isOpen, onClose, userId, provider }: { isOpen: boolean
           animate={{ y: isMinimized ? 400 : 0, opacity: 1 }}
           exit={{ y: 500, opacity: 0 }}
           className={cn(
-            "fixed bottom-0 right-10 w-[500px] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] rounded-t-[32px] z-[100] flex flex-col",
+            "fixed bottom-0 right-4 sm:right-10 w-[92%] sm:w-[500px] bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] rounded-t-[32px] z-[100] flex flex-col",
             isMinimized ? "h-[60px]" : "h-[550px]"
           )}
         >
@@ -398,20 +405,20 @@ function ComposeBalloon({ isOpen, onClose, userId, provider }: { isOpen: boolean
                placeholder="Para:" 
                value={to} 
                onChange={(e) => setTo(e.target.value)}
-               className="w-full bg-transparent border-b border-slate-100 dark:border-zinc-800 py-2 text-sm font-bold outline-none focus:border-emerald-500 transition-colors"
+               className="w-full bg-transparent border-b border-slate-100 dark:border-zinc-800 py-2 text-sm font-bold outline-none focus:border-emerald-500 transition-colors dark:text-zinc-100 placeholder:text-slate-400"
              />
              <input 
                type="text" 
                placeholder="Assunto:" 
                value={subject} 
                onChange={(e) => setSubject(e.target.value)}
-               className="w-full bg-transparent border-b border-slate-100 dark:border-zinc-800 py-2 text-sm font-bold outline-none focus:border-emerald-500 transition-colors"
+               className="w-full bg-transparent border-b border-slate-100 dark:border-zinc-800 py-2 text-sm font-bold outline-none focus:border-emerald-500 transition-colors dark:text-zinc-100 placeholder:text-slate-400"
              />
              <textarea 
                placeholder="Escreva sua mensagem aqui..." 
                value={body}
                onChange={(e) => setBody(e.target.value)}
-               className="flex-1 w-full bg-transparent border-none outline-none resize-none text-sm leading-relaxed"
+               className="flex-1 w-full bg-transparent border-none outline-none resize-none text-sm leading-relaxed dark:text-zinc-200 placeholder:text-slate-400 shadow-none focus:ring-0"
              />
 
              <div className="pt-4 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">
