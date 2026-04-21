@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+﻿import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./pages/LandingPitch";
 import Login from "./pages/Login";
 import Layout from "./components/Layout";
@@ -13,6 +13,8 @@ import EmailClient from "./pages/EmailClient";
 import EmailCallback from "./pages/EmailCallback";
 import PedidosPage from "./pages/Pedidos";
 import GoogleCallback from "./pages/GoogleCallback";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -47,6 +49,10 @@ export default function App() {
           <Route path="/auth/callback/google" element={<GoogleCallback />} />
           <Route path="/auth/callback/email" element={<EmailCallback />} />
           
+          {/* Public Legal Routes */}
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
@@ -54,4 +60,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-
