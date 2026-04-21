@@ -27,8 +27,8 @@ export const Logo: React.FC<LogoProps> = ({
   // Mask logic to remove black background using luminance
   // This ensures the logo stays sharp and transparent
   const maskStyle: React.CSSProperties = {
-    maskImage: url(),
-    WebkitMaskImage: url(),
+    maskImage: `url(${logoUrl})`,
+    WebkitMaskImage: `url(${logoUrl})`,
     maskMode: "luminance",
     WebkitMaskMode: "luminance",
     maskSize: "contain",
