@@ -55,7 +55,6 @@ export async function getValidEmailToken(userId: string, provider: EmailProvider
 
   const isExpired = new Date(tokenData.expires_at).getTime() < Date.now();
   if (isExpired && tokenData.refresh_token) {
-     console.log("Token expirado, renovando...");
      return await refreshEmailToken(userId, provider, tokenData.refresh_token);
   }
   return tokenData.access_token;
@@ -186,7 +185,6 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
              fullBody: detail.snippet 
            };
          } catch (e) {
-           console.error("Erro ao processar detalhe de mensagem:", msg.id, e);
            return null;
          }
       }));
@@ -212,17 +210,21 @@ export async function sendEmailViaApi(userId: string, provider: EmailProvider, t
 
   if (provider === 'google') {
     try {
+      // 1. MONTAR O MIME CORRETAMENTE COM UTF-8
       const mimeMessage = [
         `To: ${to}`,
         `Subject: ${subject}`,
-        'MIME-Version: 1.0',
         'Content-Type: text/plain; charset="UTF-8"',
+        'MIME-Version: 1.0',
         'Content-Transfer-Encoding: 7bit',
         '',
         text
       ].join('\r\n');
 
-      const encodedMessage = btoa(unescape(encodeURIComponent(mimeMessage)))
+      // 2. ENCODER ROBUSTO PARA BASE64URL
+      const utf8Encoder = new TextEncoder();
+      const bytes = utf8Encoder.encode(mimeMessage);
+      const base64 = btoa(String.fromCharCode(...bytes))
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '');
@@ -233,19 +235,21 @@ export async function sendEmailViaApi(userId: string, provider: EmailProvider, t
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ raw: encodedMessage })
+        body: JSON.stringify({ raw: base64 })
       });
 
       if (!res.ok) {
         const errorData = await res.json();
+        console.error("Erro API Gmail Send:", errorData);
         throw new Error(errorData.error?.message || "Erro ao enviar e-mail");
       }
       
       return { success: true };
     } catch (err: any) {
+      console.error("Erro Técnico Envio:", err);
       return { success: false, error: err.message || "Falha no envio" };
     }
   }
   
-  return { success: false, error: "Provedor não suportado para envio no momento" };
+  return { success: false, error: "Provedor não suportado para envio" };
 }
