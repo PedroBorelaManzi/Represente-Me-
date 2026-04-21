@@ -27,18 +27,30 @@ export const Logo: React.FC<LogoProps> = ({
   return (
     <div className={cn("flex items-center gap-3 group shrink-0", className)}>
       <div className={cn("relative flex items-center justify-center shrink-0", sizeMap[size])}>
-        {/* The 'R' Icon - Using multiply blend mode to remove white background while keeping colors vibrant */}
-        <img 
-          src={logoUrl}
-          alt="Represente-se"
-          className={cn(
-            "w-full h-full object-contain transition-transform duration-500 group-hover:scale-110",
-            "mix-blend-multiply dark:mix-blend-normal", // Multiply fixed colors to white background
-            "contrast-[1.1] saturate-[1.1]" // Ensure colors POP
-          )}
+        {/* 
+          The 'R' Icon - Using Luminance Masking on a black-background image.
+          This technique makes the black background 100% transparent while keeping 
+          the bright green 3D logo 100% solid and vibrant.
+        */}
+        <div 
+          className="w-full h-full transition-transform duration-500 group-hover:scale-110"
           style={{
-            // Fallback for dark mode or systems where mix-blend-mode is tricky
-            // We use a slight brightness boost to keep it vibrant
+            backgroundColor: 'transparent',
+            backgroundImage: `url(${logoUrl})`,
+            backgroundSize: 'contain',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            WebkitMaskImage: `url(${logoUrl})`,
+            maskImage: `url(${logoUrl})`,
+            WebkitMaskMode: 'luminance',
+            maskMode: 'luminance',
+            WebkitMaskRepeat: 'no-repeat',
+            maskRepeat: 'no-repeat',
+            WebkitMaskPosition: 'center',
+            maskPosition: 'center',
+            WebkitMaskSize: 'contain',
+            maskSize: 'contain',
+            filter: 'contrast(1.1) saturate(1.2)' // Keep it popping
           }}
         />
       </div>
