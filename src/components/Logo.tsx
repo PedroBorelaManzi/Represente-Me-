@@ -24,16 +24,36 @@ export const Logo: React.FC<LogoProps> = ({
 
   const finalIconOnly = iconOnly || !showText;
 
+  // Mask logic to remove black background using luminance
+  // This ensures the logo stays sharp and transparent
+  const maskStyle: React.CSSProperties = {
+    maskImage: url(),
+    WebkitMaskImage: url(),
+    maskMode: "luminance",
+    WebkitMaskMode: "luminance",
+    maskSize: "contain",
+    WebkitMaskSize: "contain",
+    maskPosition: "center",
+    WebkitMaskPosition: "center",
+    maskRepeat: "no-repeat",
+    WebkitMaskRepeat: "no-repeat"
+  };
+
   return (
     <div className={cn("flex items-center gap-3 group shrink-0", className)}>
       <div className={cn("relative flex items-center justify-center shrink-0", sizeMap[size])}>
-        <img 
-          src={logoUrl}
-          alt="Represente-se"
-          className={cn(
-            "w-full h-full object-contain transition-transform duration-500 group-hover:scale-110",
-          )}
-        />
+        {/* Container with Mask */}
+        <div 
+          className="absolute inset-0 transition-transform duration-500 group-hover:scale-110"
+          style={maskStyle}
+        >
+          {/* We render the image itself inside the masked container to keep its colors */}
+          <img 
+            src={logoUrl}
+            alt="Represente-se"
+            className="w-full h-full object-contain"
+          />
+        </div>
       </div>
       
       {!finalIconOnly && (
