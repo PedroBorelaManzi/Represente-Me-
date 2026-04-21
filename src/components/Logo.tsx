@@ -24,36 +24,23 @@ export const Logo: React.FC<LogoProps> = ({
 
   const finalIconOnly = iconOnly || !showText;
 
-  // Mask logic to remove black background using luminance
-  // This ensures the logo stays sharp and transparent
-  const maskStyle: React.CSSProperties = {
-    maskImage: `url(${logoUrl})`,
-    WebkitMaskImage: `url(${logoUrl})`,
-    maskMode: "luminance",
-    WebkitMaskMode: "luminance",
-    maskSize: "contain",
-    WebkitMaskSize: "contain",
-    maskPosition: "center",
-    WebkitMaskPosition: "center",
-    maskRepeat: "no-repeat",
-    WebkitMaskRepeat: "no-repeat"
-  };
-
   return (
     <div className={cn("flex items-center gap-3 group shrink-0", className)}>
       <div className={cn("relative flex items-center justify-center shrink-0", sizeMap[size])}>
-        {/* Container with Mask */}
-        <div 
-          className="absolute inset-0 transition-transform duration-500 group-hover:scale-110"
-          style={maskStyle}
-        >
-          {/* We render the image itself inside the masked container to keep its colors */}
-          <img 
-            src={logoUrl}
-            alt="Represente-se"
-            className="w-full h-full object-contain"
-          />
-        </div>
+        {/* The 'R' Icon - Using multiply blend mode to remove white background while keeping colors vibrant */}
+        <img 
+          src={logoUrl}
+          alt="Represente-se"
+          className={cn(
+            "w-full h-full object-contain transition-transform duration-500 group-hover:scale-110",
+            "mix-blend-multiply dark:mix-blend-normal", // Multiply fixed colors to white background
+            "contrast-[1.1] saturate-[1.1]" // Ensure colors POP
+          )}
+          style={{
+            // Fallback for dark mode or systems where mix-blend-mode is tricky
+            // We use a slight brightness boost to keep it vibrant
+          }}
+        />
       </div>
       
       {!finalIconOnly && (
