@@ -27,30 +27,29 @@ export const Logo: React.FC<LogoProps> = ({
   return (
     <div className={cn("flex items-center gap-3 group shrink-0", className)}>
       <div className={cn("relative flex items-center justify-center shrink-0", sizeMap[size])}>
-        {/* 
-          The 'R' Icon - Using Luminance Masking on a black-background image.
-          This technique makes the black background 100% transparent while keeping 
-          the bright green 3D logo 100% solid and vibrant.
-        */}
-        <div 
-          className="w-full h-full transition-transform duration-500 group-hover:scale-110"
+        {/* SVG Filter to remove white background while keeping everything else OPAQUE */}
+        <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
+          <filter id="chroma-white" colorInterpolationFilters="sRGB">
+            {/* 
+              This matrix is tuned to target pure white (#FFFFFF) 
+              It converts high luminance (white) to transparency (alpha = 0)
+              but keeps everything else (darker tones) solid.
+            */}
+            <feColorMatrix type="matrix" values="1 0 0 0 0 
+                                                 0 1 0 0 0 
+                                                 0 0 1 0 0 
+                                                 -3 -3 -3 1 8" /> 
+          </filter>
+        </svg>
+
+        <img 
+          src={logoUrl}
+          alt="Represente-se"
+          className={cn(
+            "w-full h-full object-contain transition-transform duration-500 group-hover:scale-110",
+          )}
           style={{
-            backgroundColor: 'transparent',
-            backgroundImage: `url(${logoUrl})`,
-            backgroundSize: 'contain',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            WebkitMaskImage: `url(${logoUrl})`,
-            maskImage: `url(${logoUrl})`,
-            WebkitMaskMode: 'luminance',
-            maskMode: 'luminance',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat',
-            WebkitMaskPosition: 'center',
-            maskPosition: 'center',
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-            filter: 'contrast(1.1) saturate(1.2)' // Keep it popping
+            filter: 'url(#chroma-white) contrast(1.1) saturate(1.2)'
           }}
         />
       </div>
