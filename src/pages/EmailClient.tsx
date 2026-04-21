@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from "react";
-import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2, X, Minimize2, Maximize2, Loader2 } from "lucide-react";
+import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2, X, Minimize2, Maximize2, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { getGoogleEmailAuthUrl, getMicrosoftEmailAuthUrl, fetchEmailsFromApi, sendEmailViaApi, EmailMessage, EmailProvider } from "../lib/emailSync";
@@ -22,6 +22,7 @@ export default function EmailClient() {
   const [emails, setEmails] = useState<EmailMessage[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<string | null>(null);
 
   // Pagination
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
@@ -53,8 +54,9 @@ export default function EmailClient() {
   // 2. Fetch Emails when account/folder changes
   useEffect(() => {
     if (selectedAccount && user) {
-      setEmails([]); // Reset list on folder change
+      setEmails([]); 
       setNextPageToken(null);
+      setErrorStatus(null);
       fetchEmails();
     }
   }, [selectedAccount, currentFolder]);
@@ -63,23 +65,30 @@ export default function EmailClient() {
     if (!user || !selectedAccount) return;
     
     setIsLoading(true);
-    const result = await fetchEmailsFromApi(user.id, selectedAccount.provider, currentFolder, pageToken);
-    
-    if (result.success) {
-      if (pageToken) {
-        // Filtro para evitar duplicatas caso a API retorne algo repetido
-        setEmails(prev => {
-          const newEmails = result.emails || [];
-          const existingIds = new Set(prev.map(e => e.id));
-          const filtered = newEmails.filter(e => !existingIds.has(e.id));
-          return [...prev, ...filtered];
-        });
+    setErrorStatus(null);
+    try {
+      const result = await fetchEmailsFromApi(user.id, selectedAccount.provider, currentFolder, pageToken);
+      
+      if (result.success) {
+        if (pageToken) {
+          setEmails(prev => {
+            const newEmails = result.emails || [];
+            const existingIds = new Set(prev.map(e => e.id));
+            const filtered = newEmails.filter(e => !existingIds.has(e.id));
+            return [...prev, ...filtered];
+          });
+        } else {
+          setEmails(result.emails || []);
+        }
+        setNextPageToken(result.nextPageToken || null);
       } else {
-        setEmails(result.emails || []);
+        setErrorStatus(result.error || "Erro desconhecido ao carregar e-mails.");
       }
-      setNextPageToken(result.nextPageToken || null);
+    } catch (err: any) {
+      setErrorStatus(err.message || "Falha na conexão com o servidor de e-mail.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }
 
   const handleConnectProvider = (provider: EmailProvider) => {
@@ -106,7 +115,7 @@ export default function EmailClient() {
             Caixa de Entrada <span className="text-emerald-600">Universal</span>
           </h1>
           <p className="text-slate-500 dark:text-zinc-400 font-medium text-lg max-w-xl mx-auto leading-relaxed">
-            Centralize sua comunicação com clientes. Selecione uma conta vinculada ou conecte um novo provedor.
+            Centralize sua comunicação com clientes. Selecione uma conta vinculada para ler e responder.
           </p>
 
           {accounts.length > 0 && (
@@ -138,7 +147,7 @@ export default function EmailClient() {
           <div className="my-10 flex items-center gap-4 max-w-md mx-auto opacity-50">
              <div className="h-px bg-slate-300 dark:bg-zinc-700 flex-1" />
              <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
-               {accounts.length > 0 ? "Ou conecte outra conta" : "Comece conectando uma conta"}
+               Nova Conexão
              </span>
              <div className="h-px bg-slate-300 dark:bg-zinc-700 flex-1" />
           </div>
@@ -159,8 +168,6 @@ export default function EmailClient() {
   // 2. MAIN INBOX SCREEN
   return (
     <div className="h-full flex flex-col gap-6 -mx-4 sm:mx-0 relative">
-      
-      {/* Header Premium */}
       <div className="px-4 sm:px-0 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
            <button onClick={() => { setSelectedAccount(null); setSelectedEmail(null); }} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors mb-4">
@@ -170,26 +177,33 @@ export default function EmailClient() {
              <div className="p-2 bg-emerald-600 rounded-[16px]">
                <Mail className="w-6 h-6 text-white" />
              </div>
-             Caixa de Entrada
+             Gmail
            </h1>
            <div className="flex items-center gap-2 mt-2">
              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
              <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
-               Conectado como <strong className="text-slate-700 dark:text-zinc-200">{selectedAccount.email}</strong>
+               {selectedAccount.email}
              </p>
            </div>
         </div>
         
-        <button 
-          onClick={() => setIsComposing(true)}
-          className="px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[20px] font-black uppercase text-[10px] tracking-widest transition-all shadow-[0_10px_20px_-10px_rgba(16,185,129,0.5)] active:scale-95 flex items-center justify-center gap-2"
-        >
-          <Edit className="w-4 h-4" /> Novo E-mail
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => fetchEmails()}
+            className="p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[20px] text-slate-500 hover:text-emerald-600 transition-all hover:border-emerald-500 shadow-sm"
+          >
+            <RefreshCw className={cn("w-5 h-5", isLoading && "animate-spin")} />
+          </button>
+          <button 
+            onClick={() => setIsComposing(true)}
+            className="px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[20px] font-black uppercase text-[10px] tracking-widest transition-all shadow-[0_10px_20px_-10px_rgba(16,185,129,0.5)] active:scale-95 flex items-center justify-center gap-2"
+          >
+            <Edit className="w-4 h-4" /> Novo E-mail
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 min-h-[600px] flex gap-2 sm:gap-6 px-2 sm:px-0 bg-slate-50 dark:bg-zinc-950 overflow-hidden relative">
-        
         <div className="hidden lg:flex w-56 flex-col gap-2">
            <div className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] p-4 flex flex-col">
               <nav className="space-y-1">
@@ -210,8 +224,8 @@ export default function EmailClient() {
                  <div className="p-4 bg-slate-50 dark:bg-zinc-950 rounded-[24px] flex items-center gap-3 border border-slate-100 dark:border-zinc-800">
                     <CheckCircle2 className="w-6 h-6 text-emerald-500" />
                     <div>
-                      <p className="text-[9px] font-black uppercase text-slate-500">Status</p>
-                      <p className="text-xs font-bold text-slate-800 dark:text-zinc-200">Sincronizado</p>
+                      <p className="text-[9px] font-black uppercase text-slate-500">Google API</p>
+                      <p className="text-xs font-bold text-slate-800 dark:text-zinc-200">Online</p>
                     </div>
                  </div>
               </div>
@@ -231,7 +245,18 @@ export default function EmailClient() {
              {isLoading && emails.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 opacity-50">
                    <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
-                   <p className="text-[10px] font-black uppercase tracking-widest text-center px-4">Conectando ao Gmail...</p>
+                   <p className="text-[10px] font-black uppercase tracking-widest text-center px-4">Conectando ao Google...</p>
+                </div>
+             ) : errorStatus ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center text-red-500">
+                   <AlertCircle className="w-12 h-12" />
+                   <div>
+                     <p className="text-sm font-black uppercase tracking-widest mb-2">Erro na Sincronização</p>
+                     <p className="text-xs font-medium text-slate-500 dark:text-zinc-400 leading-relaxed mb-6">{errorStatus}</p>
+                     <button onClick={() => fetchEmails()} className="px-6 py-3 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 rounded-2xl font-black uppercase text-[10px] tracking-widest border border-red-100 dark:border-red-900/20 hover:bg-red-message transition-all">
+                       Tentar Novamente
+                     </button>
+                   </div>
                 </div>
              ) : emails.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 opacity-30">
@@ -316,30 +341,17 @@ export default function EmailClient() {
                    {selectedEmail.preview}
                 </div>
              </div>
-
-             <div className="p-4 sm:p-6 border-t border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex-shrink-0">
-                <div className="border border-slate-200 dark:border-zinc-800 rounded-[24px] p-2 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all">
-                  <textarea 
-                    placeholder="Escreva sua resposta..." 
-                    className="w-full bg-transparent border-none outline-none resize-none p-3 text-sm text-slate-800 dark:text-zinc-200 min-h-[80px]"
-                  />
-                  <div className="flex items-center justify-between mt-2 px-2 pb-2">
-                     <button className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"><Sparkles className="w-4 h-4" /></button>
-                     <button className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[16px] font-black uppercase text-[10px] tracking-widest flex items-center gap-2 transition-all active:scale-95">
-                        Enviar Resposta <Send className="w-3 h-3" />
-                     </button>
-                  </div>
-                </div>
-             </div>
           </div>
         ) : (
           <div className="hidden md:flex flex-1 items-center justify-center bg-transparent border-2 border-dashed border-slate-200 dark:border-zinc-800/50 rounded-[32px]">
-             <div className="text-center">
+             <div className="text-center p-8 max-w-md">
                <div className="w-16 h-16 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100 dark:border-zinc-800 shadow-sm">
                  <Mail className="w-6 h-6 text-slate-300" />
                </div>
-               <p className="text-sm font-bold text-slate-500">Nenhum e-mail selecionado</p>
-               <p className="text-xs text-slate-400 mt-1">Selecione uma mensagem ao lado para ler.</p>
+               <p className="text-sm font-bold text-slate-500">Selecione uma mensagem</p>
+               <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                 Escolha um e-mail da lista à esquerda para carregar o conteúdo completo aqui.
+               </p>
              </div>
           </div>
         )}
@@ -365,14 +377,18 @@ function ComposeBalloon({ isOpen, onClose, userId, provider }: { isOpen: boolean
   async function handleSend() {
     if (!to || !subject || !body || !provider) return;
     setIsSending(true);
-    const res = await sendEmailViaApi(userId, provider, to, subject, body);
-    setIsSending(false);
-    
-    if (res.success) {
-      onClose();
-      setTo(""); setSubject(""); setBody("");
-    } else {
-      alert("Erro ao enviar: " + res.error);
+    try {
+      const res = await sendEmailViaApi(userId, provider, to, subject, body);
+      if (res.success) {
+        onClose();
+        setTo(""); setSubject(""); setBody("");
+      } else {
+        alert("Erro no Google: " + res.error);
+      }
+    } catch (err: any) {
+      alert("Falha técnica no envio: " + err.message);
+    } finally {
+      setIsSending(false);
     }
   }
 
@@ -388,7 +404,6 @@ function ComposeBalloon({ isOpen, onClose, userId, provider }: { isOpen: boolean
             isMinimized ? "h-[60px]" : "h-[550px]"
           )}
         >
-          {/* Balloon Header */}
           <div className="bg-slate-900 dark:bg-black p-4 rounded-t-[32px] flex items-center justify-between">
              <h3 className="text-[10px] font-black uppercase tracking-widest text-white pl-2">Nova Mensagem</h3>
              <div className="flex items-center gap-2">
