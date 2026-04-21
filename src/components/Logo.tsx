@@ -26,16 +26,15 @@ export const Logo: React.FC<LogoProps> = ({
 
   return (
     <div className={cn("flex items-center gap-3 group shrink-0", className)}>
-      <div className={cn("relative flex items-center justify-center shrink-0", sizeMap[size])}>
+      <div className={cn("relative flex items-center justify-center shrink-0 overflow-hidden", sizeMap[size])}>
         {/* 
-          Vibrant 3D Logo 
-          The background of the image is perfectly matched to the page background (#f8fafc)
-          to ensure a seamless, high-fidelity look without complex CSS filters.
+          Emerald 3D Logo on Pure White Background with Multiply blend mode.
+          This technique makes the white background 100% transparent on light-colored pages.
         */}
         <img 
           src={logoUrl}
           alt="Represente-se"
-          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
+          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110 mix-blend-multiply"
         />
       </div>
       
