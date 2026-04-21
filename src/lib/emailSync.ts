@@ -2,6 +2,18 @@
 
 export type EmailProvider = 'google' | 'microsoft';
 
+export interface EmailMessage {
+  id: string;
+  from: string;
+  subject: string;
+  preview: string;
+  time: string;
+  unread: boolean;
+  folder: string;
+  fullBody?: string;
+  to?: string;
+}
+
 // 1. GERAÇÃO DE URLS DE AUTENTICAÇÃO
 export function getGoogleEmailAuthUrl() {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -76,7 +88,7 @@ async function refreshEmailToken(userId: string, provider: EmailProvider, refres
     const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
     const newRefreshToken = tokens.refresh_token || refreshToken;
 
-    const { error } = await supabase
+    await supabase
       .from('user_email_tokens')
       .update({
         access_token: tokens.access_token,
@@ -87,8 +99,6 @@ async function refreshEmailToken(userId: string, provider: EmailProvider, refres
       .eq('user_id', userId)
       .eq('provider', provider);
 
-    if (error) throw error;
-    
     return tokens.access_token;
   } catch (error) {
     console.error("Erro no refresh token", error);
@@ -96,19 +106,118 @@ async function refreshEmailToken(userId: string, provider: EmailProvider, refres
   }
 }
 
-// 3. COMUNICAÇÃO (MOCK PARA TESTE) - Fase de Busca
-export async function fetchEmailsFromApi(userId: string, provider: EmailProvider, folder: string) {
+// 3. COMUNICAÇÃO REAL (GMAIL)
+export async function fetchEmailsFromApi(userId: string, provider: EmailProvider, folder: string, pageToken?: string) {
   const token = await getValidEmailToken(userId, provider);
   if (!token) return { success: false, error: "Reautenticação necessária" };
-  
-  // MOCK: Sucesso retornado da API
-  return { success: true, emails: [] }; 
+
+  if (provider === 'google') {
+    try {
+      const folderMap: Record<string, string> = {
+        'inbox': 'label:INBOX',
+        'sent': 'label:SENT',
+        'drafts': 'label:DRAFT',
+        'trash': 'label:TRASH'
+      };
+      
+      const query = folderMap[folder] || 'label:INBOX';
+      const listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=20&q=${encodeURIComponent(query)}${pageToken ? `&pageToken=${pageToken}` : ''}`;
+      
+      const listRes = await fetch(listUrl, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!listRes.ok) throw new Error("Erro ao listar mensagens");
+      const listData = await listRes.json();
+      
+      if (!listData.messages || listData.messages.length === 0) {
+        return { success: true, emails: [], nextPageToken: null };
+      }
+
+      const emailDetails = await Promise.all(listData.messages.map(async (msg: any) => {
+         try {
+           const detailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full`, {
+             headers: { 'Authorization': `Bearer ${token}` }
+           });
+           const detail = await detailRes.json();
+           
+           const headers = detail.payload.headers;
+           const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || "";
+           
+           const dateStr = getHeader("Date");
+           const date = dateStr ? new Date(dateStr) : new Date();
+           const formattedTime = date.toLocaleDateString() === new Date().toLocaleDateString() 
+              ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : date.toLocaleDateString([], { day: '2-digit', month: 'short' });
+
+           return {
+             id: detail.id,
+             from: getHeader("From").split("<")[0].replace(/"/g, "").trim() || getHeader("From"),
+             subject: getHeader("Subject") || "(Sem Assunto)",
+             preview: detail.snippet || "",
+             time: formattedTime,
+             unread: detail.labelIds?.includes("UNREAD") || false,
+             folder: folder,
+             fullBody: detail.snippet // Para o preview simplificado
+           };
+         } catch (e) {
+           return null;
+         }
+      }));
+
+      return { 
+        success: true, 
+        emails: emailDetails.filter(e => e !== null), 
+        nextPageToken: listData.nextPageToken || null 
+      };
+
+    } catch (err) {
+      console.error(err);
+      return { success: false, error: "Falha ao buscar e-mails" };
+    }
+  }
+
+  return { success: true, emails: [], nextPageToken: null }; 
 }
 
 export async function sendEmailViaApi(userId: string, provider: EmailProvider, to: string, subject: string, text: string) {
   const token = await getValidEmailToken(userId, provider);
-  if (!token) return { success: false, error: "Falha na conexão com servidor HTTP" };
+  if (!token) return { success: false, error: "Token inválido" };
+
+  if (provider === 'google') {
+    try {
+      const rawMessage = [
+        `To: ${to}`,
+        `Subject: ${subject}`,
+        'Content-Type: text/plain; charset="UTF-8"',
+        '',
+        text
+      ].join('\r\n');
+
+      const encodedMessage = btoa(unescape(encodeURIComponent(rawMessage)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+
+      const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ raw: encodedMessage })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error?.message || "Erro ao enviar e-mail");
+      }
+      return { success: true };
+    } catch (err: any) {
+      console.error(err);
+      return { success: false, error: err.message || "Falha no envio" };
+    }
+  }
   
-  // MOCK: Sucesso retornado da API
-  return { success: true };
+  return { success: false, error: "Provedor não suportado para envio no momento" };
 }
