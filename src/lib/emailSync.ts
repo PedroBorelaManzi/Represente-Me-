@@ -1,4 +1,4 @@
-﻿import { supabase } from './supabase';
+import { supabase } from './supabase';
 
 export type EmailProvider = 'google' | 'microsoft';
 
@@ -143,10 +143,11 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
       }
       if (pageToken) urlParams.append('pageToken', pageToken);
 
-      const listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?${urlParams.toString()}`;
+      const listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?${urlParams.toString()}&_t=${Date.now()}`;
       
       const listRes = await fetch(listUrl, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        cache: 'no-store'
       });
       
       if (!listRes.ok) throw new Error("Erro ao listar mensagens");
@@ -158,8 +159,9 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
 
       const emailDetails = await Promise.all(listData.messages.map(async (msg: any) => {
          try {
-           const detailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full`, {
-             headers: { 'Authorization': `Bearer ${token}` }
+           const detailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full&_t=${Date.now()}`, {
+             headers: { 'Authorization': `Bearer ${token}` },
+             cache: 'no-store'
            });
            const detail = await detailRes.json();
            

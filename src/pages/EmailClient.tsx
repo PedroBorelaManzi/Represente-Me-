@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2, X, Minimize2, Maximize2, Loader2, RefreshCw, Clock, Info, ShieldAlert, Layers, Bookmark, PartyPopper, Users, Zap } from "lucide-react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -241,7 +241,7 @@ export default function EmailClient() {
         </div>
         
         <div className="flex items-center gap-3">
-          <button onClick={() => fetchEmails()} className="p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[20px] text-slate-500 hover:text-emerald-600 transition-all hover:border-emerald-500 shadow-sm" title="Sincronizar">
+          <button onClick={() => { setEmails([]); fetchEmails(); }} className="p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[20px] text-slate-500 hover:text-emerald-600 transition-all hover:border-emerald-500 shadow-sm" title="Sincronizar">
             <RefreshCw className={cn("w-5 h-5", isLoading && "animate-spin")} />
           </button>
           <button onClick={() => setIsComposing(true)} className="px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[20px] font-black uppercase text-[10px] tracking-widest transition-all shadow-md flex items-center justify-center gap-2">
