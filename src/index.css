@@ -3,87 +3,90 @@
 @variant dark (&:where(.dark, .dark *));
 
 @layer base {
- html, body {
- @apply transition-colors duration-300;
- }
- 
- html.dark, html.dark body {
- background-color: #09090b; /* bg-zinc-950 */
- color-scheme: dark;
- }
+  html, body {
+    @apply transition-colors duration-300;
+  }
+  
+  html.dark, html.dark body {
+    background-color: #09090b; /* bg-zinc-950 */
+    color-scheme: dark;
+  }
 
- html:not(.dark), html:not(.dark) body {
- background-color: #f5f5f7; /* Apple Style Light Gray */
- color-scheme: light;
- color: #1d1d1f;
- }
+  html:not(.dark), html:not(.dark) body {
+    background-color: #f5f5f7; /* Apple Style Light Gray */
+    color-scheme: light;
+    color: #1d1d1f;
+  }
 
- /* Smooth scroll for navigation links */
- * {
- scroll-behavior: smooth;
- }
+  /* Smooth scroll for navigation links */
+  * {
+    scroll-behavior: smooth;
+  }
 }
 
 /* Sophisticated Emerald Glow Effects */
 .emerald-glow {
- box-shadow: 0 0 20px rgba(16, 185, 129, 0.05);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.05);
 }
 
 .hover-emerald-glow {
- @apply transition-all duration-300;
+  @apply transition-all duration-300;
 }
 
 .hover-emerald-glow:hover {
- box-shadow: 0 0 30px rgba(16, 185, 129, 0.18);
- transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.18);
+  transform: translateY(-2px);
 }
 
 .emerald-text-gradient {
- @apply bg-clip-text text-transparent bg-gradient-to-br from-emerald-400 to-emerald-600;
+  @apply bg-clip-text text-transparent bg-gradient-to-br from-emerald-400 to-emerald-600;
 }
 
 /* Glassmorphism utilities */
 .glass-panel {
- @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl;
+  @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl;
 }
 
 .dark .glass-panel {
- @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl;
+  @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl;
 }
 
 /* Premium typography tweaks */
 h1, h2, h3, h4 {
- @apply tracking-tighter;
+  @apply tracking-tighter;
 }
 
 .font-black {
- letter-spacing: -0.04em;
+  letter-spacing: -0.04em;
 }
 
 /* Custom Scrollbar for Premium Feel */
 .custom-scrollbar {
- scrollbar-width: thin;
- scrollbar-color: #e2e8f0 transparent;
+  scrollbar-width: thin;
+  scrollbar-color: #10b981 transparent;
 }
 
 .dark .custom-scrollbar {
- scrollbar-color: #27272a transparent;
+  scrollbar-color: #059669 transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
- width: 6px;
- height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
- background: transparent;
+  background: rgba(16, 185, 129, 0.02);
+  border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
- background-color: #e2e8f0;
- border-radius: 20px;
+  background-color: #10b981;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
- background-color: #27272a;
+  background-color: #059669;
 }

@@ -131,16 +131,23 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
         'all': ''
       };
       
-      const labelIds: string[] = [];
+      let q = "";
       const baseLabel = folderToLabel[folder];
-      if (baseLabel) labelIds.push(baseLabel);
-      if (category) labelIds.push(category);
+      
+      if (folder === "inbox") {
+        q = "label:inbox";
+        if (category === "CATEGORY_PERSONAL") q += " category:primary";
+        else if (category === "CATEGORY_SOCIAL") q += " category:social";
+        else if (category === "CATEGORY_PROMOTIONS") q += " category:promotions";
+        else if (category === "CATEGORY_UPDATES") q += " category:updates";
+        else if (category) q += " category:" + category.replace("CATEGORY_", "").toLowerCase();
+      } else if (baseLabel) {
+        q = "label:" + baseLabel.toLowerCase();
+      }
 
       let urlParams = new URLSearchParams();
-      urlParams.append('maxResults', '20');
-      if (labelIds.length > 0) {
-        labelIds.forEach(id => urlParams.append('labelIds', id));
-      }
+      urlParams.append('maxResults', '25');
+      if (q) urlParams.append('q', q);
       if (pageToken) urlParams.append('pageToken', pageToken);
 
       const listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?${urlParams.toString()}&_t=${Date.now()}`;

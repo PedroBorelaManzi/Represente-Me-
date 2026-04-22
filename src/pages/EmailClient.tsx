@@ -250,7 +250,7 @@ export default function EmailClient() {
         </div>
       </div>
 
-      <div className="flex-1 h-[calc(100vh-210px)] min-h-[500px] flex gap-2 sm:gap-6 px-2 sm:px-0 bg-slate-50 dark:bg-zinc-950 overflow-hidden relative">
+      <div className="flex-1 h-[calc(100vh-210px)] min-h-0 flex gap-2 sm:gap-6 px-2 sm:px-0 bg-slate-50 dark:bg-zinc-950 overflow-hidden relative">
         <div className="hidden lg:flex w-64 flex-col gap-2">
            <div className="h-fit bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] p-4 flex flex-col shadow-sm">
               <nav className="space-y-1">
