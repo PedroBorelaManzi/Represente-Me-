@@ -135,7 +135,7 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
       const baseLabel = folderToLabel[folder];
       
       if (folder === "inbox") {
-        q = "label:inbox"; # Strict Inbox Filter
+        q = "label:inbox"; // Strict Inbox Filter
         if (category === "CATEGORY_PERSONAL") q += " category:primary";
         else if (category === "CATEGORY_SOCIAL") q += " category:social";
         else if (category === "CATEGORY_PROMOTIONS") q += " category:promotions";
