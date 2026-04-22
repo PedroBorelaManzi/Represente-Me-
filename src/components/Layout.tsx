@@ -96,7 +96,7 @@ export default function Layout() {
   const isIntegrationView = location.pathname.includes('/links') && location.search.includes('id=');
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 font-sans flex">
+    <div className="h-screen overflow-hidden bg-slate-50 dark:bg-zinc-950 font-sans flex">
       {sidebarOpen && (
         <div 
           className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm md:hidden"
@@ -352,7 +352,7 @@ export default function Layout() {
 
         <div className={cn(
           cn("flex-1", location.pathname.includes('/email') ? "overflow-hidden" : "overflow-y-auto"),
-          isIntegrationView ? "p-0" : "p-4 sm:p-6 lg:p-8"
+          (isIntegrationView || location.pathname.includes("/email")) ? "p-0 h-full overflow-hidden" : "p-4 sm:p-6 lg:p-8"
         )}>
           <Outlet />
         </div>

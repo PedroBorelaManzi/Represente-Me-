@@ -223,7 +223,7 @@ export default function EmailClient() {
   }
 
   return (
-    <div className="h-full flex flex-col gap-6 -mx-4 sm:mx-0 relative">
+    <div className="h-full flex flex-col gap-4 p-4 lg:p-6 relative overflow-hidden">
       <div className="px-4 sm:px-0 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
            <button onClick={() => { setSelectedAccount(null); setSelectedEmail(null); }} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors mb-4">
@@ -250,7 +250,7 @@ export default function EmailClient() {
         </div>
       </div>
 
-      <div className="flex-1 h-[calc(100vh-140px)] min-h-0 flex gap-2 sm:gap-6 px-2 sm:px-0 bg-slate-50 dark:bg-zinc-950 overflow-hidden relative">
+      <div className="flex-1 min-h-0 flex gap-2 sm:gap-6 px-2 sm:px-0 bg-slate-50 dark:bg-zinc-950 overflow-hidden relative">
         <div className="hidden lg:flex w-64 flex-col gap-2">
            <div className="h-fit bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] p-4 flex flex-col shadow-sm">
               <nav className="space-y-1">
