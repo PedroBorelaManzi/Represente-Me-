@@ -47,7 +47,7 @@ export default function MapPage() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchingMap, setIsSearchingMap] = useState(false);
-  const [center, setCenter] = useState<[number, number]>([-23.550520, -46.633308]);
+  const [center, setCenter] = useState<[number, number]>([-15.793889, -47.882778]); // Brasília - Centro do Brasil
   const [zoom, setZoom] = useState(13);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchingCnpj, setIsSearchingCnpj] = useState(false);
@@ -297,7 +297,7 @@ export default function MapPage() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' 
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
           />
-          {mapCompanies.filter(c => c.displayLat && c.displayLng).map((company) => (
+          {mapCompanies.filter(c => c.lat && c.lng).map((company) => (
             <Marker 
               key={company.id} 
               position={[company.displayLat, company.displayLng]}
