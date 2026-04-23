@@ -136,6 +136,10 @@ export default function CRMPage() {
 
     try {
       const cnpjs = await parseFileForCnpjs(file);
+      
+      // AUTO-ATTACH UPLOAD
+      const importPath = `${user.id}/imports/${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+      await supabase.storage.from('client_vault').upload(importPath, file);
       if (cnpjs.length === 0) {
         toast.error('Nenhum CNPJ detectado no arquivo.');
         setIsImporting(false);
@@ -148,11 +152,12 @@ export default function CRMPage() {
 
       let importedCount = 0;
 
+      const processedLocal = new Set();
       for (const cnpj of cnpjs) {
         setImportStats(prev => ({ ...prev, current: prev.current + 1 }));
         
-        const isDuplicate = clients.some(c => c.cnpj === cnpj);
-        if (isDuplicate) continue;
+        if (processedLocal.has(cnpj)) continue;
+        processedLocal.add(cnpj);
 
         try {
           const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
@@ -166,17 +171,39 @@ export default function CRMPage() {
               address: `${data.logradouro || ""}, ${data.numero || "S/N"} - ${data.bairro || ""}, ${data.municipio || ""} - ${data.uf || ""}`.trim(),
             };
           } else {
-            clientData = {
-              name: `Cliente ${cnpj.substring(0, 4)}`,
-              city: "",
-              address: "",
-            };
+            // GEMINI DATA RECOVERY FALLBACK
+            try {
+              const resText = await callGeminiProxy({
+                contents: [{ role: "user", parts: [{ text: `Encontre o Nome da Empresa, Cidade e Estado para o CNPJ: ${cnpj}. Retorne JSON: {"name": "...", "city": "...", "state": "...", "address": "..."}. Se não achar nada, retorne null.` }] }],
+                model: "gemini-2.0-flash",
+              });
+              const data = JSON.parse(resText.replace(/```json/g, "").replace(/```/g, "").trim());
+              if (data && data.name) {
+                clientData = {
+                   name: data.name,
+                   city: data.city || "",
+                   address: data.address || `${data.city} - ${data.state}`,
+                };
+              } else { throw new Error("Not found"); }
+            } catch {
+              clientData = {
+                name: `Cliente ${cnpj.substring(0, 4)}`,
+                city: "",
+                address: "",
+              };
+            }
           }
 
-          // HIGH PRECISION GEOCODING STEP
           const coords = await getHighPrecisionCoordinates(clientData.address, clientData.name, cnpj);
 
-          const { error } = await supabase.from('clients').insert([{
+          // Link to existing or new
+        let clientId = null;
+        const existing = clients.find(c => c.cnpj === cnpj);
+        
+        if (existing) {
+          clientId = existing.id;
+        } else {
+          const { data, error: insertError } = await supabase.from('clients').insert([{
             user_id: user.id,
             name: clientData.name,
             cnpj: cnpj,
@@ -186,9 +213,25 @@ export default function CRMPage() {
             lng: coords?.lng || null,
             status: 'Ativo',
             last_contact: new Date().toISOString().split('T')[0]
-          }]);
+          }]).select('id').single();
+          
+          if (!insertError && data) {
+            clientId = data.id;
+            importedCount++;
+          }
+        }
 
-          if (!error) importedCount++;
+        // CREATE ORDER/FILE LINK
+        if (clientId) {
+          await supabase.from('orders').insert([{
+            user_id: user.id,
+            client_id: clientId,
+            category: "Lista Importada",
+            value: 0,
+            file_path: importPath,
+            file_name: file.name
+          }]);
+        }
         } catch (err) {
           console.error('Import Step Error:', err);
         }

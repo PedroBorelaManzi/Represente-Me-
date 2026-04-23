@@ -266,6 +266,16 @@ export default function ClientDetailsPage() {
         last_contact: new Date().toISOString() 
       }).eq('id', id);
 
+      // RECORD IN ORDERS TABLE
+      await supabase.from('orders').insert([{
+        user_id: user.id,
+        client_id: id,
+        category: selectedCategory,
+        value: enteredValue,
+        file_path: path,
+        file_name: formattedName
+      }]);
+
       loadFiles();
       loadCategories();
       setIsUploadModalOpen(false);
