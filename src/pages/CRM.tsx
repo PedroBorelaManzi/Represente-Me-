@@ -156,30 +156,39 @@ export default function CRMPage() {
 
         try {
           const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+          let clientData: any = {};
+          
           if (response.ok) {
             const data = await response.json();
-            
-            const { error } = await supabase.from('clients').insert([{
-              user_id: user.id,
+            clientData = {
               name: data.razao_social || data.nome_fantasia || 'Cliente Importado',
-              cnpj: cnpj,
               city: data.municipio || "",
               address: `${data.logradouro || ""}, ${data.numero || "S/N"} - ${data.bairro || ""}, ${data.municipio || ""} - ${data.uf || ""}`.trim(),
-              status: 'Ativo',
-              last_contact: new Date().toISOString().split('T')[0]
-            }]);
-
-            if (!error) importedCount++;
+            };
           } else {
-             const { error } = await supabase.from('clients').insert([{
-               user_id: user.id,
-               name: `Cliente ${cnpj.substring(0, 4)}`,
-               cnpj: cnpj,
-               status: 'Ativo',
-               last_contact: new Date().toISOString().split('T')[0]
-             }]);
-             if (!error) importedCount++;
+            clientData = {
+              name: `Cliente ${cnpj.substring(0, 4)}`,
+              city: "",
+              address: "",
+            };
           }
+
+          // HIGH PRECISION GEOCODING STEP
+          const coords = await getHighPrecisionCoordinates(clientData.address, clientData.name, cnpj);
+
+          const { error } = await supabase.from('clients').insert([{
+            user_id: user.id,
+            name: clientData.name,
+            cnpj: cnpj,
+            city: clientData.city,
+            address: clientData.address,
+            lat: coords?.lat || null,
+            lng: coords?.lng || null,
+            status: 'Ativo',
+            last_contact: new Date().toISOString().split('T')[0]
+          }]);
+
+          if (!error) importedCount++;
         } catch (err) {
           console.error('Import Step Error:', err);
         }
