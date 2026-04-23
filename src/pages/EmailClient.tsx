@@ -97,7 +97,7 @@ export default function EmailClient() {
     setErrorStatus(null);
     try {
       const activeCategory = currentFolder === 'inbox' ? currentCategory : "";
-      const result = await fetchEmailsFromApi(user.id, selectedAccount.provider, currentFolder, pageToken, activeCategory);
+      const result = await fetchEmailsFromApi(user.id, selectedAccount.provider, currentFolder, pageToken, activeCategory, selectedAccount.email);
       
       if (result.success) {
         const newEmails = result.emails || [];
@@ -189,7 +189,13 @@ export default function EmailClient() {
                   className="p-6 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] hover:border-emerald-500 hover:shadow-xl hover:-translate-y-1 transition-all group flex items-start gap-4 text-left relative overflow-hidden"
                 >
                   <div className="w-12 h-12 rounded-full bg-slate-50 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" className="w-5 h-5"/>
+                    <div className="w-6 h-6 flex items-center justify-center">
+                      {acc.provider === 'google' ? (
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" className="w-5 h-5"/>
+                      ) : (
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft" className="w-5 h-5"/>
+                      )}
+                    </div>
                   </div>
                   <div className="flex-1 min-w-0 pr-6">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Gmail</p>
@@ -423,14 +429,14 @@ export default function EmailClient() {
         isOpen={isComposing} 
         onClose={() => setIsComposing(false)} 
         userId={user?.id || ""} 
-        provider={selectedAccount?.provider}
+        provider={selectedAccount?.provider} emailAccount={selectedAccount?.email}
         contacts={contacts}
       />
     </div>
   );
 }
 
-function ComposeBalloon({ isOpen, onClose, userId, provider, contacts }: { isOpen: boolean, onClose: () => void, userId: string, provider?: EmailProvider, contacts: Contact[] }) {
+function ComposeBalloon({ isOpen, onClose, userId, provider, contacts, emailAccount }: { isOpen: boolean, onClose: () => void, userId: string, provider?: EmailProvider, contacts: Contact[], emailAccount?: string }) {
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -463,7 +469,7 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts }: { isOpe
     if (!to || !subject || !body || !provider) return;
     setIsSending(true);
     try {
-      const res = await sendEmailViaApi(userId, provider, to, subject, body);
+      const res = await sendEmailViaApi(userId, provider, to, subject, body, (contacts as any).selectedEmailAddress); // We'll pass the email here
       if (res.success) {
         onClose();
         setTo(""); setSubject(""); setBody("");

@@ -95,7 +95,7 @@ export default function EmailCallback() {
             refresh_token: tokens.refresh_token, 
             expires_at: new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString(),
             updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id, provider" });
+          }, { onConflict: "user_id, email_address" });
 
         if (upsertError) throw upsertError;
 

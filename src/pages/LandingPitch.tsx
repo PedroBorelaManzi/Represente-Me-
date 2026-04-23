@@ -22,11 +22,11 @@ import { Logo } from '../components/Logo';
 import { Link } from "react-router-dom";
 
 const industries = [
-  { name: "Materiais de ConstruÃ§Ã£o", icon: Building2, color: "bg-orange-50 text-orange-600" },
+  { name: "Materiais de Construção", icon: Building2, color: "bg-orange-50 text-orange-600" },
   { name: "Supermercados", icon: ShoppingCart, color: "bg-emerald-50 text-emerald-600" },
-  { name: "FarmÃ¡cias", icon: PlusIcon, color: "bg-red-50 text-red-600" },
-  { name: "SaÃºde", icon: Stethoscope, color: "bg-green-50 text-green-600" },
-  { name: "ServiÃ§os", icon: Briefcase, color: "bg-emerald-50 text-emerald-600" },
+  { name: "Farmácias", icon: PlusIcon, color: "bg-red-50 text-red-600" },
+  { name: "Saúde", icon: Stethoscope, color: "bg-green-50 text-green-600" },
+  { name: "Serviços", icon: Briefcase, color: "bg-emerald-50 text-emerald-600" },
   { name: "Outros", icon: Zap, color: "bg-slate-50 text-slate-600" },
 ];
 
@@ -34,8 +34,8 @@ const plans = [
   {
     name: "Exclusivo",
     price: 97,
-    description: "Para quem estÃ¡ comeÃ§ando.",
-    features: ["1 Empresa", "Mapa BÃ¡sico", "CRM BÃ¡sico", "Suporte Email"],
+    description: "Para quem está começando.",
+    features: ["1 Empresa", "Mapa Básico", "CRM Básico", "Suporte Email"],
     buttonText: "Assinar Agora",
     popular: false,
   },
@@ -43,23 +43,23 @@ const plans = [
     name: "Profissional",
     price: 147,
     description: "Ideal para equipes em crescimento.",
-    features: ["5 Empresas", "Busca CNPJ AutomÃ¡tica", "Dashboard de Faturamento", "Suporte WhatsApp"],
-    buttonText: "Teste GrÃ¡tis",
+    features: ["5 Empresas", "Busca CNPJ Automática", "Dashboard de Faturamento", "Suporte WhatsApp"],
+    buttonText: "Teste Grátis",
     popular: true,
   },
   {
     name: "Corporativo",
     price: 197,
     description: "Para grandes volumes e IA.",
-    features: ["Empresas Ilimitadas", "LanÃ§amento via Gemini (IA)", "Radar Territorial AvanÃ§ado", "AutomaÃ§Ã£o de Pedidos"],
+    features: ["Empresas Ilimitadas", "Lançamento via Gemini (IA)", "Radar Territorial Avançado", "Automação de Pedidos"],
     buttonText: "Falar com Time",
     popular: false,
   },
   {
     name: "Ultimate",
     price: 247,
-    description: "A soluÃ§Ã£o completa definitiva.",
-    features: ["Tudo do Corporativo", "BI & Analytics AvanÃ§ado", "PersonalizaÃ§Ã£o White-label", "Inbox Integrada"],
+    description: "A solução completa definitiva.",
+    features: ["Tudo do Corporativo", "BI & Analytics Avançado", "Personalização White-label", "Inbox Integrada"],
     buttonText: "Assinar VIP",
     popular: false,
   },
@@ -101,7 +101,7 @@ export default function LandingPitch() {
             <a href="#industrias" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Setores</a>
             <a href="#inbox" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Tecnologia</a>
             <a href="#planos" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Planos</a>
-            <a href="#faq" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">DÃºvidas</a>
+            <a href="#faq" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Dúvidas</a>
           </div>
 
           <div className="flex items-center gap-4">
@@ -121,20 +121,20 @@ export default function LandingPitch() {
             transition={{ duration: 0.8 }}
           >
             <span className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-black uppercase tracking-widest border border-emerald-100 mb-8 inline-block shadow-sm">
-              âœ¨ A revoluÃ§Ã£o tecnolÃ³gica do representante
+              ✨ A revolução tecnológica do representante
             </span>
             <h1 className="text-5xl md:text-8xl font-black tracking-tight text-slate-900 mb-8 leading-[0.9] text-balance">
-              Venda mais com <span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400">Menos EsforÃ§o.</span>
+              Venda mais com <span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400">Menos Esforço.</span>
             </h1>
             <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-12">
-              NÃ£o Ã© apenas um CRM. Ã‰ o cÃ©rebro da sua operaÃ§Ã£o comercial, automatizando o que antes tomava seu dia inteiro.
+              Não é apenas um CRM. É o cérebro da sua operação comercial, automatizando o que antes tomava seu dia inteiro.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
               <a href="#planos" className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all  hover:-translate-y-1 flex items-center justify-center">
                 Criar conta gratuita
               </a>
               <button className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest hover:border-slate-300 transition-all">
-                Ver VÃ­deo Explicativo
+                Ver Vídeo Explicativo
               </button>
             </div>
           </motion.div>
@@ -155,8 +155,8 @@ export default function LandingPitch() {
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.03),transparent)] pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6 relative">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter mb-4">AdaptÃ¡vel Ã  sua realidade</h2>
-            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Interface customizada por setor de atuaÃ§Ã£o</p>
+            <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter mb-4">Adaptável à sua realidade</h2>
+            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Interface customizada por setor de atuação</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {industries.map((item, idx) => (
@@ -190,10 +190,10 @@ export default function LandingPitch() {
                 <TrendingUp className="w-3 h-3" /> Faturamento Inteligente
               </div>
               <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter mb-8 leading-[1.1]">
-                Controle total da sua <span className="text-emerald-600">ComunicaÃ§Ã£o</span>
+                Controle total da sua <span className="text-emerald-600">Comunicação</span>
               </h2>
               <p className="text-lg text-slate-500 font-medium leading-relaxed mb-10">
-                O Ãºnico CRM que centraliza sua caixa de entrada e vincula automaticamente cada e-mail ao histÃ³rico do cliente. Chega de perder pedidos enterrados em threads infinitas.
+                O único CRM que centraliza sua caixa de entrada e vincula automaticamente cada e-mail ao histórico do cliente. Chega de perder pedidos enterrados em threads infinitas.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-left max-w-lg mx-auto lg:mx-0">
                  <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
@@ -201,13 +201,13 @@ export default function LandingPitch() {
                        <Check className="w-4 h-4" />
                     </div>
                     <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 mb-1">IA Integration</p>
-                    <p className="text-xs text-slate-400 font-bold leading-tight">Gemini lÃª e categoriza seus e-mails.</p>
+                    <p className="text-xs text-slate-400 font-bold leading-tight">Gemini lê e categoriza seus e-mails.</p>
                  </div>
                  <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
                     <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
                        <Check className="w-4 h-4" />
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 mb-1">HistÃ³rico Real</p>
+                    <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 mb-1">Histórico Real</p>
                     <p className="text-xs text-slate-400 font-bold leading-tight">Cada resposta vira um evento no CRM.</p>
                  </div>
               </div>
@@ -272,7 +272,7 @@ export default function LandingPitch() {
                 <div className="flex items-baseline gap-1 mb-10">
                   <span className="text-xs font-black opacity-50">R$</span>
                   <span className="text-6xl font-black tracking-tighter">{calculatePrice(plan.price)}</span>
-                  <span className={`text-[10px] font-black uppercase tracking-widest opacity-50`}>/mÃªs</span>
+                  <span className={`text-[10px] font-black uppercase tracking-widest opacity-50`}>/mês</span>
                 </div>
                 <div className="space-y-5 mb-12 flex-1">
                   {plan.features.map((feat, fidx) => (
@@ -305,9 +305,9 @@ export default function LandingPitch() {
           </div>
           <div className="space-y-4">
             {[
-               { q: "O Gemini (IA) requer configuraÃ§Ã£o?", a: "NÃ£o, jÃ¡ vem integrado com o modelo Pro 1.5 para anÃ¡lise de pedidos." },
-               { q: "Posso importar minha lista atual?", a: "Sim, aceitamos planilhas Excel e CSV com busca automÃ¡tica de CNPJ." },
-               { q: "Como funciona o Radar Territorial?", a: "Ele mapeia seus clientes e identifica Ã¡reas de baixa atividade automaticamente." }
+               { q: "O Gemini (IA) requer configuração?", a: "Não, já vem integrado com o modelo Pro 1.5 para análise de pedidos." },
+               { q: "Posso importar minha lista atual?", a: "Sim, aceitamos planilhas Excel e CSV com busca automática de CNPJ." },
+               { q: "Como funciona o Radar Territorial?", a: "Ele mapeia seus clientes e identifica áreas de baixa atividade automaticamente." }
             ].map((faq, fidx) => (
               <div key={fidx} className="p-8 rounded-3xl bg-white border border-slate-100 shadow-sm hover:border-emerald-100 transition-all">
                 <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-3 flex items-center gap-3">
@@ -330,10 +330,10 @@ export default function LandingPitch() {
               Pronto para ser um <br /> <span className="text-emerald-400 text-5xl md:text-8xl">SUPER REPRESENTANTE?</span>
             </h2>
             <p className="text-slate-400 font-medium text-lg max-w-xl mx-auto mb-12">
-              Junte-se a mais de 2.000 que jÃ¡ alavancaram mais de 150% de suas vendas com a Represente-se
+              Junte-se a mais de 2.000 que já alavancaram mais de 150% de suas vendas com a Represente-se
             </p>
             <a href="#planos" className="px-12 py-6 rounded-2xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/20 inline-block">
-              ComeÃ§ar agora mesmo
+              Começar agora mesmo
             </a>
           </motion.div>
         </div>
@@ -344,7 +344,7 @@ export default function LandingPitch() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
           <Logo className="opacity-50 h-8 md:h-10" showText={true} />
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
-            Â© 2026 Represente-se â€” Tecnologia para RepresentaÃ§Ãµes Comerciais
+            Â© 2026 Represente-se â€” Tecnologia para Representações Comerciais
           </p>
           <div className="flex gap-8">
             <Link to="/privacy" className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">Privacidade</Link>

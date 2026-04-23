@@ -43,13 +43,18 @@ export function getMicrosoftEmailAuthUrl() {
 }
 
 // 2. RECUPERAÇÃO DE TOKENS VALIDADOS DO BANCO
-export async function getValidEmailToken(userId: string, provider: EmailProvider) {
-  const { data: tokenData, error } = await supabase
+export async function getValidEmailToken(userId: string, provider: EmailProvider, emailAddress?: string) {
+  let query = supabase
     .from('user_email_tokens')
     .select('*')
     .eq('user_id', userId)
-    .eq('provider', provider)
-    .maybeSingle();
+    .eq('provider', provider);
+
+  if (emailAddress) {
+    query = query.eq('email_address', emailAddress);
+  }
+
+  const { data: tokenData, error } = await (emailAddress ? query.maybeSingle() : query.limit(1).maybeSingle());
 
   if (error || !tokenData) {
     console.error("Token não encontrado para o usuário:", userId);
@@ -58,12 +63,12 @@ export async function getValidEmailToken(userId: string, provider: EmailProvider
 
   const isExpired = new Date(tokenData.expires_at).getTime() < Date.now();
   if (isExpired && tokenData.refresh_token) {
-     return await refreshEmailToken(userId, provider, tokenData.refresh_token);
+     return await refreshEmailToken(userId, provider, tokenData.refresh_token, tokenData.email_address);
   }
   return tokenData.access_token;
 }
 
-async function refreshEmailToken(userId: string, provider: EmailProvider, refreshToken: string) {
+async function refreshEmailToken(userId: string, provider: EmailProvider, refreshToken: string, emailAddress?: string) {
   let endpoint = "";
   let bodyRequest = new URLSearchParams();
 
@@ -94,7 +99,7 @@ async function refreshEmailToken(userId: string, provider: EmailProvider, refres
     const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
     const newRefreshToken = tokens.refresh_token || refreshToken;
 
-    await supabase
+    const query = supabase
       .from('user_email_tokens')
       .update({
         access_token: tokens.access_token,
@@ -105,6 +110,12 @@ async function refreshEmailToken(userId: string, provider: EmailProvider, refres
       .eq('user_id', userId)
       .eq('provider', provider);
 
+    if (emailAddress) {
+      query.eq('email_address', emailAddress);
+    }
+
+    await query;
+
     return tokens.access_token;
   } catch (error) {
     console.error("Erro no refresh token", error);
@@ -113,8 +124,8 @@ async function refreshEmailToken(userId: string, provider: EmailProvider, refres
 }
 
 // 3. COMUNICAÇÃO REAL (GMAIL)
-export async function fetchEmailsFromApi(userId: string, provider: EmailProvider, folder: string, pageToken?: string, category?: string) {
-  const token = await getValidEmailToken(userId, provider);
+export async function fetchEmailsFromApi(userId: string, provider: EmailProvider, folder: string, pageToken?: string, category?: string, emailAddress?: string) {
+  const token = await getValidEmailToken(userId, provider, emailAddress);
   if (!token) return { success: false, error: "Reautenticação necessária" };
 
   if (provider === 'google') {
@@ -214,8 +225,8 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
   return { success: true, emails: [], nextPageToken: null }; 
 }
 
-export async function sendEmailViaApi(userId: string, provider: EmailProvider, to: string, subject: string, text: string) {
-  const token = await getValidEmailToken(userId, provider);
+export async function sendEmailViaApi(userId: string, provider: EmailProvider, to: string, subject: string, text: string, emailAddress?: string) {
+  const token = await getValidEmailToken(userId, provider, emailAddress);
   if (!token) return { success: false, error: "Token não disponível. Reautentique-se." };
 
   if (provider === 'google') {
