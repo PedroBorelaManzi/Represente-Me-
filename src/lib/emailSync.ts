@@ -133,7 +133,7 @@ function base64Decode(str: string) {
 }
 
 // 3. COMUNICAÇÃO REAL (GMAIL)
-export async function fetchEmailsFromApi(userId: string, provider: EmailProvider, folder: string, pageToken?: string, category?: string, emailAddress?: string) {
+export async function fetchEmailsFromApi(userId: string, provider: EmailProvider, folder: string, pageToken?: string, category?: string, emailAddress?: string, searchQuery?: string) {
   const token = await getValidEmailToken(userId, provider, emailAddress);
   if (!token) return { success: false, error: "Reautenticação necessária" };
 
