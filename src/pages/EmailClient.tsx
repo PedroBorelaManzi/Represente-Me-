@@ -407,8 +407,7 @@ export default function EmailClient() {
                      <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-5 py-2.5 rounded-full uppercase tracking-widest">{selectedEmail.time}</span>
                   </div>
                   <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-zinc-300 text-base leading-relaxed space-y-6 whitespace-pre-wrap font-medium">
-                     {selectedEmail.preview}
-                     {(selectedEmail as any).fullBody || ""}
+                     {(selectedEmail as any).fullBody || selectedEmail.preview}
                   </div>
                 </div>
              </div>
@@ -467,7 +466,7 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts, emailAcco
 
   async function handleSend() {
     if (!to) { alert("Por favor, preencha o destinatário."); return; }
-    if (!subject) { alert("Por favor, preencha o assunto."); return; }
+    // Assunto opcional conforme solicitado
     if (!body) { alert("Por favor, preencha a mensagem."); return; }
     if (!provider) { alert("Conta de e-mail não disponível."); return; }
 
@@ -562,7 +561,7 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts, emailAcco
 
              <div className="space-y-1">
                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Assunto</p>
-               <input type="text" placeholder="Qual o assunto hoje?" value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full bg-transparent border-b border-slate-100 dark:border-zinc-800 py-3 text-sm font-bold outline-none focus:border-emerald-500 transition-colors dark:text-zinc-100 placeholder:text-slate-300"/>
+               <input type="text" placeholder="Qual o assunto hoje? (Opcional)" value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full bg-transparent border-b border-slate-100 dark:border-zinc-800 py-3 text-sm font-bold outline-none focus:border-emerald-500 transition-colors dark:text-zinc-100 placeholder:text-slate-300"/>
              </div>
 
              <div className="flex-1 space-y-1">

@@ -22,7 +22,6 @@ export function getGoogleEmailAuthUrl() {
   if (!clientId) throw new Error("VITE_GOOGLE_CLIENT_ID não configurado.");
   
   const redirectUri = `${window.location.origin}/auth/callback/email`;
-  // ESCOPOS ESSENCIAIS PARA LEITURA E ENVIO
   const scopes = [
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.send",
@@ -123,6 +122,16 @@ async function refreshEmailToken(userId: string, provider: EmailProvider, refres
   }
 }
 
+// Helper to decode Gmail Base64
+function base64Decode(str: string) {
+  return decodeURIComponent(
+    atob(str.replace(/-/g, '+').replace(/_/g, '/'))
+      .split('')
+      .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+      .join('')
+  );
+}
+
 // 3. COMUNICAÇÃO REAL (GMAIL)
 export async function fetchEmailsFromApi(userId: string, provider: EmailProvider, folder: string, pageToken?: string, category?: string, emailAddress?: string) {
   const token = await getValidEmailToken(userId, provider, emailAddress);
@@ -146,7 +155,7 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
       const baseLabel = folderToLabel[folder];
       
       if (folder === "inbox") {
-        q = "label:inbox"; // Strict Inbox Filter
+        q = "label:inbox";
         if (category === "CATEGORY_PERSONAL") q += " category:primary";
         else if (category === "CATEGORY_SOCIAL") q += " category:social";
         else if (category === "CATEGORY_PROMOTIONS") q += " category:promotions";
@@ -201,6 +210,26 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
               ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               : date.toLocaleDateString([], { day: '2-digit', month: 'short' });
 
+           // Extrare corpo completo
+           let body = "";
+           if (detail.payload.body?.data) {
+             body = base64Decode(detail.payload.body.data);
+           } else if (detail.payload.parts) {
+             // Simplificado para pegar a primeira parte text/plain ou text/html
+             const findBody = (parts: any[]): string => {
+               for (const part of parts) {
+                 if (part.mimeType === "text/plain" && part.body.data) return base64Decode(part.body.data);
+                 if (part.mimeType === "text/html" && part.body.data) return base64Decode(part.body.data);
+                 if (part.parts) {
+                   const found = findBody(part.parts);
+                   if (found) return found;
+                 }
+               }
+               return "";
+             };
+             body = findBody(detail.payload.parts);
+           }
+
            return {
              id: detail.id,
              from: fromInfo.name || fromInfo.email,
@@ -212,7 +241,7 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
              time: formattedTime,
              unread: detail.labelIds?.includes("UNREAD") || false,
              folder: folder,
-             fullBody: detail.snippet 
+             fullBody: body || detail.snippet || ""
            };
          } catch (e) { return null; }
       }));
@@ -231,10 +260,9 @@ export async function sendEmailViaApi(userId: string, provider: EmailProvider, t
 
   if (provider === 'google') {
     try {
-      // 1. ESTRUTURA MIME COMPLETA
       const mime = [
         `To: ${to}`,
-        `Subject: ${subject}`,
+        `Subject: ${subject || '(Sem Assunto)'}`,
         'Content-Type: text/plain; charset="UTF-8"',
         'MIME-Version: 1.0',
         'Content-Transfer-Encoding: 8bit',
@@ -242,7 +270,6 @@ export async function sendEmailViaApi(userId: string, provider: EmailProvider, t
         text
       ].join('\r\n');
 
-      // 2. CONVERSÃO SEGURA PARA BASE64URL
       const encoder = new TextEncoder();
       const u8a = encoder.encode(mime);
       let binary = "";
@@ -267,7 +294,6 @@ export async function sendEmailViaApi(userId: string, provider: EmailProvider, t
       if (!response.ok) {
         const err = await response.json();
         const msg = err.error?.message || "Erro desconhecido na API";
-        // Se o erro for de escopo, avisamos claramente
         if (msg.includes("insufficient permissions") || response.status === 403) {
           return { success: false, error: "Permissões insuficientes. Clique em 'Nova Conta Gmail' para autorizar o envio." };
         }
