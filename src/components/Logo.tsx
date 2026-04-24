@@ -41,7 +41,7 @@ export const Logo: React.FC<LogoProps> = ({
       {!finalIconOnly && (
         <span className={cn(
           "font-black tracking-tighter flex items-center leading-none select-none uppercase whitespace-nowrap",
-          size === 'lg' || size === 'xl' ? "text-3xl md:text-5xl" : "text-xl md:text-2xl"
+          size === 'lg' || size === 'xl' ? "text-xl md:text-5xl" : "text-lg md:text-2xl"
         )}>
           <span className="text-slate-900 dark:text-white">Represente</span>
           <span className="text-emerald-600 dark:text-emerald-500 font-extrabold">-se!</span>

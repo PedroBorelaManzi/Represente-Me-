@@ -127,9 +127,9 @@ export default function LandingPitch() {
           scrolled ? "bg-white/80 backdrop-blur-xl border-b border-slate-200/50 py-3" : "bg-transparent py-6"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between gap-2 md:gap-4">
           <div className="flex-shrink-0 flex items-center gap-3">
-            <Logo size="lg" showText={true} />
+            <Logo size={typeof window !== "undefined" && window.innerWidth < 768 ? "md" : "lg"} showText={true} />
           </div>
           
           <div className="hidden lg:flex items-center gap-10">
@@ -140,7 +140,7 @@ export default function LandingPitch() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link to="/login" className="px-6 py-3 rounded-2xl bg-slate-900 text-white hover-emerald-glow text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-slate-200">
+            <Link to="/login" className="px-4 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl bg-slate-900 text-white hover-emerald-glow text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-slate-200">
               Entrar
             </Link>
           </div>
@@ -158,7 +158,7 @@ export default function LandingPitch() {
             <span className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-black uppercase tracking-widest border border-emerald-100 mb-8 inline-block shadow-sm">
               ✨ A revolução tecnológica do representante
             </span>
-            <h1 className="text-5xl md:text-8xl font-black tracking-tight text-slate-900 mb-8 leading-[0.9] text-balance">
+            <h1 className="text-4xl md:text-8xl font-black tracking-tight text-slate-900 mb-6 md:mb-8 leading-[1.1] md:leading-[0.9] text-balance">
               Venda mais com <span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400">Menos Esforço.</span>
             </h1>
             <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-12">
