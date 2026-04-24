@@ -466,10 +466,14 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts, emailAcco
   }, []);
 
   async function handleSend() {
-    if (!to || !subject || !body || !provider) return;
+    if (!to) { alert("Por favor, preencha o destinatário."); return; }
+    if (!subject) { alert("Por favor, preencha o assunto."); return; }
+    if (!body) { alert("Por favor, preencha a mensagem."); return; }
+    if (!provider) { alert("Conta de e-mail não disponível."); return; }
+
     setIsSending(true);
     try {
-      const res = await sendEmailViaApi(userId, provider, to, subject, body, (contacts as any).selectedEmailAddress); // We'll pass the email here
+      const res = await sendEmailViaApi(userId, provider, to, subject, body, emailAccount);
       if (res.success) {
         onClose();
         setTo(""); setSubject(""); setBody("");
