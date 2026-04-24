@@ -214,9 +214,44 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
               ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               : date.toLocaleDateString([], { day: '2-digit', month: 'short' });
 
-           // Extrare corpo completo
+                      // Extrair corpo completo e anexos
            let body = "";
-                      if (detail.payload.body?.data) {
+           let isHtml = false;
+           const attachments: any[] = [];
+           const cids: Record<string, string> = {};
+
+           const processParts = (parts: any[]) => {
+             parts.forEach((part: any) => {
+               if (part.mimeType === "text/plain" && !body) {
+                 if (part.body?.data) body = base64Decode(part.body.data);
+                 isHtml = false;
+               } else if (part.mimeType === "text/html") {
+                 if (part.body?.data) {
+                   body = base64Decode(part.body.data);
+                   isHtml = true;
+                 }
+               } else if (part.parts) {
+                 processParts(part.parts);
+               } else if (part.filename && part.body?.attachmentId) {
+                 attachments.push({
+                   id: part.body.attachmentId,
+                   filename: part.filename,
+                   mimeType: part.mimeType,
+                   size: part.body.size
+                 });
+                 
+                 const cidHeader = part.headers?.find((h: any) => h.name.toLowerCase() === 'content-id')?.value;
+                 if (cidHeader) {
+                   const cid = cidHeader.replace(/[<>]/g, "");
+                   if (part.body.data) {
+                     cids[cid] = `data:${part.mimeType};base64,${part.body.data}`;
+                   }
+                 }
+               }
+             });
+           };
+
+           if (detail.payload.body?.data) {
              body = base64Decode(detail.payload.body.data);
              isHtml = detail.payload.mimeType === "text/html";
            } else if (detail.payload.parts) {
@@ -328,6 +363,6 @@ export async function downloadAttachmentFromApi(userId: string, provider: EmailP
     } catch (err: any) {
       return { success: false, error: err.message };
     }
-  }
-  return { success: false, error: "Provedor não suportado" };
+
+            return { success: false, error: "Provedor não suportado" };
 }
