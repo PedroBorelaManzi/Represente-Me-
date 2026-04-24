@@ -52,7 +52,8 @@ const industries = [
     name: "Serviços", 
     icon: Briefcase, 
     color: "bg-emerald-50 text-emerald-600",
-    image: "/assets/setor_servicos.png"
+    image: "/assets/setor_servicos.png",
+    objectPosition: "50% 15%"
   },
   { 
     name: "Outros", 
@@ -184,7 +185,7 @@ export default function LandingPitch() {
       </div>
 
       {/* Industry Selection */}
-      <section id="industrias" className="min-h-[90vh] py-32 bg-white border-y border-slate-100 relative overflow-hidden transition-all duration-700 flex items-center">
+      <section id="industrias" className="min-h-[80vh] py-32 bg-white border-y border-slate-100 relative overflow-hidden transition-all duration-700 flex items-center">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.03),transparent)] pointer-events-none z-10" />
         
         {/* Background Photo Overlay */}
@@ -206,6 +207,7 @@ export default function LandingPitch() {
                 src={industries[hoveredIndustry].image} 
                 alt="" 
                 className="w-full h-full object-cover"
+                style={{ objectPosition: (industries[hoveredIndustry] as any).objectPosition || "center" }}
               />
             </motion.div>
           )}
