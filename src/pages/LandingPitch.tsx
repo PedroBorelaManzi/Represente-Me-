@@ -166,7 +166,7 @@ export default function LandingPitch() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
               <a href="#planos" className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all  hover:-translate-y-1 flex items-center justify-center">
-                Criar conta gratuita
+                Teste grátis por 7 dias
               </a>
               <button className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest hover:border-slate-300 transition-all">
                 Ver Vídeo Explicativo
