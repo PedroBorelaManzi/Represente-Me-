@@ -44,6 +44,12 @@ export default function EmailClient() {
   // Compose State
   const [isComposing, setIsComposing] = useState(false);
 
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+
   // 1. Load Connected Accounts
   useEffect(() => {
     if (!user) return;
@@ -97,7 +103,7 @@ export default function EmailClient() {
     setErrorStatus(null);
     try {
       const activeCategory = currentFolder === 'inbox' ? currentCategory : "";
-      const result = await fetchEmailsFromApi(user.id, selectedAccount.provider, currentFolder, pageToken, activeCategory, selectedAccount.email);
+      const result = await fetchEmailsFromApi(user.id, selectedAccount.provider, currentFolder, pageToken, activeCategory, selectedAccount.email, searchQuery);
       
       if (result.success) {
         const newEmails = result.emails || [];
@@ -311,7 +317,21 @@ export default function EmailClient() {
 
           <div className="p-4 flex items-center gap-3 relative">
              <Search className="w-4 h-4 text-slate-400 absolute left-8" />
-             <input type="text" placeholder="Pesquisar..." className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[20px] py-3 pl-10 pr-4 text-xs font-bold text-slate-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-emerald-500/10" />
+             <input 
+               type="text" 
+               placeholder="Pesquisar..." 
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               onKeyDown={(e) => { if (e.key === 'Enter') { setEmails([]); fetchEmails(); } }}
+               className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[20px] py-3 pl-10 pr-12 text-xs font-bold text-slate-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-emerald-500/10" 
+             />
+             <button 
+               onClick={() => { setEmails([]); fetchEmails(); }}
+               className="absolute right-8 p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+               title="Buscar"
+             >
+               <Search className="w-3.5 h-3.5" />
+             </button>
           </div>
           
           <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">

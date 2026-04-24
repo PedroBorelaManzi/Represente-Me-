@@ -165,6 +165,10 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
         q = "label:" + baseLabel.toLowerCase();
       }
 
+      if (searchQuery) {
+        q = q ? `${q} ${searchQuery}` : searchQuery;
+      }
+
       let urlParams = new URLSearchParams();
       urlParams.append('maxResults', '100');
       if (q) urlParams.append('q', q);
