@@ -216,18 +216,18 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
 
            // Extrare corpo completo
            let body = "";
-           if (detail.payload.body?.data) {
+                      if (detail.payload.body?.data) {
              body = base64Decode(detail.payload.body.data);
+             isHtml = detail.payload.mimeType === "text/html";
            } else if (detail.payload.parts) {
-             // Simplificado para pegar a primeira parte text/plain ou text/html
-             const findBody = (parts: any[]): string => {
-               for (const part of parts) {
-                 if (part.mimeType === "text/plain" && part.body.data) return base64Decode(part.body.data);
-                 if (part.mimeType === "text/html" && part.body.data) return base64Decode(part.body.data);
-                 if (part.parts) {
-                   const found = findBody(part.parts);
-                   if (found) return found;
-                 }
+             processParts(detail.payload.parts);
+           }
+           
+           if (isHtml && body) {
+             for (const cid in cids) {
+               body = body.replace(new RegExp('cid:' + cid, 'g'), cids[cid]);
+             }
+           }
                }
                return "";
              };
@@ -310,4 +310,27 @@ export async function sendEmailViaApi(userId: string, provider: EmailProvider, t
     }
   }
   return { success: false, error: "Provedor não suportado." };
+}
+
+
+export async function downloadAttachmentFromApi(userId: string, provider: EmailProvider, messageId: string, attachmentId: string, emailAddress?: string) {
+  const token = await getValidEmailToken(userId, provider, emailAddress);
+  if (!token) return { success: false, error: "Token não disponível" };
+
+  if (provider === 'google') {
+    try {
+      const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/attachments/${attachmentId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!res.ok) throw new Error("Erro ao baixar anexo");
+      const data = await res.json();
+      
+      // Gmail returns attachment data in base64url format
+      return { success: true, data: data.data };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  }
+  return { success: false, error: "Provedor não suportado" };
 }

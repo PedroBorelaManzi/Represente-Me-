@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2, X, Minimize2, Maximize2, Loader2, RefreshCw, Clock, Info, ShieldAlert, Layers, Bookmark, PartyPopper, Users, Zap } from "lucide-react";
+import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2, X, Minimize2, Maximize2, Loader2, RefreshCw, Clock, Info, ShieldAlert, Layers, Bookmark, PartyPopper, Users, Zap, Paperclip, Download, FileText } from "lucide-react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { getGoogleEmailAuthUrl, getMicrosoftEmailAuthUrl, fetchEmailsFromApi, sendEmailViaApi, EmailMessage, EmailProvider } from "../lib/emailSync";
+import { getGoogleEmailAuthUrl, getMicrosoftEmailAuthUrl, fetchEmailsFromApi, sendEmailViaApi, EmailMessage, EmailProvider, downloadAttachmentFromApi } from "../lib/emailSync";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 
@@ -92,6 +92,38 @@ export default function EmailClient() {
       fetchEmails();
     }
   }, [selectedAccount, currentFolder, currentCategory]);
+
+    async function handleDownloadAttachment(attachmentId: string, filename: string) {
+    if (!user || !selectedAccount || !selectedEmail) return;
+    
+    try {
+      const res = await downloadAttachmentFromApi(user.id, selectedAccount.provider, selectedEmail.id, attachmentId, selectedAccount.email);
+      if (res.success && res.data) {
+        // Create a blob from the base64 data
+        const base64Data = res.data.replace(/-/g, '+').replace(/_/g, '/');
+        const byteCharacters = atob(base64Data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray]);
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        alert("Erro ao baixar anexo: " + res.error);
+      }
+    } catch (err: any) {
+      alert("Falha no download: " + err.message);
+    }
+  }
 
   async function fetchEmails(pageToken?: string) {
     if (!user || !selectedAccount) return;
@@ -423,8 +455,56 @@ export default function EmailClient() {
                      </div>
                      <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-5 py-2.5 rounded-full uppercase tracking-widest">{selectedEmail.time}</span>
                   </div>
-                  <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-zinc-300 text-base leading-relaxed space-y-6 whitespace-pre-wrap font-medium">
-                     {(selectedEmail as any).fullBody || selectedEmail.preview}
+                  <div className="space-y-8">
+                    {selectedEmail.isHtml ? (
+                      <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden border border-slate-100 dark:border-zinc-800 min-h-[400px]">
+                        <iframe
+                          srcDoc={selectedEmail.fullBody || selectedEmail.preview}
+                          title="Email Content"
+                          className="w-full min-h-[600px] border-none"
+                          sandbox="allow-popups allow-popups-to-escape-sandbox"
+                          onLoad={(e) => {
+                             const iframe = e.currentTarget;
+                             if (iframe.contentWindow) {
+                               iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px';
+                             }
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-zinc-300 text-base leading-relaxed space-y-6 whitespace-pre-wrap font-medium bg-slate-50 dark:bg-zinc-900/50 p-8 rounded-3xl border border-slate-100 dark:border-zinc-800">
+                        {selectedEmail.fullBody || selectedEmail.preview}
+                      </div>
+                    )}
+
+                    {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
+                      <div className="mt-12 pt-8 border-t border-slate-100 dark:border-zinc-800">
+                        <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+                          <Paperclip className="w-4 h-4" /> Anexos ({selectedEmail.attachments.length})
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {selectedEmail.attachments.map(att => (
+                            <div key={att.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 rounded-2xl group hover:border-emerald-500/30 transition-all">
+                              <div className="flex items-center gap-4 min-w-0">
+                                <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center text-slate-400">
+                                  <FileText className="w-5 h-5" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate pr-2">{att.filename}</p>
+                                  <p className="text-[10px] font-medium text-slate-400 uppercase">{(att.size / 1024).toFixed(1)} KB</p>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => handleDownloadAttachment(att.id, att.filename)}
+                                className="p-2.5 bg-white dark:bg-zinc-900 text-slate-400 hover:text-emerald-600 rounded-xl border border-slate-100 dark:border-zinc-800 shadow-sm opacity-0 group-hover:opacity-100 transition-all"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
              </div>
