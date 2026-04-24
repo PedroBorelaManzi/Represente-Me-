@@ -598,11 +598,11 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts, emailAcco
           animate={{ y: isMinimized ? 400 : 0, opacity: 1, scale: 1 }}
           exit={{ y: 500, opacity: 0, scale: 0.95 }}
           className={cn(
-            "fixed bottom-0 right-4 sm:right-10 w-[92%] sm:w-[550px] bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-2xl rounded-t-[40px] z-[100] flex flex-col",
-            isMinimized ? "h-[80px]" : "h-[650px]"
+            "fixed bottom-0 right-0 sm:right-10 w-full sm:w-[550px] bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-2xl sm:rounded-t-[40px] z-[100] flex flex-col transition-all duration-500",
+            isMinimized ? "h-[80px]" : "h-[100dvh] sm:h-[650px]"
           )}
         >
-          <div className="bg-slate-900 p-6 rounded-t-[40px] flex items-center justify-between">
+          <div className="bg-slate-900 p-6 sm:rounded-t-[40px] flex items-center justify-between shrink-0">
              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white pl-2">Nova Mensagem</h3>
              <div className="flex items-center gap-3">
                 <button onClick={() => setIsMinimized(!isMinimized)} className="p-2 hover:bg-white/10 rounded-xl text-white transition-colors">
@@ -612,7 +612,7 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts, emailAcco
              </div>
           </div>
 
-          <div className={cn("flex-1 p-10 flex flex-col gap-6", isMinimized && "hidden")}>
+          <div className={cn("flex-1 p-6 sm:p-10 flex flex-col gap-4 sm:gap-6 overflow-y-auto custom-scrollbar", isMinimized && "hidden")}>
              <div className="space-y-1 relative">
                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Para</p>
                <input 
@@ -666,14 +666,14 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts, emailAcco
                <textarea placeholder="Sua história começa aqui..." value={body} onChange={(e) => setBody(e.target.value)} className="w-full h-full bg-transparent border-none outline-none resize-none text-sm leading-relaxed dark:text-zinc-200 placeholder:text-slate-300 focus:ring-0 shadow-none"/>
              </div>
 
-             <div className="pt-6 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+             <div className="pt-4 sm:pt-6 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0 pb-6 sm:pb-0">
                 <div className="flex items-center gap-2">
                    <button className="p-4 text-emerald-600 bg-emerald-50 rounded-2xl hover:bg-emerald-100 transition-colors"><Sparkles className="w-5 h-5" /></button>
                 </div>
                 <button 
                   disabled={isSending}
                   onClick={handleSend}
-                  className="px-12 py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center gap-3"
+                  className="flex-1 sm:flex-none justify-center px-8 sm:px-12 py-4 sm:py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl sm:rounded-[24px] font-black uppercase text-[10px] sm:text-[11px] tracking-widest transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center gap-3"
                 >
                   {isSending ? "Enviando..." : "Enviar E-mail"} <Send className="w-4 h-4" />
                 </button>
