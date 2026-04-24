@@ -1,6 +1,7 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { 
   motion, 
+  AnimatePresence,
   useScroll, 
   useMotionValueEvent 
 } from "framer-motion";
@@ -16,18 +17,49 @@ import {
   Zap,
   TrendingUp,
   Layout as LayoutIcon,
-  ShieldCheck
+  ShieldCheck,
+  Store
 } from "lucide-react";
 import { Logo } from '../components/Logo';
 import { Link } from "react-router-dom";
 
 const industries = [
-  { name: "Materiais de Construção", icon: Building2, color: "bg-orange-50 text-orange-600" },
-  { name: "Supermercados", icon: ShoppingCart, color: "bg-emerald-50 text-emerald-600" },
-  { name: "Farmácias", icon: PlusIcon, color: "bg-red-50 text-red-600" },
-  { name: "Saúde", icon: Stethoscope, color: "bg-green-50 text-green-600" },
-  { name: "Serviços", icon: Briefcase, color: "bg-emerald-50 text-emerald-600" },
-  { name: "Outros", icon: Zap, color: "bg-slate-50 text-slate-600" },
+  { 
+    name: "Materiais de Construção", 
+    icon: Building2, 
+    color: "bg-orange-50 text-orange-600",
+    image: "https://images.unsplash.com/photo-1503387762-592dee58ec46?auto=format&fit=crop&q=80&w=2000"
+  },
+  { 
+    name: "Supermercados", 
+    icon: ShoppingCart, 
+    color: "bg-emerald-50 text-emerald-600",
+    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=2000"
+  },
+  { 
+    name: "Farmácias", 
+    icon: PlusIcon, 
+    color: "bg-red-50 text-red-600",
+    image: "https://images.unsplash.com/photo-1587854692152-cbe660dbbb88?auto=format&fit=crop&q=80&w=2000"
+  },
+  { 
+    name: "Distribuidoras", 
+    icon: Store, 
+    color: "bg-blue-50 text-blue-600",
+    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=2000"
+  },
+  { 
+    name: "Serviços", 
+    icon: Briefcase, 
+    color: "bg-emerald-50 text-emerald-600",
+    image: "https://images.unsplash.com/photo-1454165833767-027eeef16017?auto=format&fit=crop&q=80&w=2000"
+  },
+  { 
+    name: "Outros", 
+    icon: Zap, 
+    color: "bg-slate-50 text-slate-600",
+    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=2000"
+  },
 ];
 
 const plans = [
@@ -69,6 +101,7 @@ export default function LandingPitch() {
   const { scrollY } = useScroll();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [scrolled, setScrolled] = useState(false);
+  const [hoveredIndustry, setHoveredIndustry] = useState<number | null>(null);
 
   const calculatePrice = (annualPrice: number) => {
     if (billingCycle === "annual") return annualPrice.toString();
@@ -151,24 +184,59 @@ export default function LandingPitch() {
       </div>
 
       {/* Industry Selection */}
-      <section id="industrias" className="py-32 bg-white border-y border-slate-100 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.03),transparent)] pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-6 relative">
+      <section id="industrias" className="py-32 bg-white border-y border-slate-100 relative overflow-hidden transition-colors duration-700">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.03),transparent)] pointer-events-none z-10" />
+        
+        {/* Background Photo Overlay */}
+        <AnimatePresence>
+          {hoveredIndustry !== null && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="absolute inset-0 z-0"
+            >
+              <div className="absolute inset-0 bg-slate-900/60 z-10" />
+              <img 
+                src={industries[hoveredIndustry].image} 
+                alt="" 
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="max-w-7xl mx-auto px-6 relative z-20">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter mb-4">Adaptável à sua realidade</h2>
-            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Interface customizada por setor de atuação</p>
+            <h2 className={`text-4xl font-black uppercase tracking-tighter mb-4 transition-colors duration-500 ${hoveredIndustry !== null ? "text-white" : "text-slate-900"}`}>
+              Adaptável à sua realidade
+            </h2>
+            <p className={`font-bold uppercase text-[10px] tracking-widest transition-colors duration-500 ${hoveredIndustry !== null ? "text-slate-300" : "text-slate-400"}`}>
+              Interface customizada por setor de atuação
+            </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
             {industries.map((item, idx) => (
               <motion.button
                 key={idx}
-                whileHover={{ y: -8, scale: 1.02 }}
-                className="p-8 rounded-[32px] border border-slate-100 bg-white flex flex-col items-center gap-5 hover:shadow-2xl hover:border-emerald-100 transition-all group shadow-sm"
+                onMouseEnter={() => setHoveredIndustry(idx)}
+                onMouseLeave={() => setHoveredIndustry(null)}
+                whileHover={{ y: -8, scale: 1.05 }}
+                className={`p-8 rounded-[32px] border flex flex-col items-center gap-5 transition-all group shadow-sm ${
+                  hoveredIndustry === null 
+                    ? "bg-white border-slate-100 hover:shadow-2xl hover:border-emerald-100" 
+                    : hoveredIndustry === idx
+                      ? "bg-white border-white shadow-2xl scale-105 z-30"
+                      : "bg-white/10 border-white/10 opacity-40 grayscale blur-[2px] scale-95"
+                }`}
               >
                 <div className={`p-5 rounded-2xl ${item.color} group-hover:scale-110 transition-transform shadow-sm`}>
                   <item.icon className="w-7 h-7" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-tight text-slate-900 text-center leading-tight max-w-[120px]">
+                <span className={`text-[10px] font-black uppercase tracking-tight text-center leading-tight max-w-[120px] transition-colors ${
+                  hoveredIndustry !== null && hoveredIndustry !== idx ? "text-white/70" : "text-slate-900"
+                }`}>
                   {item.name}
                 </span>
               </motion.button>
@@ -344,7 +412,7 @@ export default function LandingPitch() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
           <Logo className="opacity-50 h-8 md:h-10" showText={true} />
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
-            Â© 2026 Represente-se â€” Tecnologia para Representações Comerciais
+            © 2026 Represente-se — Tecnologia para Representações Comerciais
           </p>
           <div className="flex gap-8">
             <Link to="/privacy" className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">Privacidade</Link>
@@ -355,4 +423,3 @@ export default function LandingPitch() {
     </div>
   );
 }
-
