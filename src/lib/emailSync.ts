@@ -363,6 +363,7 @@ export async function downloadAttachmentFromApi(userId: string, provider: EmailP
     } catch (err: any) {
       return { success: false, error: err.message };
     }
+  }
 
-            return { success: false, error: "Provedor não suportado" };
+  return { success: false, error: "Provedor não suportado" };
 }
