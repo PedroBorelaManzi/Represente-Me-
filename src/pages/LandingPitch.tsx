@@ -28,13 +28,13 @@ const industries = [
     name: "Materiais de Construção", 
     icon: Building2, 
     color: "bg-orange-50 text-orange-600",
-    image: "https://images.unsplash.com/photo-1503387762-592dee58ec46?auto=format&fit=crop&q=80&w=2000"
+    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=2000"
   },
   { 
     name: "Supermercados", 
     icon: ShoppingCart, 
     color: "bg-emerald-50 text-emerald-600",
-    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=2000"
+    image: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&q=80&w=2000"
   },
   { 
     name: "Farmácias", 
@@ -52,13 +52,13 @@ const industries = [
     name: "Serviços", 
     icon: Briefcase, 
     color: "bg-emerald-50 text-emerald-600",
-    image: "https://images.unsplash.com/photo-1454165833767-027eeef16017?auto=format&fit=crop&q=80&w=2000"
+    image: "https://images.unsplash.com/photo-1521791136064-7986c2959213?auto=format&fit=crop&q=80&w=2000"
   },
   { 
     name: "Outros", 
     icon: Zap, 
     color: "bg-slate-50 text-slate-600",
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=2000"
+    image: "https://images.unsplash.com/photo-1454165833767-027eeef16017?auto=format&fit=crop&q=80&w=2000"
   },
 ];
 
@@ -184,7 +184,7 @@ export default function LandingPitch() {
       </div>
 
       {/* Industry Selection */}
-      <section id="industrias" className="py-32 bg-white border-y border-slate-100 relative overflow-hidden transition-colors duration-700">
+      <section id="industrias" className="min-h-[70vh] py-32 bg-white border-y border-slate-100 relative overflow-hidden transition-all duration-700 flex items-center">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.03),transparent)] pointer-events-none z-10" />
         
         {/* Background Photo Overlay */}
@@ -194,11 +194,15 @@ export default function LandingPitch() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.7, ease: "easeInOut" }}
               className="absolute inset-0 z-0"
             >
-              <div className="absolute inset-0 bg-slate-900/60 z-10" />
-              <img 
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] z-10 transition-all" />
+              <motion.img 
+                key={industries[hoveredIndustry].image}
+                initial={{ scale: 1.1 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 1.5, ease: "easeOut" }}
                 src={industries[hoveredIndustry].image} 
                 alt="" 
                 className="w-full h-full object-cover"
@@ -207,35 +211,35 @@ export default function LandingPitch() {
           )}
         </AnimatePresence>
 
-        <div className="max-w-7xl mx-auto px-6 relative z-20">
+        <div className="max-w-7xl mx-auto px-6 relative z-20 w-full">
           <div className="text-center mb-16">
-            <h2 className={`text-4xl font-black uppercase tracking-tighter mb-4 transition-colors duration-500 ${hoveredIndustry !== null ? "text-white" : "text-slate-900"}`}>
+            <h2 className={`text-4xl md:text-6xl font-black uppercase tracking-tighter mb-4 transition-all duration-500 ${hoveredIndustry !== null ? "text-white drop-shadow-lg" : "text-slate-900"}`}>
               Adaptável à sua realidade
             </h2>
-            <p className={`font-bold uppercase text-[10px] tracking-widest transition-colors duration-500 ${hoveredIndustry !== null ? "text-slate-300" : "text-slate-400"}`}>
+            <p className={`font-bold uppercase text-[10px] md:text-xs tracking-[0.3em] transition-all duration-500 ${hoveredIndustry !== null ? "text-white/80" : "text-slate-400"}`}>
               Interface customizada por setor de atuação
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-8 max-w-7xl mx-auto">
             {industries.map((item, idx) => (
               <motion.button
                 key={idx}
                 onMouseEnter={() => setHoveredIndustry(idx)}
                 onMouseLeave={() => setHoveredIndustry(null)}
-                whileHover={{ y: -8, scale: 1.05 }}
-                className={`p-8 rounded-[32px] border flex flex-col items-center gap-5 transition-all group shadow-sm ${
+                whileHover={{ y: -12, scale: 1.1 }}
+                className={`p-6 md:p-10 rounded-[32px] md:rounded-[48px] border-2 flex flex-col items-center gap-6 transition-all duration-500 group shadow-lg ${
                   hoveredIndustry === null 
-                    ? "bg-white border-slate-100 hover:shadow-2xl hover:border-emerald-100" 
+                    ? "bg-white border-slate-50 hover:shadow-2xl" 
                     : hoveredIndustry === idx
-                      ? "bg-white border-white shadow-2xl scale-105 z-30"
-                      : "bg-white/10 border-white/10 opacity-40 grayscale blur-[2px] scale-95"
+                      ? "bg-white border-white scale-125 z-30 shadow-2xl"
+                      : "bg-white/5 border-white/10 opacity-30 blur-sm scale-90 grayscale"
                 }`}
               >
-                <div className={`p-5 rounded-2xl ${item.color} group-hover:scale-110 transition-transform shadow-sm`}>
-                  <item.icon className="w-7 h-7" />
+                <div className={`p-4 md:p-6 rounded-[24px] ${item.color} group-hover:scale-110 transition-transform shadow-md`}>
+                  <item.icon className="w-6 h-6 md:w-8 md:h-8" />
                 </div>
-                <span className={`text-[10px] font-black uppercase tracking-tight text-center leading-tight max-w-[120px] transition-colors ${
-                  hoveredIndustry !== null && hoveredIndustry !== idx ? "text-white/70" : "text-slate-900"
+                <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-tight text-center leading-tight max-w-[120px] transition-all duration-500 ${
+                  hoveredIndustry === idx ? "text-slate-900" : (hoveredIndustry === null ? "text-slate-900" : "text-white/0")
                 }`}>
                   {item.name}
                 </span>
