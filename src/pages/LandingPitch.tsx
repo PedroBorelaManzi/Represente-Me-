@@ -28,37 +28,37 @@ const industries = [
     name: "Materiais de Construção", 
     icon: Building2, 
     color: "bg-orange-50 text-orange-600",
-    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=2000"
+    image: "/assets/setor_materiais.png"
   },
   { 
     name: "Supermercados", 
     icon: ShoppingCart, 
     color: "bg-emerald-50 text-emerald-600",
-    image: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&q=80&w=2000"
+    image: "/assets/setor_supermercado.png"
   },
   { 
     name: "Farmácias", 
     icon: PlusIcon, 
     color: "bg-red-50 text-red-600",
-    image: "https://images.unsplash.com/photo-1587854692152-cbe660dbbb88?auto=format&fit=crop&q=80&w=2000"
+    image: "/assets/setor_farmacia.png"
   },
   { 
     name: "Distribuidoras", 
     icon: Store, 
     color: "bg-blue-50 text-blue-600",
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=2000"
+    image: "/assets/setor_distribuidora.png"
   },
   { 
     name: "Serviços", 
     icon: Briefcase, 
     color: "bg-emerald-50 text-emerald-600",
-    image: "https://images.unsplash.com/photo-1521791136064-7986c2959213?auto=format&fit=crop&q=80&w=2000"
+    image: "/assets/setor_servicos.png"
   },
   { 
     name: "Outros", 
     icon: Zap, 
     color: "bg-slate-50 text-slate-600",
-    image: "https://images.unsplash.com/photo-1454165833767-027eeef16017?auto=format&fit=crop&q=80&w=2000"
+    image: "/assets/setor_outros.png"
   },
 ];
 
@@ -184,7 +184,7 @@ export default function LandingPitch() {
       </div>
 
       {/* Industry Selection */}
-      <section id="industrias" className="min-h-[70vh] py-32 bg-white border-y border-slate-100 relative overflow-hidden transition-all duration-700 flex items-center">
+      <section id="industrias" className="min-h-[90vh] py-32 bg-white border-y border-slate-100 relative overflow-hidden transition-all duration-700 flex items-center">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.03),transparent)] pointer-events-none z-10" />
         
         {/* Background Photo Overlay */}
@@ -213,10 +213,10 @@ export default function LandingPitch() {
 
         <div className="max-w-7xl mx-auto px-6 relative z-20 w-full">
           <div className="text-center mb-16">
-            <h2 className={`text-4xl md:text-6xl font-black uppercase tracking-tighter mb-4 transition-all duration-500 ${hoveredIndustry !== null ? "text-white drop-shadow-lg" : "text-slate-900"}`}>
+            <h2 className={`text-4xl md:text-7xl font-black uppercase tracking-tighter mb-4 transition-all duration-500 ${hoveredIndustry !== null ? "text-white drop-shadow-lg" : "text-slate-900"}`}>
               Adaptável à sua realidade
             </h2>
-            <p className={`font-bold uppercase text-[10px] md:text-xs tracking-[0.3em] transition-all duration-500 ${hoveredIndustry !== null ? "text-white/80" : "text-slate-400"}`}>
+            <p className={`font-bold uppercase text-[10px] md:text-sm tracking-[0.3em] transition-all duration-500 ${hoveredIndustry !== null ? "text-white/80" : "text-slate-400"}`}>
               Interface customizada por setor de atuação
             </p>
           </div>
@@ -226,8 +226,8 @@ export default function LandingPitch() {
                 key={idx}
                 onMouseEnter={() => setHoveredIndustry(idx)}
                 onMouseLeave={() => setHoveredIndustry(null)}
-                whileHover={{ y: -12, scale: 1.1 }}
-                className={`p-6 md:p-10 rounded-[32px] md:rounded-[48px] border-2 flex flex-col items-center gap-6 transition-all duration-500 group shadow-lg ${
+                whileHover={{ y: -12, scale: 1.15 }}
+                className={`p-6 md:p-12 rounded-[32px] md:rounded-[56px] border-2 flex flex-col items-center gap-6 transition-all duration-500 group shadow-lg ${
                   hoveredIndustry === null 
                     ? "bg-white border-slate-50 hover:shadow-2xl" 
                     : hoveredIndustry === idx
@@ -235,10 +235,10 @@ export default function LandingPitch() {
                       : "bg-white/5 border-white/10 opacity-30 blur-sm scale-90 grayscale"
                 }`}
               >
-                <div className={`p-4 md:p-6 rounded-[24px] ${item.color} group-hover:scale-110 transition-transform shadow-md`}>
-                  <item.icon className="w-6 h-6 md:w-8 md:h-8" />
+                <div className={`p-4 md:p-7 rounded-[28px] ${item.color} group-hover:scale-110 transition-transform shadow-md`}>
+                  <item.icon className="w-6 h-6 md:w-9 md:h-9" />
                 </div>
-                <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-tight text-center leading-tight max-w-[120px] transition-all duration-500 ${
+                <span className={`text-[9px] md:text-[11px] font-black uppercase tracking-tight text-center leading-tight max-w-[140px] transition-all duration-500 ${
                   hoveredIndustry === idx ? "text-slate-900" : (hoveredIndustry === null ? "text-slate-900" : "text-white/0")
                 }`}>
                   {item.name}
