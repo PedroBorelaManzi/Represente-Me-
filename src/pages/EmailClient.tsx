@@ -47,9 +47,6 @@ export default function EmailClient() {
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Search State
-  const [searchQuery, setSearchQuery] = useState("");
-
   // 1. Load Connected Accounts
   useEffect(() => {
     if (!user) return;
