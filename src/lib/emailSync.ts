@@ -228,11 +228,6 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
                body = body.replace(new RegExp('cid:' + cid, 'g'), cids[cid]);
              }
            }
-               }
-               return "";
-             };
-             body = findBody(detail.payload.parts);
-           }
 
            return {
              id: detail.id,
@@ -245,7 +240,9 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
              time: formattedTime,
              unread: detail.labelIds?.includes("UNREAD") || false,
              folder: folder,
-             fullBody: body || detail.snippet || ""
+             fullBody: body || detail.snippet || "",
+              isHtml: isHtml,
+              attachments: attachments
            };
          } catch (e) { return null; }
       }));
