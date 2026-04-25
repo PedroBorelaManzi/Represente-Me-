@@ -369,39 +369,77 @@ export async function downloadAttachmentFromApi(userId: string, provider: EmailP
   return { success: false, error: "Provedor não suportado" };
 }
 
+
 export async function fetchGoogleContacts(userId: string, emailAddress?: string) {
   const token = await getValidEmailToken(userId, 'google', emailAddress);
-  if (!token) return [];
-
-  try {
-    const contacts: { name: string, email: string }[] = [];
-    const headers = { 'Authorization': `Bearer ${token}` };
-
-    // Connection: Regular Address Book
-    const resConn = await fetch('https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses&pageSize=1000', { headers });
-    if (resConn.ok) {
-      const data = await resConn.json();
-      (data.connections || []).forEach((p: any) => {
-        const name = p.names?.[0]?.displayName || "";
-        const email = p.emailAddresses?.[0]?.value;
-        if (email) contacts.push({ name: name || email, email });
-      });
-    }
-
-    // OtherContacts: People you've interacted with (Crucial for email history)
-    const resOther = await fetch('https://people.googleapis.com/v1/otherContacts?readMask=names,emailAddresses&pageSize=1000', { headers });
-    if (resOther.ok) {
-      const data = await resOther.json();
-      (data.otherContacts || []).forEach((p: any) => {
-        const name = p.names?.[0]?.displayName || "";
-        const email = p.emailAddresses?.[0]?.value;
-        if (email) contacts.push({ name: name || email, email });
-      });
-    }
-
-    return contacts;
-  } catch (err) {
-    console.error("People API fetch error:", err);
+  if (!token) {
+    console.error("fetchGoogleContacts: No token available");
     return [];
   }
+
+  try {
+    const contactsMap = new Map<string, string>();
+    const headers = { 'Authorization': `Bearer ${token}` };
+
+    console.log("fetchGoogleContacts: Starting fetch from People API...");
+
+    // 1. Connection: Regular Address Book
+    try {
+      const resConn = await fetch('https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses&pageSize=1000', { headers });
+      if (resConn.ok) {
+        const data = await resConn.json();
+        console.log(`fetchGoogleContacts: Found ${data.connections?.length || 0} connections`);
+        (data.connections || []).forEach((p: any) => {
+          const name = p.names?.[0]?.displayName;
+          const email = p.emailAddresses?.[0]?.value;
+          if (email) contactsMap.set(email, name || email);
+        });
+      } else {
+        const err = await resConn.json();
+        console.warn("fetchGoogleContacts: Connections API failed", err);
+      }
+    } catch (e) {
+      console.error("fetchGoogleContacts: Connections fetch error", e);
+    }
+
+    // 2. OtherContacts: People interacted with
+    try {
+      const resOther = await fetch('https://people.googleapis.com/v1/otherContacts?readMask=names,emailAddresses&pageSize=1000', { headers });
+      if (resOther.ok) {
+        const data = await resOther.json();
+        console.log(`fetchGoogleContacts: Found ${data.otherContacts?.length || 0} other contacts`);
+        (data.otherContacts || []).forEach((p: any) => {
+          const name = p.names?.[0]?.displayName;
+          const email = p.emailAddresses?.[0]?.value;
+          if (email) contactsMap.set(email, name || email);
+        });
+      } else {
+        const err = await resOther.json();
+        console.warn("fetchGoogleContacts: OtherContacts API failed", err);
+      }
+    } catch (e) {
+      console.error("fetchGoogleContacts: OtherContacts fetch error", e);
+    }
+
+    // 3. Fallback: Extract from recent messages if People API gave nothing
+    if (contactsMap.size === 0) {
+      console.log("fetchGoogleContacts: People API returned nothing, falling back to message headers...");
+      const resMsgs = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=100', { headers });
+      if (resMsgs.ok) {
+        const data = await resMsgs.json();
+        const messages = data.messages || [];
+        // Just getting IDs, would need individual fetches which is slow, 
+        // so we rely on the main fetchEmails logic to populate as they browse if People API fails.
+      }
+    }
+
+    const finalContacts = Array.from(contactsMap.entries()).map(([email, name]) => ({ name, email }));
+    console.log(`fetchGoogleContacts: Returning ${finalContacts.length} total contacts`);
+    return finalContacts;
+  } catch (err) {
+    console.error("fetchGoogleContacts: Fatal error", err);
+    return [];
+  }
+}
+
 }

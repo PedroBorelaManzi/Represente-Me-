@@ -87,7 +87,9 @@ export default function EmailClient() {
   // 3. Fetch Global Contacts
   useEffect(() => {
     if (selectedAccount && user && selectedAccount.provider === 'google') {
+      console.log("EmailClient: Iniciando busca de contatos globais...");
       fetchGoogleContacts(user.id, selectedAccount.email).then(newContacts => {
+        console.log(`EmailClient: ${newContacts.length} contatos globais carregados`);
         if (newContacts.length > 0) {
           setContacts(prev => {
             const map = new Map<string, string>();
@@ -164,18 +166,32 @@ export default function EmailClient() {
           setEmails(newEmails);
         }
         
-        // Populate rich contacts
+        
+        // Populate rich contacts without overwriting better names from People API
         setContacts(prev => {
            const map = new Map<string, string>();
            prev.forEach(c => map.set(c.email, c.name));
            
            newEmails.forEach(e => {
-             if (e.fromEmail) map.set(e.fromEmail, e.from);
-             if (e.toEmail) map.set(e.toEmail, e.to || e.toEmail);
+             if (e.fromEmail) {
+               const existing = map.get(e.fromEmail);
+               // Only update if we don't have a name or if the new name is "better" (longer/not just an email)
+               if (!existing || (e.from && e.from !== e.fromEmail && existing === e.fromEmail)) {
+                 map.set(e.fromEmail, e.from);
+               }
+             }
+             if (e.toEmail) {
+               const existing = map.get(e.toEmail);
+               const name = e.to || e.toEmail;
+               if (!existing || (e.to && e.to !== e.toEmail && existing === e.toEmail)) {
+                 map.set(e.toEmail, name);
+               }
+             }
            });
            
            return Array.from(map.entries()).map(([email, name]) => ({ name, email }));
         });
+
 
         setNextPageToken(result.nextPageToken || null);
       } else {
