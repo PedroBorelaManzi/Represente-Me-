@@ -12,155 +12,121 @@ export interface EmailMessage {
   unread: boolean;
   folder: string;
   fullBody?: string;
+  isHtml?: boolean;
   to?: string;
   toEmail?: string;
   fullDate?: string;
+  attachments?: {
+    id: string;
+    filename: string;
+    mimeType: string;
+    size: number;
+  }[];
 }
 
 // 1. GERAÇÃO DE URLS DE AUTENTICAÇÃO
 export function getGoogleEmailAuthUrl() {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  if (!clientId) throw new Error("VITE_GOOGLE_CLIENT_ID não configurado.");
-  
-  const redirectUri = `${window.location.origin}/auth/callback/email`;
-  const scopes = [
-    "https://www.googleapis.com/auth/gmail.readonly",
-    "https://www.googleapis.com/auth/gmail.send",
-    "https://www.googleapis.com/auth/userinfo.email",
-    "https://www.googleapis.com/auth/contacts.readonly"
-  ].join(" ");
-
-  return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=code&access_type=offline&prompt=consent&state=google`;
+  const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
+  const options = {
+    redirect_uri: window.location.origin + '/auth/callback',
+    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    access_type: 'offline',
+    response_type: 'code',
+    prompt: 'consent',
+    scope: [
+      'https://www.googleapis.com/auth/userinfo.email',
+      'https://www.googleapis.com/auth/gmail.modify',
+      'https://www.googleapis.com/auth/contacts.readonly',
+      'https://www.googleapis.com/auth/directory.readonly'
+    ].join(' ')
+  };
+  const qs = new URLSearchParams(options);
+  return `${rootUrl}?${qs.toString()}`;
 }
 
 export function getMicrosoftEmailAuthUrl() {
-  const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID;
-  if (!clientId) throw new Error("VITE_MICROSOFT_CLIENT_ID não configurado.");
+  const rootUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
+  const options = {
+    client_id: import.meta.env.VITE_MICROSOFT_CLIENT_ID,
+    response_type: 'code',
+    redirect_uri: window.location.origin + '/auth/callback',
+    response_mode: 'query',
+    scope: 'offline_access user.read mail.readwrite mail.send contacts.read',
+  };
+  const qs = new URLSearchParams(options);
+  return `${rootUrl}?${qs.toString()}`;
+}
+
+// 2. TOKEN MANAGEMENT
+async function getValidEmailToken(userId: string, provider: EmailProvider, emailAccount?: string) {
+  let query = supabase.from('user_email_tokens').select('*').eq('user_id', userId).eq('provider', provider);
+  if (emailAccount) query = query.eq('email_address', emailAccount);
   
-  const redirectUri = `${window.location.origin}/auth/callback/email`;
-  const scopes = ["offline_access", "User.Read", "Mail.ReadWrite", "Mail.Send"].join(" ");
+  const { data: tokenData, error } = await query.single();
+  if (error || !tokenData) return null;
 
-  return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&response_mode=query&scope=${encodeURIComponent(scopes)}&prompt=select_account&state=microsoft`;
-}
+  const now = Math.floor(Date.now() / 1000);
+  if (tokenData.expires_at > now + 60) return tokenData.access_token;
 
-// 2. RECUPERAÇÃO DE TOKENS VALIDADOS DO BANCO
-export async function getValidEmailToken(userId: string, provider: EmailProvider, emailAddress?: string) {
-  let query = supabase
-    .from('user_email_tokens')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('provider', provider);
+  const refreshParams = new URLSearchParams();
+  refreshParams.append('client_id', provider === 'google' ? import.meta.env.VITE_GOOGLE_CLIENT_ID : import.meta.env.VITE_MICROSOFT_CLIENT_ID);
+  refreshParams.append('client_secret', provider === 'google' ? import.meta.env.VITE_GOOGLE_CLIENT_SECRET : import.meta.env.VITE_MICROSOFT_CLIENT_SECRET);
+  refreshParams.append('refresh_token', tokenData.refresh_token);
+  refreshParams.append('grant_type', 'refresh_token');
 
-  if (emailAddress) {
-    query = query.eq('email_address', emailAddress);
-  }
-
-  const { data: tokenData, error } = await (emailAddress ? query.maybeSingle() : query.limit(1).maybeSingle());
-
-  if (error || !tokenData) {
-    console.error("Token não encontrado para o usuário:", userId);
-    return null;
-  }
-
-  const isExpired = new Date(tokenData.expires_at).getTime() < Date.now();
-  if (isExpired && tokenData.refresh_token) {
-     return await refreshEmailToken(userId, provider, tokenData.refresh_token, tokenData.email_address);
-  }
-  return tokenData.access_token;
-}
-
-async function refreshEmailToken(userId: string, provider: EmailProvider, refreshToken: string, emailAddress?: string) {
-  let endpoint = "";
-  let bodyRequest = new URLSearchParams();
-
-  if (provider === 'google') {
-    endpoint = "https://oauth2.googleapis.com/token";
-    bodyRequest.append("client_id", import.meta.env.VITE_GOOGLE_CLIENT_ID);
-    bodyRequest.append("client_secret", import.meta.env.VITE_GOOGLE_CLIENT_SECRET);
-    bodyRequest.append("refresh_token", refreshToken);
-    bodyRequest.append("grant_type", "refresh_token");
-  } else {
-    endpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
-    bodyRequest.append("client_id", import.meta.env.VITE_MICROSOFT_CLIENT_ID);
-    bodyRequest.append("client_secret", import.meta.env.VITE_MICROSOFT_CLIENT_SECRET || "");
-    bodyRequest.append("refresh_token", refreshToken);
-    bodyRequest.append("grant_type", "refresh_token");
-  }
+  const url = provider === 'google' 
+    ? 'https://oauth2.googleapis.com/token' 
+    : 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
 
   try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: bodyRequest
-    });
-    
-    if (!res.ok) return null;
-    
-    const tokens = await res.json();
-    const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
-    const newRefreshToken = tokens.refresh_token || refreshToken;
-
-    const query = supabase
-      .from('user_email_tokens')
-      .update({
-        access_token: tokens.access_token,
-        refresh_token: newRefreshToken,
-        expires_at: expiresAt,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', userId)
-      .eq('provider', provider);
-
-    if (emailAddress) {
-      query.eq('email_address', emailAddress);
+    const res = await fetch(url, { method: 'POST', body: refreshParams });
+    const data = await res.json();
+    if (data.access_token) {
+      await supabase.from('user_email_tokens').update({
+        access_token: data.access_token,
+        expires_at: now + (data.expires_in || 3600),
+      }).eq('id', tokenData.id);
+      return data.access_token;
     }
-
-    await query;
-
-    return tokens.access_token;
-  } catch (error) {
-    console.error("Erro no refresh token", error);
-    return null;
-  }
+  } catch (e) {}
+  return null;
 }
 
-// Helper to decode Gmail Base64
-function base64Decode(str: string) {
-  try {
-    return decodeURIComponent(
-      atob(str.replace(/-/g, '+').replace(/_/g, '/'))
-        .split('')
-        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-  } catch (e) {
-    try {
-      return atob(str.replace(/-/g, '+').replace(/_/g, '/'));
-    } catch (e2) {
-      return "";
-    }
-  }
-}
-
-// 3. COMUNICAÇÃO REAL (GMAIL)
-export async function fetchEmailsFromApi(userId: string, provider: EmailProvider, folder: string, pageToken?: string, category?: string, emailAddress?: string, searchQuery?: string) {
-  const token = await getValidEmailToken(userId, provider, emailAddress);
+// 3. FETCH EMAILS
+export async function fetchEmailsFromApi(
+  userId: string, 
+  provider: EmailProvider, 
+  folder: string = 'inbox', 
+  pageToken: string | null = null,
+  category: string = "",
+  emailAccount?: string,
+  searchQuery?: string
+) {
+  const token = await getValidEmailToken(userId, provider, emailAccount);
   if (!token) return { success: false, error: "Token não disponível" };
 
   if (provider === 'google') {
     try {
       let q = "";
+      // Gmail labels are case sensitive in some contexts but usually uppercase for system labels
       if (folder === 'inbox') q = "label:INBOX";
       else if (folder === 'sent') q = "label:SENT";
       else if (folder === 'trash') q = "label:TRASH";
       else if (folder === 'spam') q = "label:SPAM";
       else if (folder === 'drafts') q = "label:DRAFT";
+      else if (folder === 'starred') q = "label:STARRED";
+      else if (folder === 'important') q = "label:IMPORTANT";
+      else if (folder === 'snoozed') q = "label:SNOOZED";
 
-      if (category) q += ` label:${category}`;
+      // If category is provided, add it. "" means Primary which usually has no special category filter needed or label:CATEGORY_PERSONAL
+      if (category) {
+        q += ` label:${category}`;
+      }
+      
       if (searchQuery) q += ` ${searchQuery}`;
 
       const listUrl = new URL('https://gmail.googleapis.com/gmail/v1/users/me/messages');
-      listUrl.searchParams.append('maxResults', '20');
+      listUrl.searchParams.append('maxResults', '25');
       if (q) listUrl.searchParams.append('q', q);
       if (pageToken) listUrl.searchParams.append('pageToken', pageToken);
 
@@ -168,37 +134,23 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      if (!listRes.ok) return { success: false, error: "Falha na API do Gmail" };
+      if (!listRes.ok) return { success: false, error: "Erro na API do Gmail" };
       const listData = await listRes.json();
-      
+
       const emailDetails = await Promise.all((listData.messages || []).map(async (msg: any) => {
         try {
           const detailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
+          if (!detailRes.ok) return null;
           const detail = await detailRes.json();
-          const headers = detail.payload.headers;
-          const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || "";
           
-          const parseEmailHeader = (raw: string) => {
-            if (!raw) return { name: "", email: "" };
-            const match = raw.match(/^(.*?)\s*<([^>]+)>$/);
-            if (match) return { name: match[1].replace(/"/g, "").trim(), email: match[2].trim() };
-            return { name: raw.split("@")[0].replace(/"/g, "").trim(), email: raw.trim() };
-          };
-
-          const fromInfo = parseEmailHeader(getHeader("From"));
-          const toInfo = parseEmailHeader(getHeader("To"));
-          const dateStr = getHeader("Date");
-          const date = dateStr ? new Date(dateStr) : new Date();
-          const formattedTime = date.toLocaleDateString() === new Date().toLocaleDateString() 
-             ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-             : date.toLocaleDateString([], { day: '2-digit', month: 'short' });
+          const headers = detail.payload.headers || [];
+          const findHeader = (n: string) => headers.find((h: any) => h.name.toLowerCase() === n.toLowerCase())?.value || "";
 
           let body = "";
           let isHtml = false;
-          const attachments: any[] = [];
-          const cids: Record<string, string> = {};
+          let attachments: any[] = [];
 
           const processParts = (parts: any[]) => {
             parts.forEach((part: any) => {
@@ -223,48 +175,41 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
                   id: part.body.attachmentId,
                   filename: part.filename,
                   mimeType: part.mimeType,
-                  size: part.body.size
+                  size: part.body.size || 0
                 });
-                
-                const cidHeader = part.headers?.find((h: any) => h.name.toLowerCase() === 'content-id')?.value;
-                if (cidHeader) {
-                  const cid = cidHeader.replace(/[<>]/g, "");
-                  if (part.body.data) {
-                    cids[cid] = `data:${part.mimeType};base64,${part.body.data}`;
-                  }
-                }
               }
             });
           };
 
-          if (detail.payload.body?.data) {
-            body = base64Decode(detail.payload.body.data);
-            isHtml = detail.payload.mimeType === "text/html";
-          } else if (detail.payload.parts) {
+          if (detail.payload.parts) {
             processParts(detail.payload.parts);
+          } else if (detail.payload.body?.data) {
+            body = base64Decode(detail.payload.body.data);
+            isHtml = detail.payload.mimeType === 'text/html';
           }
-          
-          if (isHtml && body) {
-            for (const cid in cids) {
-              body = body.replace(new RegExp('cid:' + cid, 'g'), cids[cid]);
-            }
-          }
+
+          const fromValue = findHeader("From");
+          const toValue = findHeader("To");
+          const fromEmail = fromValue.match(/<(.+?)>/)?.[1] || fromValue;
+          const fromName = fromValue.replace(/<.+?>/, "").replace(/"/g, "").trim() || fromEmail;
+          const toEmail = toValue.match(/<(.+?)>/)?.[1] || toValue;
+          const toName = toValue.replace(/<.+?>/, "").replace(/"/g, "").trim() || toEmail;
 
           return {
             id: detail.id,
-            from: fromInfo.name || fromInfo.email,
-            fromEmail: fromInfo.email,
-            to: toInfo.name || toInfo.email,
-            toEmail: toInfo.email,
-            subject: getHeader("Subject") || "(Sem Assunto)",
+            from: fromName,
+            fromEmail: fromEmail,
+            to: toName,
+            toEmail: toEmail,
+            subject: findHeader("Subject") || "(Sem assunto)",
             preview: detail.snippet || "",
-            time: formattedTime,
-            fullDate: dateStr || formattedTime,
-            unread: detail.labelIds?.includes("UNREAD") || false,
+            time: formatTime(findHeader("Date")),
+            fullDate: findHeader("Date"),
+            unread: detail.labelIds?.includes("UNREAD"),
             folder: folder,
-            fullBody: body || detail.snippet || "",
-            isHtml: isHtml,
-            attachments: attachments
+            fullBody: body,
+            isHtml,
+            attachments
           };
         } catch (e) { return null; }
       }));
@@ -274,59 +219,47 @@ export async function fetchEmailsFromApi(userId: string, provider: EmailProvider
       return { success: false, error: "Falha ao buscar e-mails" };
     }
   }
-  return { success: true, emails: [], nextPageToken: null }; 
+  return { success: false, error: "Provedor não suportado" };
 }
 
-export async function sendEmailViaApi(userId: string, provider: EmailProvider, to: string, subject: string, text: string, emailAddress?: string) {
-  const token = await getValidEmailToken(userId, provider, emailAddress);
-  if (!token) return { success: false, error: "Token não disponível. Reautentique-se." };
+// 4. SEND EMAIL
+export async function sendEmailViaApi(userId: string, provider: EmailProvider, to: string, subject: string, body: string, emailAccount?: string) {
+  const token = await getValidEmailToken(userId, provider, emailAccount);
+  if (!token) return { success: false, error: "Token não disponível" };
 
   if (provider === 'google') {
     try {
-      const mime = [
+      const utf8Subject = `=?utf-8?B?${btoa(new TextEncoder().encode(subject).reduce((p, c) => p + String.fromCharCode(c), ""))}?=`;
+      const emailLines = [
         `To: ${to}`,
-        `Subject: ${subject || '(Sem Assunto)'}`,
-        'Content-Type: text/html; charset="UTF-8"',
+        `Subject: ${utf8Subject}`,
+        'Content-Type: text/html; charset=utf-8',
         'MIME-Version: 1.0',
         '',
-        text.replace(/\n/g, '<br>')
-      ].join('\r\n');
+        body
+      ];
+      const raw = btoa(new TextEncoder().encode(emailLines.join('\r\n')).reduce((p, c) => p + String.fromCharCode(c), ""))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-      const encoder = new TextEncoder();
-      const u8a = encoder.encode(mime);
-      let binary = "";
-      for (let i = 0; i < u8a.length; i++) {
-        binary += String.fromCharCode(u8a[i]);
-      }
-      
-      const base64 = btoa(binary)
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-
-      const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, {
+      const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ raw: base64 })
+        body: JSON.stringify({ raw })
       });
-
-      if (!response.ok) {
-        const err = await response.json();
-        return { success: false, error: err.error?.message || "Erro desconhecido na API" };
-      }
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+      if (res.ok) return { success: true };
+      const errData = await res.json();
+      return { success: false, error: errData.error?.message || "Erro no envio" };
+    } catch (e: any) { return { success: false, error: e.message }; }
   }
-  return { success: false, error: "Provedor não suportado." };
+  return { success: false, error: "Provedor não suportado" };
 }
 
-export async function downloadAttachmentFromApi(userId: string, provider: EmailProvider, messageId: string, attachmentId: string, emailAddress?: string) {
-  const token = await getValidEmailToken(userId, provider, emailAddress);
+// 5. DOWNLOAD ATTACHMENT
+export async function downloadAttachmentFromApi(userId: string, provider: EmailProvider, messageId: string, attachmentId: string, emailAccount?: string) {
+  const token = await getValidEmailToken(userId, provider, emailAccount);
   if (!token) return { success: false, error: "Token não disponível" };
 
   if (provider === 'google') {
@@ -334,19 +267,17 @@ export async function downloadAttachmentFromApi(userId: string, provider: EmailP
       const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/attachments/${attachmentId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
-      if (!res.ok) throw new Error("Erro ao baixar anexo");
+      if (!res.ok) return { success: false, error: "Erro ao baixar anexo" };
       const data = await res.json();
       return { success: true, data: data.data };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
+    } catch (e: any) { return { success: false, error: e.message }; }
   }
   return { success: false, error: "Provedor não suportado" };
 }
 
-export async function fetchGoogleContacts(userId: string, emailAddress?: string) {
-  const token = await getValidEmailToken(userId, 'google', emailAddress);
+// 6. CONTACTS
+export async function fetchGoogleContacts(userId: string, emailAccount?: string) {
+  const token = await getValidEmailToken(userId, 'google', emailAccount);
   if (!token) return [];
 
   try {
@@ -355,7 +286,7 @@ export async function fetchGoogleContacts(userId: string, emailAddress?: string)
 
     // 1. Connections
     try {
-      const resConn = await fetch('https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses&pageSize=1000', { headers });
+      const resConn = await fetch('https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses&pageSize=500', { headers });
       if (resConn.ok) {
         const data = await resConn.json();
         (data.connections || []).forEach((p: any) => {
@@ -366,9 +297,9 @@ export async function fetchGoogleContacts(userId: string, emailAddress?: string)
       }
     } catch (e) {}
 
-    // 2. OtherContacts
+    // 2. OtherContacts (Frequent)
     try {
-      const resOther = await fetch('https://people.googleapis.com/v1/otherContacts?readMask=names,emailAddresses&pageSize=1000', { headers });
+      const resOther = await fetch('https://people.googleapis.com/v1/otherContacts?readMask=names,emailAddresses&pageSize=500', { headers });
       if (resOther.ok) {
         const data = await resOther.json();
         (data.otherContacts || []).forEach((p: any) => {
@@ -380,7 +311,33 @@ export async function fetchGoogleContacts(userId: string, emailAddress?: string)
     } catch (e) {}
 
     return Array.from(contactsMap.entries()).map(([email, name]) => ({ name, email }));
-  } catch (err) {
-    return [];
+  } catch (err) { return []; }
+}
+
+// HELPERS
+function base64Decode(str: string) {
+  try {
+    return decodeURIComponent(
+      atob(str.replace(/-/g, '+').replace(/_/g, '/'))
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+  } catch (e) {
+    try {
+      return atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+    } catch (e2) {
+      return "";
+    }
   }
+}
+
+function formatTime(dateStr: string) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  return d.toLocaleDateString([], { day: '2-digit', month: 'short' });
 }

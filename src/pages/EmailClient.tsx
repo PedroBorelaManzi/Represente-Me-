@@ -27,7 +27,7 @@ export default function EmailClient() {
   
   // Navigation State
   const [currentFolder, setCurrentFolder] = useState<EmailFolder>("inbox");
-  const [currentCategory, setCurrentCategory] = useState<GmailCategory>("CATEGORY_PERSONAL");
+  const [currentCategory, setCurrentCategory] = useState<GmailCategory>(""); // Start with empty (Primary)
   
   // Messages State
   const [emails, setEmails] = useState<EmailMessage[]>([]);
@@ -68,6 +68,15 @@ export default function EmailClient() {
         provider: d.provider,
         email: d.email_address || "Conectado"
       })));
+      
+      // Auto-select if only one account
+      if (data.length === 1 && !selectedAccount) {
+        setSelectedAccount({
+          id: data[0].id,
+          provider: data[0].provider,
+          email: data[0].email_address || "Conectado"
+        });
+      }
     }
   }
 
@@ -81,6 +90,7 @@ export default function EmailClient() {
 
     if (!error) {
        setAccounts(prev => prev.filter(acc => acc.id !== id));
+       if (selectedAccount?.id === id) setSelectedAccount(null);
     } else {
        alert("Erro ao remover: " + error.message);
     }
@@ -90,9 +100,7 @@ export default function EmailClient() {
   // 3. Fetch Global Contacts
   useEffect(() => {
     if (selectedAccount && user && selectedAccount.provider === 'google') {
-      console.log("EmailClient: Iniciando busca de contatos globais...");
       fetchGoogleContacts(user.id, selectedAccount.email).then(newContacts => {
-        console.log(`EmailClient: ${newContacts.length} contatos globais carregados`);
         if (newContacts.length > 0) {
           setContacts(prev => {
             const map = new Map<string, string>();
@@ -121,7 +129,6 @@ export default function EmailClient() {
     try {
       const res = await downloadAttachmentFromApi(user.id, selectedAccount.provider, selectedEmail.id, attachmentId, selectedAccount.email);
       if (res.success && res.data) {
-        // Create a blob from the base64 data
         const base64Data = res.data.replace(/-/g, '+').replace(/_/g, '/');
         const byteCharacters = atob(base64Data);
         const byteNumbers = new Array(byteCharacters.length);
@@ -169,8 +176,6 @@ export default function EmailClient() {
           setEmails(newEmails);
         }
         
-        
-        // Populate rich contacts without overwriting better names from People API
         setContacts(prev => {
            const map = new Map<string, string>();
            prev.forEach(c => map.set(c.email, c.name));
@@ -178,7 +183,6 @@ export default function EmailClient() {
            newEmails.forEach(e => {
              if (e.fromEmail) {
                const existing = map.get(e.fromEmail);
-               // Only update if we don't have a name or if the new name is "better" (longer/not just an email)
                if (!existing || (e.from && e.from !== e.fromEmail && existing === e.fromEmail)) {
                  map.set(e.fromEmail, e.from);
                }
@@ -194,7 +198,6 @@ export default function EmailClient() {
            
            return Array.from(map.entries()).map(([email, name]) => ({ name, email }));
         });
-
 
         setNextPageToken(result.nextPageToken || null);
       } else {
@@ -272,8 +275,6 @@ export default function EmailClient() {
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Gmail</p>
                     <p className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">{acc.email}</p>
                   </div>
-                  
-                  {/* Botão de Exclusão (X vermelho) no Hover */}
                   <div 
                     onClick={(e) => { e.stopPropagation(); deleteAccount(acc.id); }}
                     className="absolute top-4 right-4 p-2.5 bg-red-50 text-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 hover:text-white shadow-sm z-10 scale-90 group-hover:scale-100"
@@ -281,7 +282,6 @@ export default function EmailClient() {
                   >
                     <X className="w-4 h-4" />
                   </div>
-
                   <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center absolute right-6 top-12 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
                     <ChevronRight className="w-4 h-4" />
                   </div>
@@ -345,7 +345,7 @@ export default function EmailClient() {
                         setCurrentFolder(folder); 
                         setSelectedEmail(null); 
                         if (folder !== 'inbox') setCurrentCategory("");
-                        else setCurrentCategory("CATEGORY_PERSONAL");
+                        else setCurrentCategory(""); 
                       }} 
                       className={cn(
                         "w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all", 
@@ -366,7 +366,7 @@ export default function EmailClient() {
           {currentFolder === 'inbox' && (
             <div className="px-4 pt-4 flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-slate-50 dark:border-zinc-800 pb-2">
               {[
-                { id: "CATEGORY_PERSONAL", label: "Principal", icon: <Inbox className="w-3.5 h-3.5" /> },
+                { id: "", label: "Principal", icon: <Inbox className="w-3.5 h-3.5" /> },
                 { id: "CATEGORY_PROMOTIONS", label: "Promoções", icon: <Zap className="w-3.5 h-3.5" /> },
                 { id: "CATEGORY_SOCIAL", label: "Social", icon: <Users className="w-3.5 h-3.5" /> },
                 { id: "CATEGORY_UPDATES", label: "Atualizações", icon: <Info className="w-3.5 h-3.5" /> }
@@ -629,7 +629,6 @@ function ComposeBalloon({
   const [body, setBody] = useState("");
   const [isSending, setIsSending] = useState(false);
   
-  // Update state when initial values change (e.g. clicking reply)
   useEffect(() => {
     if (isOpen) {
       setTo(initialTo);
