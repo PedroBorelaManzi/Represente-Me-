@@ -108,21 +108,21 @@ export async function fetchEmailsFromApi(
   if (provider === 'google') {
     try {
       let q = "";
-      // Gmail labels are case sensitive in some contexts but usually uppercase for system labels
-      if (folder === 'inbox') q = "label:INBOX";
-      else if (folder === 'sent') q = "label:SENT";
+      if (folder === 'inbox') {
+        if (category) {
+          q = `label:INBOX label:${category}`;
+        } else {
+          q = "label:INBOX -label:CATEGORY_SOCIAL -label:CATEGORY_PROMOTIONS -label:CATEGORY_UPDATES -label:CATEGORY_FORUMS";
+        }
+      } else if (folder === 'sent') q = "label:SENT";
       else if (folder === 'trash') q = "label:TRASH";
       else if (folder === 'spam') q = "label:SPAM";
       else if (folder === 'drafts') q = "label:DRAFT";
       else if (folder === 'starred') q = "label:STARRED";
       else if (folder === 'important') q = "label:IMPORTANT";
       else if (folder === 'snoozed') q = "label:SNOOZED";
+      else q = ""; // Para "Todos os e-mails" ou pastas desconhecidas
 
-      // If category is provided, add it. "" means Primary which usually has no special category filter needed or label:CATEGORY_PERSONAL
-      if (category) {
-        q += ` label:${category}`;
-      }
-      
       if (searchQuery) q += ` ${searchQuery}`;
 
       const listUrl = new URL('https://gmail.googleapis.com/gmail/v1/users/me/messages');
