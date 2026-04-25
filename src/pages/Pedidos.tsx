@@ -3,6 +3,7 @@ import { Plus, Search, FileText, Upload, Loader2, ShoppingBag, Trash2, ArrowUpRi
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { useSettings } from "../contexts/SettingsContext";
 import { processOrderFile } from "../lib/orderProcessor";
 import { getHighPrecisionCoordinates } from "../lib/geminiGeocoding";
 import { cn } from "../lib/utils";
@@ -11,11 +12,12 @@ import { toast } from "sonner";
 
 export default function PedidosPage() {
   const { user } = useAuth();
+  const { settings } = useSettings();
   const [orders, setOrders] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [settings, setSettings] = useState<any>({});
+  
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -30,12 +32,9 @@ export default function PedidosPage() {
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
   const [viewDate, setViewDate] = useState(new Date());
 
-  useEffect(() => { if (user) { loadData(); loadSettings(); } }, [user]);
+  useEffect(() => { if (user) { loadData();  } }, [user]);
 
-  const loadSettings = async () => {
-    const { data } = await supabase.from("user_settings").select("*").eq("user_id", user?.id).maybeSingle();
-    if (data) setSettings(data);
-  };
+  
 
   const loadData = async () => {
     setLoading(true);
