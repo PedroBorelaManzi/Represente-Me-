@@ -41,6 +41,7 @@ export default function Dashboard() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [userCategories, setUserCategories] = useState<string[]>([]);
+  const [allTimeCategories, setAllTimeCategories] = useState<string[]>([]);
   const [monthlyOrders, setMonthlyOrders] = useState<any[]>([]);
 
   const handlePrevMonth = () => {
@@ -98,6 +99,21 @@ export default function Dashboard() {
         .maybeSingle();
       const cats = settingsData?.categories; setUserCategories(Array.isArray(cats) ? cats : []);
 
+      // Fetch all unique categories ever used by this user
+      const { data: allOrdersCats } = await supabase
+        .from("orders")
+        .select("category")
+        .eq("user_id", user.id);
+      
+      const uniqueCats = new Set<string>();
+      // Add from settings
+      if (Array.isArray(cats)) cats.forEach(c => c && uniqueCats.add(c.trim()));
+      // Add from orders
+      if (allOrdersCats) allOrdersCats.forEach(o => o.category && uniqueCats.add(o.category.trim()));
+      
+      setAllTimeCategories(Array.from(uniqueCats));
+
+
       const { data: clientsData } = await supabase
         .from("clients")
         .select("id, name, city, state, faturamento")
@@ -146,12 +162,13 @@ export default function Dashboard() {
   
   
   
+  
   const revenueChartData = useMemo(() => { try {
     const companyTotals: Record<string, number> = {};
     const normalizedToOriginal: Record<string, string> = {};
     
-    // 1. Initialize from userCategories (The "Source of Truth")
-    userCategories.forEach(cat => {
+    // 1. Initialize from EVERY category ever found (Settings + All Orders)
+    allTimeCategories.forEach(cat => {
       if (cat && cat.trim()) {
         const originalName = cat.trim();
         const normalized = originalName.toLowerCase();
@@ -160,23 +177,16 @@ export default function Dashboard() {
       }
     });
     
-    // 2. Sum revenue from monthly orders with normalization
+    // 2. Sum revenue from CURRENT MONTH orders
     monthlyOrders.forEach(order => {
       const rawName = order.category;
       if (rawName && rawName.trim()) {
         const normalized = rawName.trim().toLowerCase();
-        // If it's a known company, sum it. If unknown, add it to the list too.
-        if (companyTotals.hasOwnProperty(normalized)) {
-          companyTotals[normalized] += (Number(order.value) || 0);
-        } else {
-          companyTotals[normalized] = Number(order.value) || 0;
-          normalizedToOriginal[normalized] = rawName.trim();
-        }
+        companyTotals[normalized] = (companyTotals[normalized] || 0) + (Number(order.value) || 0);
+        if (!normalizedToOriginal[normalized]) normalizedToOriginal[normalized] = rawName.trim();
       }
     });
 
-    // 3. Return all companies found in settings PLUS any with revenue
-    // Sorted by NAME (original casing) to keep it "fixed"
     return Object.keys(companyTotals)
       .map(norm => ({ 
         name: normalizedToOriginal[norm], 
@@ -184,7 +194,8 @@ export default function Dashboard() {
       }))
       .sort((a, b) => a.name.localeCompare(b.name)); 
     } catch (e) { console.error("Chart Logic Error:", e); return []; }
-  }, [monthlyOrders, userCategories]);
+  }, [monthlyOrders, allTimeCategories]);
+
 
 
 
