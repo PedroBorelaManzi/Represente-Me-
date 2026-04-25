@@ -41,6 +41,7 @@ export default function Dashboard() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [userCategories, setUserCategories] = useState<string[]>([]);
+  const [monthlyOrders, setMonthlyOrders] = useState<any[]>([]);
 
   const handlePrevMonth = () => {
     const next = new Date(currentDate);
@@ -110,6 +111,19 @@ export default function Dashboard() {
         .eq("user_id", user.id);
       setEvents(appData || []);
 
+      // Fetch Monthly Orders for the chart
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
+      
+      const { data: ordersData } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("created_at", startOfMonth)
+        .lte("created_at", endOfMonth);
+      setMonthlyOrders(ordersData || []);
+
+
       // Fetch Holidays
       const locations = await getClientLocations(user.id);
       const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
@@ -129,33 +143,29 @@ export default function Dashboard() {
   
   
   
+  
   const revenueChartData = useMemo(() => { try {
     const companyTotals: Record<string, number> = {};
     
-    // 1. Initialize all registered companies from settings with zero
+    // 1. Initialize all registered companies
     userCategories.forEach(cat => {
-      if (cat && cat.trim()) {
-        companyTotals[cat] = 0;
-      }
+      if (cat && cat.trim()) companyTotals[cat] = 0;
     });
     
-    // 2. Sum revenue from all clients
-    clients.forEach(client => {
-      const faturamento = client.faturamento || {};
-      Object.entries(faturamento).forEach(([companyName, value]) => {
-        if (companyName && companyName.trim() && companyName.toLowerCase() !== 'sad' && companyName.toLowerCase() !== 'placeholder') {
-          // Check if this company is in our list, if not add it (to be safe)
-          companyTotals[companyName] = (companyTotals[companyName] || 0) + (Number(value) || 0);
-        }
-      });
+    // 2. Sum revenue from monthly orders
+    monthlyOrders.forEach(order => {
+      const companyName = order.category;
+      if (companyName && companyName.trim()) {
+        companyTotals[companyName] = (companyTotals[companyName] || 0) + (Number(order.value) || 0);
+      }
     });
 
-    // 3. Return all companies (no filter for value > 0)
     return Object.entries(companyTotals)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value); 
     } catch (e) { console.error("Chart Logic Error:", e); return []; }
-  }, [clients, userCategories]);
+  }, [monthlyOrders, userCategories]);
+
 
 
 
