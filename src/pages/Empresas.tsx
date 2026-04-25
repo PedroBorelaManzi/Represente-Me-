@@ -163,22 +163,42 @@ export default function EmpresasPage() {
     }
   };
 
+  
   const addCategory = async () => {
-    if (!newCat.trim()) return;
+    const trimmedCat = newCat.trim();
+    if (!trimmedCat) {
+      toast.error("Por favor, digite o nome da empresa.");
+      return;
+    }
+    
     try {
       const currentCategories = settings.categories || [];
-      if (currentCategories.some((c: string) => c.toLowerCase() === newCat.trim().toLowerCase())) {
-        toast.error("Empresa já cadastrada.");
+      
+      // Check if already exists (case-insensitive)
+      if (currentCategories.some((c: string) => c.toLowerCase() === trimmedCat.toLowerCase())) {
+        toast.error("Empresa \"" + trimmedCat + "\" já está cadastrada.");
         return;
       }
-      await updateSettings({ categories: [...currentCategories, newCat.trim()] });
-      toast.success("Empresa \"" + newCat.trim() + "\" cadastrada com sucesso!");
+
+      console.log("Cadastrando empresa:", trimmedCat);
+      
+      await updateSettings({ 
+        categories: [...currentCategories, trimmedCat] 
+      });
+      
+      toast.success("Empresa \"" + trimmedCat + "\" cadastrada com sucesso!");
       setNewCat("");
       setIsAddModalOpen(false);
+      
+      // Trigger a reload of the categories in the dashboard logic if needed
+      if (typeof loadOrders === 'function') loadOrders();
+      
     } catch (err) {
-      toast.error("Erro ao cadastrar empresa.");
+      console.error("Erro ao cadastrar empresa:", err);
+      toast.error("Erro ao salvar no banco de dados.");
     }
   };
+
 
   return (
     <div className="h-full flex flex-col gap-8 md:gap-10 pb-20">
