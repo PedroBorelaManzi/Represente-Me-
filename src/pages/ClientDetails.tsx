@@ -93,25 +93,21 @@ export default function ClientDetailsPage() {
     }
   };
 
-  const loadCategories = async () => {
-    if (!id) return;
+    const loadCategories = async () => {
+    if (!user) return;
     const { data: catData, error } = await supabase
       .from("orders")
       .select("category")
-      .eq("client_id", id);
+      .eq("user_id", user.id);
     
     if (!error && catData) {
       const uniqueCats = new Set<string>();
-      catData.forEach(o => uniqueCats.add(o.category));
-      
-      const normalizedCats = [...uniqueCats].map(cat => {
-        const matched = settings.categories?.find(c => c.toLowerCase() === cat.toLowerCase());
-        return matched || cat;
+      catData.forEach(o => {
+        if (o.category) uniqueCats.add(o.category);
       });
-      
-      setCategories([...new Set(normalizedCats)]);
+      setCategories([...uniqueCats]);
     }
-  };
+  };;
 
   const handleSaveNotes = async () => {
     setIsSavingNotes(true);
@@ -307,21 +303,26 @@ export default function ClientDetailsPage() {
   }, [selectedFile]);
 
   
+  
   const allAvailableCategories = useMemo(() => {
-    const fromSettings = settings.categories || [];
-    const fromOrders = categories || [];
-    const combined = [...fromSettings, ...fromOrders];
+    const s = settings.categories || [];
+    const h = categories || [];
+    const combined = Array.from(new Set([...s, ...h].map(c => c?.trim()).filter(Boolean)));
     
-    // Unique case-insensitive
+    const unique = [];
     const seen = new Set();
-    return combined.filter(cat => {
-      if (!cat) return false;
-      const lower = cat.toLowerCase().trim();
-      if (seen.has(lower)) return false;
-      seen.add(lower);
-      return true;
-    }).sort((a, b) => a.localeCompare(b));
+    
+    for (const cat of combined) {
+      const lower = cat.toLowerCase();
+      if (!seen.has(lower)) {
+        seen.add(lower);
+        unique.push(cat);
+      }
+    }
+    
+    return unique.sort((a, b) => a.localeCompare(b));
   }, [settings.categories, categories]);
+
 
 
   useEffect(() => {
