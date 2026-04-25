@@ -96,7 +96,7 @@ export default function Layout() {
   const isIntegrationView = location.pathname.includes('/links') && location.search.includes('id=');
 
   return (
-    <div className="h-[100dvh] overflow-hidden bg-slate-50 dark:bg-zinc-950 font-sans flex">
+    <div className="h-screen overflow-hidden bg-slate-50 dark:bg-zinc-950 font-sans flex">
       {sidebarOpen && (
         <div 
           className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden"

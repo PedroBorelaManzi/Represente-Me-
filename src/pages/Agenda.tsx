@@ -193,7 +193,7 @@ export default function Agenda() {
   };
 
   return (
-    <div className="h-[100dvh] flex flex-col gap-8 md:gap-10 pb-20">
+    <div className="h-full flex flex-col gap-8 md:gap-10 pb-20">
       {/* Premium Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
