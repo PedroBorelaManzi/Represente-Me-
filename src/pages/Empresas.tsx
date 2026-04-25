@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   Building2, 
   Plus, 
@@ -86,11 +86,21 @@ export default function EmpresasPage() {
   }, [allOrders, viewDate]);
 
   const combinedCategories = useMemo(() => {
-    if (!Array.isArray(allOrders)) return [];
     const cats = new Set<string>();
-    allOrders.forEach(o => { if (o && o.category) cats.add(o.category); });
+    // First add categories from settings
+    if (settings?.categories) {
+      settings.categories.forEach((cat: string) => {
+        if (cat) cats.add(cat);
+      });
+    }
+    // Then add categories found in orders
+    if (Array.isArray(allOrders)) {
+      allOrders.forEach(o => { 
+        if (o && o.category) cats.add(o.category); 
+      });
+    }
     return Array.from(cats);
-  }, [allOrders]);
+  }, [allOrders, settings?.categories]);
 
   const catTotals = useMemo(() => {
     const currentMonthly = monthlyOrders || [];
@@ -371,4 +381,3 @@ export default function EmpresasPage() {
     </div>
   );
 }
-

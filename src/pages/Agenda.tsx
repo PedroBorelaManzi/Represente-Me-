@@ -193,7 +193,7 @@ export default function Agenda() {
   };
 
   return (
-    <div className="h-full flex flex-col gap-8 md:gap-10 pb-10">
+    <div className="h-[100dvh] flex flex-col gap-8 md:gap-10 pb-20">
       {/* Premium Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
@@ -269,7 +269,7 @@ export default function Agenda() {
         </div>
 
         <div className="flex-1 flex flex-col overflow-x-auto custom-scrollbar">
-          <div className="grid grid-cols-7 border-b border-slate-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-900 sticky top-0 z-10 min-w-[1000px]">
+          <div className="grid grid-cols-7 border-b border-slate-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-900 sticky top-0 z-20 min-w-[1000px]">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
               <div key={day} className="py-6 text-center text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em]">{day}</div>
             ))}

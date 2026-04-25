@@ -300,7 +300,7 @@ export default function EmailClient() {
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 p-4 lg:p-6 relative overflow-hidden">
+    <div className="h-[calc(100dvh-4rem)] lg:h-full flex flex-col gap-4 p-4 lg:p-6 relative overflow-hidden">
       <div className="px-4 sm:px-0 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
            <button onClick={() => { setSelectedAccount(null); setSelectedEmail(null); }} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors mb-4">
