@@ -25,7 +25,8 @@ export function getGoogleEmailAuthUrl() {
   const scopes = [
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.send",
-    "https://www.googleapis.com/auth/userinfo.email"
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/contacts.readonly"
   ].join(" ");
 
   return `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=code&access_type=offline&prompt=consent&state=google`;
@@ -366,4 +367,41 @@ export async function downloadAttachmentFromApi(userId: string, provider: EmailP
   }
 
   return { success: false, error: "Provedor não suportado" };
+}
+
+export async function fetchGoogleContacts(userId: string, emailAddress?: string) {
+  const token = await getValidEmailToken(userId, 'google', emailAddress);
+  if (!token) return [];
+
+  try {
+    const contacts: { name: string, email: string }[] = [];
+    const headers = { 'Authorization': `Bearer ${token}` };
+
+    // Connection: Regular Address Book
+    const resConn = await fetch('https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses&pageSize=1000', { headers });
+    if (resConn.ok) {
+      const data = await resConn.json();
+      (data.connections || []).forEach((p: any) => {
+        const name = p.names?.[0]?.displayName || "";
+        const email = p.emailAddresses?.[0]?.value;
+        if (email) contacts.push({ name: name || email, email });
+      });
+    }
+
+    // OtherContacts: People you've interacted with (Crucial for email history)
+    const resOther = await fetch('https://people.googleapis.com/v1/otherContacts?readMask=names,emailAddresses&pageSize=1000', { headers });
+    if (resOther.ok) {
+      const data = await resOther.json();
+      (data.otherContacts || []).forEach((p: any) => {
+        const name = p.names?.[0]?.displayName || "";
+        const email = p.emailAddresses?.[0]?.value;
+        if (email) contacts.push({ name: name || email, email });
+      });
+    }
+
+    return contacts;
+  } catch (err) {
+    console.error("People API fetch error:", err);
+    return [];
+  }
 }

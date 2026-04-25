@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2, X, Minimize2, Maximize2, Loader2, RefreshCw, Clock, Info, ShieldAlert, Layers, Bookmark, PartyPopper, Users, Zap, Paperclip, Download, FileText } from "lucide-react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { getGoogleEmailAuthUrl, getMicrosoftEmailAuthUrl, fetchEmailsFromApi, sendEmailViaApi, EmailMessage, EmailProvider, downloadAttachmentFromApi } from "../lib/emailSync";
+import { getGoogleEmailAuthUrl, getMicrosoftEmailAuthUrl, fetchEmailsFromApi, sendEmailViaApi, EmailMessage, EmailProvider, downloadAttachmentFromApi, fetchGoogleContacts } from "../lib/emailSync";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 
@@ -82,6 +82,23 @@ export default function EmailClient() {
        alert("Erro ao remover: " + error.message);
     }
   }
+
+  
+  // 3. Fetch Global Contacts
+  useEffect(() => {
+    if (selectedAccount && user && selectedAccount.provider === 'google') {
+      fetchGoogleContacts(user.id, selectedAccount.email).then(newContacts => {
+        if (newContacts.length > 0) {
+          setContacts(prev => {
+            const map = new Map<string, string>();
+            prev.forEach(c => map.set(c.email, c.name));
+            newContacts.forEach(c => map.set(c.email, c.name));
+            return Array.from(map.entries()).map(([email, name]) => ({ name, email }));
+          });
+        }
+      });
+    }
+  }, [selectedAccount, user]);
 
   // 2. Fetch Emails
   useEffect(() => {
@@ -594,11 +611,12 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts, emailAcco
       {isOpen && (
         <motion.div 
           ref={containerRef}
-          initial={{ y: 500, opacity: 0, scale: 0.95 }}
-          animate={{ y: isMinimized ? 400 : 0, opacity: 1, scale: 1 }}
-          exit={{ y: 500, opacity: 0, scale: 0.95 }}
+          initial={{ y: "100%", opacity: 0 }}
+          animate={{ y: isMinimized ? "calc(100% - 80px)" : 0, opacity: 1 }}
+          exit={{ y: "100%", opacity: 0 }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
           className={cn(
-            "fixed bottom-0 right-0 sm:right-10 w-full sm:w-[550px] bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-2xl sm:rounded-t-[40px] z-[100] flex flex-col transition-all duration-500",
+            "fixed bottom-0 right-0 sm:right-10 w-full sm:w-[550px] bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-2xl sm:rounded-t-[40px] z-[100] flex flex-col",
             isMinimized ? "h-[80px]" : "h-[100dvh] sm:h-[650px]"
           )}
         >
