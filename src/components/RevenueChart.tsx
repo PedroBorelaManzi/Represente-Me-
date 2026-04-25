@@ -86,13 +86,13 @@ const RevenueChart = ({ data, loading, currentDate, onPrevMonth, onNextMonth }) 
              <span key={i} className="text-[9px] font-black text-slate-500">{formatShortCurrency(Math.round((MAX_REVENUE/4)*i))}</span>
            ))}
         </div>
-        <div className="flex-1 flex items-stretch justify-around gap-4 px-4 relative">
+        <div className="flex-1 flex items-stretch gap-4 px-4 relative overflow-x-auto custom-scrollbar pb-2">
           {data.map((item, idx) => {
             const val = Number(item.value) || 0;
             const h = (val / MAX_REVENUE) * 100;
             const isSelected = selectedIdx === idx;
             return (
-              <div key={idx} className="flex-1 relative flex flex-col items-center justify-end group h-full pb-10" onMouseEnter={() => setSelectedIdx(idx)} onMouseLeave={() => setSelectedIdx(null)}>
+              <div key={idx} className="min-w-[80px] flex-1 relative flex flex-col items-center justify-end group h-full pb-10" onMouseEnter={() => setSelectedIdx(idx)} onMouseLeave={() => setSelectedIdx(null)}>
                 <motion.div 
                   initial={{ height: 0 }} 
                   animate={{ height: h + '%' }} 

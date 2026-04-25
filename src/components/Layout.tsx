@@ -352,7 +352,7 @@ export default function Layout() {
 
         <div className={cn(
           cn("flex-1", location.pathname.includes('/email') ? "overflow-hidden" : "overflow-y-auto"),
-          (isIntegrationView || location.pathname.includes("/email") || location.pathname.includes("/agenda")) ? "p-0 h-full overflow-hidden" : "p-4 sm:p-6 lg:p-8"
+          (isIntegrationView || location.pathname.includes("/email") || location.pathname.includes("/agenda")) ? "p-0 h-full overflow-y-auto" : "p-4 sm:p-6 lg:p-8"
         )}>
           <Outlet />
         </div>

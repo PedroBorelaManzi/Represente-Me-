@@ -35,6 +35,8 @@ export default function EmpresasPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [newCat, setNewCat] = useState("");
   const [viewDate, setViewDate] = useState(new Date());
+  const [managingCompany, setManagingCompany] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
 
   const formatCurrency = (val: any) => {
     const num = Number(val) || 0;
@@ -124,6 +126,42 @@ export default function EmpresasPage() {
     if (selectedCategory === "all") return currentMonthly;
     return currentMonthly.filter(o => o && o.category && o.category.toLowerCase() === selectedCategory.toLowerCase());
   }, [selectedCategory, monthlyOrders]);
+
+  
+  const handleUpdateCompany = async () => {
+    if (!managingCompany || !editName.trim()) return;
+    try {
+      const updatedCategories = settings.categories.map((c: string) => 
+        c === managingCompany ? editName.trim() : c
+      );
+      await updateSettings({ categories: updatedCategories });
+      
+      // Update orders if they use this category
+      const { error } = await supabase
+        .from("orders")
+        .update({ category: editName.trim() })
+        .eq("user_id", user?.id)
+        .eq("category", managingCompany);
+      
+      toast.success("Empresa atualizada!");
+      setManagingCompany(null);
+      loadOrders();
+    } catch (err) {
+      toast.error("Erro ao atualizar.");
+    }
+  };
+
+  const handleDeleteCompany = async (name: string) => {
+    if (!window.confirm("Deseja realmente excluir a empresa " + name + "?")) return;
+    try {
+      const updatedCategories = settings.categories.filter((c: string) => c !== name);
+      await updateSettings({ categories: updatedCategories });
+      toast.success("Empresa removida.");
+      setManagingCompany(null);
+    } catch (err) {
+      toast.error("Erro ao remover.");
+    }
+  };
 
   const addCategory = async () => {
     if (!newCat.trim()) return;
@@ -255,7 +293,16 @@ export default function EmpresasPage() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-[13px] font-black uppercase tracking-tight truncate">{cat}</h4>
-                    <Settings className="w-4 h-4 opacity-30 group-hover:rotate-45 transition-transform" />
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setManagingCompany(cat); 
+                        setEditName(cat);
+                      }} 
+                      className="p-2 hover:bg-white/20 rounded-full transition-all relative z-20"
+                    >
+                      <Settings className="w-4 h-4 opacity-30 group-hover:rotate-45 transition-transform" />
+                    </button>
                   </div>
                   <p className="text-xl font-black tracking-tighter">{formatCurrency(catTotals[cat] || 0)}</p>
                 </button>
@@ -377,6 +424,29 @@ export default function EmpresasPage() {
              </motion.div>
           </div>
         )}
+      
+        {managingCompany && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setManagingCompany(null)} className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl" />
+             <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white dark:bg-zinc-900 p-10 rounded-[48px] shadow-2xl relative z-10 w-full max-w-sm border border-white/20">
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-xl font-black uppercase text-slate-900 dark:text-zinc-100 tracking-tighter">Gerenciar Empresa</h3>
+                  <button onClick={() => setManagingCompany(null)} className="text-slate-300 hover:text-slate-900 transition-colors"><X/></button>
+                </div>
+                <div className="space-y-6">
+                  <div>
+                    <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Nome da Empresa</label>
+                    <input value={editName} onChange={e => setEditName(e.target.value)} className="w-full p-5 bg-slate-50 dark:bg-zinc-850 rounded-3xl font-black uppercase text-sm outline-none border border-slate-100 dark:border-zinc-800" />
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <button onClick={handleUpdateCompany} className="w-full py-5 bg-emerald-600 text-white rounded-[24px] font-black uppercase tracking-widest text-[10px]">Salvar Alterações</button>
+                    <button onClick={() => handleDeleteCompany(managingCompany)} className="w-full py-5 bg-red-50 text-red-600 hover:bg-red-100 rounded-[24px] font-black uppercase tracking-widest text-[10px]">Excluir Empresa</button>
+                  </div>
+                </div>
+             </motion.div>
+          </div>
+        )}
+  
       </AnimatePresence>
     </div>
   );

@@ -248,7 +248,7 @@ export default function Agenda() {
         </div>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-zinc-950 lg:rounded-none border-none shadow-none overflow-hidden flex flex-col min-h-[600px] relative">
+      <div className="flex-1 bg-white dark:bg-zinc-950 lg:rounded-none border-none shadow-none flex flex-col min-h-[600px] relative">
         <div className="p-8 border-b border-slate-200 dark:border-zinc-700/50 flex items-center justify-between bg-emerald-600/5 dark:bg-emerald-900/10">
           <div className="flex items-center gap-6">
              <div className="flex items-center bg-white dark:bg-zinc-900 p-2 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm">

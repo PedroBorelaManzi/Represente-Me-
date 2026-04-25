@@ -126,44 +126,31 @@ export default function Dashboard() {
     logAudit('ACCESS_DASHBOARD'); loadData(); }, [user, currentDate.getFullYear(), currentDate.getMonth()]);
 
   // Aggregate revenue data for the chart with dynamic categories
+  
   const revenueChartData = useMemo(() => { try {
     if (!clients.length) return [];
     
-    // 1. Start with categories defined in settings
-    const uniqueCategories = new Set(userCategories);
+    // Group by Client Name (Empresa)
+    const companyTotals: Record<string, number> = {};
     
-    // 2. Add all categories that actually have data in clients table
     clients.forEach(client => {
-      if (client.faturamento) {
-        Object.keys(client.faturamento).forEach(cat => {
-          if (cat && cat.trim() && cat.toLowerCase() !== "sad" && cat.toLowerCase() !== "placeholder") {
-            // Case-insensitive check before adding to preserve original casing if possible
-            const exists = Array.from(uniqueCategories).some(c => c.toLowerCase() === cat.toLowerCase());
-            if (!exists) uniqueCategories.add(cat);
-          }
-        });
+      const faturamento = client.faturamento || {};
+      let total = 0;
+      Object.values(faturamento).forEach(val => {
+        total += Number(val) || 0;
+      });
+      
+      if (total > 0) {
+        companyTotals[client.name] = (companyTotals[client.name] || 0) + total;
       }
     });
 
-    const categoriesArray = Array.from(uniqueCategories).sort();
-    const totals: Record<string, number> = {};
-    categoriesArray.forEach(cat => totals[cat] = 0);
+    return Object.entries(companyTotals)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value); // Sort by highest revenue
+    } catch (e) { console.error("Chart Logic Error:", e); return []; }
+  }, [clients]);
 
-    clients.forEach(client => {
-      const faturamento = client.faturamento || {};
-      Object.entries(faturamento).forEach(([cat, val]) => {
-        const matchedCat = categoriesArray.find(c => c.toLowerCase() === cat.toLowerCase());
-        if (matchedCat) {
-          totals[matchedCat] += Number(val) || 0;
-        }
-      });
-    });
-
-    return categoriesArray.map(cat => ({
-      name: cat,
-      value: totals[cat]
-    })).filter(item => item.value > 0); } catch (e) { console.error("Chart Logic Error:", e); return []; }
-  }, [userCategories, clients]);
 
   const handleSync = async () => {
     if (!user) return;
