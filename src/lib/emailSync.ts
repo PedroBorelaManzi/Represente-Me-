@@ -29,7 +29,6 @@ export function getGoogleEmailAuthUrl() {
   const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
   const options = {
     redirect_uri: window.location.origin + '/auth/callback/email',
-    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
     access_type: 'offline',
     response_type: 'code',
     prompt: 'consent',
@@ -110,9 +109,11 @@ export async function fetchEmailsFromApi(
       let q = "";
       if (folder === 'inbox') {
         if (category) {
-          q = `label:INBOX label:${category}`;
+          const catName = category.replace("CATEGORY_", "").toLowerCase();
+          q = `label:INBOX category:${catName}`;
         } else {
-          q = "label:INBOX -label:CATEGORY_SOCIAL -label:CATEGORY_PROMOTIONS -label:CATEGORY_UPDATES -label:CATEGORY_FORUMS";
+          // Gmail's 'category:primary' is the best way to get the Primary tab content
+          q = "label:INBOX category:primary";
         }
       } else if (folder === 'sent') q = "label:SENT";
       else if (folder === 'trash') q = "label:TRASH";
@@ -121,7 +122,7 @@ export async function fetchEmailsFromApi(
       else if (folder === 'starred') q = "label:STARRED";
       else if (folder === 'important') q = "label:IMPORTANT";
       else if (folder === 'snoozed') q = "label:SNOOZED";
-      else q = ""; // Para "Todos os e-mails" ou pastas desconhecidas
+      else q = "";
 
       if (searchQuery) q += ` ${searchQuery}`;
 
