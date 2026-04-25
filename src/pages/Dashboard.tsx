@@ -145,33 +145,47 @@ export default function Dashboard() {
   
   
   
+  
   const revenueChartData = useMemo(() => { try {
     const companyTotals: Record<string, number> = {};
+    const normalizedToOriginal: Record<string, string> = {};
     
-    // 1. Initialize ONLY registered companies from settings to keep it "fixed"
+    // 1. Initialize from userCategories (The "Source of Truth")
     userCategories.forEach(cat => {
       if (cat && cat.trim()) {
-        companyTotals[cat] = 0;
+        const originalName = cat.trim();
+        const normalized = originalName.toLowerCase();
+        companyTotals[normalized] = 0;
+        normalizedToOriginal[normalized] = originalName;
       }
     });
     
-    // 2. Sum revenue from monthly orders only for the registered companies
+    // 2. Sum revenue from monthly orders with normalization
     monthlyOrders.forEach(order => {
-      const companyName = order.category;
-      if (companyName && companyName.trim() && companyTotals.hasOwnProperty(companyName)) {
-        companyTotals[companyName] += (Number(order.value) || 0);
-      } else if (companyName && companyName.trim()) {
-        // If there's an order for a company NOT in settings, show it anyway so data isn't lost
-        companyTotals[companyName] = (companyTotals[companyName] || 0) + (Number(order.value) || 0);
+      const rawName = order.category;
+      if (rawName && rawName.trim()) {
+        const normalized = rawName.trim().toLowerCase();
+        // If it's a known company, sum it. If unknown, add it to the list too.
+        if (companyTotals.hasOwnProperty(normalized)) {
+          companyTotals[normalized] += (Number(order.value) || 0);
+        } else {
+          companyTotals[normalized] = Number(order.value) || 0;
+          normalizedToOriginal[normalized] = rawName.trim();
+        }
       }
     });
 
-    // 3. Return all companies sorted by NAME to keep them "fixed" in position
-    return Object.entries(companyTotals)
-      .map(([name, value]) => ({ name, value }))
+    // 3. Return all companies found in settings PLUS any with revenue
+    // Sorted by NAME (original casing) to keep it "fixed"
+    return Object.keys(companyTotals)
+      .map(norm => ({ 
+        name: normalizedToOriginal[norm], 
+        value: companyTotals[norm] 
+      }))
       .sort((a, b) => a.name.localeCompare(b.name)); 
     } catch (e) { console.error("Chart Logic Error:", e); return []; }
   }, [monthlyOrders, userCategories]);
+
 
 
 
