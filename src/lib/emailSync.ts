@@ -28,7 +28,7 @@ export interface EmailMessage {
 export function getGoogleEmailAuthUrl() {
   const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
   const options = {
-    redirect_uri: window.location.origin + '/auth/callback',
+    redirect_uri: window.location.origin + '/auth/callback/email',
     client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
     access_type: 'offline',
     response_type: 'code',
@@ -49,7 +49,7 @@ export function getMicrosoftEmailAuthUrl() {
   const options = {
     client_id: import.meta.env.VITE_MICROSOFT_CLIENT_ID,
     response_type: 'code',
-    redirect_uri: window.location.origin + '/auth/callback',
+    redirect_uri: window.location.origin + '/auth/callback/email',
     response_mode: 'query',
     scope: 'offline_access user.read mail.readwrite mail.send contacts.read',
   };
