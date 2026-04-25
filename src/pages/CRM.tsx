@@ -248,7 +248,7 @@ export default function CRMPage() {
   };
 
   return (
-    <div className='h-[calc(100vh-2rem)] flex flex-col gap-6'>
+    <div className='h-[calc(100dvh-2rem)] flex flex-col gap-6'>
       {/* Header */}
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
         <div>

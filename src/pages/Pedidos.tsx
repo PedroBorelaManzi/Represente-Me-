@@ -202,7 +202,7 @@ export default function PedidosPage() {
 
 
   return (
-    <div className="h-full flex flex-col gap-8 md:gap-10 pb-20">
+    <div className="h-[100dvh] flex flex-col gap-8 md:gap-10 pb-20">
       {/* Premium Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
@@ -290,8 +290,8 @@ export default function PedidosPage() {
           </div>
         </div>
 
-        {/* List View */}
-        <div className="flex-1 overflow-x-auto custom-scrollbar">
+        {/* List View (Desktop) */}
+        <div className="hidden md:block flex-1 overflow-x-auto custom-scrollbar">
            <div className="min-w-[900px]">
               <div className="grid grid-cols-12 px-10 py-6 border-b border-slate-50 dark:border-zinc-850 bg-slate-50/10 dark:bg-zinc-900 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                  <div className="col-span-4">Cliente / Cliente</div>
@@ -366,6 +366,65 @@ export default function PedidosPage() {
                 )}
               </div>
            </div>
+        </div>
+
+        {/* Card View (Mobile) */}
+        <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-4">
+          {filteredOrders.length === 0 ? (
+            <div className="py-20 text-center flex flex-col items-center justify-center gap-4 grayscale opacity-50">
+               <ShoppingBag className="w-16 h-16 text-slate-200" />
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Nenhum registro encontrado</p>
+            </div>
+          ) : (
+            filteredOrders.map((order, i) => (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                key={order.id} 
+                className="bg-white dark:bg-zinc-900 p-6 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-sm flex flex-col gap-4 active:scale-[0.98] transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-900/40 flex items-center justify-center text-sm font-black text-emerald-600">
+                    {order.client?.name?.charAt(0)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Link to={'/dashboard/clientes/' + order.client_id} className="text-sm font-black text-slate-900 dark:text-zinc-100 uppercase truncate block">
+                      {order.client?.name || "Cliente Desconhecida"}
+                    </Link>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{order.client?.cnpj || "N/A"}</p>
+                  </div>
+                  <button onClick={() => handleDeleteOrder(order)} className="p-3 bg-red-50 dark:bg-red-950/20 text-red-500 rounded-xl">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-zinc-800/50">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none">Categoria</span>
+                    <span className="text-[10px] font-black text-slate-900 dark:text-zinc-100 uppercase">{order.category}</span>
+                  </div>
+                  <div className="text-right flex flex-col gap-1">
+                    <span className="text-[7px] font-black text-emerald-500 uppercase tracking-widest leading-none">Valor Bruto</span>
+                    <span className="text-sm font-black text-slate-900 dark:text-zinc-100 tracking-tighter">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.value)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {new Date(order.created_at).toLocaleDateString('pt-BR')}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Navigation className="w-3 h-3" />
+                    {order.client?.city || "N/A"}
+                  </div>
+                </div>
+              </motion.div>
+            ))
+          )}
         </div>
       </div>
 

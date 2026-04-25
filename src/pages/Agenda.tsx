@@ -269,13 +269,13 @@ export default function Agenda() {
         </div>
 
         <div className="flex-1 flex flex-col overflow-x-auto custom-scrollbar">
-          <div className="grid grid-cols-7 border-b border-slate-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-900 sticky top-0 z-10 min-w-[900px]">
+          <div className="grid grid-cols-7 border-b border-slate-200 dark:border-zinc-700/50 bg-white dark:bg-zinc-900 sticky top-0 z-10 min-w-[1000px]">
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
               <div key={day} className="py-6 text-center text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em]">{day}</div>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 flex-1 min-w-[900px] divide-x divide-y divide-slate-200 dark:divide-zinc-700/50">
+          <div className="grid grid-cols-7 flex-1 min-w-[1000px] divide-x divide-y divide-slate-200 dark:divide-zinc-700/50">
             {daysArray.map((date, i) => {
               const dateIso = date ? formatDateLocal(date) : null;
               const isToday = dateIso === formatDateLocal(new Date());

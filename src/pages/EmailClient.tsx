@@ -255,7 +255,7 @@ export default function EmailClient() {
             Selecione uma conta para gerenciar suas mensagens com o poder do Gmail.
           </p>
           {accounts.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-12 text-left">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 md:mt-12 text-left pb-20">
               {accounts.map(acc => (
                 <button
                   key={acc.id}

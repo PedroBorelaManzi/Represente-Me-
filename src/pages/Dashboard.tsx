@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Plus, ChevronLeft, ChevronRight, Clock, X, Home, Loader2, Users, Globe, RefreshCw } from "lucide-react";
 import { supabase, logAudit } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -179,7 +179,7 @@ export default function Dashboard() {
   const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert("Erro: Client ID do Google não configurado.");
+      alert("Erro: Client ID do Google n�o configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -289,7 +289,7 @@ export default function Dashboard() {
       const startMin = parseInt(start[0]) * 60 + parseInt(start[1] || "0");
       const endMin = parseInt(end[0]) * 60 + parseInt(end[1] || "0");
       const duration = endMin - startMin;
-      return Math.max(duration, 24); // Mínimo de 24px para visibilidade
+      return Math.max(duration, 24); // M�nimo de 24px para visibilidade
     } catch { return 48; }
   };
 
@@ -355,7 +355,7 @@ export default function Dashboard() {
 
           <div className="flex-1 flex flex-col overflow-hidden relative">
             <div className="flex flex-1 min-h-[960px] overflow-auto custom-scrollbar">
-              <div className="flex flex-col flex-1 min-w-[500px]">
+              <div className="flex flex-col flex-1 min-w-[1000px]">
                 <div className="flex bg-slate-100/30 dark:bg-zinc-950/40 border-b border-slate-300 dark:border-zinc-700/50 sticky top-0 z-30 backdrop-blur-md">
                   <div className="w-12 flex-shrink-0 sticky left-0 bg-slate-100 dark:bg-zinc-950/40 z-40 border-r border-slate-200 dark:border-zinc-800" />
                   <div className="flex-1 grid grid-cols-7 divide-x divide-slate-300 dark:divide-zinc-700/50">

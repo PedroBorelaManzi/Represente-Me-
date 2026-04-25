@@ -96,23 +96,23 @@ export default function Layout() {
   const isIntegrationView = location.pathname.includes('/links') && location.search.includes('id=');
 
   return (
-    <div className="h-screen overflow-hidden bg-slate-50 dark:bg-zinc-950 font-sans flex">
+    <div className="h-[100dvh] overflow-hidden bg-slate-50 dark:bg-zinc-950 font-sans flex">
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 transform transition-transform duration-300 ease-in-out md:translate-x-0 md:static flex flex-col h-screen overflow-y-auto overscroll-contain shadow-2xl md:shadow-none",
+        "fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static flex flex-col h-[100dvh] overflow-y-auto overscroll-contain shadow-2xl lg:shadow-none",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex-shrink-0 flex items-center justify-between pt-8 px-6 border-b border-slate-100 dark:border-zinc-900">
           <Link to="/" className="flex items-center justify-center p-2 mb-6">
             <Logo className='h-8 mx-auto' />
           </Link>
-          <button onClick={() => setSidebarOpen(false)} className="md:hidden text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -340,7 +340,7 @@ export default function Layout() {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="md:hidden flex items-center justify-between h-16 px-4 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800">
+        <div className="lg:hidden flex items-center justify-between h-16 px-4 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800">
           <button onClick={() => setSidebarOpen(true)} className="text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
             <Menu className="w-6 h-6" />
           </button>

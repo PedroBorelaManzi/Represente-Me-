@@ -203,12 +203,12 @@ export default function EmpresasPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-4 flex lg:flex-col gap-4 overflow-x-auto lg:overflow-x-visible pb-6 lg:pb-0 snap-x scroll-px-4 custom-scrollbar">
           <div className="flex items-center justify-between px-4">
              <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Seleção Estratégica</h3>
           </div>
           
-          <div className="space-y-3">
+          <div className="flex lg:flex-col gap-3 min-w-max lg:min-w-0">
             <button onClick={() => setIsAddModalOpen(true)} className="w-full text-left p-6 rounded-[32px] bg-emerald-600 text-white shadow-xl flex items-center justify-between group mb-4  transition-all active:scale-95">
               <span className="text-[14px] font-black uppercase tracking-tight">Nova Empresa</span>
               <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform" />
@@ -216,8 +216,7 @@ export default function EmpresasPage() {
 
             <button 
               onClick={() => setSelectedCategory("all")}
-              className={cn(
-                "w-full text-left p-7 rounded-[35px] border transition-all relative group overflow-hidden active:scale-[0.98]",
+              className={cn("min-w-[280px] lg:min-w-0 lg:w-full text-left p-7 rounded-[35px] border transition-all relative group overflow-hidden active:scale-[0.98]",
                 selectedCategory === "all" 
                   ? "bg-slate-900 dark:bg-zinc-800 border-slate-900 text-white shadow-[0_20px_40px_rgba(0,0,0,0.1)]" 
                   : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-emerald-200 shadow-sm"
@@ -233,13 +232,12 @@ export default function EmpresasPage() {
               </div>
             </button>
 
-            <div className="pt-6 border-t border-slate-50 dark:border-zinc-800/50 space-y-3">
+            <div className="flex lg:flex-col gap-3 min-w-max lg:min-w-0 lg:pt-6 lg:border-t border-slate-50 dark:border-zinc-800/50">
               {combinedCategories.map(cat => (
                 <button 
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={cn(
-                    "w-full text-left p-6 rounded-[32px] border transition-all relative group overflow-hidden active:scale-[0.98]",
+                  className={cn("min-w-[240px] lg:min-w-0 lg:w-full text-left p-6 rounded-[32px] border transition-all relative group overflow-hidden active:scale-[0.98]",
                     selectedCategory === cat
                       ? "bg-slate-900 dark:bg-zinc-800 border-slate-900 text-white shadow-xl scale-[1.02]" 
                       : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-emerald-200"
