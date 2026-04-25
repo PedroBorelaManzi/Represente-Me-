@@ -28,6 +28,7 @@ export interface EmailMessage {
 export function getGoogleEmailAuthUrl() {
   const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
   const options = {
+    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
     redirect_uri: window.location.origin + '/auth/callback/email',
     access_type: 'offline',
     response_type: 'code',
