@@ -561,7 +561,7 @@ export default function ClientDetailsPage() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Selecionar Empresa</label>
-                  {!isCreatingCategory ? (
+                                    {!isCreatingCategory ? (
                     <div className="flex gap-2">
                       <select 
                         value={selectedCategory}
@@ -571,7 +571,7 @@ export default function ClientDetailsPage() {
                       >
                         {allAvailableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                       </select>
-                      <button onClick={() => setIsCreatingCategory(true)} className="px-3 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors border border-slate-200">
+                      <button type="button" onClick={() => setIsCreatingCategory(true)} className="px-3 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors border border-slate-200">
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
@@ -582,10 +582,12 @@ export default function ClientDetailsPage() {
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         placeholder="Nome da empresa..."
-                        className="flex-1 px-3 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm bg-white dark:bg-zinc-900"
+                        className="flex-1 px-3 py-2 border border-emerald-500 dark:border-emerald-600 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm bg-white dark:bg-zinc-900 dark:text-zinc-100"
                         autoFocus
+                        onKeyDown={(e) => { if(e.key === 'Enter') { e.preventDefault(); saveNewCategory(); } }}
                       />
-                      <button onClick={saveNewCategory} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-bold text-sm">Salvar</button>
+                      <button type="button" onClick={saveNewCategory} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-bold text-sm">Salvar</button>
+                      <button type="button" onClick={() => { setIsCreatingCategory(false); setNewCategoryName(""); }} className="px-3 py-2 bg-slate-100 text-slate-500 rounded-xl hover:bg-slate-200 transition-colors border border-slate-200"><X className="w-4 h-4" /></button>
                     </div>
                   )}
                 </div>
