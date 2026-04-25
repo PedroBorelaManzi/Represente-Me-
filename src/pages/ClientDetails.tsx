@@ -306,7 +306,7 @@ export default function ClientDetailsPage() {
     if (selectedFile) handleAnalyzePDF();
   }, [selectedFile]);
 
-  const allAvailableCategories = [...new Set([...(settings.categories || []), ...categories])];
+  const allAvailableCategories = settings.categories && settings.categories.length > 0 ? settings.categories : categories;
 
   useEffect(() => {
     if (allAvailableCategories.length > 0 && !selectedCategory) {
