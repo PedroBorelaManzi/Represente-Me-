@@ -306,7 +306,23 @@ export default function ClientDetailsPage() {
     if (selectedFile) handleAnalyzePDF();
   }, [selectedFile]);
 
-  const allAvailableCategories = settings.categories && settings.categories.length > 0 ? settings.categories : categories;
+  
+  const allAvailableCategories = useMemo(() => {
+    const fromSettings = settings.categories || [];
+    const fromOrders = categories || [];
+    const combined = [...fromSettings, ...fromOrders];
+    
+    // Unique case-insensitive
+    const seen = new Set();
+    return combined.filter(cat => {
+      if (!cat) return false;
+      const lower = cat.toLowerCase().trim();
+      if (seen.has(lower)) return false;
+      seen.add(lower);
+      return true;
+    }).sort((a, b) => a.localeCompare(b));
+  }, [settings.categories, categories]);
+
 
   useEffect(() => {
     if (allAvailableCategories.length > 0 && !selectedCategory) {
