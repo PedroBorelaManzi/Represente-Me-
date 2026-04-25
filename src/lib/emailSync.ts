@@ -14,6 +14,7 @@ export interface EmailMessage {
   fullBody?: string;
   to?: string;
   toEmail?: string;
+  fullDate?: string;
 }
 
 // 1. GERAÇÃO DE URLS DE AUTENTICAÇÃO
@@ -125,162 +126,147 @@ async function refreshEmailToken(userId: string, provider: EmailProvider, refres
 
 // Helper to decode Gmail Base64
 function base64Decode(str: string) {
-  return decodeURIComponent(
-    atob(str.replace(/-/g, '+').replace(/_/g, '/'))
-      .split('')
-      .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-      .join('')
-  );
+  try {
+    return decodeURIComponent(
+      atob(str.replace(/-/g, '+').replace(/_/g, '/'))
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+  } catch (e) {
+    try {
+      return atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+    } catch (e2) {
+      return "";
+    }
+  }
 }
 
 // 3. COMUNICAÇÃO REAL (GMAIL)
 export async function fetchEmailsFromApi(userId: string, provider: EmailProvider, folder: string, pageToken?: string, category?: string, emailAddress?: string, searchQuery?: string) {
   const token = await getValidEmailToken(userId, provider, emailAddress);
-  if (!token) return { success: false, error: "Reautenticação necessária" };
+  if (!token) return { success: false, error: "Token não disponível" };
 
   if (provider === 'google') {
     try {
-      const folderToLabel: Record<string, string> = {
-        'inbox': 'INBOX',
-        'sent': 'SENT',
-        'drafts': 'DRAFT',
-        'trash': 'TRASH',
-        'starred': 'STARRED',
-        'important': 'IMPORTANT',
-        'spam': 'SPAM',
-        'snoozed': 'SNOOZED',
-        'all': ''
-      };
-      
       let q = "";
-      const baseLabel = folderToLabel[folder];
-      
-      if (folder === "inbox") {
-        q = "label:inbox";
-        if (category === "CATEGORY_PERSONAL") q += " category:primary";
-        else if (category === "CATEGORY_SOCIAL") q += " category:social";
-        else if (category === "CATEGORY_PROMOTIONS") q += " category:promotions";
-        else if (category === "CATEGORY_UPDATES") q += " category:updates";
-        else if (category) q += " category:" + category.replace("CATEGORY_", "").toLowerCase();
-      } else if (baseLabel) {
-        q = "label:" + baseLabel.toLowerCase();
-      }
+      if (folder === 'inbox') q = "label:INBOX";
+      else if (folder === 'sent') q = "label:SENT";
+      else if (folder === 'trash') q = "label:TRASH";
+      else if (folder === 'spam') q = "label:SPAM";
+      else if (folder === 'drafts') q = "label:DRAFT";
 
-      if (searchQuery) {
-        q = q ? `${q} ${searchQuery}` : searchQuery;
-      }
+      if (category) q += ` label:${category}`;
+      if (searchQuery) q += ` ${searchQuery}`;
 
-      let urlParams = new URLSearchParams();
-      urlParams.append('maxResults', '100');
-      if (q) urlParams.append('q', q);
-      if (pageToken) urlParams.append('pageToken', pageToken);
+      const listUrl = new URL('https://gmail.googleapis.com/gmail/v1/users/me/messages');
+      listUrl.searchParams.append('maxResults', '20');
+      if (q) listUrl.searchParams.append('q', q);
+      if (pageToken) listUrl.searchParams.append('pageToken', pageToken);
 
-      const listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?${urlParams.toString()}&_t=${Date.now()}`;
-      
-      const listRes = await fetch(listUrl, {
-        headers: { 'Authorization': `Bearer ${token}` },
-        cache: 'no-store'
+      const listRes = await fetch(listUrl.toString(), {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      if (!listRes.ok) throw new Error("Erro ao listar mensagens");
+      if (!listRes.ok) return { success: false, error: "Falha na API do Gmail" };
       const listData = await listRes.json();
       
-      if (!listData.messages || listData.messages.length === 0) {
-        return { success: true, emails: [], nextPageToken: null };
-      }
+      const emailDetails = await Promise.all((listData.messages || []).map(async (msg: any) => {
+        try {
+          const detailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const detail = await detailRes.json();
+          const headers = detail.payload.headers;
+          const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || "";
+          
+          const parseEmailHeader = (raw: string) => {
+            if (!raw) return { name: "", email: "" };
+            const match = raw.match(/^(.*?)\s*<([^>]+)>$/);
+            if (match) return { name: match[1].replace(/"/g, "").trim(), email: match[2].trim() };
+            return { name: raw.split("@")[0].replace(/"/g, "").trim(), email: raw.trim() };
+          };
 
-      const emailDetails = await Promise.all(listData.messages.map(async (msg: any) => {
-         try {
-           const detailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full&_t=${Date.now()}`, {
-             headers: { 'Authorization': `Bearer ${token}` },
-             cache: 'no-store'
-           });
-           const detail = await detailRes.json();
-           
-           const headers = detail.payload.headers;
-           const getHeader = (name: string) => headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())?.value || "";
-           
-           const parseEmailHeader = (raw: string) => {
-             const match = raw.match(/^(.*?)\s*<([^>]+)>$/);
-             if (match) return { name: match[1].replace(/"/g, "").trim(), email: match[2].trim() };
-             return { name: raw.split("@")[0].replace(/"/g, "").trim(), email: raw.trim() };
-           };
+          const fromInfo = parseEmailHeader(getHeader("From"));
+          const toInfo = parseEmailHeader(getHeader("To"));
+          const dateStr = getHeader("Date");
+          const date = dateStr ? new Date(dateStr) : new Date();
+          const formattedTime = date.toLocaleDateString() === new Date().toLocaleDateString() 
+             ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+             : date.toLocaleDateString([], { day: '2-digit', month: 'short' });
 
-           const fromInfo = parseEmailHeader(getHeader("From"));
-           const toInfo = parseEmailHeader(getHeader("To"));
+          let body = "";
+          let isHtml = false;
+          const attachments: any[] = [];
+          const cids: Record<string, string> = {};
 
-           const dateStr = getHeader("Date");
-           const date = dateStr ? new Date(dateStr) : new Date();
-           const formattedTime = date.toLocaleDateString() === new Date().toLocaleDateString() 
-              ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : date.toLocaleDateString([], { day: '2-digit', month: 'short' });
+          const processParts = (parts: any[]) => {
+            parts.forEach((part: any) => {
+              const partMime = part.mimeType?.toLowerCase();
+              
+              if (partMime === "text/plain" && !body) {
+                if (part.body?.data) {
+                  body = base64Decode(part.body.data);
+                  isHtml = false;
+                }
+              } else if (partMime === "text/html") {
+                if (part.body?.data) {
+                  body = base64Decode(part.body.data);
+                  isHtml = true;
+                }
+              } else if (part.parts) {
+                processParts(part.parts);
+              }
+              
+              if (part.filename && part.body?.attachmentId) {
+                attachments.push({
+                  id: part.body.attachmentId,
+                  filename: part.filename,
+                  mimeType: part.mimeType,
+                  size: part.body.size
+                });
+                
+                const cidHeader = part.headers?.find((h: any) => h.name.toLowerCase() === 'content-id')?.value;
+                if (cidHeader) {
+                  const cid = cidHeader.replace(/[<>]/g, "");
+                  if (part.body.data) {
+                    cids[cid] = `data:${part.mimeType};base64,${part.body.data}`;
+                  }
+                }
+              }
+            });
+          };
 
-                      // Extrair corpo completo e anexos
-           let body = "";
-           let isHtml = false;
-           const attachments: any[] = [];
-           const cids: Record<string, string> = {};
+          if (detail.payload.body?.data) {
+            body = base64Decode(detail.payload.body.data);
+            isHtml = detail.payload.mimeType === "text/html";
+          } else if (detail.payload.parts) {
+            processParts(detail.payload.parts);
+          }
+          
+          if (isHtml && body) {
+            for (const cid in cids) {
+              body = body.replace(new RegExp('cid:' + cid, 'g'), cids[cid]);
+            }
+          }
 
-           const processParts = (parts: any[]) => {
-             parts.forEach((part: any) => {
-               if (part.mimeType === "text/plain" && !body) {
-                 if (part.body?.data) body = base64Decode(part.body.data);
-                 isHtml = false;
-               } else if (part.mimeType === "text/html") {
-                 if (part.body?.data) {
-                   body = base64Decode(part.body.data);
-                   isHtml = true;
-                 }
-               } else if (part.parts) {
-                 processParts(part.parts);
-               } else if (part.filename && part.body?.attachmentId) {
-                 attachments.push({
-                   id: part.body.attachmentId,
-                   filename: part.filename,
-                   mimeType: part.mimeType,
-                   size: part.body.size
-                 });
-                 
-                 const cidHeader = part.headers?.find((h: any) => h.name.toLowerCase() === 'content-id')?.value;
-                 if (cidHeader) {
-                   const cid = cidHeader.replace(/[<>]/g, "");
-                   if (part.body.data) {
-                     cids[cid] = `data:${part.mimeType};base64,${part.body.data}`;
-                   }
-                 }
-               }
-             });
-           };
-
-           if (detail.payload.body?.data) {
-             body = base64Decode(detail.payload.body.data);
-             isHtml = detail.payload.mimeType === "text/html";
-           } else if (detail.payload.parts) {
-             processParts(detail.payload.parts);
-           }
-           
-           if (isHtml && body) {
-             for (const cid in cids) {
-               body = body.replace(new RegExp('cid:' + cid, 'g'), cids[cid]);
-             }
-           }
-
-           return {
-             id: detail.id,
-             from: fromInfo.name || fromInfo.email,
-             fromEmail: fromInfo.email,
-             to: toInfo.name || toInfo.email,
-             toEmail: toInfo.email,
-             subject: getHeader("Subject") || "(Sem Assunto)",
-             preview: detail.snippet || "",
-             time: formattedTime,
-             unread: detail.labelIds?.includes("UNREAD") || false,
-             folder: folder,
-             fullBody: body || detail.snippet || "",
-              isHtml: isHtml,
-              attachments: attachments
-           };
-         } catch (e) { return null; }
+          return {
+            id: detail.id,
+            from: fromInfo.name || fromInfo.email,
+            fromEmail: fromInfo.email,
+            to: toInfo.name || toInfo.email,
+            toEmail: toInfo.email,
+            subject: getHeader("Subject") || "(Sem Assunto)",
+            preview: detail.snippet || "",
+            time: formattedTime,
+            fullDate: dateStr || formattedTime,
+            unread: detail.labelIds?.includes("UNREAD") || false,
+            folder: folder,
+            fullBody: body || detail.snippet || "",
+            isHtml: isHtml,
+            attachments: attachments
+          };
+        } catch (e) { return null; }
       }));
 
       return { success: true, emails: emailDetails.filter(e => e !== null), nextPageToken: listData.nextPageToken || null };
@@ -300,11 +286,10 @@ export async function sendEmailViaApi(userId: string, provider: EmailProvider, t
       const mime = [
         `To: ${to}`,
         `Subject: ${subject || '(Sem Assunto)'}`,
-        'Content-Type: text/plain; charset="UTF-8"',
+        'Content-Type: text/html; charset="UTF-8"',
         'MIME-Version: 1.0',
-        'Content-Transfer-Encoding: 8bit',
         '',
-        text
+        text.replace(/\n/g, '<br>')
       ].join('\r\n');
 
       const encoder = new TextEncoder();
@@ -330,21 +315,15 @@ export async function sendEmailViaApi(userId: string, provider: EmailProvider, t
 
       if (!response.ok) {
         const err = await response.json();
-        const msg = err.error?.message || "Erro desconhecido na API";
-        if (msg.includes("insufficient permissions") || response.status === 403) {
-          return { success: false, error: "Permissões insuficientes. Clique em 'Nova Conta Gmail' para autorizar o envio." };
-        }
-        return { success: false, error: msg };
+        return { success: false, error: err.error?.message || "Erro desconhecido na API" };
       }
-      
       return { success: true };
     } catch (err: any) {
-      return { success: false, error: err.message || "Erro de conexão ao enviar." };
+      return { success: false, error: err.message };
     }
   }
   return { success: false, error: "Provedor não suportado." };
 }
-
 
 export async function downloadAttachmentFromApi(userId: string, provider: EmailProvider, messageId: string, attachmentId: string, emailAddress?: string) {
   const token = await getValidEmailToken(userId, provider, emailAddress);
@@ -358,87 +337,50 @@ export async function downloadAttachmentFromApi(userId: string, provider: EmailP
       
       if (!res.ok) throw new Error("Erro ao baixar anexo");
       const data = await res.json();
-      
-      // Gmail returns attachment data in base64url format
       return { success: true, data: data.data };
     } catch (err: any) {
       return { success: false, error: err.message };
     }
   }
-
   return { success: false, error: "Provedor não suportado" };
 }
 
-
 export async function fetchGoogleContacts(userId: string, emailAddress?: string) {
   const token = await getValidEmailToken(userId, 'google', emailAddress);
-  if (!token) {
-    console.error("fetchGoogleContacts: No token available");
-    return [];
-  }
+  if (!token) return [];
 
   try {
     const contactsMap = new Map<string, string>();
     const headers = { 'Authorization': `Bearer ${token}` };
 
-    console.log("fetchGoogleContacts: Starting fetch from People API...");
-
-    // 1. Connection: Regular Address Book
+    // 1. Connections
     try {
       const resConn = await fetch('https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses&pageSize=1000', { headers });
       if (resConn.ok) {
         const data = await resConn.json();
-        console.log(`fetchGoogleContacts: Found ${data.connections?.length || 0} connections`);
         (data.connections || []).forEach((p: any) => {
           const name = p.names?.[0]?.displayName;
           const email = p.emailAddresses?.[0]?.value;
           if (email) contactsMap.set(email, name || email);
         });
-      } else {
-        const err = await resConn.json();
-        console.warn("fetchGoogleContacts: Connections API failed", err);
       }
-    } catch (e) {
-      console.error("fetchGoogleContacts: Connections fetch error", e);
-    }
+    } catch (e) {}
 
-    // 2. OtherContacts: People interacted with
+    // 2. OtherContacts
     try {
       const resOther = await fetch('https://people.googleapis.com/v1/otherContacts?readMask=names,emailAddresses&pageSize=1000', { headers });
       if (resOther.ok) {
         const data = await resOther.json();
-        console.log(`fetchGoogleContacts: Found ${data.otherContacts?.length || 0} other contacts`);
         (data.otherContacts || []).forEach((p: any) => {
           const name = p.names?.[0]?.displayName;
           const email = p.emailAddresses?.[0]?.value;
           if (email) contactsMap.set(email, name || email);
         });
-      } else {
-        const err = await resOther.json();
-        console.warn("fetchGoogleContacts: OtherContacts API failed", err);
       }
-    } catch (e) {
-      console.error("fetchGoogleContacts: OtherContacts fetch error", e);
-    }
+    } catch (e) {}
 
-    // 3. Fallback: Extract from recent messages if People API gave nothing
-    if (contactsMap.size === 0) {
-      console.log("fetchGoogleContacts: People API returned nothing, falling back to message headers...");
-      const resMsgs = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=100', { headers });
-      if (resMsgs.ok) {
-        const data = await resMsgs.json();
-        const messages = data.messages || [];
-        // Just getting IDs, would need individual fetches which is slow, 
-        // so we rely on the main fetchEmails logic to populate as they browse if People API fails.
-      }
-    }
-
-    const finalContacts = Array.from(contactsMap.entries()).map(([email, name]) => ({ name, email }));
-    console.log(`fetchGoogleContacts: Returning ${finalContacts.length} total contacts`);
-    return finalContacts;
+    return Array.from(contactsMap.entries()).map(([email, name]) => ({ name, email }));
   } catch (err) {
-    console.error("fetchGoogleContacts: Fatal error", err);
     return [];
   }
 }
-

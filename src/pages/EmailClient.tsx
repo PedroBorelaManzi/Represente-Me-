@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2, X, Minimize2, Maximize2, Loader2, RefreshCw, Clock, Info, ShieldAlert, Layers, Bookmark, PartyPopper, Users, Zap, Paperclip, Download, FileText } from "lucide-react";
+import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2, X, Minimize2, Maximize2, Loader2, RefreshCw, Clock, Info, ShieldAlert, Layers, Bookmark, PartyPopper, Users, Zap, Paperclip, Download, FileText, ChevronDown } from "lucide-react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { getGoogleEmailAuthUrl, getMicrosoftEmailAuthUrl, fetchEmailsFromApi, sendEmailViaApi, EmailMessage, EmailProvider, downloadAttachmentFromApi, fetchGoogleContacts } from "../lib/emailSync";
@@ -43,6 +43,9 @@ export default function EmailClient() {
 
   // Compose State
   const [isComposing, setIsComposing] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [replyTo, setReplyTo] = useState("");
+  const [replySubject, setReplySubject] = useState("");
 
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
@@ -318,7 +321,14 @@ export default function EmailClient() {
           <button onClick={() => { setEmails([]); fetchEmails(); }} className="p-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[20px] text-slate-500 hover:text-emerald-600 transition-all hover:border-emerald-500 shadow-sm" title="Sincronizar">
             <RefreshCw className={cn("w-5 h-5", isLoading && "animate-spin")} />
           </button>
-          <button onClick={() => setIsComposing(true)} className="px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[20px] font-black uppercase text-[10px] tracking-widest transition-all shadow-md flex items-center justify-center gap-2">
+          <button 
+            onClick={() => {
+              setReplyTo("");
+              setReplySubject("");
+              setIsComposing(true);
+            }} 
+            className="px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[20px] font-black uppercase text-[10px] tracking-widest transition-all shadow-md flex items-center justify-center gap-2"
+          >
             <Edit className="w-4 h-4" /> Escrever
           </button>
         </div>
@@ -420,7 +430,7 @@ export default function EmailClient() {
                   {emails.map(email => (
                     <button 
                       key={email.id}
-                      onClick={() => setSelectedEmail(email)}
+                      onClick={() => { setSelectedEmail(email); setShowDetails(false); }}
                       className={cn(
                         "w-full text-left p-5 border-b border-slate-50 dark:border-zinc-800/50 hover:bg-slate-50 dark:hover:bg-zinc-800/20 transition-colors flex gap-4 relative",
                         selectedEmail?.id === email.id && "bg-emerald-50/50 dark:bg-emerald-500/5 border-l-4 border-l-emerald-500"
@@ -466,7 +476,16 @@ export default function EmailClient() {
                 <div className="flex items-center gap-4">
                    <button onClick={() => setSelectedEmail(null)} className="md:hidden p-2.5 bg-slate-100 rounded-full"><ChevronLeft className="w-5 h-5"/></button>
                    <div className="flex gap-2">
-                     <button className="p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-500 transition-colors border border-slate-100 dark:border-zinc-800"><Reply className="w-4 h-4" /></button>
+                     <button 
+                       onClick={() => {
+                         setReplyTo(selectedEmail.fromEmail || "");
+                         setReplySubject(`Re: ${selectedEmail.subject}`);
+                         setIsComposing(true);
+                       }}
+                       className="p-3 rounded-2xl hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-slate-500 hover:text-emerald-600 transition-colors border border-slate-100 dark:border-zinc-800 flex items-center gap-2 font-black uppercase text-[10px] tracking-widest"
+                     >
+                       <Reply className="w-4 h-4" /> Responder
+                     </button>
                      <button className="p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-500 transition-colors border border-slate-100 dark:border-zinc-800"><Forward className="w-4 h-4" /></button>
                    </div>
                 </div>
@@ -476,18 +495,37 @@ export default function EmailClient() {
              <div className="flex-1 overflow-y-auto p-4 sm:p-14 custom-scrollbar">
                 <div className="max-w-4xl mx-auto">
                   <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-100 mb-10 leading-tight">{selectedEmail.subject}</h2>
-                  <div className="flex items-center justify-between mb-12">
+                  
+                  <div className="flex items-center justify-between mb-4">
                      <div className="flex items-center gap-5">
                         <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center font-black text-emerald-600 text-xl border-2 border-white dark:border-zinc-800 shadow-sm">
                           {selectedEmail.from.charAt(0).toUpperCase()}
                         </div>
-                        <div>
-                          <p className="font-black text-slate-900 dark:text-zinc-100 text-base">{selectedEmail.from}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-black text-slate-900 dark:text-zinc-100 text-base">{selectedEmail.from}</p>
+                            <button 
+                              onClick={() => setShowDetails(!showDetails)}
+                              className="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                            >
+                              <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", showDetails && "rotate-180")} />
+                            </button>
+                          </div>
                           <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-1">Para: {selectedEmail.to || 'mim'}</p>
                         </div>
                      </div>
                      <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-5 py-2.5 rounded-full uppercase tracking-widest">{selectedEmail.time}</span>
                   </div>
+
+                  {showDetails && (
+                    <div className="mb-8 p-6 bg-slate-50 dark:bg-zinc-950 rounded-[24px] border border-slate-100 dark:border-zinc-800 text-[11px] font-bold space-y-2 animate-in fade-in slide-in-from-top-2">
+                      <div className="flex gap-2"><span className="text-slate-400 uppercase w-16">de:</span> <span className="text-slate-700 dark:text-zinc-300">{selectedEmail.from} &lt;{selectedEmail.fromEmail}&gt;</span></div>
+                      <div className="flex gap-2"><span className="text-slate-400 uppercase w-16">para:</span> <span className="text-slate-700 dark:text-zinc-300">{selectedEmail.to} &lt;{selectedEmail.toEmail}&gt;</span></div>
+                      <div className="flex gap-2"><span className="text-slate-400 uppercase w-16">data:</span> <span className="text-slate-700 dark:text-zinc-300">{(selectedEmail as any).fullDate || selectedEmail.time}</span></div>
+                      <div className="flex gap-2"><span className="text-slate-400 uppercase w-16">assunto:</span> <span className="text-slate-700 dark:text-zinc-300">{selectedEmail.subject}</span></div>
+                    </div>
+                  )}
+
                   <div className="space-y-8">
                     {selectedEmail.isHtml ? (
                       <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden border border-slate-100 dark:border-zinc-800 min-h-[400px]">
@@ -499,7 +537,7 @@ export default function EmailClient() {
                           onLoad={(e) => {
                              const iframe = e.currentTarget;
                              if (iframe.contentWindow) {
-                               iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px';
+                                iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px';
                              }
                           }}
                         />
@@ -560,16 +598,45 @@ export default function EmailClient() {
         userId={user?.id || ""} 
         provider={selectedAccount?.provider} emailAccount={selectedAccount?.email}
         contacts={contacts}
+        initialTo={replyTo}
+        initialSubject={replySubject}
       />
     </div>
   );
 }
 
-function ComposeBalloon({ isOpen, onClose, userId, provider, contacts, emailAccount }: { isOpen: boolean, onClose: () => void, userId: string, provider?: EmailProvider, contacts: Contact[], emailAccount?: string }) {
-  const [to, setTo] = useState("");
-  const [subject, setSubject] = useState("");
+function ComposeBalloon({ 
+  isOpen, 
+  onClose, 
+  userId, 
+  provider, 
+  contacts, 
+  emailAccount,
+  initialTo = "",
+  initialSubject = ""
+}: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  userId: string, 
+  provider?: EmailProvider, 
+  contacts: Contact[], 
+  emailAccount?: string,
+  initialTo?: string,
+  initialSubject?: string
+}) {
+  const [to, setTo] = useState(initialTo);
+  const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState("");
   const [isSending, setIsSending] = useState(false);
+  
+  // Update state when initial values change (e.g. clicking reply)
+  useEffect(() => {
+    if (isOpen) {
+      setTo(initialTo);
+      setSubject(initialSubject);
+    }
+  }, [isOpen, initialTo, initialSubject]);
+
   const [isMinimized, setIsMinimized] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
@@ -596,7 +663,6 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts, emailAcco
 
   async function handleSend() {
     if (!to) { alert("Por favor, preencha o destinatário."); return; }
-    // Assunto opcional conforme solicitado
     if (!body) { alert("Por favor, preencha a mensagem."); return; }
     if (!provider) { alert("Conta de e-mail não disponível."); return; }
 
@@ -670,7 +736,7 @@ function ComposeBalloon({ isOpen, onClose, userId, provider, contacts, emailAcco
                         <button 
                           key={contact.email}
                           onClick={() => { setTo(contact.email); setShowSuggestions(false); }}
-                          className="w-full text-left px-6 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors group"
+                          className="w-full text-left px-6 py-4 flex items-center gap-4 hover:bg-slate-50 dark:hover:bg-zinc-900 transition-colors group"
                         >
                           <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm uppercase shadow-sm", getAvatarColor(contact.name))}>
                             {contact.name.charAt(0)}
