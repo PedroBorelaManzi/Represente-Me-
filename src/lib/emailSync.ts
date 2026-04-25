@@ -442,4 +442,3 @@ export async function fetchGoogleContacts(userId: string, emailAddress?: string)
   }
 }
 
-}
