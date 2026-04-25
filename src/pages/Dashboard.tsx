@@ -144,27 +144,35 @@ export default function Dashboard() {
   
   
   
+  
   const revenueChartData = useMemo(() => { try {
     const companyTotals: Record<string, number> = {};
     
-    // 1. Initialize all registered companies
+    // 1. Initialize ONLY registered companies from settings to keep it "fixed"
     userCategories.forEach(cat => {
-      if (cat && cat.trim()) companyTotals[cat] = 0;
+      if (cat && cat.trim()) {
+        companyTotals[cat] = 0;
+      }
     });
     
-    // 2. Sum revenue from monthly orders
+    // 2. Sum revenue from monthly orders only for the registered companies
     monthlyOrders.forEach(order => {
       const companyName = order.category;
-      if (companyName && companyName.trim()) {
+      if (companyName && companyName.trim() && companyTotals.hasOwnProperty(companyName)) {
+        companyTotals[companyName] += (Number(order.value) || 0);
+      } else if (companyName && companyName.trim()) {
+        // If there's an order for a company NOT in settings, show it anyway so data isn't lost
         companyTotals[companyName] = (companyTotals[companyName] || 0) + (Number(order.value) || 0);
       }
     });
 
+    // 3. Return all companies sorted by NAME to keep them "fixed" in position
     return Object.entries(companyTotals)
       .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value); 
+      .sort((a, b) => a.name.localeCompare(b.name)); 
     } catch (e) { console.error("Chart Logic Error:", e); return []; }
   }, [monthlyOrders, userCategories]);
+
 
 
 
