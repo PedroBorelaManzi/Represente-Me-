@@ -127,29 +127,30 @@ export default function Dashboard() {
 
   // Aggregate revenue data for the chart with dynamic categories
   
+  
   const revenueChartData = useMemo(() => { try {
     if (!clients.length) return [];
     
-    // Group by Client Name (Empresa)
     const companyTotals: Record<string, number> = {};
     
     clients.forEach(client => {
       const faturamento = client.faturamento || {};
-      let total = 0;
-      Object.values(faturamento).forEach(val => {
-        total += Number(val) || 0;
+      Object.entries(faturamento).forEach(([companyName, value]) => {
+        // Ignore placeholders or empty names
+        if (companyName && companyName.trim() && companyName.toLowerCase() !== 'sad' && companyName.toLowerCase() !== 'placeholder') {
+          // Normalize to preserve casing from settings if possible, but simple summation works best here
+          companyTotals[companyName] = (companyTotals[companyName] || 0) + (Number(value) || 0);
+        }
       });
-      
-      if (total > 0) {
-        companyTotals[client.name] = (companyTotals[client.name] || 0) + total;
-      }
     });
 
     return Object.entries(companyTotals)
       .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value); // Sort by highest revenue
+      .filter(item => item.value > 0)
+      .sort((a, b) => b.value - a.value); 
     } catch (e) { console.error("Chart Logic Error:", e); return []; }
   }, [clients]);
+
 
 
   const handleSync = async () => {
