@@ -43,7 +43,7 @@ export default function Layout() {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
-
+    <div className="flex min-h-screen bg-slate-50 dark:bg-zinc-950 transition-colors duration-300"> 
   useEffect(() => {
     if (user) loadLinks();
   }, [user]);
