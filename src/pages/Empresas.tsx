@@ -310,7 +310,7 @@ export default function EmpresasPage() {
                     selectedCategory === cat
                       ? "bg-slate-900 dark:bg-zinc-800 border-slate-900 text-white shadow-xl scale-[1.02]" 
                       : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-emerald-200"
-                  )
+                  )}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-[11px] md:text-[13px] font-black uppercase tracking-tight truncate max-w-[120px] md:max-w-none">{cat}</h4>
