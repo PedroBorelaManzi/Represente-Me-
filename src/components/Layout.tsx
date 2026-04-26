@@ -109,7 +109,7 @@ export default function Layout() {
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex-shrink-0 flex items-center justify-between pt-8 px-6 border-b border-slate-100 dark:border-zinc-900">
-          <Link to="/" className="flex items-center justify-center p-2 mb-6">
+          <Link to="/dashboard" onClick={() => setSidebarOpen(false)} className="flex items-center justify-center p-2 mb-6">
             <Logo className='h-8 mx-auto' />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
@@ -157,6 +157,7 @@ export default function Layout() {
                         >
                           <Link
                             to="/dashboard/links"
+                            onClick={() => setSidebarOpen(false)}
                             className="flex items-center px-3 py-1.5 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-emerald-600 rounded-lg hover:bg-slate-50 dark:bg-zinc-950 transition-colors"
                           >
                              Ver Todos
@@ -165,6 +166,7 @@ export default function Layout() {
                             <Link
                               key={link.id}
                               to={`/dashboard/links?id=${link.id}`}
+                              onClick={() => setSidebarOpen(false)}
                               className="flex items-center gap-2 px-3 py-1.5 text-xs text-slate-600 dark:text-zinc-400 hover:text-emerald-600 rounded-lg hover:bg-slate-50 dark:bg-zinc-950 transition-colors"
                             >
                               <div className={`w-1.5 h-1.5 rounded-full ${link.color || 'bg-slate-400'}`} />
@@ -182,6 +184,7 @@ export default function Layout() {
                 <Link
                   key={item.name}
                   to={item.href}
+                  onClick={() => setSidebarOpen(false)}
                   className={cn(
                     "group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all",
                     isActive
@@ -345,7 +348,7 @@ export default function Layout() {
             <button onClick={() => setSidebarOpen(true)} className="text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300 transition-colors p-1">
               <Menu className="w-6 h-6" />
             </button>
-            <span className="font-black text-base uppercase tracking-tighter text-slate-900 dark:text-zinc-100">Represente-se</span>
+            <Link to="/dashboard" className="font-black text-base uppercase tracking-tighter text-slate-900 dark:text-zinc-100">Represente-se</Link>
           </div>
 
           <div className="flex items-center gap-3">
