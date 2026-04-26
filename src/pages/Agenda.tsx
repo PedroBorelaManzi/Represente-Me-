@@ -39,6 +39,10 @@ const formatDateLocal = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const isSameDay = (d1: Date, d2String: string) => {
+  return formatDateLocal(d1) === d2String;
+};
+
 export default function Agenda() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
