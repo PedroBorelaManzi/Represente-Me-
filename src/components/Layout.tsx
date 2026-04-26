@@ -341,12 +341,28 @@ export default function Layout() {
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <div className="lg:hidden flex items-center justify-between h-16 px-4 bg-white dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800">
-          <button onClick={() => setSidebarOpen(true)} className="text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300">
-            <Menu className="w-6 h-6" />
-          </button>
-          <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-zinc-100">Represente-se</span>
-          <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
-             {user?.email?.charAt(0).toUpperCase() || "U"}
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:text-zinc-300 transition-colors p-1">
+              <Menu className="w-6 h-6" />
+            </button>
+            <span className="font-black text-base uppercase tracking-tighter text-slate-900 dark:text-zinc-100">Represente-se</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={async () => {
+                const newTheme = settings.theme === 'dark' ? 'light' : 'dark';
+                await updateSettings({ theme: newTheme });
+              }}
+              className="p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700 active:scale-95 transition-all shadow-sm"
+              title={settings.theme === 'dark' ? "Ativar Modo Claro" : "Ativar Modo Escuro"}
+            >
+              {settings.theme === 'dark' ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-emerald-600" />}
+            </button>
+            
+            <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-bold text-sm border border-emerald-200 dark:border-emerald-500/30">
+              {user?.email?.charAt(0).toUpperCase() || "U"}
+            </div>
           </div>
         </div>
 
@@ -476,4 +492,3 @@ export default function Layout() {
     </div>
   );
 }
-
