@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { 
   LayoutDashboard, 
@@ -52,6 +52,7 @@ export default function Layout() {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
   useEffect(() => {
     if (user) loadLinks();
   }, [user]);
@@ -98,7 +99,7 @@ export default function Layout() {
         const cFiles = filesByClient[client.id] || [];
         const lastDates: any = {};
         cFiles.forEach((f: any) => {
-          const parts = f.file_name.split("___");
+          const parts = f.file_name?.split("___") || [];
           if (parts.length > 1) {
             const cat = parts[0];
             const date = new Date(f.created_at).getTime();
@@ -238,12 +239,12 @@ export default function Layout() {
               
               <div>
                 <button onClick={() => setAcompAlertaOpen(!acompAlertaOpen)} className='group flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-amber-600 dark:text-amber-500 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all'>
-                  <div className='flex items-center'><div className='w-2 h-2 rounded-full bg-amber-500 mr-3' />Alerta ({acompData.Alerta.length})</div>
+                  <div className='flex items-center'><div className='w-2 h-2 rounded-full bg-amber-500 mr-3' />Alerta ({acompData.Alerta?.length || 0})</div>
                   {acompAlertaOpen ? <ChevronUp className='w-3 h-3' /> : <ChevronDown className='w-3 h-3' />}
                 </button>
                 <AnimatePresence>{acompAlertaOpen && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className='overflow-hidden pl-8 pr-2 space-y-1 mt-1'>
-                    {acompData.Alerta.map((item: any, idx: number) => (
+                    {(acompData.Alerta || []).map((item: any, idx: number) => (
                       <Link key={idx} to={`/dashboard/clientes/${item.id}`} className='block text-[10px] py-1 text-slate-500 hover:text-amber-600 truncate'>
                         <span className='font-black uppercase opacity-60 mr-1'>{item.category}:</span> {item.name}
                       </Link>
@@ -254,12 +255,12 @@ export default function Layout() {
 
               <div>
                 <button onClick={() => setAcompCriticoOpen(!acompCriticoOpen)} className='group flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-red-600 dark:text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-all'>
-                  <div className='flex items-center'><div className='w-2 h-2 rounded-full bg-red-600 mr-3' />Crítico ({acompData.Critico.length})</div>
+                  <div className='flex items-center'><div className='w-2 h-2 rounded-full bg-red-600 mr-3' />Crítico ({acompData.Critico?.length || 0})</div>
                   {acompCriticoOpen ? <ChevronUp className='w-3 h-3' /> : <ChevronDown className='w-3 h-3' />}
                 </button>
                 <AnimatePresence>{acompCriticoOpen && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className='overflow-hidden pl-8 pr-2 space-y-1 mt-1'>
-                    {acompData.Critico.map((item: any, idx: number) => (
+                    {(acompData.Critico || []).map((item: any, idx: number) => (
                       <Link key={idx} to={`/dashboard/clientes/${item.id}`} className='block text-[10px] py-1 text-slate-500 hover:text-red-600 truncate'>
                         <span className='font-black uppercase opacity-60 mr-1'>{item.category}:</span> {item.name}
                       </Link>
@@ -270,12 +271,12 @@ export default function Layout() {
 
               <div>
                 <button onClick={() => setAcompPerdaOpen(!acompPerdaOpen)} className='group flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-purple-600 dark:text-purple-500 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all'>
-                  <div className='flex items-center'><div className='w-2 h-2 rounded-full bg-purple-600 mr-3' />Perda ({acompData.Perda.length})</div>
+                  <div className='flex items-center'><div className='w-2 h-2 rounded-full bg-purple-600 mr-3' />Perda ({acompData.Perda?.length || 0})</div>
                   {acompPerdaOpen ? <ChevronUp className='w-3 h-3' /> : <ChevronDown className='w-3 h-3' />}
                 </button>
                 <AnimatePresence>{acompPerdaOpen && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className='overflow-hidden pl-8 pr-2 space-y-1 mt-1'>
-                    {acompData.Perda.map((item: any, idx: number) => (
+                    {(acompData.Perda || []).map((item: any, idx: number) => (
                       <Link key={idx} to={`/dashboard/clientes/${item.id}`} className='block text-[10px] py-1 text-slate-500 hover:text-purple-600 truncate'>
                         <span className='font-black uppercase opacity-60 mr-1'>{item.category}:</span> {item.name}
                       </Link>
@@ -386,14 +387,3 @@ export default function Layout() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-

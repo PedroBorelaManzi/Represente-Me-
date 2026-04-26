@@ -28,14 +28,13 @@ export const Logo: React.FC<LogoProps> = ({
     <div className={cn("flex items-center gap-3 group shrink-0", className)}>
       <div className={cn("relative flex items-center justify-center shrink-0 overflow-hidden", sizeMap[size])}>
         {/* 
-          Emerald 3D Logo on Pure White Background with Multiply blend mode.
-          This technique makes the white background 100% transparent on light-colored pages.
-          In dark mode, we use screen blend mode or heavy brightness to overcome the dark background.
+          Emerald 3D Logo with enhanced visibility for Dark Mode.
+          Added more brightness, contrast and a stronger emerald glow.
         */}
         <img 
           src={logoUrl}
           alt="Represente-se"
-          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110 mix-blend-multiply dark:mix-blend-normal dark:brightness-[3.5] dark:contrast-[1.2] dark:drop-shadow-[0_0_30px_rgba(16,185,129,0.9)]"
+          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110 mix-blend-multiply dark:mix-blend-normal dark:brightness-[3.5] dark:contrast-[1.2] dark:drop-shadow-[0_0_25px_rgba(16,185,129,0.9)]"
         />
       </div>
       
