@@ -201,7 +201,7 @@ export default function EmpresasPage() {
 
 
   return (
-    <div className="h-full flex flex-col gap-6 md:gap-10 pb-20 overflow-x-hidden">
+    <div className="flex flex-col gap-6 md:gap-10 pb-20 overflow-x-hidden">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 md:gap-4 uppercase tracking-tight">
