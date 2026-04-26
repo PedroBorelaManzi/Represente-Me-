@@ -43,7 +43,6 @@ export default function Layout() {
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
-    <div className="flex min-h-screen bg-slate-50 dark:bg-zinc-950 transition-colors duration-300"> 
   useEffect(() => {
     if (user) loadLinks();
   }, [user]);
@@ -63,7 +62,7 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 font-sans selection:bg-emerald-100 selection:text-emerald-900 transition-colors duration-300">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-zinc-950 font-sans selection:bg-emerald-100 selection:text-emerald-900 transition-colors duration-300">
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {sidebarOpen && (
