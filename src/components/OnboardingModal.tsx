@@ -1,5 +1,5 @@
-﻿import { useState } from "react";
-import { Plus, Trash2, Sun, Moon, Check, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { Plus, Trash2, Sun, Moon, Check, ChevronRight, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSettings } from "../contexts/SettingsContext";
 
@@ -45,6 +45,12 @@ export default function OnboardingModal() {
     });
   };
 
+  const handleSkip = async () => {
+    await updateSettings({
+      has_completed_onboarding: true,
+    });
+  };
+
   if (loading || settings.has_completed_onboarding || (settings.categories && settings.categories.length > 0)) return null;
 
   return (
@@ -52,8 +58,16 @@ export default function OnboardingModal() {
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-8 w-full max-w-lg space-y-6"
+        className="bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-2xl p-8 w-full max-w-lg space-y-6 relative"
       >
+        <button 
+          onClick={handleSkip}
+          className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
+          title="Pular configuração"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
         {/* Progress Bar */}
         <div className="flex gap-2">
           <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? "bg-emerald-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
@@ -268,4 +282,3 @@ export default function OnboardingModal() {
     </div>
   );
 }
-
