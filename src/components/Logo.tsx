@@ -34,7 +34,7 @@ export const Logo: React.FC<LogoProps> = ({
         <img 
           src={logoUrl}
           alt="Represente-se"
-          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110 mix-blend-multiply"
+          className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110 mix-blend-multiply dark:mix-blend-normal dark:brightness-[1.5] dark:contrast-[1.2] dark:drop-shadow-[0_0_10px_rgba(16,185,129,0.4)]"
         />
       </div>
       
@@ -50,3 +50,5 @@ export const Logo: React.FC<LogoProps> = ({
     </div>
   );
 };
+
+

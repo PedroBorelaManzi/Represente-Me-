@@ -22,7 +22,7 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
   const [perda, setPerda] = useState(settings.perda_days || 45);
   const [inativo, setInativo] = useState(settings.inativo_days || 90);
   const [theme, setTheme] = useState<'light' | 'dark'>(settings.theme || 'light');
-  const [ceiling, setCeiling] = useState(settings.revenue_ceiling || 1000000);
+  
   const [categories, setCategories] = useState<string[]>(settings.categories || []);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
       setPerda(settings.perda_days || 45);
       setInativo(settings.inativo_days || 90);
       setTheme(settings.theme || 'light');
-      setCeiling(settings.revenue_ceiling || 1000000);
+      
       setCategories(settings.categories || []);
       setStep(initialStep);
     }
@@ -47,7 +47,7 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
         perda_days: perda,
         inativo_days: inativo,
         theme,
-        revenue_ceiling: ceiling,
+        
         categories
       });
       toast.success("Configurações atualizadas com sucesso!");
@@ -112,15 +112,7 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
             >
               Visual
             </button>
-            <button 
-              onClick={() => setStep(3)}
-              className={cn(
-                "flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
-                step === 3 ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              Faturamento
-            </button>
+            
           </div>
 
           <div className="min-h-[200px]">
@@ -238,3 +230,5 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
     </div>
   );
 }
+
+
