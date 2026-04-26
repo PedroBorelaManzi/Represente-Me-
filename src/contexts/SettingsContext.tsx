@@ -160,13 +160,18 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const root = document.documentElement;
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    const metaColorScheme = document.querySelector('meta[name="color-scheme"]');
 
     if (settings.theme === 'dark') {
       root.classList.add('dark');
+      root.style.colorScheme = 'dark';
       if (metaThemeColor) metaThemeColor.setAttribute('content', '#09090b');
+      if (metaColorScheme) metaColorScheme.setAttribute('content', 'dark');
     } else {
       root.classList.remove('dark');
+      root.style.colorScheme = 'light';
       if (metaThemeColor) metaThemeColor.setAttribute('content', '#f8fafc');
+      if (metaColorScheme) metaColorScheme.setAttribute('content', 'light');
     }
   }, [settings.theme]);
 
