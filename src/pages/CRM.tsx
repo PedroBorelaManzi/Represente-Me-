@@ -334,9 +334,9 @@ export default function CRMPage() {
                              <p className='text-sm font-black text-slate-900 dark:text-zinc-100 uppercase truncate pr-1'>{client.name}</p>
                              {client.alerts?.length > 0 && (
                                <span className="flex gap-1 shrink-0">
-                                 {client.alerts.slice(0, 1).map((a: any, i: number) => (
-                                   <span key={i} className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase border ${a.type === 'Perda' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                                     {a.type === "Critico" ? "Crítico" : a.type}: {a.days}D
+                                 {client.alerts.filter((a: any) => activeTab === 'Todos' ? true : a.type === activeTab).slice(0, 1).map((a: any, i: number) => (
+                                   <span key={i} className={cn("px-2 py-0.5 rounded-md text-[8px] font-black uppercase border flex items-center gap-1", a.type === 'Perda' ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/30 dark:border-red-900/40' : a.type === 'Critico' ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-950/30 dark:border-orange-900/40' : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/30 dark:border-amber-900/40') }>
+                                     <span className="opacity-60">{a.company}</span> <span className="w-1 h-1 rounded-full bg-current opacity-30" /> <span>{a.type === "Critico" ? "Crítico" : a.type}: {a.days}D</span>
                                    </span>
                                  ))}
                                </span>
@@ -384,5 +384,7 @@ export default function CRMPage() {
     </div>
   );
 }
+
+
 
 
