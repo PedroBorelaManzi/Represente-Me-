@@ -241,6 +241,30 @@ export default function EmailClient() {
     all: "Todos os e-mails"
   };
 
+  // Helper to optimize email body for mobile
+  const getOptimizedHtml = (html: string) => {
+    const meta = `<meta name="viewport" content="width=device-width, initial-scale=1.0">`;
+    const style = `
+      <style>
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+          font-size: 16px; 
+          line-height: 1.6; 
+          color: #333; 
+          margin: 0; 
+          padding: 16px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+        img { max-width: 100% !important; height: auto !important; }
+        table { width: 100% !important; height: auto !important; table-layout: fixed !important; }
+        .dark-mode { color: #e4e4e7; background-color: #18181b; }
+      </style>
+    `;
+    const isDark = document.documentElement.classList.contains('dark');
+    return `<!DOCTYPE html><html><head>${meta}${style}</head><body class="${isDark ? 'dark-mode' : ''}">${html}</body></html>`;
+  };
+
   if (!selectedAccount) {
     return (
       <div className="h-full flex flex-col items-center justify-center -mt-10">
@@ -492,18 +516,18 @@ export default function EmailClient() {
                 <button className="p-3 rounded-2xl hover:bg-red-50 text-red-500 transition-colors border border-red-100 dark:border-red-900/10"><Trash2 className="w-4 h-4" /></button>
              </div>
 
-             <div className="flex-1 overflow-y-auto p-4 sm:p-14 custom-scrollbar">
+             <div className="flex-1 overflow-y-auto p-4 sm:p-14 custom-scrollbar bg-white dark:bg-zinc-900">
                 <div className="max-w-4xl mx-auto">
-                  <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-100 mb-10 leading-tight">{selectedEmail.subject}</h2>
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-zinc-100 mb-6 sm:mb-10 leading-tight">{selectedEmail.subject}</h2>
                   
-                  <div className="flex items-center justify-between mb-4">
-                     <div className="flex items-center gap-5">
-                        <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center font-black text-emerald-600 text-xl border-2 border-white dark:border-zinc-800 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                     <div className="flex items-center gap-3 sm:gap-5">
+                        <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center font-black text-emerald-600 text-base sm:text-xl border-2 border-white dark:border-zinc-800 shadow-sm">
                           {selectedEmail.from.charAt(0).toUpperCase()}
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="font-black text-slate-900 dark:text-zinc-100 text-base">{selectedEmail.from}</p>
+                            <p className="font-black text-slate-900 dark:text-zinc-100 text-sm sm:text-base truncate">{selectedEmail.from}</p>
                             <button 
                               onClick={() => setShowDetails(!showDetails)}
                               className="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
@@ -511,10 +535,10 @@ export default function EmailClient() {
                               <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform", showDetails && "rotate-180")} />
                             </button>
                           </div>
-                          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-1">Para: {selectedEmail.to || 'mim'}</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Para: {selectedEmail.to || 'mim'}</p>
                         </div>
                      </div>
-                     <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-5 py-2.5 rounded-full uppercase tracking-widest">{selectedEmail.time}</span>
+                     <span className="self-start sm:self-center text-[9px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-full uppercase tracking-widest">{selectedEmail.time}</span>
                   </div>
 
                   {showDetails && (
@@ -528,22 +552,27 @@ export default function EmailClient() {
 
                   <div className="space-y-8">
                     {selectedEmail.isHtml ? (
-                      <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden border border-slate-100 dark:border-zinc-800 min-h-[400px]">
+                      <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden border border-slate-100 dark:border-zinc-800 min-h-[300px]">
                         <iframe
-                          srcDoc={selectedEmail.fullBody || selectedEmail.preview}
+                          srcDoc={getOptimizedHtml(selectedEmail.fullBody || selectedEmail.preview)}
                           title="Email Content"
-                          className="w-full min-h-[600px] border-none"
+                          className="w-full min-h-[500px] border-none"
                           sandbox="allow-popups allow-popups-to-escape-sandbox"
                           onLoad={(e) => {
                              const iframe = e.currentTarget;
                              if (iframe.contentWindow) {
-                                iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px';
+                                try {
+                                  iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 50 + 'px';
+                                } catch (err) {
+                                  // Cross-origin fallback if needed
+                                  iframe.style.height = '800px';
+                                }
                              }
                           }}
                         />
                       </div>
                     ) : (
-                      <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-zinc-300 text-base leading-relaxed space-y-6 whitespace-pre-wrap font-medium bg-slate-50 dark:bg-zinc-900/50 p-8 rounded-3xl border border-slate-100 dark:border-zinc-800">
+                      <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed space-y-6 whitespace-pre-wrap font-medium bg-slate-50 dark:bg-zinc-900/50 p-5 sm:p-8 rounded-3xl border border-slate-100 dark:border-zinc-800 overflow-x-hidden">
                         {selectedEmail.fullBody || selectedEmail.preview}
                       </div>
                     )}
