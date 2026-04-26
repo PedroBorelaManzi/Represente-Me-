@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { 
   LayoutDashboard, 
@@ -92,10 +92,10 @@ export default function Layout() {
 
           {/* Navigation */}
           <nav className="flex-1 space-y-2 overflow-y-auto custom-scrollbar pr-2">
-            <p className="px-3 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">Módulos Estratégicos</p>
+            <p className="px-3 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">MÃ³dulos EstratÃ©gicos</p>
             {navigation.map((item) => {
               const isActive = location.pathname === item.href || (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
-              const isIntegracoes = item.name === "Integrações";
+              const isIntegracoes = item.name === "IntegraÃ§Ãµes";
 
               if (isIntegracoes) {
                 return (
@@ -182,7 +182,7 @@ export default function Layout() {
               className="group flex items-center w-full px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-zinc-400 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-slate-900 dark:text-zinc-100 transition-all"
             >
               <Settings className="mr-3 h-5 w-5 text-slate-400 dark:text-zinc-500 group-hover:text-slate-500 dark:text-zinc-400" />
-              Configurações
+              ConfiguraÃ§Ãµes
             </button>
             <button
               onClick={() => signOut()}
@@ -220,7 +220,7 @@ export default function Layout() {
 
         {/* Global Page Container */}
         <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12 scroll-smooth custom-scrollbar">
-          <div className="max-w-7xl mx-auto h-full">
+          <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
         </main>
