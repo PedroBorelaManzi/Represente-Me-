@@ -15,6 +15,7 @@ export default function CRMPage() {
   const navigate = useNavigate();
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -32,16 +33,24 @@ export default function CRMPage() {
     if (!user) return;
     try {
       setLoading(true);
-      // Fetch Clients
+      
+      // Phase 1: Fetch Basic Client Data (Fast)
       const { data: clientsData, error } = await supabase
         .from('clients')
-        .select('*')
+        .select('id, name, cnpj, city, address, status, last_contact, created_at')
         .eq('user_id', user.id)
         .order('name', { ascending: true });
 
       if (error) throw error;
+      
+      // Initialize with empty alerts
+      const initialClients = (clientsData || []).map(c => ({ ...c, alerts: [] }));
+      setClients(initialClients);
+      setLoading(false); // List is now visible to user
 
-      // Fetch Files to calculate alerts
+      // Phase 2: Fetch Files & Calculate Alerts in background
+      setLoadingAlerts(true);
+      
       let files: any[] = [];
       try {
         const { data: filesData } = await supabase.rpc("list_user_files", { u_id: user.id });
@@ -50,51 +59,48 @@ export default function CRMPage() {
         console.error("RPC Error:", err);
       }
       
-      // Optimization: Group and pre-process files by category
-      const filesByClient: any = {};
-      const categoryLookup = new Map();
-      settings?.categories?.forEach((c: string) => categoryLookup.set(c.toLowerCase(), c));
-
-      files.forEach((f: any) => {
-        const cId = f.client_id;
-        if (!filesByClient[cId]) filesByClient[cId] = [];
-        
-        // Extract category once
-        const parts = f.file_name.split("___");
-        if (parts.length > 1) {
-          const rawCatLower = parts[0].toLowerCase();
-          const cat = categoryLookup.get(rawCatLower) || parts[0];
-          filesByClient[cId].push({ cat, date: new Date(f.created_at).getTime() });
-        }
-      });
-
-      const clientsWithAlerts = (clientsData || []).map((client: any) => {
-        const clientProcessedFiles = filesByClient[client.id] || [];
-        const lastDates: Record<string, number> = {};
-        
-        clientProcessedFiles.forEach((f: any) => {
-          if (!lastDates[f.cat] || f.date > lastDates[f.cat]) {
-            lastDates[f.cat] = f.date;
-          }
+      if (files.length > 0) {
+        const filesByClient: any = {};
+        files.forEach((f: any) => {
+          const cId = f.client_id;
+          if (!filesByClient[cId]) filesByClient[cId] = [];
+          filesByClient[cId].push({ file_name: f.file_name, created_at: f.created_at });
         });
 
-        const alerts: any[] = [];
-        const today = new Date().getTime();
-        for (const [cat, date] of Object.entries(lastDates)) {
-          const days = Math.floor((today - date) / (1000 * 60 * 60 * 24));
-          if (days >= (settings?.perda_days || 365)) alerts.push({ company: cat, type: "Perda", days });
-          else if (days >= (settings?.critico_days || 90)) alerts.push({ company: cat, type: "Critico", days });
-          else if (days >= (settings?.alerta_days || 45)) alerts.push({ company: cat, type: "Alerta", days });
-        }
-        return { ...client, alerts: alerts.sort((a, b) => b.days - a.days) };
-      });
+        const categoryLookup = new Map();
+        settings?.categories?.forEach((c: string) => categoryLookup.set(c.toLowerCase(), c));
 
-      setClients(clientsWithAlerts);
+        setClients(prevClients => prevClients.map((client: any) => {
+          const clientFiles = filesByClient[client.id] || [];
+          const lastDates: any = {};
+          
+          clientFiles.forEach((f: any) => {
+            const parts = f.file_name.split("___");
+            if (parts.length > 1) {
+              const rawCatLower = parts[0].toLowerCase();
+              const cat = categoryLookup.get(rawCatLower) || parts[0];
+              const date = new Date(f.created_at).getTime();
+              if (!lastDates[cat] || date > lastDates[cat]) lastDates[cat] = date;
+            }
+          });
+
+          const alerts: any[] = [];
+          const today = new Date().getTime();
+          for (const [cat, date] of Object.entries(lastDates)) {
+            const days = Math.floor((today - (date as number)) / (1000 * 60 * 60 * 24));
+            if (days >= (settings?.perda_days || 365)) alerts.push({ company: cat, type: "Perda", days });
+            else if (days >= (settings?.critico_days || 90)) alerts.push({ company: cat, type: "Critico", days });
+            else if (days >= (settings?.alerta_days || 45)) alerts.push({ company: cat, type: "Alerta", days });
+          }
+          return { ...client, alerts: alerts.sort((a, b) => b.days - a.days) };
+        }));
+      }
     } catch (err) {
       console.error('Load Clients Error:', err);
       toast.error('Erro ao carregar clientes');
     } finally {
       setLoading(false);
+      setLoadingAlerts(false);
     }
   };
 
@@ -291,6 +297,12 @@ export default function CRMPage() {
               {tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: any) => a.type === tab)).length})</span>
             </button>
           ))}
+          {loadingAlerts && (
+             <div className="flex items-center gap-2 ml-auto pr-4">
+                <Loader2 className="w-3 h-3 animate-spin text-emerald-600" />
+                <span className="text-[9px] font-black uppercase text-emerald-600/60 tracking-widest">Sincronizando Alertas...</span>
+             </div>
+          )}
         </div>
         
         <div className='flex-1 overflow-y-auto custom-scrollbar'>

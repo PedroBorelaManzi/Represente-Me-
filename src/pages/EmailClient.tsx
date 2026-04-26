@@ -243,26 +243,43 @@ export default function EmailClient() {
 
   // Helper to optimize email body for mobile
   const getOptimizedHtml = (html: string) => {
-    const meta = `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">`;
+    const meta = `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">`;
     const style = `
       <style>
-        * { box-sizing: border-box; }
+        :root { color-scheme: light dark; }
         body { 
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
           font-size: 16px; 
           line-height: 1.6; 
-          color: #333; 
+          color: #1a1a1a; 
           margin: 0; 
-          padding: 12px;
+          padding: 16px;
           word-wrap: break-word;
           overflow-wrap: break-word;
+          -webkit-text-size-adjust: 100%;
           max-width: 100vw;
-          overflow-x: hidden;
+          box-sizing: border-box;
         }
-        img { max-width: 100% !important; height: auto !important; }
-        table { width: 100% !important; height: auto !important; table-layout: fixed !important; border-collapse: collapse; }
-        .dark-mode { color: #e4e4e7; background-color: #18181b; }
-        p { margin-bottom: 1em; }
+        img { 
+          max-width: 100% !important; 
+          height: auto !important; 
+          display: block;
+          margin: 10px 0;
+        }
+        table { 
+          width: 100% !important; 
+          max-width: 100% !important;
+          height: auto !important; 
+          table-layout: fixed !important; 
+          border-collapse: collapse !important;
+        }
+        a { color: #059669; text-decoration: none; }
+        pre, code { white-space: pre-wrap; word-break: break-all; }
+        .dark-mode { color: #f4f4f5; background-color: #18181b; }
+        @media (max-width: 600px) {
+          body { padding: 12px; font-size: 15px; }
+          .no-mobile-padding { padding: 0 !important; }
+        }
       </style>
     `;
     const isDark = document.documentElement.classList.contains('dark');
@@ -522,7 +539,7 @@ export default function EmailClient() {
 
              <div className="flex-1 overflow-y-auto p-4 sm:p-14 custom-scrollbar bg-white dark:bg-zinc-900">
                 <div className="max-w-4xl mx-auto">
-                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-zinc-100 mb-6 sm:mb-10 leading-tight">{selectedEmail.subject}</h2>
+                   <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-zinc-100 mb-6 sm:mb-10 leading-tight">{selectedEmail.subject}</h2>
                   
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                      <div className="flex items-center gap-3 sm:gap-5">
@@ -556,27 +573,30 @@ export default function EmailClient() {
 
                   <div className="space-y-8">
                     {selectedEmail.isHtml ? (
-                      <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden border border-slate-100 dark:border-zinc-800 min-h-[300px]">
+                      <div className="bg-white dark:bg-zinc-800 rounded-3xl overflow-hidden border border-slate-100 dark:border-zinc-800 min-h-[300px] shadow-sm">
                         <iframe
                           srcDoc={getOptimizedHtml(selectedEmail.fullBody || selectedEmail.preview)}
                           title="Email Content"
-                          className="w-full min-h-[500px] border-none"
-                          sandbox="allow-popups allow-popups-to-escape-sandbox"
+                          className="w-full min-h-[400px] md:min-h-[600px] border-none"
+                          sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts"
                           onLoad={(e) => {
                              const iframe = e.currentTarget;
-                             if (iframe.contentWindow) {
-                                try {
-                                  iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 50 + 'px';
-                                } catch (err) {
-                                  // Cross-origin fallback if needed
-                                  iframe.style.height = '800px';
-                                }
-                             }
+                             // Delay to ensure rendering is complete
+                             setTimeout(() => {
+                               if (iframe.contentWindow) {
+                                  try {
+                                    const height = iframe.contentWindow.document.documentElement.scrollHeight;
+                                    iframe.style.height = (height + 40) + 'px';
+                                  } catch (err) {
+                                    iframe.style.height = '800px';
+                                  }
+                               }
+                             }, 100);
                           }}
                         />
                       </div>
                     ) : (
-                      <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed space-y-6 whitespace-pre-wrap font-medium bg-slate-50 dark:bg-zinc-900/50 p-5 sm:p-8 rounded-3xl border border-slate-100 dark:border-zinc-800 overflow-x-hidden">
+                      <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed space-y-6 whitespace-pre-wrap font-medium bg-slate-50 dark:bg-zinc-900/50 p-6 sm:p-10 rounded-[32px] border border-slate-100 dark:border-zinc-800 overflow-x-auto custom-scrollbar">
                         {selectedEmail.fullBody || selectedEmail.preview}
                       </div>
                     )}
@@ -738,7 +758,7 @@ function ComposeBalloon({
              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white pl-2">Nova Mensagem</h3>
              <div className="flex items-center gap-3">
                 <button onClick={() => setIsMinimized(!isMinimized)} className="p-2 hover:bg-white/10 rounded-xl text-white transition-colors">
-                  {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+                   {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
                 </button>
                 <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-xl text-white transition-colors"><X className="w-4 h-4" /></button>
              </div>
@@ -802,13 +822,12 @@ function ComposeBalloon({
                 <div className="flex items-center gap-2">
                    <button className="p-4 text-emerald-600 bg-emerald-50 rounded-2xl hover:bg-emerald-100 transition-colors"><Sparkles className="w-5 h-5" /></button>
                 </div>
-                <button
+                <button 
                   disabled={isSending}
                   onClick={handleSend}
-                  className="px-10 py-4 bg-emerald-600 text-white rounded-[24px] font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 disabled:opacity-50 flex items-center gap-3 active:scale-95"
+                  className="flex-1 sm:flex-none justify-center px-8 sm:px-12 py-4 sm:py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl sm:rounded-[24px] font-black uppercase text-[10px] sm:text-[11px] tracking-widest transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center gap-3"
                 >
-                  {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  {isSending ? "Enviando..." : "Enviar Agora"}
+                  {isSending ? "Enviando..." : "Enviar E-mail"} <Send className="w-4 h-4" />
                 </button>
              </div>
           </div>
