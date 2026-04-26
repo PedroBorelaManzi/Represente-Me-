@@ -47,7 +47,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     async function loadSettings() {
-      // Don't clear settings while user is still loading (refresh)
       if (!user) {
         setLoading(false);
         return;
@@ -61,30 +60,75 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       if (!error && data) {
+        let hasCompleted = data.has_completed_onboarding ?? defaultSettings.has_completed_onboarding;
+        let categories = data.categories || [];
+
+        // Auto-complete onboarding para usuários existentes com dados
+        if (!hasCompleted) {
+          const { count } = await supabase
+            .from("clients")
+            .select("*", { count: 'exact', head: true })
+            .eq("user_id", user.id);
+
+          if (count && count > 0) {
+            hasCompleted = true;
+            
+            if (categories.length === 0) {
+              const { data: orders } = await supabase
+                .from("orders")
+                .select("category")
+                .eq("user_id", user.id);
+              
+              if (orders && orders.length > 0) {
+                const unique = Array.from(new Set(orders.map(o => o.category).filter(Boolean)));
+                categories = unique as string[];
+              }
+            }
+
+            await supabase.from("user_settings").upsert({
+              user_id: user.id,
+              has_completed_onboarding: true,
+              categories,
+              updated_at: new Date().toISOString()
+            });
+          }
+        }
+
         setSettings({
           alerta_days: data.alerta_days ?? defaultSettings.alerta_days,
           critico_days: data.critico_days ?? defaultSettings.critico_days,
           perda_days: data.perda_days ?? defaultSettings.perda_days,
           inativo_days: data.inativo_days ?? defaultSettings.inativo_days,
           theme: data.theme ?? defaultSettings.theme,
-          has_completed_onboarding: data.has_completed_onboarding ?? defaultSettings.has_completed_onboarding,
-          categories: data.categories || [],
+          has_completed_onboarding: hasCompleted,
+          categories: categories,
           revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
         });
       } else if (error) {
         console.error("Error loading settings:", error);
       } else {
-        // No settings found, create them to ensure persistence works
+        // No settings found, create them
         try {
+          // Antes de criar com o padrão, checar se já tem dados para bypassar onboarding
+          const { count } = await supabase
+            .from("clients")
+            .select("*", { count: 'exact', head: true })
+            .eq("user_id", user.id);
+          
+          const initialOnboarding = count && count > 0;
+
           await supabase.from("user_settings").upsert({
             user_id: user.id,
             ...defaultSettings,
+            has_completed_onboarding: initialOnboarding,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' });
+          
+          setSettings({ ...defaultSettings, has_completed_onboarding: initialOnboarding });
         } catch (e) {
           console.error("Failed to Initialize settings:", e);
+          setSettings(defaultSettings);
         }
-        setSettings(defaultSettings);
       }
       setLoading(false);
     }
