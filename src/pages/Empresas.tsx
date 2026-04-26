@@ -326,7 +326,6 @@ export default function EmpresasPage() {
                     </button>
                   </div>
                   <p className="text-lg md:text-xl font-black tracking-tighter">{formatCurrency(catTotals[cat] || 0)}</p>
-                </button>
                 </div>
             </div>
           </div>
