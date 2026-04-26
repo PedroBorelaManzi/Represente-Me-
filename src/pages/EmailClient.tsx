@@ -243,22 +243,26 @@ export default function EmailClient() {
 
   // Helper to optimize email body for mobile
   const getOptimizedHtml = (html: string) => {
-    const meta = `<meta name="viewport" content="width=device-width, initial-scale=1.0">`;
+    const meta = `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">`;
     const style = `
       <style>
+        * { box-sizing: border-box; }
         body { 
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
           font-size: 16px; 
           line-height: 1.6; 
           color: #333; 
           margin: 0; 
-          padding: 16px;
+          padding: 12px;
           word-wrap: break-word;
           overflow-wrap: break-word;
+          max-width: 100vw;
+          overflow-x: hidden;
         }
         img { max-width: 100% !important; height: auto !important; }
-        table { width: 100% !important; height: auto !important; table-layout: fixed !important; }
+        table { width: 100% !important; height: auto !important; table-layout: fixed !important; border-collapse: collapse; }
         .dark-mode { color: #e4e4e7; background-color: #18181b; }
+        p { margin-bottom: 1em; }
       </style>
     `;
     const isDark = document.documentElement.classList.contains('dark');
@@ -798,12 +802,13 @@ function ComposeBalloon({
                 <div className="flex items-center gap-2">
                    <button className="p-4 text-emerald-600 bg-emerald-50 rounded-2xl hover:bg-emerald-100 transition-colors"><Sparkles className="w-5 h-5" /></button>
                 </div>
-                <button 
+                <button
                   disabled={isSending}
                   onClick={handleSend}
-                  className="flex-1 sm:flex-none justify-center px-8 sm:px-12 py-4 sm:py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl sm:rounded-[24px] font-black uppercase text-[10px] sm:text-[11px] tracking-widest transition-all shadow-xl active:scale-95 disabled:opacity-50 flex items-center gap-3"
+                  className="px-10 py-4 bg-emerald-600 text-white rounded-[24px] font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 disabled:opacity-50 flex items-center gap-3 active:scale-95"
                 >
-                  {isSending ? "Enviando..." : "Enviar E-mail"} <Send className="w-4 h-4" />
+                  {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {isSending ? "Enviando..." : "Enviar Agora"}
                 </button>
              </div>
           </div>

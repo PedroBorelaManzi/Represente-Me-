@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   motion, 
   AnimatePresence,
@@ -21,7 +21,8 @@ import {
   Store
 } from "lucide-react";
 import { Logo } from '../components/Logo';
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const industries = [
   { 
@@ -100,10 +101,18 @@ const plans = [
 ];
 
 export default function LandingPitch() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const { scrollY } = useScroll();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [scrolled, setScrolled] = useState(false);
   const [hoveredIndustry, setHoveredIndustry] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   const calculatePrice = (annualPrice: number) => {
     if (billingCycle === "annual") return annualPrice.toString();
@@ -129,7 +138,9 @@ export default function LandingPitch() {
       >
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between gap-2 md:gap-4">
           <div className="flex-shrink-0 flex items-center gap-3">
-            <Logo size={typeof window !== "undefined" && window.innerWidth < 768 ? "md" : "lg"} showText={true} />
+            <Link to="/dashboard" className="transition-transform active:scale-95">
+              <Logo size={typeof window !== "undefined" && window.innerWidth < 768 ? "md" : "lg"} showText={true} />
+            </Link>
           </div>
           
           <div className="hidden lg:flex items-center gap-10">

@@ -50,35 +50,38 @@ export default function CRMPage() {
         console.error("RPC Error:", err);
       }
       
+      // Optimization: Group and pre-process files by category
       const filesByClient: any = {};
-      files.forEach((f: any) => {
-        const cId = f.client_id;
-        if (!filesByClient[cId]) filesByClient[cId] = [];
-        filesByClient[cId].push({ file_name: f.file_name, created_at: f.created_at });
-      });
-
-      // Optimization: Create a category map for O(1) lookup
       const categoryLookup = new Map();
       settings?.categories?.forEach((c: string) => categoryLookup.set(c.toLowerCase(), c));
 
-      const clientsWithAlerts = (clientsData || []).map((client: any) => {
-        const clientFiles = filesByClient[client.id] || [];
-        const lastDates: any = {};
+      files.forEach((f: any) => {
+        const cId = f.client_id;
+        if (!filesByClient[cId]) filesByClient[cId] = [];
         
-        clientFiles.forEach((f: any) => {
-          const parts = f.file_name.split("___");
-          if (parts.length > 1) {
-            const rawCatLower = parts[0].toLowerCase();
-            const cat = categoryLookup.get(rawCatLower) || parts[0];
-            const date = new Date(f.created_at).getTime();
-            if (!lastDates[cat] || date > lastDates[cat]) lastDates[cat] = date;
+        // Extract category once
+        const parts = f.file_name.split("___");
+        if (parts.length > 1) {
+          const rawCatLower = parts[0].toLowerCase();
+          const cat = categoryLookup.get(rawCatLower) || parts[0];
+          filesByClient[cId].push({ cat, date: new Date(f.created_at).getTime() });
+        }
+      });
+
+      const clientsWithAlerts = (clientsData || []).map((client: any) => {
+        const clientProcessedFiles = filesByClient[client.id] || [];
+        const lastDates: Record<string, number> = {};
+        
+        clientProcessedFiles.forEach((f: any) => {
+          if (!lastDates[f.cat] || f.date > lastDates[f.cat]) {
+            lastDates[f.cat] = f.date;
           }
         });
 
         const alerts: any[] = [];
         const today = new Date().getTime();
         for (const [cat, date] of Object.entries(lastDates)) {
-          const days = Math.floor((today - (date as number)) / (1000 * 60 * 60 * 24));
+          const days = Math.floor((today - date) / (1000 * 60 * 60 * 24));
           if (days >= (settings?.perda_days || 365)) alerts.push({ company: cat, type: "Perda", days });
           else if (days >= (settings?.critico_days || 90)) alerts.push({ company: cat, type: "Critico", days });
           else if (days >= (settings?.alerta_days || 45)) alerts.push({ company: cat, type: "Alerta", days });
