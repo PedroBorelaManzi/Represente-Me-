@@ -382,9 +382,6 @@ export default function EmpresasPage() {
           </div>
         </div>
       </div>
-          </div>
-        </div>
-
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
