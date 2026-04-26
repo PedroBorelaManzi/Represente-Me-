@@ -114,7 +114,7 @@ export default function EmpresasPage() {
     }, {});
   }, [combinedCategories, monthlyOrders]);
 
-  const totalGeral = useMemo(() => (monthlyOrders || []).reduce((sum, o) => sum + (Number(o.value) || 0), [monthlyOrders]);
+  const totalGeral = useMemo(() => (monthlyOrders || []).reduce((sum, o) => sum + (Number(o.value) || 0), 0), [monthlyOrders]);
 
   const ordersToday = useMemo(() => {
     const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
@@ -361,7 +361,7 @@ export default function EmpresasPage() {
                       <p className="text-[7px] md:text-[8px] font-black text-emerald-400 uppercase tracking-widest leading-none mb-2">Cliente Adquirente</p>
                       <Link to={'/dashboard/clientes/' + order.client_id} className="block">
                         <h4 className="text-sm md:text-base font-black uppercase text-slate-900 dark:text-zinc-100 truncate hover:text-emerald-600 transition-colors leading-tight">
-                          {order.client?.name || "Cliente Desconhecida"}
+                          {order.client?.name || "Cliente Desconhecido"}
                         </h4>
                       </Link>
                     </div>
