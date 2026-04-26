@@ -306,11 +306,11 @@ export default function EmpresasPage() {
                 <button 
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={cn("min-w-[200px] md:min-w-[240px] lg:min-w-0 lg:w-full text-left p-5 md:p-6 rounded-[28px] md:rounded-[32px] border transition-all relative group overflow-hidden active:scale-[0.98]",
+                <div
                     selectedCategory === cat
                       ? "bg-slate-900 dark:bg-zinc-800 border-slate-900 text-white shadow-xl scale-[1.02]" 
                       : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-emerald-200"
-                  )}
+                  onClick={() => setSelectedCategory(cat)} className={cn("cursor-pointer min-w-[200px] md:min-w-[240px] lg:min-w-0 lg:w-full text-left p-5 md:p-6 rounded-[28px] md:rounded-[32px] border transition-all relative group overflow-hidden active:scale-[0.98]",
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-[11px] md:text-[13px] font-black uppercase tracking-tight truncate max-w-[120px] md:max-w-none">{cat}</h4>
@@ -327,7 +327,7 @@ export default function EmpresasPage() {
                   </div>
                   <p className="text-lg md:text-xl font-black tracking-tighter">{formatCurrency(catTotals[cat] || 0)}</p>
                 </button>
-              ))}
+                </div>
             </div>
           </div>
         </div>
