@@ -101,16 +101,17 @@ const plans = [
 ];
 
 export default function LandingPitch() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
   const { scrollY } = useScroll();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [scrolled, setScrolled] = useState(false);
   const [hoveredIndustry, setHoveredIndustry] = useState<number | null>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
+  // Redirect to dashboard if logged in
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      navigate('/dashboard');
     }
   }, [user, navigate]);
 
@@ -137,11 +138,9 @@ export default function LandingPitch() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between gap-2 md:gap-4">
-          <div className="flex-shrink-0 flex items-center gap-3">
-            <Link to="/dashboard" className="transition-transform active:scale-95">
-              <Logo size={typeof window !== "undefined" && window.innerWidth < 768 ? "md" : "lg"} showText={true} />
-            </Link>
-          </div>
+          <Link to={user ? "/dashboard" : "/"} className="flex-shrink-0 flex items-center gap-3">
+            <Logo size={typeof window !== "undefined" && window.innerWidth < 768 ? "md" : "lg"} showText={true} />
+          </Link>
           
           <div className="hidden lg:flex items-center gap-10">
             <a href="#industrias" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Setores</a>

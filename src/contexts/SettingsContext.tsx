@@ -1,22 +1,16 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
 
-export interface Settings {
+interface Settings {
   alerta_days: number;
   critico_days: number;
   perda_days: number;
   inativo_days: number;
-  theme?: 'light' | 'dark';
-  has_completed_onboarding?: boolean;
-  categories?: string[];
-  revenue_ceiling?: number;
-}
-
-interface SettingsContextType {
-  settings: Settings;
-  loading: boolean;
-  updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
+  theme: 'light' | 'dark';
+  has_completed_onboarding: boolean;
+  categories: string[];
+  revenue_ceiling: number;
 }
 
 const defaultSettings: Settings = {
@@ -30,18 +24,34 @@ const defaultSettings: Settings = {
   revenue_ceiling: 1000000,
 };
 
+interface SettingsContextType {
+  settings: Settings;
+  loading: boolean;
+  updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
+}
+
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const useSettings = () => {
   const context = useContext(SettingsContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error("useSettings must be used within a SettingsProvider");
   }
   return context;
 };
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
-  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [settings, setSettings] = useState<Settings>(() => {
+    // Tenta carregar tema e onboarding do localStorage para evitar flashes e problemas de estado inicial
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const savedOnboarding = localStorage.getItem('has_completed_onboarding') === 'true';
+    
+    return {
+      ...defaultSettings,
+      theme: savedTheme || defaultSettings.theme,
+      has_completed_onboarding: savedOnboarding || defaultSettings.has_completed_onboarding,
+    };
+  });
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
@@ -94,6 +104,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           }
         }
 
+        // Salva no localStorage para persistência local rápida
+        if (hasCompleted) localStorage.setItem('has_completed_onboarding', 'true');
+        if (data.theme) localStorage.setItem('theme', data.theme);
+
         setSettings({
           alerta_days: data.alerta_days ?? defaultSettings.alerta_days,
           critico_days: data.critico_days ?? defaultSettings.critico_days,
@@ -123,6 +137,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' });
           
+          if (initialOnboarding) localStorage.setItem('has_completed_onboarding', 'true');
           setSettings({ ...defaultSettings, has_completed_onboarding: initialOnboarding });
         } catch (e) {
           console.error("Failed to Initialize settings:", e);
@@ -136,16 +151,21 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   const updateSettings = async (newSettings: Partial<Settings>) => {
-    if (!user || loading) return;
+    if (!user) return;
+    
+    // CRÍTICO: Se estiver carregando, não permitir atualização para não sobrescrever dados do banco com padrões locais
+    if (loading) {
+        console.warn("Tentativa de atualizar configurações enquanto ainda carregando. Ignorado.");
+        return;
+    }
 
-    // Garantir que has_completed_onboarding nunca volte para false se já for true
-    const hasCompleted = settings.has_completed_onboarding || newSettings.has_completed_onboarding;
+    // Garante que se o onboarding já estiver completo, ele nunca volte a ser false
+    const onboardingStatus = newSettings.has_completed_onboarding || settings.has_completed_onboarding;
+    const updated = { ...settings, ...newSettings, has_completed_onboarding: onboardingStatus };
 
-    const updated = { 
-      ...settings, 
-      ...newSettings,
-      has_completed_onboarding: hasCompleted 
-    };
+    // Persistência local imediata para feedback instantâneo e robustez
+    if (updated.theme) localStorage.setItem('theme', updated.theme);
+    if (updated.has_completed_onboarding) localStorage.setItem('has_completed_onboarding', 'true');
 
     const { error } = await supabase
       .from("user_settings")
