@@ -15,7 +15,9 @@ import {
   Settings,
   ShoppingBag
 } from "lucide-react";
-import { Logo } from "./Logo";
+import { Logo } from './Logo';
+import SettingsModal from './SettingsModal';
+import { AlertTriangle, TrendingDown, Palette, Bell } from 'lucide-react';
 import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { cn } from "../lib/utils";
@@ -23,12 +25,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../lib/supabase";
 
 const navigation = [
-  { name: "Painel de Controle", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Radar Territorial", href: "/dashboard/map", icon: MapIcon },
+  { name: "Início", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Mapa de Clientes", href: "/dashboard/map", icon: MapIcon },
   { name: "Carteira de Clientes", href: "/dashboard/clientes", icon: Users },
   { name: "Pedidos e Empresas", href: "/dashboard/empresas", icon: Building2 },
   { name: "Agenda Comercial", href: "/dashboard/agenda", icon: CalendarIcon },
-  { name: "Caixa de Entrada", href: "/dashboard/email", icon: Mail },
+  { name: "Email", href: "/dashboard/email", icon: Mail },
 ];
 
 export default function Layout() {
@@ -37,6 +39,9 @@ export default function Layout() {
   const { signOut, user } = useAuth();
   const { settings, updateSettings } = useSettings();
   const [integracoesOpen, setIntegracoesOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [settingsInitialStep, setSettingsInitialStep] = useState(1);
   const [shortcutLinks, setShortcutLinks] = useState<any[]>([]);
 
   // Auto-collapse sidebar on navigation (mobile)
@@ -91,7 +96,7 @@ export default function Layout() {
 
           {/* Navigation */}
           <nav className="flex-1 space-y-2 overflow-y-auto custom-scrollbar pr-2">
-            <p className="px-3 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">MÃ³dulos EstratÃ©gicos</p>
+            <p className="px-3 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">Módulos Estratégicos</p>
             {navigation.map((item) => {
               const isActive = location.pathname === item.href || (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
               const isIntegracoes = item.name === "IntegraÃ§Ãµes";
@@ -172,6 +177,31 @@ export default function Layout() {
                 </Link>
               );
             })}
+                        {/* Acompanhamentos Section */}
+            <div className="pt-4 mt-4 border-t border-slate-50 dark:border-zinc-850 space-y-2">
+              <p className="px-3 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">Acompanhamentos</p>
+              <Link 
+                to="/dashboard/clientes?tab=Alerta"
+                className="group flex items-center px-3 py-2 text-xs font-bold text-amber-600 dark:text-amber-500 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all"
+              >
+                <div className="w-2 h-2 rounded-full bg-amber-500 mr-3" />
+                Alerta
+              </Link>
+              <Link 
+                to="/dashboard/clientes?tab=Critico"
+                className="group flex items-center px-3 py-2 text-xs font-bold text-red-600 dark:text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-all"
+              >
+                <div className="w-2 h-2 rounded-full bg-red-600 mr-3" />
+                Crítico (Quente)
+              </Link>
+              <Link 
+                to="/dashboard/clientes?tab=Perda"
+                className="group flex items-center px-3 py-2 text-xs font-bold text-purple-600 dark:text-purple-500 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all"
+              >
+                <div className="w-2 h-2 rounded-full bg-purple-600 mr-3" />
+                Perda de Cliente
+              </Link>
+            </div>
           </nav>
 
           {/* Bottom Actions */}
@@ -193,6 +223,12 @@ export default function Layout() {
           </div>
         </div>
       </aside>
+
+      <SettingsModal 
+        isOpen={isSettingsModalOpen} 
+        onClose={() => setIsSettingsModalOpen(false)} 
+        initialStep={settingsInitialStep}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
@@ -227,3 +263,8 @@ export default function Layout() {
     </div>
   );
 }
+
+
+
+
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -47,7 +47,7 @@ export default function MapPage() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchingMap, setIsSearchingMap] = useState(false);
-  const [center, setCenter] = useState<[number, number]>([-15.793889, -47.882778]); // Brasília - Centro do Brasil
+  const [center, setCenter] = useState<[number, number]>([-15.793889, -47.882778]); // BrasÃ­lia - Centro do Brasil
   const [zoom, setZoom] = useState(13);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchingCnpj, setIsSearchingCnpj] = useState(false);
@@ -78,7 +78,7 @@ export default function MapPage() {
           setZoom(14);
         },
         (error) => {
-          console.error("Erro ao obter localização:", error);
+          console.error("Erro ao obter localizaÃ§Ã£o:", error);
         }
       );
     }
@@ -92,14 +92,14 @@ export default function MapPage() {
 
     if (!error) {
       setCompanies(prev => prev.map(c => c.id === id ? { ...c, lat: latlng.lat, lng: latlng.lng } : c));
-      toast.success("Localização atualizada!");
+      toast.success("LocalizaÃ§Ã£o atualizada!");
     } else {
-      toast.error("Erro ao salvar localização");
+      toast.error("Erro ao salvar localizaÃ§Ã£o");
     }
   };
 
   const handleDeleteClient = async (id: string, name: string) => {
-    if (!window.confirm(`Deseja realmente excluir o cliente "${name}"? Esta ação não pode ser desfeita.`)) return;
+    if (!window.confirm(`Deseja realmente excluir o cliente "${name}"? Esta aÃ§Ã£o nÃ£o pode ser desfeita.`)) return;
 
     const { error } = await supabase.from("clients").delete().eq("id", id);
     if (error) {
@@ -113,14 +113,14 @@ export default function MapPage() {
   const handleCnpjLookup = async () => {
     const cleanedCnpj = newLocation.cnpj.replace(/\D/g, "");
     if (!cleanedCnpj || cleanedCnpj.length !== 14) {
-      toast.error("Insira um CNPJ válido.");
+      toast.error("Insira um CNPJ vÃ¡lido.");
       return;
     }
 
     setIsSearchingCnpj(true);
     try {
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanedCnpj}`);
-      if (!response.ok) throw new Error("CNPJ não encontrado");
+      if (!response.ok) throw new Error("CNPJ nÃ£o encontrado");
       
       const data = await response.json();
       const streetType = data.tipo_logradouro ? `${data.tipo_logradouro} ` : "";
@@ -148,7 +148,7 @@ export default function MapPage() {
       }));
       toast.success("Dados recuperados com sucesso!");
     } catch (err) {
-      toast.error("CNPJ não encontrado. Preencha manualmente.");
+      toast.error("CNPJ nÃ£o encontrado. Preencha manualmente.");
     } finally {
       setIsSearchingCnpj(false);
     }
@@ -252,7 +252,7 @@ export default function MapPage() {
             </div>
             Radar <span className="text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-emerald-600">Territorial</span>
           </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Visualização geo-estratégica da sua carteira de clientes.</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">VisualizaÃ§Ã£o geo-estratÃ©gica da sua carteira de clientes.</p>
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
@@ -265,7 +265,7 @@ export default function MapPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="block w-full pl-14 pr-6 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] shadow-sm focus:ring-8 focus:ring-emerald-500/10 text-xs font-black uppercase tracking-widest transition-all placeholder:text-slate-300"
-              placeholder="Buscar Cliente ou Endereço..."
+              placeholder="Buscar Cliente ou EndereÃ§o..."
             />
           </form>
           <button 
@@ -325,7 +325,7 @@ export default function MapPage() {
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center gap-3 text-xs font-bold text-slate-600 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-2xl">
                       <MapPin className="w-4 h-4 text-slate-400" />
-                      <span className="truncate">{company.address || "Endereço não informado"}</span>
+                      <span className="truncate">{company.address || "EndereÃ§o nÃ£o informado"}</span>
                     </div>
                   </div>
 
@@ -348,7 +348,7 @@ export default function MapPage() {
                   
                   <div className="flex items-center gap-2 justify-center py-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
                     <Info className="w-3.5 h-3.5 text-amber-600" />
-                    <span className="text-[9px] font-black uppercase tracking-tighter text-amber-700 dark:text-amber-500">Arraste para ajustar posição exata</span>
+                    <span className="text-[9px] font-black uppercase tracking-tighter text-amber-700 dark:text-amber-500">Arraste para ajustar posiÃ§Ã£o exata</span>
                   </div>
                 </div>
               </Popup>
@@ -371,7 +371,7 @@ export default function MapPage() {
                <div className="p-12 border-b dark:border-zinc-850 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-950/20">
                 <div>
                   <h3 className="font-black text-slate-900 dark:text-zinc-100 text-3xl uppercase tracking-tighter">Expandir Radar</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Sincronização com o Ecossistema Territorial</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">SincronizaÃ§Ã£o com o Ecossistema Territorial</p>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="p-5 bg-white dark:bg-zinc-800 rounded-[24px] shadow-sm text-slate-400 hover:text-red-500 transition-all"><X className="w-8 h-8" /></button>
               </div>
@@ -400,17 +400,17 @@ export default function MapPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Identificação do Ponto</label>
-                  <input required type="text" value={newLocation.name} onChange={e => setNewLocation({...newLocation, name: e.target.value})} className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all" placeholder="Razão Social ou Nome Fantasia" />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">IdentificaÃ§Ã£o do Ponto</label>
+                  <input required type="text" value={newLocation.name} onChange={e => setNewLocation({...newLocation, name: e.target.value})} className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all" placeholder="RazÃ£o Social ou Nome Fantasia" />
                 </div>
 
                 <div className="space-y-4">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Localização Territorial</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">LocalizaÃ§Ã£o Territorial</label>
                   <textarea 
                     value={newLocation.address} 
                     onChange={e => setNewLocation({...newLocation, address: e.target.value})} 
                     className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all resize-none h-32" 
-                    placeholder="Rua, Número, Bairro, Cidade..." 
+                    placeholder="Rua, NÃºmero, Bairro, Cidade..." 
                   />
                 </div>
 
@@ -426,4 +426,5 @@ export default function MapPage() {
     </div>
   );
 }
+
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate, useLocation } from "react-router-dom";
 import { Search, MapPin, Building2, Phone, Mail, FileText, ChevronRight, Filter, Plus, Trash2, Clock, CheckCircle2, TrendingUp, AlertCircle, X, Download, UserPlus, MoreHorizontal, Settings, LayoutGrid, Info, Loader2, Upload, FileUp, Activity, ChevronDown } from 'lucide-react';
 import { supabase, logAudit } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,7 +12,16 @@ import { getHighPrecisionCoordinates } from '../lib/geminiGeocoding';
 export default function CRMPage() {
   const { user } = useAuth();
   const { settings } = useSettings();
-  const navigate = useNavigate();
+      const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+    if (tab === "Alerta") setActiveTab("Alerta");
+    else if (tab === "Critico") setActiveTab("Critico");
+    else if (tab === "Perda") setActiveTab("Perda");
+  }, [location.search]);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
@@ -138,7 +147,7 @@ export default function CRMPage() {
   }, [filteredClients, displayLimit]);
 
   const handleDeleteClient = async (id: string) => {
-    if (!window.confirm('Deseja realmente excluir este cliente? Todos os pedidos associados serão mantidos, mas o vínculo será perdido.')) return;
+    if (!window.confirm('Deseja realmente excluir este cliente? Todos os pedidos associados serÃ£o mantidos, mas o vÃ­nculo serÃ¡ perdido.')) return;
     
     try {
       const { error } = await supabase.from('clients').delete().eq('id', id).eq('user_id', user?.id);
@@ -238,10 +247,10 @@ export default function CRMPage() {
         }
       }
 
-      toast.success(`Importação concluída! ${importedCount} novos clientes adicionados.`, { id: toastId });
+      toast.success(`ImportaÃ§Ã£o concluÃ­da! ${importedCount} novos clientes adicionados.`, { id: toastId });
       loadClients();
     } catch (err: any) {
-      toast.error('Erro na importação: ' + err.message, { id: toastId });
+      toast.error('Erro na importaÃ§Ã£o: ' + err.message, { id: toastId });
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -254,7 +263,7 @@ export default function CRMPage() {
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
         <div>
           <h1 className='text-3xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 uppercase'>
-             Gestão de Clientes
+             GestÃ£o de Clientes
           </h1>
         </div>
         
@@ -294,7 +303,7 @@ export default function CRMPage() {
               onClick={() => setActiveTab(tab)}
               className={`pb-3 px-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap ${activeTab === tab ? "border-emerald-600 text-emerald-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
             >
-              {tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: any) => a.type === tab)).length})</span>
+              {tab === "Critico" ? "Crítico" : tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: any) => a.type === tab)).length})</span>
             </button>
           ))}
           {loadingAlerts && (
@@ -327,7 +336,7 @@ export default function CRMPage() {
                                <span className="flex gap-1 shrink-0">
                                  {client.alerts.slice(0, 1).map((a: any, i: number) => (
                                    <span key={i} className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase border ${a.type === 'Perda' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                                     {a.type}: {a.days}D
+                                     {a.type === "Critico" ? "Crítico" : a.type}: {a.days}D
                                    </span>
                                  ))}
                                </span>
@@ -338,7 +347,7 @@ export default function CRMPage() {
                                 {client.cnpj || 'Sem CNPJ'}
                              </span>
                              <p className='text-[10px] text-slate-400 dark:text-zinc-500 truncate uppercase font-bold tracking-tight'>
-                                {client.city ? `🏙️ ${client.city}` : 'Cidade não informada'}
+                                {client.city ? `ðŸ™ï¸ ${client.city}` : 'Cidade nÃ£o informada'}
                              </p>
                           </div>
                        </div>
@@ -375,3 +384,5 @@ export default function CRMPage() {
     </div>
   );
 }
+
+

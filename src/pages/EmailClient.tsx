@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+﻿import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2, X, Minimize2, Maximize2, Loader2, RefreshCw, Clock, Info, ShieldAlert, Layers, Bookmark, PartyPopper, Users, Zap, Paperclip, Download, FileText, ChevronDown } from "lucide-react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -204,7 +204,7 @@ export default function EmailClient() {
         setErrorStatus(result.error || "Erro ao carregar mensagens.");
       }
     } catch (err: any) {
-      setErrorStatus(err.message || "Falha na conexão.");
+      setErrorStatus(err.message || "Falha na conexÃ£o.");
     } finally {
       setIsLoading(false);
     }
@@ -294,7 +294,7 @@ export default function EmailClient() {
             <Mail className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">
-            E-mail <span className="text-emerald-600">Represente-se</span>
+            Email
           </h1>
           <p className="text-slate-500 dark:text-zinc-400 font-medium text-lg max-w-xl mx-auto leading-relaxed">
             Selecione uma conta para gerenciar suas mensagens com o poder do Gmail.
@@ -412,9 +412,9 @@ export default function EmailClient() {
             <div className="px-4 pt-4 flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-slate-50 dark:border-zinc-800 pb-2">
               {[
                 { id: "", label: "Principal", icon: <Inbox className="w-3.5 h-3.5" /> },
-                { id: "CATEGORY_PROMOTIONS", label: "Promoções", icon: <Zap className="w-3.5 h-3.5" /> },
+                { id: "CATEGORY_PROMOTIONS", label: "PromoÃ§Ãµes", icon: <Zap className="w-3.5 h-3.5" /> },
                 { id: "CATEGORY_SOCIAL", label: "Social", icon: <Users className="w-3.5 h-3.5" /> },
-                { id: "CATEGORY_UPDATES", label: "Atualizações", icon: <Info className="w-3.5 h-3.5" /> }
+                { id: "CATEGORY_UPDATES", label: "AtualizaÃ§Ãµes", icon: <Info className="w-3.5 h-3.5" /> }
               ].map(cat => (
                 <button
                   key={cat.id}
@@ -714,9 +714,9 @@ function ComposeBalloon({
   }, []);
 
   async function handleSend() {
-    if (!to) { alert("Por favor, preencha o destinatário."); return; }
+    if (!to) { alert("Por favor, preencha o destinatÃ¡rio."); return; }
     if (!body) { alert("Por favor, preencha a mensagem."); return; }
-    if (!provider) { alert("Conta de e-mail não disponível."); return; }
+    if (!provider) { alert("Conta de e-mail nÃ£o disponÃ­vel."); return; }
 
     setIsSending(true);
     try {
@@ -728,7 +728,7 @@ function ComposeBalloon({
         alert("Erro no envio: " + res.error);
       }
     } catch (err: any) {
-      alert("Falha técnica: " + err.message);
+      alert("Falha tÃ©cnica: " + err.message);
     } finally {
       setIsSending(false);
     }
@@ -769,7 +769,7 @@ function ComposeBalloon({
                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Para</p>
                <input 
                  type="text" 
-                 placeholder="Destinatário" 
+                 placeholder="DestinatÃ¡rio" 
                  value={to} 
                  onChange={(e) => { setTo(e.target.value); setShowSuggestions(true); }}
                  onFocus={() => setShowSuggestions(true)}
@@ -815,7 +815,7 @@ function ComposeBalloon({
 
              <div className="flex-1 space-y-1">
                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Mensagem</p>
-               <textarea placeholder="Sua história começa aqui..." value={body} onChange={(e) => setBody(e.target.value)} className="w-full h-full bg-transparent border-none outline-none resize-none text-sm leading-relaxed dark:text-zinc-200 placeholder:text-slate-300 focus:ring-0 shadow-none"/>
+               <textarea placeholder="Sua histÃ³ria comeÃ§a aqui..." value={body} onChange={(e) => setBody(e.target.value)} className="w-full h-full bg-transparent border-none outline-none resize-none text-sm leading-relaxed dark:text-zinc-200 placeholder:text-slate-300 focus:ring-0 shadow-none"/>
              </div>
 
              <div className="pt-4 sm:pt-6 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0 pb-6 sm:pb-0">
@@ -836,3 +836,4 @@ function ComposeBalloon({
     </AnimatePresence>
   );
 }
+
