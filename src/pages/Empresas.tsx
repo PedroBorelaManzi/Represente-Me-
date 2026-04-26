@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   Building2, 
   Plus, 
@@ -114,7 +114,7 @@ export default function EmpresasPage() {
     }, {});
   }, [combinedCategories, monthlyOrders]);
 
-  const totalGeral = useMemo(() => (monthlyOrders || []).reduce((sum, o) => sum + (Number(o.value) || 0), 0), [monthlyOrders]);
+  const totalGeral = useMemo(() => (monthlyOrders || []).reduce((sum, o) => sum + (Number(o.value) || 0), [monthlyOrders]);
 
   const ordersToday = useMemo(() => {
     const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
@@ -176,7 +176,7 @@ export default function EmpresasPage() {
       
       // Check if already exists (case-insensitive)
       if (currentCategories.some((c: string) => c.toLowerCase() === trimmedCat.toLowerCase())) {
-        toast.error("Empresa \"" + trimmedCat + "\" jÃ¡ estÃ¡ cadastrada.");
+        toast.error("Empresa \"" + trimmedCat + "\" já está cadastrada.");
         return;
       }
 
@@ -240,7 +240,7 @@ export default function EmpresasPage() {
               <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
             </div>
             <div>
-              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Faturamento MÃªs</p>
+              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Faturamento Mês</p>
               <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{formatCurrency(totalGeral)}</h2>
             </div>
           </div>
@@ -252,7 +252,7 @@ export default function EmpresasPage() {
               <ShoppingBag className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
             </div>
             <div>
-              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pedidos MÃªs</p>
+              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pedidos Mês</p>
               <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{monthlyOrders.length}</h2>
             </div>
           </div>
@@ -274,7 +274,7 @@ export default function EmpresasPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-10">
         <div className="lg:col-span-4 flex lg:flex-col gap-4 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 snap-x scroll-px-4 custom-scrollbar">
           <div className="flex items-center justify-between px-2 md:px-4">
-             <h3 className="text-[9px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">SeleÃ§Ã£o EstratÃ©gica</h3>
+             <h3 className="text-[9px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Seleção Estratégica</h3>
           </div>
           
           <div className="flex lg:flex-col gap-3 min-w-max lg:min-w-0">
@@ -292,7 +292,7 @@ export default function EmpresasPage() {
               )}
             >
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[10px] md:text-[12px] font-black uppercase tracking-widest text-emerald-500">VisÃ£o Consolidada</h4>
+                <h4 className="text-[10px] md:text-[12px] font-black uppercase tracking-widest text-emerald-500">Visão Consolidada</h4>
                 <LayoutGrid className="w-4 h-4 md:w-5 md:h-5 opacity-40 group-hover:scale-110 transition-transform" />
               </div>
               <div className="flex items-end justify-between">
@@ -339,7 +339,7 @@ export default function EmpresasPage() {
               ) : filteredOrders.length === 0 ? (
                 <div className="col-span-full h-60 md:h-80 border-4 border-dashed border-slate-100 dark:border-zinc-800 rounded-[32px] md:rounded-[48px] flex flex-col items-center justify-center text-slate-300">
                   <ShoppingBag className="w-12 h-12 md:w-20 md:h-20 mb-4 md:mb-6 opacity-5" />
-                  <p className="font-black uppercase text-[9px] md:text-[11px] tracking-[0.3em] text-center opacity-40 leading-relaxed px-6">Nenhum Pedido <br/> Identificado Neste PerÃ­odo</p>
+                  <p className="font-black uppercase text-[9px] md:text-[11px] tracking-[0.3em] text-center opacity-40 leading-relaxed px-6">Nenhum Pedido <br/> Identificado Neste Período</p>
                 </div>
               ) : (
                 filteredOrders.map(order => (
@@ -352,7 +352,7 @@ export default function EmpresasPage() {
                         <span className="text-[10px] md:text-xs font-black text-slate-900 dark:text-zinc-100">{order.created_at ? new Date(order.created_at).toLocaleDateString("pt-BR") : "---"}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[7px] md:text-[8px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1 block">Valor LÃ­quido</span>
+                        <span className="text-[7px] md:text-[8px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1 block">Valor Líquido</span>
                         <span className="text-lg md:text-xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter tabular-nums">{formatCurrency(order.value)}</span>
                       </div>
                     </div>
@@ -393,7 +393,7 @@ export default function EmpresasPage() {
                 </div>
                 <div className="space-y-6">
                    <div>
-                     <label className="text-[8px] md:text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 block">RazÃ£o Social / Fantasia</label>
+                     <label className="text-[8px] md:text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Razão Social / Fantasia</label>
                      <input placeholder="EX: COZIMAX" value={newCat} onChange={e => setNewCat(e.target.value)} className="w-full p-5 md:p-6 bg-slate-50 dark:bg-zinc-850 rounded-[24px] md:rounded-[28px] font-black uppercase text-sm outline-none border border-slate-100 dark:border-zinc-800 focus:border-emerald-500 transition-all shadow-inner" />
                    </div>
                    <button onClick={addCategory} className="w-full py-5 md:py-6 bg-emerald-600 text-white rounded-[24px] md:rounded-[32px] font-black uppercase tracking-widest text-[10px] md:text-xs shadow-xl hover:bg-emerald-700 transition-all active:scale-95">Efetivar Cadastro</button>
@@ -422,7 +422,7 @@ export default function EmpresasPage() {
                       <Upload className="w-12 h-12 md:w-20 md:h-20" />
                    </div>
                    <h4 className="text-xl md:text-2xl font-black uppercase text-slate-900 dark:text-zinc-100 mb-2 md:mb-4 tracking-tight">Enviar Pedidos</h4>
-                   <p className="text-slate-400 text-sm md:text-lg max-w-sm font-medium leading-relaxed italic mx-auto">Clique para ir Ã  central de pedidos e registrar via IA ou manualmente.</p>
+                   <p className="text-slate-400 text-sm md:text-lg max-w-sm font-medium leading-relaxed italic mx-auto">Clique para ir à central de pedidos e registrar via IA ou manualmente.</p>
                 </div>
              </motion.div>
           </div>
@@ -442,7 +442,7 @@ export default function EmpresasPage() {
                      <input value={editName} onChange={e => setEditName(e.target.value)} className="w-full p-4 md:p-5 bg-slate-50 dark:bg-zinc-850 rounded-2xl md:rounded-3xl font-black uppercase text-sm outline-none border border-slate-100 dark:border-zinc-800" />
                    </div>
                    <div className="flex flex-col gap-3">
-                     <button onClick={handleUpdateCompany} className="w-full py-4 md:py-5 bg-emerald-600 text-white rounded-[20px] md:rounded-[24px] font-black uppercase tracking-widest text-[9px] md:text-[10px]">Salvar AlteraÃ§Ãµes</button>
+                     <button onClick={handleUpdateCompany} className="w-full py-4 md:py-5 bg-emerald-600 text-white rounded-[20px] md:rounded-[24px] font-black uppercase tracking-widest text-[9px] md:text-[10px]">Salvar Alterações</button>
                      <button onClick={() => handleDeleteCompany(managingCompany)} className="w-full py-4 md:py-5 bg-red-50 text-red-600 hover:bg-red-100 rounded-[20px] md:rounded-[24px] font-black uppercase tracking-widest text-[9px] md:text-[10px]">Excluir Empresa</button>
                    </div>
                 </div>
