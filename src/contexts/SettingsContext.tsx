@@ -109,7 +109,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       } else {
         // No settings found, create them
         try {
-          // Antes de criar com o padrão, checar se já tem dados para bypassar onboarding
           const { count } = await supabase
             .from("clients")
             .select("*", { count: 'exact', head: true })
@@ -137,9 +136,16 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   }, [user]);
 
   const updateSettings = async (newSettings: Partial<Settings>) => {
-    if (!user) return;
+    if (!user || loading) return;
 
-    const updated = { ...settings, ...newSettings };
+    // Garantir que has_completed_onboarding nunca volte para false se já for true
+    const hasCompleted = settings.has_completed_onboarding || newSettings.has_completed_onboarding;
+
+    const updated = { 
+      ...settings, 
+      ...newSettings,
+      has_completed_onboarding: hasCompleted 
+    };
 
     const { error } = await supabase
       .from("user_settings")

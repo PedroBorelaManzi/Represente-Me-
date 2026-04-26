@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -16,13 +16,21 @@ import {
 import { supabase } from "../lib/supabase";
 import { toast } from "sonner";
 import { Logo } from '../components/Logo';
+import { useAuth } from "../contexts/AuthContext";
 
 const Login = () => {
+  const { user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
 
   // Forgot Password State
   const [forgotEmail, setForgotEmail] = useState("");
@@ -52,7 +60,6 @@ const Login = () => {
     e.preventDefault();
     setResetLoading(true);
     try {
-      // 1. Validar se o usuário existe na tabela de clientes (user_settings)
       const { data: customer, error: customerError } = await supabase
         .from('user_settings')
         .select('email')
@@ -63,7 +70,6 @@ const Login = () => {
         throw new Error("E-mail não encontrado em nossa base de assinantes.");
       }
 
-      // 2. Iniciar recuperação no Supabase (envia código se configurado)
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail);
       if (error) throw error;
 
