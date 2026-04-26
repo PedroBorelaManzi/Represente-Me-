@@ -99,7 +99,7 @@ export default function MapPage() {
   };
 
   const handleDeleteClient = async (id: string, name: string) => {
-    if (!window.confirm(`Deseja realmente excluir o cliente "${name}"? Esta aÃ§Ã£o nÃ£o pode ser desfeita.`)) return;
+    if (!window.confirm(`Deseja realmente excluir o cliente "${name}"? Esta aÃ§Ã£o não pode ser desfeita.`)) return;
 
     const { error } = await supabase.from("clients").delete().eq("id", id);
     if (error) {
@@ -120,7 +120,7 @@ export default function MapPage() {
     setIsSearchingCnpj(true);
     try {
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanedCnpj}`);
-      if (!response.ok) throw new Error("CNPJ nÃ£o encontrado");
+      if (!response.ok) throw new Error("CNPJ não encontrado");
       
       const data = await response.json();
       const streetType = data.tipo_logradouro ? `${data.tipo_logradouro} ` : "";
@@ -148,7 +148,7 @@ export default function MapPage() {
       }));
       toast.success("Dados recuperados com sucesso!");
     } catch (err) {
-      toast.error("CNPJ nÃ£o encontrado. Preencha manualmente.");
+      toast.error("CNPJ não encontrado. Preencha manualmente.");
     } finally {
       setIsSearchingCnpj(false);
     }
@@ -252,7 +252,7 @@ export default function MapPage() {
             </div>
             Mapa de Clientes
           </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">VisualizaÃ§Ã£o geo-estratÃ©gica da sua carteira de clientes.</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Visualização geo-estratégica da sua carteira de clientes.</p>
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
@@ -265,7 +265,7 @@ export default function MapPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="block w-full pl-14 pr-6 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] shadow-sm focus:ring-8 focus:ring-emerald-500/10 text-xs font-black uppercase tracking-widest transition-all placeholder:text-slate-300"
-              placeholder="Buscar Cliente ou EndereÃ§o..."
+              placeholder="Buscar Cliente ou Endereço..."
             />
           </form>
           <button 
@@ -325,7 +325,7 @@ export default function MapPage() {
                   <div className="space-y-3 mb-6">
                     <div className="flex items-center gap-3 text-xs font-bold text-slate-600 dark:text-zinc-400 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-2xl">
                       <MapPin className="w-4 h-4 text-slate-400" />
-                      <span className="truncate">{company.address || "EndereÃ§o nÃ£o informado"}</span>
+                      <span className="truncate">{company.address || "Endereço não informado"}</span>
                     </div>
                   </div>
 
@@ -426,6 +426,7 @@ export default function MapPage() {
     </div>
   );
 }
+
 
 
 

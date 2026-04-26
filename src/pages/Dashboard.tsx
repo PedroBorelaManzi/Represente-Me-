@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo } from "react";
 import { Plus, ChevronLeft, ChevronRight, Clock, X, Home, Loader2, Users, Globe, RefreshCw, Calendar } from "lucide-react";
 import { supabase, logAudit } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -482,7 +482,7 @@ export default function Dashboard() {
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Orquestração do Dia</h3>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Orquestraçáo do Dia</h3>
                         </div>
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white dark:bg-zinc-900 px-3 py-1 rounded-full border border-slate-100 dark:border-zinc-800">
                            {selectedMobileDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
@@ -525,7 +525,7 @@ export default function Dashboard() {
                                 <Calendar className="w-10 h-10 text-slate-200 dark:text-zinc-700" />
                             </div>
                             <h4 className="text-base font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">Nada agendado</h4>
-                            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2 max-w-[200px] font-medium uppercase tracking-tight">Voc não possui compromissos orquestrados para este dia.</p>
+                            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2 max-w-[200px] font-medium uppercase tracking-tight">Voc ná£o possui compromissos orquestrados para este dia.</p>
                             <button 
                                 onClick={() => openNewEventModal(selectedMobileDate)}
                                 className="mt-8 px-8 py-4 bg-emerald-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 dark:shadow-none active:scale-95 transition-all"
@@ -564,3 +564,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

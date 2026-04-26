@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo } from "react";
 import {
   Plus,
   ChevronLeft,
@@ -144,7 +144,7 @@ export default function Agenda() {
   const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      toast.error("Google Client ID não configurado.");
+      toast.error("Google Client ID ná£o configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -215,7 +215,7 @@ export default function Agenda() {
             </div>
             Agenda <span className="hidden lg:inline text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-emerald-600">Sincronizada</span>
           </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Orquestração de visitas e monitoramento de feriados locais.</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Orquestraçáo de visitas e monitoramento de feriados locais.</p>
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -448,7 +448,7 @@ export default function Agenda() {
                             <CalendarIcon className="w-10 h-10 text-slate-200 dark:text-zinc-700" />
                         </div>
                         <h4 className="text-lg font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">Agenda Livre</h4>
-                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-2 max-w-[220px] font-medium">Não encontramos nenhum compromisso orquestrado para este dia.</p>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-2 max-w-[220px] font-medium">Ná£o encontramos nenhum compromisso orquestrado para este dia.</p>
                         <button 
                             onClick={() => { setEditingEvent({ id: '', title: '', date: formatDateLocal(selectedMobileDate), time: '09:00 - 10:00' }); setIsModalOpen(true); }}
                             className="mt-8 px-8 py-4 bg-emerald-600 text-white rounded-3xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 active:scale-95 transition-all"
@@ -510,7 +510,7 @@ export default function Agenda() {
                          <span className="text-[10px] font-black uppercase tracking-widest">{selectedHoliday.city || "Território Nacional"}</span>
                       </div>
                       <p className="text-sm font-medium text-slate-600 dark:text-zinc-400 leading-relaxed">
-                        Este  um feriado oficial. Fique atento às alterações nos seus compromissos e planeje-se com antecedência para otimizar suas visitas a clientes nesta região.
+                        Este  um feriado oficial. Fique atento á s alterações nos seus compromissos e planeje-se com antecedência para otimizar suas visitas a clientes nesta regiá£o.
                       </p>
                    </div>
 
@@ -523,3 +523,4 @@ export default function Agenda() {
     </div>
   );
 }
+

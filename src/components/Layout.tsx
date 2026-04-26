@@ -43,6 +43,10 @@ export default function Layout() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsInitialStep, setSettingsInitialStep] = useState(1);
   const [shortcutLinks, setShortcutLinks] = useState<any[]>([]);
+  const [acompAlertaOpen, setAcompAlertaOpen] = useState(false);
+  const [acompCriticoOpen, setAcompCriticoOpen] = useState(false);
+  const [acompPerdaOpen, setAcompPerdaOpen] = useState(false);
+  const [acompData, setAcompData] = useState<{Alerta: any[], Critico: any[], Perda: any[]}>({ Alerta: [], Critico: [], Perda: [] });
 
   // Auto-collapse sidebar on navigation (mobile)
   useEffect(() => {
@@ -99,7 +103,7 @@ export default function Layout() {
             <p className="px-3 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">Módulos Estratégicos</p>
             {navigation.map((item) => {
               const isActive = location.pathname === item.href || (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
-              const isIntegracoes = item.name === "IntegraÃ§Ãµes";
+              const isIntegracoes = item.name === "Integrações";
 
               if (isIntegracoes) {
                 return (
@@ -177,30 +181,57 @@ export default function Layout() {
                 </Link>
               );
             })}
-                        {/* Acompanhamentos Section */}
-            <div className="pt-4 mt-4 border-t border-slate-50 dark:border-zinc-850 space-y-2">
-              <p className="px-3 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">Acompanhamentos</p>
-              <Link 
-                to="/dashboard/clientes?tab=Alerta"
-                className="group flex items-center px-3 py-2 text-xs font-bold text-amber-600 dark:text-amber-500 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all"
-              >
-                <div className="w-2 h-2 rounded-full bg-amber-500 mr-3" />
-                Alerta
-              </Link>
-              <Link 
-                to="/dashboard/clientes?tab=Critico"
-                className="group flex items-center px-3 py-2 text-xs font-bold text-red-600 dark:text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-all"
-              >
-                <div className="w-2 h-2 rounded-full bg-red-600 mr-3" />
-                Crítico (Quente)
-              </Link>
-              <Link 
-                to="/dashboard/clientes?tab=Perda"
-                className="group flex items-center px-3 py-2 text-xs font-bold text-purple-600 dark:text-purple-500 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all"
-              >
-                <div className="w-2 h-2 rounded-full bg-purple-600 mr-3" />
-                Perda de Cliente
-              </Link>
+                                    {/* Acompanhamentos Section */}
+            <div className='pt-4 mt-4 border-t border-slate-50 dark:border-zinc-850 space-y-1'>
+              <p className='px-3 text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2'>Acompanhamentos</p>
+              
+              <div>
+                <button onClick={() => setAcompAlertaOpen(!acompAlertaOpen)} className='group flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-amber-600 dark:text-amber-500 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all'>
+                  <div className='flex items-center'><div className='w-2 h-2 rounded-full bg-amber-500 mr-3' />Alerta ({acompData.Alerta.length})</div>
+                  {acompAlertaOpen ? <ChevronUp className='w-3 h-3' /> : <ChevronDown className='w-3 h-3' />}
+                </button>
+                <AnimatePresence>{acompAlertaOpen && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className='overflow-hidden pl-8 pr-2 space-y-1 mt-1'>
+                    {acompData.Alerta.map((item: any, idx: number) => (
+                      <Link key={idx} to={`/dashboard/clientes/${item.id}`} className='block text-[10px] py-1 text-slate-500 hover:text-amber-600 truncate'>
+                        <span className='font-black uppercase opacity-60 mr-1'>{item.category}:</span> {item.name}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}</AnimatePresence>
+              </div>
+
+              <div>
+                <button onClick={() => setAcompCriticoOpen(!acompCriticoOpen)} className='group flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-red-600 dark:text-red-500 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-all'>
+                  <div className='flex items-center'><div className='w-2 h-2 rounded-full bg-red-600 mr-3' />Crítico ({acompData.Critico.length})</div>
+                  {acompCriticoOpen ? <ChevronUp className='w-3 h-3' /> : <ChevronDown className='w-3 h-3' />}
+                </button>
+                <AnimatePresence>{acompCriticoOpen && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className='overflow-hidden pl-8 pr-2 space-y-1 mt-1'>
+                    {acompData.Critico.map((item: any, idx: number) => (
+                      <Link key={idx} to={`/dashboard/clientes/${item.id}`} className='block text-[10px] py-1 text-slate-500 hover:text-red-600 truncate'>
+                        <span className='font-black uppercase opacity-60 mr-1'>{item.category}:</span> {item.name}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}</AnimatePresence>
+              </div>
+
+              <div>
+                <button onClick={() => setAcompPerdaOpen(!acompPerdaOpen)} className='group flex items-center justify-between w-full px-3 py-2 text-xs font-bold text-purple-600 dark:text-purple-500 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-all'>
+                  <div className='flex items-center'><div className='w-2 h-2 rounded-full bg-purple-600 mr-3' />Perda ({acompData.Perda.length})</div>
+                  {acompPerdaOpen ? <ChevronUp className='w-3 h-3' /> : <ChevronDown className='w-3 h-3' />}
+                </button>
+                <AnimatePresence>{acompPerdaOpen && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className='overflow-hidden pl-8 pr-2 space-y-1 mt-1'>
+                    {acompData.Perda.map((item: any, idx: number) => (
+                      <Link key={idx} to={`/dashboard/clientes/${item.id}`} className='block text-[10px] py-1 text-slate-500 hover:text-purple-600 truncate'>
+                        <span className='font-black uppercase opacity-60 mr-1'>{item.category}:</span> {item.name}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}</AnimatePresence>
+              </div>
             </div>
           </nav>
 
@@ -304,6 +335,9 @@ export default function Layout() {
     </div>
   );
 }
+
+
+
 
 
 

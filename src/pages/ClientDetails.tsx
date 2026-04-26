@@ -123,7 +123,7 @@ export default function ClientDetailsPage() {
   };
 
   const handleDeleteClient = async () => {
-    if (!window.confirm("Deseja realmente excluir este cliente?\n\nATENÇÃO: Todos os pedidos, arquivos e compromissos vinculados a este cliente serão perdidos permanentemente.")) return;
+    if (!window.confirm("Deseja realmente excluir este cliente?\n\nATENÇáO: Todos os pedidos, arquivos e compromissos vinculados a este cliente seráo perdidos permanentemente.")) return;
     
     setIsDeleting(true);
     try {
@@ -160,7 +160,7 @@ export default function ClientDetailsPage() {
     setIsAnalyzing(true);
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) throw new Error("VITE_GEMINI_API_KEY não configurada.");
+      if (!apiKey) throw new Error("VITE_GEMINI_API_KEY náo configurada.");
       
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }, { apiVersion: "v1" });
@@ -635,6 +635,7 @@ export default function ClientDetailsPage() {
     </div>
   );
 }
+
 
 
 

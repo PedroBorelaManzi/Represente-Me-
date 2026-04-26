@@ -4,6 +4,7 @@ import { Search, MapPin, Building2, Phone, Mail, FileText, ChevronRight, Filter,
 import { supabase, logAudit } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { parseFileForCnpjs } from '../lib/clientImport';
@@ -14,6 +15,11 @@ export default function CRMPage() {
   const { settings } = useSettings();
       const navigate = useNavigate();
   const location = useLocation();
+  const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Critico' | 'Perda'>('Todos');
+  const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -22,14 +28,14 @@ export default function CRMPage() {
     else if (tab === "Critico") setActiveTab("Critico");
     else if (tab === "Perda") setActiveTab("Perda");
   }, [location.search]);
-  const [clients, setClients] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingAlerts, setLoadingAlerts] = useState(false);
+  
+  
+  
   const [searchTerm, setSearchTerm] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Tab State for Alerts
-  const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Critico' | 'Perda'>('Todos');
+  
   
   // Import Modal/State
   const [isImporting, setIsImporting] = useState(false);
@@ -147,7 +153,7 @@ export default function CRMPage() {
   }, [filteredClients, displayLimit]);
 
   const handleDeleteClient = async (id: string) => {
-    if (!window.confirm('Deseja realmente excluir este cliente? Todos os pedidos associados serÃ£o mantidos, mas o vÃ­nculo serÃ¡ perdido.')) return;
+    if (!window.confirm('Deseja realmente excluir este cliente? Todos os pedidos associados será£o mantidos, mas o vínculo será perdido.')) return;
     
     try {
       const { error } = await supabase.from('clients').delete().eq('id', id).eq('user_id', user?.id);
@@ -247,10 +253,10 @@ export default function CRMPage() {
         }
       }
 
-      toast.success(`ImportaÃ§Ã£o concluÃ­da! ${importedCount} novos clientes adicionados.`, { id: toastId });
+      toast.success(`Importaçáo concluída! ${importedCount} novos clientes adicionados.`, { id: toastId });
       loadClients();
     } catch (err: any) {
-      toast.error('Erro na importaÃ§Ã£o: ' + err.message, { id: toastId });
+      toast.error('Erro na importaçáo: ' + err.message, { id: toastId });
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -263,7 +269,7 @@ export default function CRMPage() {
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
         <div>
           <h1 className='text-3xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 uppercase'>
-             GestÃ£o de Clientes
+             Gestá£o de Clientes
           </h1>
         </div>
         
@@ -347,7 +353,7 @@ export default function CRMPage() {
                                 {client.cnpj || 'Sem CNPJ'}
                              </span>
                              <p className='text-[10px] text-slate-400 dark:text-zinc-500 truncate uppercase font-bold tracking-tight'>
-                                {client.city ? `ðŸ™ï¸ ${client.city}` : 'Cidade nÃ£o informada'}
+                                {client.city ? `ðŸ™ï¸ ${client.city}` : 'Cidade ná£o informada'}
                              </p>
                           </div>
                        </div>
@@ -384,6 +390,8 @@ export default function CRMPage() {
     </div>
   );
 }
+
+
 
 
 

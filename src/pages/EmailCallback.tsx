@@ -10,7 +10,7 @@ export default function EmailCallback() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [message, setMessage] = useState("Processando conexão de E-mail...");
+  const [message, setMessage] = useState("Processando conexáo de E-mail...");
 
   function parseJwt (token: string) {
     var base64Url = token.split('.')[1];
@@ -30,13 +30,13 @@ export default function EmailCallback() {
       
       if (!code) {
         setStatus("error");
-        setMessage("Código de autorização não encontrado. A autorização foi negada ou o link expirou.");
+        setMessage("Código de autorizaçáo náo encontrado. A autorizaçáo foi negada ou o link expirou.");
         return;
       }
 
       if (!user) {
         setStatus("error");
-        setMessage("Sessão não identificada. Por favor, faça login no site novamente.");
+        setMessage("Sessáo náo identificada. Por favor, faça login no site novamente.");
         return;
       }
 
@@ -48,7 +48,7 @@ export default function EmailCallback() {
         if (providerState === 'google') {
            const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
            const secret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
-           if(!clientId || !secret) throw new Error("As chaves do Google (Client ID/Secret) não foram configuradas.");
+           if(!clientId || !secret) throw new Error("As chaves do Google (Client ID/Secret) náo foram configuradas.");
            
            endpoint = "https://oauth2.googleapis.com/token";
            bodyRequest.append("client_id", clientId);
@@ -109,7 +109,7 @@ export default function EmailCallback() {
       } catch (err: any) {
         console.error("Erro no callback do Email:", err);
         setStatus("error");
-        setMessage(`Falha na conexão: ${err.message}`);
+        setMessage(`Falha na conexáo: ${err.message}`);
       }
     }
 
@@ -177,7 +177,7 @@ export default function EmailCallback() {
                  <AlertCircle className="w-20 h-20 text-red-500 mx-auto relative z-10" />
               </div>
               <div>
-                 <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mb-4">Conexão Interrompida</h2>
+                 <h2 className="text-3xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mb-4">Conexáo Interrompida</h2>
                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest leading-relaxed">{message}</p>
               </div>
               <div className="flex flex-col gap-4 pt-6">
@@ -200,3 +200,4 @@ export default function EmailCallback() {
     </div>
   );
 }
+
