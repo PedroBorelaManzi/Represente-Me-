@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, ChevronLeft, ChevronRight, Clock, X, Home, Loader2, Users, Globe, RefreshCw } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Clock, X, Home, Loader2, Users, Globe, RefreshCw, Calendar } from "lucide-react";
 import { supabase, logAudit } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { useSettings } from "../contexts/SettingsContext";
 import { cn } from "../lib/utils";
 import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../lib/googleSync";
 import { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
@@ -31,6 +32,7 @@ const formatDateLocal = (date: Date) => {
 export default function Dashboard() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedMobileDate, setSelectedMobileDate] = useState(new Date());
   const [events, setEvents] = useState<EventType[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,13 +158,6 @@ export default function Dashboard() {
     logAudit('ACCESS_DASHBOARD'); loadData(); }, [user, currentDate.getFullYear(), currentDate.getMonth()]);
 
   // Aggregate revenue data for the chart with dynamic categories
-  
-  
-  
-  
-  
-  
-  
   const revenueChartData = useMemo(() => { try {
     const companyTotals: Record<string, number> = {};
     const normalizedToOriginal: Record<string, string> = {};
@@ -196,13 +191,6 @@ export default function Dashboard() {
     } catch (e) { console.error("Chart Logic Error:", e); return []; }
   }, [monthlyOrders, allTimeCategories]);
 
-
-
-
-
-
-
-
   const handleSync = async () => {
     if (!user) return;
     setIsSyncing(true);
@@ -217,7 +205,7 @@ export default function Dashboard() {
   const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert("Erro: Client ID do Google n�o configurado.");
+      alert("Erro: Client ID do Google no configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -327,11 +315,17 @@ export default function Dashboard() {
       const startMin = parseInt(start[0]) * 60 + parseInt(start[1] || "0");
       const endMin = parseInt(end[0]) * 60 + parseInt(end[1] || "0");
       const duration = endMin - startMin;
-      return Math.max(duration, 24); // M�nimo de 24px para visibilidade
+      return Math.max(duration, 24); // Mnimo de 24px para visibilidade
     } catch { return 48; }
   };
 
-      return (
+  const selectedDayEvents = useMemo(() => {
+    return events.filter(e => isSameDay(selectedMobileDate, e.date)).sort((a,b) => {
+        return a.time.localeCompare(b.time);
+    });
+  }, [events, selectedMobileDate]);
+
+  return (
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -383,7 +377,7 @@ export default function Dashboard() {
                 <button onClick={() => setCurrentDate(prev => { const d = new Date(prev); d.setDate(d.getDate() + 7); return d; })} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-zinc-400 transition-all"><ChevronRight className="w-4 h-4" /></button>
               </div>
               <button 
-                onClick={() => openNewEventModal(new Date())} 
+                onClick={() => openNewEventModal(selectedMobileDate)} 
                 className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all shadow-lg shadow-emerald-100 dark:shadow-none uppercase tracking-wider"
               >
                 <Plus className="w-4 h-4" /> Novo
@@ -392,7 +386,8 @@ export default function Dashboard() {
           </div>
 
           <div className="flex-1 flex flex-col overflow-hidden relative">
-            <div className="flex flex-1 min-h-[960px] overflow-auto custom-scrollbar">
+            {/* Desktop Weekly Grid */}
+            <div className="hidden lg:flex flex-1 min-h-[960px] overflow-auto custom-scrollbar">
               <div className="flex flex-col flex-1 min-w-[1000px] lg:min-w-0">
                 <div className="flex bg-slate-100/30 dark:bg-zinc-950/40 border-b border-slate-300 dark:border-zinc-700/50 sticky top-0 z-30 backdrop-blur-md">
                   <div className="w-12 flex-shrink-0 sticky left-0 bg-slate-100 dark:bg-zinc-950/40 z-40 border-r border-slate-200 dark:border-zinc-800" />
@@ -453,12 +448,90 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Mobile Weekly List View */}
+            <div className="lg:hidden flex-1 flex flex-col bg-white dark:bg-zinc-900 overflow-hidden">
+                <div className="grid grid-cols-7 gap-1 p-2 border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950">
+                    {weekDays.map((date, i) => {
+                        const isSelected = isSameDay(date, formatDateLocal(selectedMobileDate));
+                        const isToday = isSameDay(date, formatDateLocal(new Date()));
+                        return (
+                            <button 
+                                key={i}
+                                onClick={() => setSelectedMobileDate(date)}
+                                className={cn(
+                                    "flex flex-col items-center py-2 rounded-xl transition-all",
+                                    isSelected ? "bg-emerald-600 text-white shadow-md scale-105" : "hover:bg-slate-100 dark:hover:bg-zinc-800"
+                                )}
+                            >
+                                <span className={cn("text-[10px] font-bold uppercase", isSelected ? "text-emerald-50" : "text-slate-400")}>
+                                    {date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
+                                </span>
+                                <span className={cn("text-sm font-black", isSelected ? "text-white" : isToday ? "text-emerald-600" : "text-slate-700 dark:text-zinc-200")}>
+                                    {date.getDate()}
+                                </span>
+                                {isToday && !isSelected && <div className="w-1 h-1 rounded-full bg-emerald-600 mt-1" />}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-zinc-950">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Compromissos</h3>
+                        <span className="text-[10px] font-bold text-slate-400">{selectedMobileDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</span>
+                    </div>
+
+                    {selectedDayEvents.length > 0 ? (
+                        <div className="space-y-3">
+                            {selectedDayEvents.map(event => {
+                                const clientName = clients.find(c => c.id === event.client_id)?.name;
+                                return (
+                                    <button 
+                                        key={event.id}
+                                        onClick={() => setEditingEvent(event)}
+                                        className="w-full text-left p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm flex items-start gap-4 active:scale-[0.98] transition-transform"
+                                    >
+                                        <div className="flex flex-col items-center justify-center py-1 px-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
+                                            <Clock className="w-3 h-3 text-emerald-600 mb-1" />
+                                            <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400">{event.time.split(' - ')[0]}</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">{event.title}</h4>
+                                            {clientName && (
+                                                <div className="flex items-center gap-1.5 mt-1">
+                                                    <Users className="w-3 h-3 text-slate-400" />
+                                                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">@{clientName}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                            <div className="w-16 h-16 bg-slate-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
+                                <Calendar className="w-8 h-8 text-slate-300 dark:text-zinc-600" />
+                            </div>
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Nenhum compromisso</h4>
+                            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-[200px]">Voc no possui compromissos agendados para este dia.</p>
+                            <button 
+                                onClick={() => openNewEventModal(selectedMobileDate)}
+                                className="mt-6 text-xs font-black text-emerald-600 uppercase tracking-wider flex items-center gap-2 hover:opacity-80"
+                            >
+                                <Plus className="w-4 h-4" /> Adicionar Primeiro
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
           </div>
         </div>
 
         {/* Right Column: Revenue Chart (~40% - 2/5 Width, 50% Height) */}
         <div className="lg:col-span-2 h-full flex flex-col gap-6">
-           <div className="h-1/2 min-h-[300px]">
+           <div className="h-full lg:h-1/2 min-h-[300px]">
               <RevenueChart data={revenueChartData} loading={loading} currentDate={currentDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} />
            </div>
            {/* Space below for layout balance */}
@@ -481,5 +554,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-
