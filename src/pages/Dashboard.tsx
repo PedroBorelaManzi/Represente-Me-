@@ -362,7 +362,7 @@ export default function Dashboard() {
                   onClick={handleGoogleConnect}
                   className={cn(
                     "p-2 rounded-xl transition-all",
-                    googleConnected ? "text-emerald-500" : "text-slate-400 hover:text-emerald-600"
+                    googleConnected ? "text-emerald-50" : "text-slate-400 hover:text-emerald-600"
                   )}
                   title={googleConnected ? "Google Conectado" : "Conectar Google Agenda"}
                 >
@@ -451,7 +451,7 @@ export default function Dashboard() {
 
             {/* Mobile Weekly List View */}
             <div className="lg:hidden flex-1 flex flex-col bg-white dark:bg-zinc-900 overflow-hidden">
-                <div className="grid grid-cols-7 gap-1 p-2 border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950">
+                <div className="flex items-center gap-3 p-4 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-x-auto no-scrollbar scroll-smooth">
                     {weekDays.map((date, i) => {
                         const isSelected = isSameDay(date, formatDateLocal(selectedMobileDate));
                         const isToday = isSameDay(date, formatDateLocal(new Date()));
@@ -460,67 +460,77 @@ export default function Dashboard() {
                                 key={i}
                                 onClick={() => setSelectedMobileDate(date)}
                                 className={cn(
-                                    "flex flex-col items-center py-2 rounded-xl transition-all",
-                                    isSelected ? "bg-emerald-600 text-white shadow-md scale-105" : "hover:bg-slate-100 dark:hover:bg-zinc-800"
+                                    "flex-shrink-0 flex flex-col items-center justify-center w-[54px] h-[78px] rounded-[22px] transition-all relative",
+                                    isSelected 
+                                      ? "bg-emerald-600 text-white shadow-[0_12px_24px_-8px_rgba(16,185,129,0.5)] scale-105 z-10" 
+                                      : "bg-slate-50 dark:bg-zinc-800/50 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-700"
                                 )}
                             >
-                                <span className={cn("text-[10px] font-bold uppercase", isSelected ? "text-emerald-50" : "text-slate-400")}>
+                                <span className={cn("text-[9px] font-black uppercase tracking-tighter mb-1", isSelected ? "text-emerald-50" : "text-slate-400")}>
                                     {date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
                                 </span>
-                                <span className={cn("text-sm font-black", isSelected ? "text-white" : isToday ? "text-emerald-600" : "text-slate-700 dark:text-zinc-200")}>
+                                <span className={cn("text-base font-black", isSelected ? "text-white" : isToday ? "text-emerald-600" : "text-slate-700 dark:text-zinc-200")}>
                                     {date.getDate()}
                                 </span>
-                                {isToday && !isSelected && <div className="w-1 h-1 rounded-full bg-emerald-600 mt-1" />}
+                                {isToday && !isSelected && <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-emerald-600" />}
                             </button>
                         );
                     })}
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-zinc-950">
+                <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50 dark:bg-zinc-950">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Compromissos</h3>
-                        <span className="text-[10px] font-bold text-slate-400">{selectedMobileDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}</span>
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Orquestração do Dia</h3>
+                        </div>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white dark:bg-zinc-900 px-3 py-1 rounded-full border border-slate-100 dark:border-zinc-800">
+                           {selectedMobileDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
+                        </span>
                     </div>
 
                     {selectedDayEvents.length > 0 ? (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {selectedDayEvents.map(event => {
                                 const clientName = clients.find(c => c.id === event.client_id)?.name;
                                 return (
                                     <button 
                                         key={event.id}
                                         onClick={() => setEditingEvent(event)}
-                                        className="w-full text-left p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm flex items-start gap-4 active:scale-[0.98] transition-transform"
+                                        className="w-full text-left p-5 bg-white dark:bg-zinc-900 rounded-[28px] border border-slate-100 dark:border-zinc-800 shadow-sm flex items-center gap-5 active:scale-[0.98] transition-all group"
                                     >
-                                        <div className="flex flex-col items-center justify-center py-1 px-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
-                                            <Clock className="w-3 h-3 text-emerald-600 mb-1" />
-                                            <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400">{event.time.split(' - ')[0]}</span>
+                                        <div className="flex flex-col items-center justify-center w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 rounded-[18px] border border-emerald-100 dark:border-emerald-500/20 flex-shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                            <Clock className="w-4 h-4 mb-1" />
+                                            <span className="text-[10px] font-black">{event.time.split(' - ')[0]}</span>
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">{event.title}</h4>
-                                            {clientName && (
-                                                <div className="flex items-center gap-1.5 mt-1">
-                                                    <Users className="w-3 h-3 text-slate-400" />
-                                                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">@{clientName}</span>
-                                                </div>
-                                            )}
+                                            <h4 className="text-sm font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight truncate leading-tight mb-1">{event.title}</h4>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">{event.time}</span>
+                                                {clientName && (
+                                                   <>
+                                                     <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-zinc-700" />
+                                                     <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">@{clientName}</span>
+                                                   </>
+                                                )}
+                                            </div>
                                         </div>
                                     </button>
                                 );
                             })}
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                            <div className="w-16 h-16 bg-slate-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
-                                <Calendar className="w-8 h-8 text-slate-300 dark:text-zinc-600" />
+                        <div className="flex flex-col items-center justify-center py-20 px-6 text-center bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-zinc-800 shadow-sm">
+                            <div className="w-20 h-20 bg-slate-50 dark:bg-zinc-800/50 rounded-full flex items-center justify-center mb-6">
+                                <Calendar className="w-10 h-10 text-slate-200 dark:text-zinc-700" />
                             </div>
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-zinc-100">Nenhum compromisso</h4>
-                            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-[200px]">Voc no possui compromissos agendados para este dia.</p>
+                            <h4 className="text-base font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">Nada agendado</h4>
+                            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2 max-w-[200px] font-medium uppercase tracking-tight">Voc não possui compromissos orquestrados para este dia.</p>
                             <button 
                                 onClick={() => openNewEventModal(selectedMobileDate)}
-                                className="mt-6 text-xs font-black text-emerald-600 uppercase tracking-wider flex items-center gap-2 hover:opacity-80"
+                                className="mt-8 px-8 py-4 bg-emerald-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 dark:shadow-none active:scale-95 transition-all"
                             >
-                                <Plus className="w-4 h-4" /> Adicionar Primeiro
+                                <Plus className="w-4 h-4 inline mr-2" /> Novo Registro
                             </button>
                         </div>
                     )}
