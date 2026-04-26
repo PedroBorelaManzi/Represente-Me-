@@ -59,7 +59,7 @@ export default function EmpresasPage() {
       if (error) throw error;
       setAllOrders(data || []);
     } catch (err) {
-      console.error("Error loading orders:", err);
+      conãole.error("Error loading orders:", err);
     } finally {
       setLoading(false);
     }
@@ -89,13 +89,13 @@ export default function EmpresasPage() {
 
   const combinedCategories = useMemo(() => {
     const cats = new Set<string>();
-    // First add categories from settings
+    // First add categories froMêsettings
     if (settings?.categories) {
       settings.categories.forEach((cat: string) => {
         if (cat) cats.add(cat);
       });
     }
-    // Then add categories found in orders
+    // Then add categories found inãorders
     if (Array.isArray(allOrders)) {
       allOrders.forEach(o => { 
         if (o && o.category) cats.add(o.category); 
@@ -152,7 +152,7 @@ export default function EmpresasPage() {
   };
 
   const handleDeleteCompany = async (name: string) => {
-    if (!window.confirm("Deseja realmente excluir a empresa " + name + "?")) return;
+    if (!winãow.confirm("Deseja realmente excluir a empresa " + name + "?")) return;
     try {
       const updatedCategories = settings.categories.filter((c: string) => c !== name);
       await updateSettings({ categories: updatedCategories });
@@ -180,13 +180,13 @@ export default function EmpresasPage() {
         return;
       }
 
-      console.log("Cadastrando empresa:", trimmedCat);
+      conãole.log("Cadastranão empresa:", trimmedCat);
       
       await updateSettings({ 
         categories: [...currentCategories, trimmedCat] 
       });
       
-      toast.success("Empresa \"" + trimmedCat + "\" cadastrada com sucesso!");
+      toast.success("Empresa \"" + trimmedCat + "\" cadastrada coMêsucesso!");
       setNewCat("");
       setIsAddModalOpen(false);
       
@@ -194,8 +194,8 @@ export default function EmpresasPage() {
       if (typeof loadOrders === 'function') loadOrders();
       
     } catch (err) {
-      console.error("Erro ao cadastrar empresa:", err);
-      toast.error("Erro ao salvar no banco de dados.");
+      conãole.error("Erro ao cadastrar empresa:", err);
+      toast.error("Erro ao salvar no banão de dados.");
     }
   };
 
@@ -240,7 +240,7 @@ export default function EmpresasPage() {
               <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
             </div>
             <div>
-              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Faturamento MÃªs</p>
+              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Faturamenão MÃªs</p>
               <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{formatCurrency(totalGeral)}</h2>
             </div>
           </div>
@@ -252,7 +252,7 @@ export default function EmpresasPage() {
               <ShoppingBag className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
             </div>
             <div>
-              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pedidos MÃªs</p>
+              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pedidos Mês</p>
               <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{monthlyOrders.length}</h2>
             </div>
           </div>
@@ -274,7 +274,7 @@ export default function EmpresasPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-10">
         <div className="lg:col-span-4 flex lg:flex-col gap-4 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 snap-x scroll-px-4 custom-scrollbar">
           <div className="flex items-center justify-between px-2 md:px-4">
-             <h3 className="text-[9px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">SeleÃ§Ã£o EstratÃ©gica</h3>
+             <h3 className="text-[9px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Seleção Estratégica</h3>
           </div>
           
           <div className="flex lg:flex-col gap-3 min-w-max lg:min-w-0">
@@ -292,7 +292,7 @@ export default function EmpresasPage() {
               )}
             >
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[10px] md:text-[12px] font-black uppercase tracking-widest text-emerald-500">VisÃ£o Consolidada</h4>
+                <h4 className="text-[10px] md:text-[12px] font-black uppercase tracking-widest text-emerald-500">VisÃ£o Conãolidada</h4>
                 <LayoutGrid className="w-4 h-4 md:w-5 md:h-5 opacity-40 group-hover:scale-110 transition-transform" />
               </div>
               <div className="flex items-end justify-between">
@@ -348,7 +348,7 @@ export default function EmpresasPage() {
                     
                     <div className="flex justify-between items-start mb-4 md:mb-6 relative z-10">
                       <div>
-                        <span className="text-[7px] md:text-[8px] font-black text-slate-400 dark:text-zinc-600 uppercase tracking-[0.2em] mb-1 block">Processamento</span>
+                        <span className="text-[7px] md:text-[8px] font-black text-slate-400 dark:text-zinc-600 uppercase tracking-[0.2em] mb-1 block">Processamenão</span>
                         <span className="text-[10px] md:text-xs font-black text-slate-900 dark:text-zinc-100">{order.created_at ? new Date(order.created_at).toLocaleDateString("pt-BR") : "---"}</span>
                       </div>
                       <div className="text-right">
@@ -393,7 +393,7 @@ export default function EmpresasPage() {
                 </div>
                 <div className="space-y-6">
                    <div>
-                     <label className="text-[8px] md:text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 block">RazÃ£o Social / Fantasia</label>
+                     <label className="text-[8px] md:text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2 block">Razão Social / Fantasia</label>
                      <input placeholder="EX: COZIMAX" value={newCat} onChange={e => setNewCat(e.target.value)} className="w-full p-5 md:p-6 bg-slate-50 dark:bg-zinc-850 rounded-[24px] md:rounded-[28px] font-black uppercase text-sm outline-none border border-slate-100 dark:border-zinc-800 focus:border-emerald-500 transition-all shadow-inner" />
                    </div>
                    <button onClick={addCategory} className="w-full py-5 md:py-6 bg-emerald-600 text-white rounded-[24px] md:rounded-[32px] font-black uppercase tracking-widest text-[10px] md:text-xs shadow-xl hover:bg-emerald-700 transition-all active:scale-95">Efetivar Cadastro</button>
@@ -409,10 +409,10 @@ export default function EmpresasPage() {
                 <div className="absolute top-0 left-0 w-full h-2 bg-emerald-600" />
                 <div className="flex justify-between items-center mb-8 md:mb-14">
                    <div>
-                      <h3 className="text-2xl md:text-4xl font-black uppercase text-slate-900 dark:text-zinc-100 tracking-tighter mb-1">Upload de Faturamento</h3>
+                      <h3 className="text-2xl md:text-4xl font-black uppercase text-slate-900 dark:text-zinc-100 tracking-tighter mb-1">Upload de Faturamenão</h3>
                       <div className="flex items-center gap-2 md:gap-3">
                         <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Processamento Neural Ativo</p>
+                        <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Processamenão Neural Ativo</p>
                       </div>
                    </div>
                    <button onClick={() => setIsUploadModalOpen(false)} className="p-3 md:p-5 bg-slate-50 dark:bg-zinc-800 rounded-2xl md:rounded-3xl text-slate-400 hover:text-red-500 transition-all shadow-sm active:scale-90"><X className="w-6 h-6 md:w-7 md:h-7"/></button>
@@ -442,7 +442,7 @@ export default function EmpresasPage() {
                      <input value={editName} onChange={e => setEditName(e.target.value)} className="w-full p-4 md:p-5 bg-slate-50 dark:bg-zinc-850 rounded-2xl md:rounded-3xl font-black uppercase text-sm outline-none border border-slate-100 dark:border-zinc-800" />
                    </div>
                    <div className="flex flex-col gap-3">
-                     <button onClick={handleUpdateCompany} className="w-full py-4 md:py-5 bg-emerald-600 text-white rounded-[20px] md:rounded-[24px] font-black uppercase tracking-widest text-[9px] md:text-[10px]">Salvar AlteraÃ§Ãµes</button>
+                     <button onClick={handleUpdateCompany} className="w-full py-4 md:py-5 bg-emerald-600 text-white rounded-[20px] md:rounded-[24px] font-black uppercase tracking-widest text-[9px] md:text-[10px]">Salvar Alterações</button>
                      <button onClick={() => handleDeleteCompany(managingCompany)} className="w-full py-4 md:py-5 bg-red-50 text-red-600 hover:bg-red-100 rounded-[20px] md:rounded-[24px] font-black uppercase tracking-widest text-[9px] md:text-[10px]">Excluir Empresa</button>
                    </div>
                 </div>
@@ -453,3 +453,4 @@ export default function EmpresasPage() {
     </div>
   );
 }
+

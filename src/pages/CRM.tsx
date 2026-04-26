@@ -153,7 +153,7 @@ export default function CRMPage() {
   }, [filteredClients, displayLimit]);
 
   const handleDeleteClient = async (id: string) => {
-    if (!window.confirm('Deseja realmente excluir este cliente? Todos os pedidos associados será£o mantidos, mas o vínculo será perdido.')) return;
+    if (!window.confirm('Deseja realmente excluir este cliente? Todos os pedidos associados serão mantidos, mas o vínculo será perdido.')) return;
     
     try {
       const { error } = await supabase.from('clients').delete().eq('id', id).eq('user_id', user?.id);
@@ -253,10 +253,10 @@ export default function CRMPage() {
         }
       }
 
-      toast.success(`Importaçáo concluída! ${importedCount} novos clientes adicionados.`, { id: toastId });
+      toast.success(`Importação concluída! ${importedCount} novos clientes adicionados.`, { id: toastId });
       loadClients();
     } catch (err: any) {
-      toast.error('Erro na importaçáo: ' + err.message, { id: toastId });
+      toast.error('Erro na Importação: ' + err.message, { id: toastId });
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -269,7 +269,7 @@ export default function CRMPage() {
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
         <div>
           <h1 className='text-3xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 uppercase'>
-             Gestá£o de Clientes
+             Gestão de Clientes
           </h1>
         </div>
         
@@ -353,7 +353,7 @@ export default function CRMPage() {
                                 {client.cnpj || 'Sem CNPJ'}
                              </span>
                              <p className='text-[10px] text-slate-400 dark:text-zinc-500 truncate uppercase font-bold tracking-tight'>
-                                {client.city ? `ðŸ™ï¸ ${client.city}` : 'Cidade ná£o informada'}
+                                {client.city ? `ðŸ™ï¸ ${client.city}` : 'Cidade não informada'}
                              </p>
                           </div>
                        </div>
@@ -390,6 +390,7 @@ export default function CRMPage() {
     </div>
   );
 }
+
 
 
 
