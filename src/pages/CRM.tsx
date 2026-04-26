@@ -31,7 +31,7 @@ export default function CRMPage() {
   
   
   
-  const [searchTerm, setSearchTerm] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Tab State for Alerts
@@ -390,6 +390,8 @@ export default function CRMPage() {
     </div>
   );
 }
+
+
 
 
 

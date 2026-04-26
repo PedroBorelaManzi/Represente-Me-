@@ -70,6 +70,57 @@ export default function Layout() {
     updateSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' });
   };
 
+  useEffect(() => {
+    if (user && settings) loadAcompanhamentos();
+  }, [user, settings]);
+
+  const loadAcompanhamentos = async () => {
+    if (!user) return;
+    try {
+      const { data: clientsData } = await supabase.from('clients').select('id, name').eq('user_id', user.id);
+      const { data: filesData } = await supabase.rpc("list_user_files", { u_id: user.id });
+      
+      const files = filesData || [];
+      const clients = clientsData || [];
+      
+      const filesByClient: any = {};
+      files.forEach((f: any) => {
+        if (!filesByClient[f.client_id]) filesByClient[f.client_id] = [];
+        filesByClient[f.client_id].push(f);
+      });
+
+      const alertaArr: any[] = [];
+      const criticoArr: any[] = [];
+      const perdaArr: any[] = [];
+      const today = new Date().getTime();
+
+      clients.forEach(client => {
+        const cFiles = filesByClient[client.id] || [];
+        const lastDates: any = {};
+        cFiles.forEach((f: any) => {
+          const parts = f.file_name.split("___");
+          if (parts.length > 1) {
+            const cat = parts[0];
+            const date = new Date(f.created_at).getTime();
+            if (!lastDates[cat] || date > lastDates[cat]) lastDates[cat] = date;
+          }
+        });
+
+        for (const [cat, date] of Object.entries(lastDates)) {
+          const days = Math.floor((today - (date as number)) / (1000 * 60 * 60 * 24));
+          const entry = { name: client.name, category: cat, id: client.id };
+          if (days >= (settings?.perda_days || 365)) perdaArr.push(entry);
+          else if (days >= (settings?.critico_days || 90)) criticoArr.push(entry);
+          else if (days >= (settings?.alerta_days || 45)) alertaArr.push(entry);
+        }
+      });
+
+      setAcompData({ Alerta: alertaArr, Critico: criticoArr, Perda: perdaArr });
+    } catch (err) {
+      console.error("Error loading acompanhamentos:", err);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-zinc-950 font-sans selection:bg-emerald-100 selection:text-emerald-900 transition-colors duration-300">
       {/* Mobile Sidebar Overlay */}
@@ -335,6 +386,7 @@ export default function Layout() {
     </div>
   );
 }
+
 
 
 
