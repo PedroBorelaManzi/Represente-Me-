@@ -250,7 +250,7 @@ export default function Map() {
             <div className="p-3 bg-emerald-600 rounded-[20px]">
               <Navigation2 className="w-8 h-8 text-white" />
             </div>
-            Radar <span className="text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-emerald-600">Territorial</span>
+            Mapa de <span className="text-emerald-600">Clientes</span>
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Visualização geo-estratégica da sua carteira de clientes.</p>
         </div>
