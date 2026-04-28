@@ -345,7 +345,7 @@ export default function EmailClient() {
   }
 
   return (
-    <div className="h-full flex flex-col gap-4 p-4 lg:p-6 relative overflow-hidden">
+    <div className="h-full flex flex-col gap-4 p-2 lg:p-0 relative overflow-hidden">
       <div className="px-4 sm:px-0 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
            <button onClick={() => { setSelectedAccount(null); setSelectedEmail(null); }} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors mb-4">
@@ -380,7 +380,7 @@ export default function EmailClient() {
       </div>
 
       <div className="flex-1 min-h-0 flex gap-2 sm:gap-6 px-2 sm:px-0 bg-slate-50 dark:bg-zinc-950 overflow-hidden relative">
-        <div className="hidden lg:flex w-64 flex-col gap-2">
+        <div className="hidden lg:flex w-72 flex-col gap-2">
            <div className="h-fit bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] p-4 flex flex-col shadow-sm">
               <nav className="space-y-1">
                  {(Object.keys(folderLabels) as EmailFolder[]).map(folder => (
@@ -405,7 +405,7 @@ export default function EmailClient() {
         </div>
 
         <div className={cn(
-          "w-full md:w-[420px] lg:w-[480px] flex-shrink-0 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] overflow-hidden shadow-sm",
+          "w-72 flex-shrink-0 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] overflow-hidden shadow-sm",
           selectedEmail && "hidden md:flex" 
         )}>
           {currentFolder === 'inbox' && (
@@ -538,7 +538,7 @@ export default function EmailClient() {
              </div>
 
              <div className="flex-1 overflow-y-auto p-4 sm:p-14 custom-scrollbar bg-white dark:bg-zinc-900">
-                <div className="max-w-4xl mx-auto">
+                <div className="max-w-none mx-auto">
                    <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-zinc-100 mb-6 sm:mb-10 leading-tight">{selectedEmail.subject}</h2>
                   
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
