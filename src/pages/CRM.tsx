@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from "react-router-dom";
 import { Search, MapPin, Building2, Phone, Mail, FileText, ChevronRight, Filter, Plus, Trash2, Clock, CheckCircle2, TrendingUp, AlertCircle, X, Download, UserPlus, MoreHorizontal, Settings, LayoutGrid, Info, Loader2, Upload, FileUp, Activity, ChevronDown } from 'lucide-react';
 import { supabase, logAudit } from '../lib/supabase';
@@ -15,7 +15,7 @@ export default function CRMPage() {
   const { settings } = useSettings();
       const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Critico' | 'Perda'>('Todos');
+  const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Crítico' | 'Perda'>('Todos');
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
@@ -25,9 +25,10 @@ export default function CRMPage() {
     const params = new URLSearchParams(location.search);
     const tab = params.get("tab");
     if (tab === "Alerta") setActiveTab("Alerta");
-    else if (tab === "Critico") setActiveTab("Critico");
+    else if (tab === "Critico" || tab === "Crítico") setActiveTab("Crítico");
     else if (tab === "Perda") setActiveTab("Perda");
   }, [location.search]);
+  
   
   
   
@@ -104,7 +105,7 @@ export default function CRMPage() {
           for (const [cat, date] of Object.entries(lastDates)) {
             const days = Math.floor((today - (date as number)) / (1000 * 60 * 60 * 24));
             if (days >= (settings?.perda_days || 365)) alerts.push({ company: cat, type: "Perda", days });
-            else if (days >= (settings?.critico_days || 90)) alerts.push({ company: cat, type: "Critico", days });
+            else if (days >= (settings?.critico_days || 90)) alerts.push({ company: cat, type: "Crítico", days });
             else if (days >= (settings?.alerta_days || 45)) alerts.push({ company: cat, type: "Alerta", days });
           }
           return { ...client, alerts: alerts.sort((a, b) => b.days - a.days) };
@@ -303,13 +304,13 @@ export default function CRMPage() {
         
         {/* Tabs next to search matches filter */}
         <div className='px-4 pt-4 border-b dark:border-zinc-850 bg-slate-50/50 dark:bg-zinc-950/20 flex items-center gap-4 overflow-x-auto no-scrollbar'>
-          {(['Todos', 'Alerta', 'Critico', 'Perda'] as const).map(tab => (
+          {(['Todos', 'Alerta', 'Crítico', 'Perda'] as const).map(tab => (
             <button 
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`pb-3 px-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap ${activeTab === tab ? "border-emerald-600 text-emerald-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
             >
-              {tab === "Critico" ? "Crítico" : tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: any) => a.type === tab)).length})</span>
+              {tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: any) => a.type === tab)).length})</span>
             </button>
           ))}
           {loadingAlerts && (
@@ -341,8 +342,8 @@ export default function CRMPage() {
                              {client.alerts?.length > 0 && (
                                <span className="flex gap-1 shrink-0">
                                  {client.alerts.filter((a: any) => activeTab === 'Todos' ? true : a.type === activeTab).slice(0, 1).map((a: any, i: number) => (
-                                   <span key={i} className={cn("px-2 py-0.5 rounded-md text-[8px] font-black uppercase border flex items-center gap-1", a.type === 'Perda' ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/30 dark:border-red-900/40' : a.type === 'Critico' ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-950/30 dark:border-orange-900/40' : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/30 dark:border-amber-900/40') }>
-                                     <span className="opacity-60">{a.company}</span> <span className="w-1 h-1 rounded-full bg-current opacity-30" /> <span>{a.type === "Critico" ? "Crítico" : a.type}: {a.days}D</span>
+                                   <span key={i} className={cn("px-2 py-0.5 rounded-md text-[8px] font-black uppercase border flex items-center gap-1", a.type === 'Perda' ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/30 dark:border-red-900/40' : a.type === 'Crítico' ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-950/30 dark:border-orange-900/40' : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/30 dark:border-amber-900/40') }>
+                                     <span className="opacity-60">{a.company}</span> <span className="w-1 h-1 rounded-full bg-current opacity-30" /> <span>{a.type}: {a.days}D</span>
                                    </span>
                                  ))}
                                </span>
@@ -353,7 +354,7 @@ export default function CRMPage() {
                                 {client.cnpj || 'Sem CNPJ'}
                              </span>
                              <p className='text-[10px] text-slate-400 dark:text-zinc-500 truncate uppercase font-bold tracking-tight'>
-                                {client.city ? `ðŸ™ï¸ ${client.city}` : 'Cidade não informada'}
+                                {client.city ? `📍 ${client.city}` : 'Cidade não informada'}
                              </p>
                           </div>
                        </div>
@@ -390,12 +391,3 @@ export default function CRMPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

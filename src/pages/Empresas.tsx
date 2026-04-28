@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   Building2, 
   Plus, 
@@ -176,7 +176,7 @@ export default function EmpresasPage() {
       
       // Check if already exists (case-insensitive)
       if (currentCategories.some((c: string) => c.toLowerCase() === trimmedCat.toLowerCase())) {
-        toast.error("Empresa \"" + trimmedCat + "\" jÃ¡ estÃ¡ cadastrada.");
+        toast.error("Empresa \"" + trimmedCat + "\" já está cadastrada.");
         return;
       }
 
@@ -240,7 +240,7 @@ export default function EmpresasPage() {
               <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
             </div>
             <div>
-              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Faturamenão MÃªs</p>
+              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Faturamento Mês</p>
               <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{formatCurrency(totalGeral)}</h2>
             </div>
           </div>
@@ -292,7 +292,7 @@ export default function EmpresasPage() {
               )}
             >
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[10px] md:text-[12px] font-black uppercase tracking-widest text-emerald-500">VisÃ£o Conãolidada</h4>
+                <h4 className="text-[10px] md:text-[12px] font-black uppercase tracking-widest text-emerald-500">Visão Consolidada</h4>
                 <LayoutGrid className="w-4 h-4 md:w-5 md:h-5 opacity-40 group-hover:scale-110 transition-transform" />
               </div>
               <div className="flex items-end justify-between">
@@ -339,7 +339,7 @@ export default function EmpresasPage() {
               ) : filteredOrders.length === 0 ? (
                 <div className="col-span-full h-60 md:h-80 border-4 border-dashed border-slate-100 dark:border-zinc-800 rounded-[32px] md:rounded-[48px] flex flex-col items-center justify-center text-slate-300">
                   <ShoppingBag className="w-12 h-12 md:w-20 md:h-20 mb-4 md:mb-6 opacity-5" />
-                  <p className="font-black uppercase text-[9px] md:text-[11px] tracking-[0.3em] text-center opacity-40 leading-relaxed px-6">Nenhum Pedido <br/> Identificado Neste PerÃ­odo</p>
+                  <p className="font-black uppercase text-[9px] md:text-[11px] tracking-[0.3em] text-center opacity-40 leading-relaxed px-6">Nenhum Pedido <br/> Identificado Neste Período</p>
                 </div>
               ) : (
                 filteredOrders.map(order => (
@@ -352,7 +352,7 @@ export default function EmpresasPage() {
                         <span className="text-[10px] md:text-xs font-black text-slate-900 dark:text-zinc-100">{order.created_at ? new Date(order.created_at).toLocaleDateString("pt-BR") : "---"}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[7px] md:text-[8px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1 block">Valor LÃ­quido</span>
+                        <span className="text-[7px] md:text-[8px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1 block">Valor Líquido</span>
                         <span className="text-lg md:text-xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter tabular-nums">{formatCurrency(order.value)}</span>
                       </div>
                     </div>
@@ -422,7 +422,7 @@ export default function EmpresasPage() {
                       <Upload className="w-12 h-12 md:w-20 md:h-20" />
                    </div>
                    <h4 className="text-xl md:text-2xl font-black uppercase text-slate-900 dark:text-zinc-100 mb-2 md:mb-4 tracking-tight">Enviar Pedidos</h4>
-                   <p className="text-slate-400 text-sm md:text-lg max-w-sm font-medium leading-relaxed italic mx-auto">Clique para ir Ã  central de pedidos e registrar via IA ou manualmente.</p>
+                   <p className="text-slate-400 text-sm md:text-lg max-w-sm font-medium leading-relaxed italic mx-auto">Clique para ir à central de pedidos e registrar via IA ou manualmente.</p>
                 </div>
              </motion.div>
           </div>

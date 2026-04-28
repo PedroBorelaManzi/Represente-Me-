@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Check, Bell, Sun, Moon, Target, Shield, Info, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSettings } from "../contexts/SettingsContext";
@@ -47,7 +47,6 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
         perda_days: perda,
         inativo_days: inativo,
         theme,
-        
         categories
       });
       toast.success("Configurações atualizadas com sucesso!");
@@ -101,7 +100,7 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
                 step === 1 ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              Alertas
+              Configurar Acompanhamentos
             </button>
             <button 
               onClick={() => setStep(2)}
@@ -110,9 +109,8 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
                 step === 2 ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              Visual
+              Escolher Temas
             </button>
-            
           </div>
 
           <div className="min-h-[200px]">
@@ -187,28 +185,6 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
                 </div>
               </div>
             )}
-
-            {step === 3 && (
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-end">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Teto de Faturamento (Visual)</span>
-                    <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
-                      {ceiling}
-                    </span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="100000" 
-                    max="10000000" 
-                    step="100000" 
-                    value={ceiling} 
-                    onChange={(e) => setCeiling(Number(e.target.value))} 
-                    className="w-full accent-emerald-600 h-2 bg-slate-100 dark:bg-zinc-800 rounded-full cursor-pointer" 
-                  />
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -230,6 +206,3 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
     </div>
   );
 }
-
-
-
