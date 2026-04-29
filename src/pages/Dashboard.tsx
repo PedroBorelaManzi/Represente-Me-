@@ -118,7 +118,7 @@ export default function Dashboard() {
 
       const { data: clientsData } = await supabase
         .from("clients")
-        .select("id, name, city, state, faturamento")
+        .select("id, name, city, state, faturamento, cnpj")
         .eq("user_id", user.id)
         .order("name");
       setClients(clientsData || []);

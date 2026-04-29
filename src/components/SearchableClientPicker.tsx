@@ -5,6 +5,8 @@ import { cn } from "../lib/utils";
 interface Client {
   id: string;
   name: string;
+  cnpj?: string;
+  city?: string;
   company_name?: string;
 }
 
@@ -22,8 +24,9 @@ export function SearchableClientPicker({ clients, value, onChange }: SearchableC
   const selectedClient = clients.find(c => c.id === value);
   
   const filteredClients = clients.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.company_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.cnpj?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.city?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   React.useEffect(() => {
@@ -97,11 +100,14 @@ export function SearchableClientPicker({ clients, value, onChange }: SearchableC
                     )}
                   >
                     <span className="text-sm font-black">{client.name}</span>
-                    {client.company_name && (
+                    {(client.cnpj || client.city) && (
                       <span className={cn(
                         "text-[10px] font-medium opacity-60 uppercase tracking-tight",
                         client.id === value ? "text-white" : "text-slate-500"
                       )}>
+                        {client.cnpj || client.city}
+                      </span>
+                    )}>
                         {client.company_name}
                       </span>
                     )}

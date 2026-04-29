@@ -70,7 +70,7 @@ export default function Agenda() {
       .maybeSingle();
     setGoogleConnected(!!tokenData);
 
-    const { data: clientsData } = await supabase.from("clients").select("id, name, city, state").order("name");
+    const { data: clientsData } = await supabase.from("clients").select("id, name, city, state, cnpj").order("name");
     setClients(clientsData || []);
 
     const locations = (clientsData || []).filter(c => c.city).map(c => ({ city: c.city, state: c.state }));

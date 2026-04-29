@@ -264,8 +264,8 @@ export default function EmpresasPage() {
               <Zap className="w-6 h-6 md:w-8 md:h-8 text-amber-600" />
             </div>
             <div>
-              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Feitos Hoje</p>
-              <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{ordersToday}</h2>
+              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Empresas Representadas</p>
+              <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{combinedCategories.length}</h2>
             </div>
           </div>
         </div>
