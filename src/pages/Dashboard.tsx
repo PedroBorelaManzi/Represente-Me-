@@ -107,13 +107,28 @@ export default function Dashboard() {
         .select("category")
         .eq("user_id", user.id);
       
-      const uniqueCats = new Set<string>();
+            const catsMap = new Map<string, string>();
       // Add from settings
-      if (Array.isArray(cats)) cats.forEach(c => c && uniqueCats.add(c.trim()));
+      if (Array.isArray(cats)) {
+        cats.forEach(c => {
+          if (c && c.trim()) {
+            const trimmed = c.trim();
+            catsMap.set(trimmed.toUpperCase(), trimmed);
+          }
+        });
+      }
       // Add from orders
-      if (allOrdersCats) allOrdersCats.forEach(o => o.category && uniqueCats.add(o.category.trim()));
+      if (allOrdersCats) {
+        allOrdersCats.forEach(o => {
+          if (o.category && o.category.trim()) {
+            const trimmed = o.category.trim();
+            const key = trimmed.toUpperCase();
+            if (!catsMap.has(key)) catsMap.set(key, trimmed);
+          }
+        });
+      }
       
-      setAllTimeCategories(Array.from(uniqueCats));
+      setAllTimeCategories(Array.from(catsMap.values()));
 
 
       const { data: clientsData } = await supabase

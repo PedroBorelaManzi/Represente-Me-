@@ -59,7 +59,7 @@ export default function EmpresasPage() {
       if (error) throw error;
       setAllOrders(data || []);
     } catch (err) {
-      conãole.error("Error loading orders:", err);
+      console.error("Error loading orders:", err);
     } finally {
       setLoading(false);
     }
@@ -87,21 +87,30 @@ export default function EmpresasPage() {
     });
   }, [allOrders, viewDate]);
 
-  const combinedCategories = useMemo(() => {
-    const cats = new Set<string>();
-    // First add categories froMêsettings
+    const combinedCategories = useMemo(() => {
+    const catsMap = new Map<string, string>();
+    
+    // Primeiro as categorias das configurações
     if (settings?.categories) {
       settings.categories.forEach((cat: string) => {
-        if (cat) cats.add(cat);
+        if (cat && cat.trim()) {
+          const trimmed = cat.trim();
+          catsMap.set(trimmed.toUpperCase(), trimmed);
+        }
       });
     }
-    // Then add categories found inãorders
+    
+    // Depois as categorias dos pedidos (apenas se não existirem nas configurações)
     if (Array.isArray(allOrders)) {
       allOrders.forEach(o => { 
-        if (o && o.category) cats.add(o.category); 
+        if (o && o.category && o.category.trim()) {
+          const trimmed = o.category.trim();
+          const key = trimmed.toUpperCase();
+          if (!catsMap.has(key)) catsMap.set(key, trimmed);
+        }
       });
     }
-    return Array.from(cats);
+    return Array.from(catsMap.values());
   }, [allOrders, settings?.categories]);
 
   const catTotals = useMemo(() => {
@@ -152,7 +161,7 @@ export default function EmpresasPage() {
   };
 
   const handleDeleteCompany = async (name: string) => {
-    if (!winãow.confirm("Deseja realmente excluir a empresa " + name + "?")) return;
+    if (!window.confirm("Deseja realmente excluir a empresa " + name + "?")) return;
     try {
       const updatedCategories = settings.categories.filter((c: string) => c !== name);
       await updateSettings({ categories: updatedCategories });
@@ -180,13 +189,13 @@ export default function EmpresasPage() {
         return;
       }
 
-      conãole.log("Cadastranão empresa:", trimmedCat);
+      console.log("Cadastranão empresa:", trimmedCat);
       
       await updateSettings({ 
         categories: [...currentCategories, trimmedCat] 
       });
       
-      toast.success("Empresa \"" + trimmedCat + "\" cadastrada coMêsucesso!");
+      toast.success("Empresa \"" + trimmedCat + "\" cadastrada com sucesso!");
       setNewCat("");
       setIsAddModalOpen(false);
       
@@ -194,8 +203,8 @@ export default function EmpresasPage() {
       if (typeof loadOrders === 'function') loadOrders();
       
     } catch (err) {
-      conãole.error("Erro ao cadastrar empresa:", err);
-      toast.error("Erro ao salvar no banão de dados.");
+      console.error("Erro ao cadastrar empresa:", err);
+      toast.error("Erro ao salvar no banco de dados.");
     }
   };
 
