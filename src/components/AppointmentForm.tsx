@@ -1,3 +1,4 @@
+﻿import { SearchableClientPicker } from './SearchableClientPicker';
 import React, { useState, useRef, useEffect } from "react";
 import { X, Clock, Plus, Trash2, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -211,18 +212,7 @@ export default function AppointmentForm({
               <label className="block text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-3 px-1">
                 Selecionar cliente
               </label>
-              <div className="relative group">
-                <select 
-                  value={formData.client_id} 
-                  onChange={e => setFormData({...formData, client_id: e.target.value})} 
-                  className="w-full px-5 py-4 border border-slate-100 dark:border-zinc-800 rounded-[24px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 focus:ring-4 focus:ring-emerald-600/10 focus:border-emerald-600 font-black text-sm transition-all appearance-none outline-none cursor-pointer"
-                >
-                  <option value="">Nenhum cliente</option>
-                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-emerald-600 transition-colors">
-                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
+              <SearchableClientPicker clients={clients} value={formData.client_id} onChange={(id) => setFormData({...formData, client_id: id})} />
               </div>
             </div>
 
@@ -273,7 +263,7 @@ export default function AppointmentForm({
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              {isSaving ? "Salvando..." : "Confirmar Alterações"}
+              {isSaving ? "Salvando..." : "Confirmar AlteraÃ§Ãµes"}
             </button>
           </div>
         </form>
@@ -281,3 +271,4 @@ export default function AppointmentForm({
     </div>
   );
 }
+
