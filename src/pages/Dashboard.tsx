@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo } from "react";
 import { Plus, ChevronLeft, ChevronRight, Clock, X, Home, Loader2, Users, Globe, RefreshCw, Calendar } from "lucide-react";
 import { supabase, logAudit } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -8,6 +8,7 @@ import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../l
 import { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
 import AppointmentForm from "../components/AppointmentForm";
 import RevenueChart from "../components/RevenueChart";
+import DailyNotes from "../components/DailyNotes";
 
 type EventType = { 
   id: string; 
@@ -33,6 +34,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedMobileDate, setSelectedMobileDate] = useState(new Date());
+  const [selectedNoteDate, setSelectedNoteDate] = useState(new Date());
   const [events, setEvents] = useState<EventType[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -220,7 +222,7 @@ export default function Dashboard() {
   const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert("Erro: Client ID do Google não configurado.");
+      alert("Erro: Client ID do Google nÃ£o configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -330,7 +332,7 @@ export default function Dashboard() {
       const startMin = parseInt(start[0]) * 60 + parseInt(start[1] || "0");
       const endMin = parseInt(end[0]) * 60 + parseInt(end[1] || "0");
       const duration = endMin - startMin;
-      return Math.max(duration, 24); // Mínimo de 24px para visibilidade
+      return Math.max(duration, 24); // MÃ­nimo de 24px para visibilidade
     } catch { return 48; }
   };
 
@@ -346,7 +348,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-tight">
             <Home className="w-6 h-6 text-emerald-600" />
-            Início
+            InÃ­cio
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Sua agenda semanal sincronizada e faturamento.</p>
         </div>
@@ -410,7 +412,15 @@ export default function Dashboard() {
                     {weekDays.map((date, i) => {
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
                           return (
-                        <div key={i} className={cn("py-2 text-center", isToday ? "bg-emerald-50/50 dark:bg-emerald-500/10" : "")}>
+                        <div 
+                          key={i} 
+                          className={cn(
+                            "py-2 text-center cursor-pointer hover:bg-slate-200/50 dark:hover:bg-zinc-700/30 transition-colors", 
+                            isToday ? "bg-emerald-50/50 dark:bg-emerald-500/10" : "",
+                            isSameDay(date, formatDateLocal(selectedNoteDate)) ? "ring-2 ring-emerald-500 ring-inset" : ""
+                          )}
+                          onClick={() => setSelectedNoteDate(date)}
+                        >
                           <div className={cn("text-[6px] font-black uppercase tracking-widest", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500")}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
                           <div className={cn("text-[10px] font-black", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-zinc-100")}>{date.getDate()}</div>
 
@@ -473,7 +483,7 @@ export default function Dashboard() {
                         return (
                             <button 
                                 key={i}
-                                onClick={() => setSelectedMobileDate(date)}
+                                onClick={() => { setSelectedMobileDate(date); setSelectedNoteDate(date); }}
                                 className={cn(
                                     "flex-shrink-0 flex flex-col items-center justify-center w-[54px] h-[78px] rounded-[22px] transition-all relative",
                                     isSelected 
@@ -497,11 +507,15 @@ export default function Dashboard() {
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Orquestração do Dia</h3>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">OrquestraÃ§Ã£o do Dia</h3>
                         </div>
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white dark:bg-zinc-900 px-3 py-1 rounded-full border border-slate-100 dark:border-zinc-800">
                            {selectedMobileDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
                         </span>
+                    </div>
+
+                    <div className="mb-2">
+                        <DailyNotes selectedDate={selectedNoteDate} className="!p-4 !rounded-[24px] shadow-sm border border-slate-100 dark:border-zinc-800" />
                     </div>
 
                     {selectedDayEvents.length > 0 ? (
@@ -540,7 +554,7 @@ export default function Dashboard() {
                                 <Calendar className="w-10 h-10 text-slate-200 dark:text-zinc-700" />
                             </div>
                             <h4 className="text-base font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">Nada agendado</h4>
-                            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2 max-w-[200px] font-medium uppercase tracking-tight">Você não possui compromissos orquestrados para este dia.</p>
+                            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2 max-w-[200px] font-medium uppercase tracking-tight">VocÃª nÃ£o possui compromissos orquestrados para este dia.</p>
                             <button 
                                 onClick={() => openNewEventModal(selectedMobileDate)}
                                 className="mt-8 px-8 py-4 bg-emerald-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 dark:shadow-none active:scale-95 transition-all"
@@ -560,7 +574,9 @@ export default function Dashboard() {
               <RevenueChart data={revenueChartData} loading={loading} currentDate={currentDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} />
            </div>
            {/* Space below for layout balance */}
-           <div className="hidden lg:block h-1/2" />
+           <div className="h-full lg:h-1/2 min-h-[300px]">
+               <DailyNotes selectedDate={selectedNoteDate} />
+            </div>
         </div>
 
       </div>
