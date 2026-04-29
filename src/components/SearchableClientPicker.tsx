@@ -107,9 +107,6 @@ export function SearchableClientPicker({ clients, value, onChange }: SearchableC
                       )}>
                         {client.cnpj || client.city}
                       </span>
-                    )}>
-                        {client.company_name}
-                      </span>
                     )}
                   </button>
                 ))
