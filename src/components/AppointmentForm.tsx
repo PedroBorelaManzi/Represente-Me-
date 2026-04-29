@@ -213,7 +213,6 @@ export default function AppointmentForm({
                 Selecionar cliente
               </label>
               <SearchableClientPicker clients={clients} value={formData.client_id} onChange={(id) => setFormData({...formData, client_id: id})} />
-              </div>
             </div>
 
             <div>
@@ -263,7 +262,7 @@ export default function AppointmentForm({
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              {isSaving ? "Salvando..." : "Confirmar AlteraÃ§Ãµes"}
+              {isSaving ? "Salvando..." : "Confirmar Alterações"}
             </button>
           </div>
         </form>
