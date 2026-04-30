@@ -53,6 +53,7 @@ export default function Agenda() {
   const [clients, setClients] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -262,8 +263,8 @@ export default function Agenda() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row gap-6 mt-6 min-h-0">
-        <div className="flex-1 bg-white dark:bg-zinc-950 lg:rounded-none border-none shadow-none flex flex-col min-h-[600px] relative">
+      <div className="flex-1 flex flex-col gap-6 mt-6 min-h-0">
+        <div className="flex-1 bg-white dark:bg-zinc-950 rounded-[48px] border border-slate-100 dark:border-zinc-800 shadow-xl flex flex-col min-h-[600px] relative overflow-hidden">
           <div className="p-4 lg:p-8 border-b border-slate-200 dark:border-zinc-700/50 flex items-center justify-between bg-emerald-600/5 dark:bg-emerald-900/10">
             <div className="flex items-center gap-4 lg:gap-6">
                <div className="flex items-center bg-white dark:bg-zinc-900 p-2 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm">
@@ -322,7 +323,7 @@ export default function Agenda() {
                                 {date.getDate()}
                             </span>
                             <button 
-                              onClick={(e) => { e.stopPropagation(); setSelectedNoteDate(date); }} 
+                              onClick={(e) => { e.stopPropagation(); setSelectedNoteDate(date); setIsNotesModalOpen(true); }} 
                               className={cn(
                                 "px-2 py-1 rounded-lg text-[7px] font-black uppercase tracking-widest transition-all",
                                 isSameDay(selectedNoteDate, dateIso || "") 
@@ -481,12 +482,24 @@ export default function Agenda() {
           </div>
         </div>
 
-        {/* Right Sidebar for Daily Notes on Desktop */}
-        <div className="hidden lg:block w-80 flex-shrink-0">
-            <DailyNotes selectedDate={selectedNoteDate} />
-        </div>
+
       </div>
 
+      
+      {/* Notes Modal */}
+      <AnimatePresence>
+        {isNotesModalOpen && (
+           <div className="fixed inset-0 z-[11000] flex items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsNotesModalOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl" />
+              <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 40 }} className="relative z-[11001] w-full max-w-2xl h-[600px]">
+                <DailyNotes selectedDate={selectedNoteDate} className="h-full shadow-2xl border-2 border-emerald-500/20" />
+                <button onClick={() => setIsNotesModalOpen(false)} className="absolute top-6 right-6 p-3 bg-white dark:bg-zinc-900 rounded-2xl text-slate-400 hover:text-emerald-600 transition-all shadow-lg z-20">
+                  <X className="w-5 h-5" />
+                </button>
+              </motion.div>
+           </div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {isModalOpen && (
            <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
