@@ -314,14 +314,25 @@ export default function Agenda() {
                     {date && (
                       <>
                         <div className="flex items-center justify-between mb-3">
-                          <span className={cn(
-                            "text-xs font-black w-8 h-8 rounded-xl flex items-center justify-center transition-all",
-                            isToday ? "bg-emerald-600 text-white shadow-lg  dark:shadow-none" : "text-slate-400 dark:text-zinc-500 group-hover:text-emerald-600"
-                          )}>
-                            <button onClick={(e) => { e.stopPropagation(); setSelectedNoteDate(date); }} className={cn("w-full h-full flex items-center justify-center", isSameDay(selectedNoteDate, dateIso || "") && "ring-2 ring-emerald-500 rounded-xl")}>
-                              {date.getDate()}
+                          <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "text-xs font-black w-8 h-8 rounded-xl flex items-center justify-center transition-all",
+                              isToday ? "bg-emerald-600 text-white shadow-lg  dark:shadow-none" : "text-slate-400 dark:text-zinc-500 group-hover:text-emerald-600"
+                            )}>
+                                {date.getDate()}
+                            </span>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setSelectedNoteDate(date); }} 
+                              className={cn(
+                                "px-2 py-1 rounded-lg text-[7px] font-black uppercase tracking-widest transition-all",
+                                isSameDay(selectedNoteDate, dateIso || "") 
+                                  ? "bg-emerald-600 text-white shadow-sm scale-105" 
+                                  : "bg-slate-50 dark:bg-zinc-800 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                              )}
+                            >
+                              Anotações
                             </button>
-                          </span>
+                          </div>
                           {dayHolidays.length > 0 && (
                             <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-sm shadow-amber-200" />
                           )}
