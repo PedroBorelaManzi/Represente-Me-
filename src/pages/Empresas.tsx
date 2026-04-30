@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+﻿import React, { useState, useEffect, useMemo } from "react";
 import { 
   Building2, 
   Plus, 
@@ -306,7 +306,7 @@ export default function EmpresasPage() {
               </div>
               <div className="flex items-end justify-between">
                 <p className="text-xl md:text-2xl font-black tracking-tighter">Todas as Empresas</p>
-                <div className="text-[8px] md:text-[10px] font-black bg-emerald-500/20 text-emerald-500 px-2 md:px-3 py-1 rounded-full">{monthlyOrders.length} Pedidos</div>
+                
               </div>
             </button>
 
@@ -462,4 +462,5 @@ export default function EmpresasPage() {
     </div>
   );
 }
+
 
