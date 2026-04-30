@@ -216,7 +216,7 @@ export default function Agenda() {
             <div className="p-3 bg-emerald-600 rounded-[20px] ">
               <CalendarIcon className="w-6 h-6 lg:w-8 lg:h-8 text-white" />
             </div>
-            Agenda <span className="hidden lg:inline text-slate-200 dark:text-zinc-800 ml-2">/</span> <span className="text-emerald-600">Sincronizada</span>
+            AGENDA
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Orquestraçáo de visitas e monitoramento de feriados locais.</p>
         </div>
