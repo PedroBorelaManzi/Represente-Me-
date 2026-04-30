@@ -514,9 +514,7 @@ export default function Dashboard() {
                         </span>
                     </div>
 
-                    <div className="mb-2">
-                        <DailyNotes selectedDate={selectedNoteDate} className="!p-4 !rounded-[24px] shadow-sm border border-slate-100 dark:border-zinc-800" />
-                    </div>
+
 
                     {selectedDayEvents.length > 0 ? (
                         <div className="space-y-4">
@@ -573,7 +571,7 @@ export default function Dashboard() {
            <div className="h-auto">
               <RevenueChart data={revenueChartData} loading={loading} currentDate={currentDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} />
            </div>
-           <div className="flex-1 min-h-[400px]">
+           <div className="h-[400px] lg:h-auto lg:flex-1 lg:min-h-[400px]">
                <DailyNotes selectedDate={selectedNoteDate} />
             </div>
         </div>
@@ -594,3 +592,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
