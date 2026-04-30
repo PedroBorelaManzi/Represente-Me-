@@ -222,7 +222,7 @@ export default function Dashboard() {
   const handleGoogleConnect = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert("Erro: Client ID do Google nÃ£o configurado.");
+      alert("Erro: Client ID do Google não configurado.");
       return;
     }
     const redirectUri = `${window.location.origin}/auth/callback/google`;
@@ -332,7 +332,7 @@ export default function Dashboard() {
       const startMin = parseInt(start[0]) * 60 + parseInt(start[1] || "0");
       const endMin = parseInt(end[0]) * 60 + parseInt(end[1] || "0");
       const duration = endMin - startMin;
-      return Math.max(duration, 24); // MÃ­nimo de 24px para visibilidade
+      return Math.max(duration, 24); // Mínimo de 24px para visibilidade
     } catch { return 48; }
   };
 
@@ -348,7 +348,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-tight">
             <Home className="w-6 h-6 text-emerald-600" />
-            InÃ­cio
+            Início
           </h1>
           <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Sua agenda semanal sincronizada e faturamento.</p>
         </div>
@@ -483,7 +483,7 @@ export default function Dashboard() {
                         return (
                             <button 
                                 key={i}
-                                onClick={() => { setselectedNoteDate(date); setSelectedNoteDate(date); }}
+                                onClick={() => { setSelectedNoteDate(date); }}
                                 className={cn(
                                     "flex-shrink-0 flex flex-col items-center justify-center w-[54px] h-[78px] rounded-[22px] transition-all relative",
                                     isSelected 
@@ -507,7 +507,7 @@ export default function Dashboard() {
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">OrquestraÃ§Ã£o do Dia</h3>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Orquestração do Dia</h3>
                         </div>
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white dark:bg-zinc-900 px-3 py-1 rounded-full border border-slate-100 dark:border-zinc-800">
                            {selectedNoteDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
@@ -554,7 +554,7 @@ export default function Dashboard() {
                                 <Calendar className="w-10 h-10 text-slate-200 dark:text-zinc-700" />
                             </div>
                             <h4 className="text-base font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">Nada agendado</h4>
-                            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2 max-w-[200px] font-medium uppercase tracking-tight">VocÃª nÃ£o possui compromissos orquestrados para este dia.</p>
+                            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2 max-w-[200px] font-medium uppercase tracking-tight">Você não possui compromissos orquestrados para este dia.</p>
                             <button 
                                 onClick={() => openNewEventModal(selectedNoteDate)}
                                 className="mt-8 px-8 py-4 bg-emerald-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 dark:shadow-none active:scale-95 transition-all"
@@ -568,76 +568,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right Column: Revenue Chart (~40% - 2/5 Width, 50% Height) */}
-        <div className="lg:col-span-2 h-full flex flex-col gap-6">
-           <div className="h-full lg:h-1/2 min-h-[300px]">
+        {/* Right Column: Revenue Chart (~40% - 2/5 Width) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+           <div className="h-auto">
               <RevenueChart data={revenueChartData} loading={loading} currentDate={currentDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} />
            </div>
-           {/* Space below for layout balance */}
-           <div className="h-full lg:h-1/2 min-h-[400px] flex flex-col gap-6">
-               {/* Daily Agenda Panel */}
-               <div className="flex-[1.5] bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-100 dark:border-zinc-800 p-6 shadow-sm overflow-hidden flex flex-col">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl border border-emerald-100 dark:border-emerald-500/20">
-                        <Calendar className="w-5 h-5 text-emerald-600" />
-                      </div>
-                      <div>
-                        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Agenda do Dia</h2>
-                        <p className="text-[11px] font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mt-0.5">
-                          {selectedNoteDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', weekday: 'long' })}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="px-3 py-1 bg-slate-50 dark:bg-zinc-800 rounded-full text-[9px] font-black text-slate-400 uppercase tracking-widest border border-slate-100 dark:border-zinc-700">
-                      {selectedDayEvents.length} Atividades
-                    </span>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1">
-                    {selectedDayEvents.length > 0 ? (
-                      selectedDayEvents.map(event => {
-                        const clientName = clients.find(c => c.id === event.client_id)?.name;
-                        return (
-                          <button 
-                            key={event.id}
-                            onClick={() => setEditingEvent(event)}
-                            className="w-full text-left p-4 bg-slate-50 dark:bg-zinc-950/50 rounded-2xl border border-slate-100 dark:border-zinc-800/50 hover:border-emerald-500/30 transition-all group"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-white dark:bg-zinc-900 rounded-xl border border-slate-100 dark:border-zinc-800 flex flex-col items-center justify-center flex-shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors shadow-sm">
-                                <Clock className="w-3 h-3 mb-0.5" />
-                                <span className="text-[8px] font-black">{event.time.split(' - ')[0]}</span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-[11px] font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight truncate leading-tight">{event.title}</h4>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[8px] font-bold text-slate-400 uppercase">{event.time}</span>
-                                  {clientName && (
-                                    <>
-                                      <div className="w-0.5 h-0.5 rounded-full bg-slate-300" />
-                                      <span className="text-[8px] font-black text-emerald-600 uppercase">@{clientName}</span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center py-10 opacity-40">
-                         <Calendar className="w-10 h-10 mb-2 text-slate-300" />
-                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sem compromissos</p>
-                      </div>
-                    )}
-                  </div>
-               </div>
-
-               {/* Daily Notes Panel */}
-               <div className="flex-1 min-h-[300px]">
-                  <DailyNotes selectedDate={selectedNoteDate} />
-               </div>
+           <div className="flex-1 min-h-[400px]">
+               <DailyNotes selectedDate={selectedNoteDate} />
             </div>
         </div>
 
