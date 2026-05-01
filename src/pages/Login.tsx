@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -67,16 +67,16 @@ const Login = () => {
         .single();
 
       if (customerError || !customer) {
-        throw new Error("E-mail não encontrado em nossa base de assinantes.");
+        throw new Error("E-mail nÃ£o encontrado em nossa base de assinantes.");
       }
 
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail);
       if (error) throw error;
 
       setResetStep("otp");
-      toast.success("Código enviado para o seu e-mail!");
+      toast.success("CÃ³digo enviado para o seu e-mail!");
     } catch (error: any) {
-      toast.error(error.message || "Erro ao solicitar recuperação");
+      toast.error(error.message || "Erro ao solicitar recuperaÃ§Ã£o");
     } finally {
       setResetLoading(false);
     }
@@ -94,7 +94,7 @@ const Login = () => {
       if (error) throw error;
       setResetStep("password");
     } catch (error: any) {
-      toast.error("Código inválido ou expirado.");
+      toast.error("CÃ³digo invÃ¡lido ou expirado.");
     } finally {
       setResetLoading(false);
     }
@@ -143,10 +143,10 @@ const Login = () => {
             >
               <h1 className="text-[84px] font-black text-slate-900 dark:text-zinc-100 leading-[0.9] mb-8 tracking-tighter">
                 O FUTURO DA <br />
-                <span className="text-emerald-600">REPRESENTAÇÃO.</span>
+                <span className="text-emerald-600">REPRESENTAÃ‡ÃƒO.</span>
               </h1>
               <p className="text-slate-500 dark:text-zinc-400 text-xl font-medium max-w-xl leading-relaxed">
-                A tecnologia que você precisa para dominar seu território e multiplicar suas vendas com inteligência e elegância.
+                A tecnologia que vocÃª precisa para dominar seu territÃ³rio e multiplicar suas vendas com inteligÃªncia e elegÃ¢ncia.
               </p>
             </motion.div>
           </div>
@@ -158,8 +158,8 @@ const Login = () => {
             className="relative z-10 grid grid-cols-2 gap-8"
           >
             {[
-              { icon: ShieldCheck, title: "Segurança Total", desc: "Seus dados protegidos por criptografia de ponta." },
-              { icon: Boxes, title: "Organização", desc: "Tudo o que você precisa em um só lugar." }
+              { icon: ShieldCheck, title: "SeguranÃ§a Total", desc: "Seus dados protegidos por criptografia de ponta." },
+              { icon: Boxes, title: "OrganizaÃ§Ã£o", desc: "Tudo o que vocÃª precisa em um sÃ³ lugar." }
             ].map((feature, i) => (
               <div key={i} className="group cursor-default">
                 <div className="flex items-center gap-3 mb-3">
@@ -238,7 +238,7 @@ const Login = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-16 pr-8 py-5 bg-slate-50/50 dark:bg-zinc-950/50 border border-slate-100 dark:border-zinc-800/50 rounded-[24px] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 text-sm font-bold transition-all placeholder:text-slate-300 outline-none"
-                    placeholder="••••••••"
+                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                   />
                 </div>
               </div>
@@ -266,10 +266,10 @@ const Login = () => {
               <div className="flex items-center gap-3">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sem conta?</span>
                 <button
-                  onClick={() => navigate("/#planos")}
+                  onClick={() => navigate("/register")}
                   className="px-6 py-2 bg-slate-50 dark:bg-zinc-800 text-[10px] font-black text-slate-900 dark:text-zinc-100 uppercase tracking-widest rounded-xl border border-slate-100 dark:border-zinc-700 hover:bg-white transition-all shadow-sm"
                 >
-                  Ver Planos
+                  Criar Conta
                 </button>
               </div>
 
@@ -309,7 +309,7 @@ const Login = () => {
               {resetStep === "email" && (
                 <form onSubmit={startPasswordReset} className="space-y-6">
                   <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                    Digite seu e-mail cadastrado para receber o código de verificação.
+                    Digite seu e-mail cadastrado para receber o cÃ³digo de verificaÃ§Ã£o.
                   </p>
                   <div className="space-y-2">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">E-mail</label>
@@ -327,7 +327,7 @@ const Login = () => {
                     type="submit"
                     className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all  dark:shadow-none flex items-center justify-center gap-2"
                   >
-                    {resetLoading ? <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Enviar Código"}
+                    {resetLoading ? <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Enviar CÃ³digo"}
                   </button>
                 </form>
               )}
@@ -335,10 +335,10 @@ const Login = () => {
               {resetStep === "otp" && (
                 <form onSubmit={verifyOtp} className="space-y-6">
                   <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                    Insira o código de 6 dígitos enviado para <strong>{forgotEmail}</strong>.
+                    Insira o cÃ³digo de 6 dÃ­gitos enviado para <strong>{forgotEmail}</strong>.
                   </p>
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Código de Verificação</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">CÃ³digo de VerificaÃ§Ã£o</label>
                     <input
                       required
                       type="text"
@@ -354,7 +354,7 @@ const Login = () => {
                     type="submit"
                     className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all  dark:shadow-none flex items-center justify-center gap-2"
                   >
-                    {resetLoading ? <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Validar Código"}
+                    {resetLoading ? <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Validar CÃ³digo"}
                   </button>
                 </form>
               )}
@@ -362,7 +362,7 @@ const Login = () => {
               {resetStep === "password" && (
                 <form onSubmit={updatePassword} className="space-y-6">
                   <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                    Quase lá! Defina sua nova senha de acesso.
+                    Quase lÃ¡! Defina sua nova senha de acesso.
                   </p>
                   <div className="space-y-2">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Nova Senha</label>
@@ -372,7 +372,7 @@ const Login = () => {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="w-full px-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-bold"
-                      placeholder="••••••••"
+                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                     />
                   </div>
                   <button
@@ -392,7 +392,7 @@ const Login = () => {
                   </div>
                   <div className="space-y-2">
                     <h4 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Senha Atualizada!</h4>
-                    <p className="text-xs text-slate-500 font-medium">Você já pode entrar no sistema com sua nova senha.</p>
+                    <p className="text-xs text-slate-500 font-medium">VocÃª jÃ¡ pode entrar no sistema com sua nova senha.</p>
                   </div>
                   <button
                     onClick={() => setShowForgotModal(false)}

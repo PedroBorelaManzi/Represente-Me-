@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { 
   motion, 
   AnimatePresence,
@@ -26,7 +26,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 const industries = [
   { 
-    name: "Materiais de Construção", 
+    name: "Materiais de ConstruÃ§Ã£o", 
     icon: Building2, 
     color: "bg-orange-50 text-orange-600",
     image: "/assets/setor_materiais.png"
@@ -38,7 +38,7 @@ const industries = [
     image: "/assets/setor_supermercado.png"
   },
   { 
-    name: "Farmácias", 
+    name: "FarmÃ¡cias", 
     icon: PlusIcon, 
     color: "bg-red-50 text-red-600",
     image: "/assets/setor_farmacia.png",
@@ -51,7 +51,7 @@ const industries = [
     image: "/assets/setor_distribuidora.png"
   },
   { 
-    name: "Serviços", 
+    name: "ServiÃ§os", 
     icon: Briefcase, 
     color: "bg-emerald-50 text-emerald-600",
     image: "/assets/setor_servicos.png",
@@ -69,8 +69,8 @@ const plans = [
   {
     name: "Exclusivo",
     price: 97,
-    description: "Para quem está começando.",
-    features: ["1 Empresa", "Mapa Básico", "CRM Básico", "Suporte Email"],
+    description: "Para quem estÃ¡ comeÃ§ando.",
+    features: ["1 Empresa", "Mapa BÃ¡sico", "CRM BÃ¡sico", "Suporte Email"],
     buttonText: "Assinar Agora",
     popular: false,
   },
@@ -78,23 +78,23 @@ const plans = [
     name: "Profissional",
     price: 147,
     description: "Ideal para equipes em crescimento.",
-    features: ["5 Empresas", "Busca CNPJ Automática", "Dashboard de Faturamento", "Suporte WhatsApp"],
-    buttonText: "Teste Grátis",
+    features: ["5 Empresas", "Busca CNPJ AutomÃ¡tica", "Dashboard de Faturamento", "Suporte WhatsApp"],
+    buttonText: "Teste GrÃ¡tis",
     popular: true,
   },
   {
     name: "Corporativo",
     price: 197,
     description: "Para grandes volumes e IA.",
-    features: ["Empresas Ilimitadas", "Lançamento via Gemini (IA)", "Radar Territorial Avançado", "Automação de Pedidos"],
+    features: ["Empresas Ilimitadas", "LanÃ§amento via Gemini (IA)", "Radar Territorial AvanÃ§ado", "AutomaÃ§Ã£o de Pedidos"],
     buttonText: "Falar com Time",
     popular: false,
   },
   {
     name: "Ultimate",
     price: 247,
-    description: "A solução completa definitiva.",
-    features: ["Tudo do Corporativo", "BI & Analytics Avançado", "Personalização White-label", "Inbox Integrada"],
+    description: "A soluÃ§Ã£o completa definitiva.",
+    features: ["Tudo do Corporativo", "BI & Analytics AvanÃ§ado", "PersonalizaÃ§Ã£o White-label", "Inbox Integrada"],
     buttonText: "Assinar VIP",
     popular: false,
   },
@@ -145,8 +145,8 @@ export default function LandingPitch() {
           <div className="hidden lg:flex items-center gap-10">
             <a href="#industrias" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Setores</a>
             <a href="#inbox" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Tecnologia</a>
-            <a href="#planos" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Planos</a>
-            <a href="#faq" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Dúvidas</a>
+            <Link to="/register" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Planos</Link>
+            <a href="#faq" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">DÃºvidas</a>
           </div>
 
           <div className="flex items-center gap-4">
@@ -166,20 +166,20 @@ export default function LandingPitch() {
             transition={{ duration: 0.8 }}
           >
             <span className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-black uppercase tracking-widest border border-emerald-100 mb-8 inline-block shadow-sm">
-              ✨ A revolução tecnológica do representante
+              âœ¨ A revoluÃ§Ã£o tecnolÃ³gica do representante
             </span>
             <h1 className="text-4xl md:text-8xl font-black tracking-tight text-slate-900 mb-6 md:mb-8 leading-[1.1] md:leading-[0.9] text-balance">
-              Venda mais com <span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400">Menos Esforço.</span>
+              Venda mais com <span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400">Menos EsforÃ§o.</span>
             </h1>
             <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-12">
-              Domine sua carteira de clientes e recupere horas preciosas do seu dia. Nossa inteligência avançada gerencia a memória da sua operação, antecipando necessidades e garantindo controle total para que nenhum pedido ou cliente fique para trás — além de diversas outras ferramentas que te ajudarão a vender mais e vender melhor!
+              Domine sua carteira de clientes e recupere horas preciosas do seu dia. Nossa inteligÃªncia avanÃ§ada gerencia a memÃ³ria da sua operaÃ§Ã£o, antecipando necessidades e garantindo controle total para que nenhum pedido ou cliente fique para trÃ¡s â€” alÃ©m de diversas outras ferramentas que te ajudarÃ£o a vender mais e vender melhor!
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-              <a href="#planos" className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all  hover:-translate-y-1 flex items-center justify-center">
-                Teste grátis por 7 dias
-              </a>
+              <Link to="/register" className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all  hover:-translate-y-1 flex items-center justify-center">
+                Teste grÃ¡tis por 7 dias
+              </Link>
               <button className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest hover:border-slate-300 transition-all">
-                Ver Vídeo Explicativo
+                Ver VÃ­deo Explicativo
               </button>
             </div>
           </motion.div>
@@ -227,10 +227,10 @@ export default function LandingPitch() {
         <div className="max-w-7xl mx-auto px-6 relative z-20 w-full">
           <div className="text-center mb-16">
             <h2 className={`text-4xl md:text-7xl font-black uppercase tracking-tighter mb-4 transition-all duration-500 ${hoveredIndustry !== null ? "text-white drop-shadow-lg" : "text-slate-900"}`}>
-              Adaptável à sua realidade
+              AdaptÃ¡vel Ã  sua realidade
             </h2>
             <p className={`font-bold uppercase text-[10px] md:text-sm tracking-[0.3em] transition-all duration-500 ${hoveredIndustry !== null ? "text-white/80" : "text-slate-400"}`}>
-              Interface customizada por setor de atuação
+              Interface customizada por setor de atuaÃ§Ã£o
             </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-8 max-w-7xl mx-auto">
@@ -275,10 +275,10 @@ export default function LandingPitch() {
                 <TrendingUp className="w-3 h-3" /> Faturamento Inteligente
               </div>
               <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter mb-8 leading-[1.1]">
-                Controle total da sua <span className="text-emerald-600">Comunicação</span>
+                Controle total da sua <span className="text-emerald-600">ComunicaÃ§Ã£o</span>
               </h2>
               <p className="text-lg text-slate-500 font-medium leading-relaxed mb-10">
-                O único CRM que centraliza sua caixa de entrada e vincula automaticamente cada e-mail ao histórico do cliente. Chega de perder pedidos enterrados em threads infinitas.
+                O Ãºnico CRM que centraliza sua caixa de entrada e vincula automaticamente cada e-mail ao histÃ³rico do cliente. Chega de perder pedidos enterrados em threads infinitas.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-left max-w-lg mx-auto lg:mx-0">
                  <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
@@ -286,13 +286,13 @@ export default function LandingPitch() {
                        <Check className="w-4 h-4" />
                     </div>
                     <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 mb-1">IA Integration</p>
-                    <p className="text-xs text-slate-400 font-bold leading-tight">Gemini lê e categoriza seus e-mails.</p>
+                    <p className="text-xs text-slate-400 font-bold leading-tight">Gemini lÃª e categoriza seus e-mails.</p>
                  </div>
                  <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
                     <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
                        <Check className="w-4 h-4" />
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 mb-1">Histórico Real</p>
+                    <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 mb-1">HistÃ³rico Real</p>
                     <p className="text-xs text-slate-400 font-bold leading-tight">Cada resposta vira um evento no CRM.</p>
                  </div>
               </div>
@@ -312,75 +312,7 @@ export default function LandingPitch() {
       </section>
 
       {/* Plans Section */}
-      <section id="planos" className="py-32 bg-white relative">
-        <div className="max-w-7xl mx-auto px-6 relative">
-          <div className="text-center mb-24">
-            <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter mb-6">Investimento de Alto Retorno</h2>
-            <div className="flex items-center justify-center gap-4">
-              <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${billingCycle === "monthly" ? "text-emerald-600" : "text-slate-400"}`}>Plano Mensal</span>
-              <button 
-                type="button"
-                onClick={() => setBillingCycle(billingCycle === "monthly" ? "annual" : "monthly")}
-                className="w-14 h-7 bg-slate-900 rounded-full p-1.5 cursor-pointer relative transition-all"
-              >
-                <motion.div 
-                  animate={{ x: billingCycle === "annual" ? 28 : 0 }}
-                  className="w-4 h-4 bg-emerald-400 rounded-full"
-                />
-              </button>
-              <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${billingCycle === "annual" ? "text-emerald-600" : "text-slate-400"}`}>Plano Anual</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-            {plans.map((plan, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className={`relative p-10 rounded-[48px] border transition-all flex flex-col ${
-                  plan.popular 
-                    ? "bg-slate-900 border-slate-800 shadow-[0_40px_80px_rgba(0,0,0,0.1)] text-white scale-105 z-10" 
-                    : "bg-white border-slate-100 text-slate-900 shadow-xl shadow-slate-100/50 hover:shadow-2xl"
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-[0.2em] px-6 py-2 rounded-full shadow-lg shadow-emerald-500/30">
-                    Recomendado
-                  </div>
-                )}
-                <h3 className="text-xl font-black uppercase tracking-tight mb-2">{plan.name}</h3>
-                <p className={`text-[10px] font-bold mb-10 uppercase tracking-widest ${plan.popular ? "text-slate-400" : "text-slate-300"}`}>
-                  {plan.description}
-                </p>
-                <div className="flex items-baseline gap-1 mb-10">
-                  <span className="text-xs font-black opacity-50">R$</span>
-                  <span className="text-6xl font-black tracking-tighter">{calculatePrice(plan.price)}</span>
-                  <span className={`text-[10px] font-black uppercase tracking-widest opacity-50`}>/mês</span>
-                </div>
-                <div className="space-y-5 mb-12 flex-1">
-                  {plan.features.map((feat, fidx) => (
-                    <div key={fidx} className="flex items-start gap-4">
-                      <div className={`p-1.5 rounded-lg flex-shrink-0 mt-0.5 ${plan.popular ? "bg-white/10" : "bg-emerald-50"}`}>
-                        <Check className={`w-3.5 h-3.5 ${plan.popular ? "text-emerald-400" : "text-emerald-600"}`} />
-                      </div>
-                      <span className="text-xs font-bold uppercase tracking-tight leading-tight opacity-90">{feat}</span>
-                    </div>
-                  ))}
-                </div>
-                <button className={`w-full py-5 rounded-[24px] text-[10px] font-black uppercase tracking-[0.2em] transition-all transform active:scale-95 ${
-                  plan.popular 
-                    ? "bg-emerald-500 text-white hover:bg-emerald-400 shadow-xl shadow-emerald-500/20" 
-                    : "bg-slate-900 text-white hover-emerald-glow hover:bg-slate-800"
-                }`}>
-                  {plan.buttonText}
-                </button>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      
 
       {/* FAQ Section */}
       <section id="faq" className="py-32 bg-slate-50/30">
@@ -390,9 +322,9 @@ export default function LandingPitch() {
           </div>
           <div className="space-y-4">
             {[
-               { q: "O Gemini (IA) requer configuração?", a: "Não, já vem integrado com o modelo Pro 1.5 para análise de pedidos." },
-               { q: "Posso importar minha lista atual?", a: "Sim, aceitamos planilhas Excel e CSV com busca automática de CNPJ." },
-               { q: "Como funciona o Radar Territorial?", a: "Ele mapeia seus clientes e identifica áreas de baixa atividade automaticamente." }
+               { q: "O Gemini (IA) requer configuraÃ§Ã£o?", a: "NÃ£o, jÃ¡ vem integrado com o modelo Pro 1.5 para anÃ¡lise de pedidos." },
+               { q: "Posso importar minha lista atual?", a: "Sim, aceitamos planilhas Excel e CSV com busca automÃ¡tica de CNPJ." },
+               { q: "Como funciona o Radar Territorial?", a: "Ele mapeia seus clientes e identifica Ã¡reas de baixa atividade automaticamente." }
             ].map((faq, fidx) => (
               <div key={fidx} className="p-8 rounded-3xl bg-white border border-slate-100 shadow-sm hover:border-emerald-100 transition-all">
                 <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-3 flex items-center gap-3">
@@ -415,11 +347,11 @@ export default function LandingPitch() {
               Pronto para ser um <br /> <span className="text-emerald-400 text-5xl md:text-8xl">SUPER REPRESENTANTE?</span>
             </h2>
             <p className="text-slate-400 font-medium text-lg max-w-xl mx-auto mb-12">
-              Junte-se a mais de 2.000 que já alavancaram mais de 150% de suas vendas com a Represente-se
+              Junte-se a mais de 2.000 que jÃ¡ alavancaram mais de 150% de suas vendas com a Represente-se
             </p>
-            <a href="#planos" className="px-12 py-6 rounded-2xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/20 inline-block">
-              Começar agora mesmo
-            </a>
+            <Link to="/register" className="px-12 py-6 rounded-2xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/20 inline-block">
+              ComeÃ§ar agora mesmo
+            </Link>
           </motion.div>
         </div>
       </section>
@@ -429,7 +361,7 @@ export default function LandingPitch() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
           <Logo className="opacity-50 h-8 md:h-10" showText={true} />
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
-            © 2026 Represente-se — Tecnologia para Representações Comerciais
+            Â© 2026 Represente-se â€” Tecnologia para RepresentaÃ§Ãµes Comerciais
           </p>
           <div className="flex gap-8">
             <Link to="/privacy" className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">Privacidade</Link>
@@ -440,3 +372,4 @@ export default function LandingPitch() {
     </div>
   );
 }
+

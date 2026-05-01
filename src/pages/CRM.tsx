@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from "react-router-dom";
 import { Search, MapPin, Building2, Phone, Mail, FileText, ChevronRight, Filter, Plus, Trash2, Clock, CheckCircle2, TrendingUp, AlertCircle, X, Download, UserPlus, MoreHorizontal, Settings, LayoutGrid, Info, Loader2, Upload, FileUp, Activity, ChevronDown } from 'lucide-react';
 import { supabase, logAudit } from '../lib/supabase';
@@ -13,7 +13,7 @@ import { getHighPrecisionCoordinates } from '../lib/geminiGeocoding';
 export default function CRMPage() {
   const { user } = useAuth();
   const { settings } = useSettings();
-      const navigate = useNavigate();
+  const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Crítico' | 'Perda'>('Todos');
   const [clients, setClients] = useState<any[]>([]);
@@ -28,18 +28,14 @@ export default function CRMPage() {
     else if (tab === "Critico" || tab === "Crítico") setActiveTab("Crítico");
     else if (tab === "Perda") setActiveTab("Perda");
   }, [location.search]);
-  
-  
-  
-  
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Tab State for Alerts
-  
-  
   // Import Modal/State
   const [isImporting, setIsImporting] = useState(false);
+  const [isAddingClient, setIsAddingClient] = useState(false);
+  const [newCnpj, setNewCnpj] = useState("");
+  const [isSearchingCnpj, setIsSearchingCnpj] = useState(false);
   const [importStats, setImportStats] = useState({ current: 0, total: 0 });
 
   // Pagination for performance on mobile
@@ -50,7 +46,6 @@ export default function CRMPage() {
     try {
       setLoading(true);
       
-      // Phase 1: Fetch Basic Client Data (Fast)
       const { data: clientsData, error } = await supabase
         .from('clients')
         .select('id, name, cnpj, city, address, status, last_contact, created_at')
@@ -59,12 +54,10 @@ export default function CRMPage() {
 
       if (error) throw error;
       
-      // Initialize with empty alerts
       const initialClients = (clientsData || []).map(c => ({ ...c, alerts: [] }));
       setClients(initialClients);
-      setLoading(false); // List is now visible to user
+      setLoading(false);
 
-      // Phase 2: Fetch Files & Calculate Alerts in background
       setLoadingAlerts(true);
       
       let files: any[] = [];
@@ -127,7 +120,6 @@ export default function CRMPage() {
     }
   }, [user, settings?.categories]);
 
-  // Reset display limit when searching or changing tabs
   useEffect(() => {
     setDisplayLimit(40);
   }, [searchTerm, activeTab]);
@@ -164,6 +156,60 @@ export default function CRMPage() {
     } catch (err) {
       console.error('Delete Error:', err);
       toast.error('Erro ao remover cliente.');
+    }
+  };
+
+  const handleAddClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCnpj || !user) return;
+
+    setIsSearchingCnpj(true);
+    const toastId = toast.loading("Buscando dados do CNPJ...");
+
+    try {
+      const cleanCnpj = newCnpj.replace(/\D/g, "");
+      const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
+      
+      let clientData: any = {};
+      if (response.ok) {
+        const data = await response.json();
+        clientData = {
+          name: data.razao_social || data.nome_fantasia || "Novo Cliente",
+          city: data.municipio || "",
+          address: `${data.logradouro || ""}, ${data.numero || "S/N"} - ${data.bairro || ""}, ${data.municipio || ""} - ${data.uf || ""}`.trim(),
+        };
+      } else {
+        toast.error("CNPJ não encontrado ou erro na API.");
+        setIsSearchingCnpj(false);
+        toast.dismiss(toastId);
+        return;
+      }
+
+      const coords = await getHighPrecisionCoordinates(clientData.address, clientData.name, cleanCnpj);
+
+      const { data, error } = await supabase.from("clients").insert([{
+        user_id: user.id,
+        name: clientData.name,
+        cnpj: cleanCnpj,
+        city: clientData.city,
+        address: clientData.address,
+        lat: coords?.lat || null,
+        lng: coords?.lng || null,
+        status: "Ativo",
+        last_contact: new Date().toISOString().split("T")[0]
+      }]).select().single();
+
+      if (error) throw error;
+
+      toast.success("Cliente adicionado com sucesso!", { id: toastId });
+      setClients(prev => [data, ...prev]);
+      setIsAddingClient(false);
+      setNewCnpj("");
+    } catch (err: any) {
+      console.error("Add Client Error:", err);
+      toast.error("Erro ao adicionar cliente: " + err.message, { id: toastId });
+    } finally {
+      setIsSearchingCnpj(false);
     }
   };
 
@@ -209,7 +255,6 @@ export default function CRMPage() {
               address: `${data.logradouro || ""}, ${data.numero || "S/N"} - ${data.bairro || ""}, ${data.municipio || ""} - ${data.uf || ""}`.trim(),
             };
           } else {
-             // Fallback logic kept from original
              clientData = { name: `Cliente ${cnpj.substring(0, 4)}`, city: "", address: "" };
           }
 
@@ -265,45 +310,44 @@ export default function CRMPage() {
   };
 
   return (
-    <div className='h-[calc(100dvh-2rem)] flex flex-col gap-6'>
-      {/* Header */}
-      <div className='flex flex-col md:flex-row md:items-center justify-between gap-4'>
+    <div className="h-[calc(100dvh-2rem)] flex flex-col gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className='text-3xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 uppercase'>
+          <h1 className="text-3xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 uppercase">
              Gestão de Clientes
           </h1>
         </div>
-        
-        <div className='flex flex-col sm:flex-row items-stretch sm:items-center gap-3'>
-           <div className='relative flex-1 sm:flex-none'>
-             <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400' />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+           <div className="relative flex-1 sm:flex-none">
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
              <input 
-               type='text'
+               type="text"
                value={searchTerm}
                onChange={(e) => setSearchTerm(e.target.value)}
-               placeholder='Buscar por nome, CNPJ ou cidade...'
-               className='pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs w-full md:w-80 outline-none focus:ring-2 focus:ring-emerald-500 font-bold'
+               placeholder="Buscar por nome, CNPJ ou cidade..."
+               className="pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs w-full md:w-80 outline-none focus:ring-2 focus:ring-emerald-500 font-bold"
              />
            </div>
-
            <input type="file" ref={fileInputRef} onChange={handleImportFile} className="hidden" accept=".pdf,.xlsx,.xls,.txt,image/*" />
-           
+           <button 
+             onClick={() => setIsAddingClient(true)}
+             className="px-6 py-2.5 bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-700 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+           >
+             <Plus className="w-4 h-4" />
+             Novo Cliente
+           </button>
            <button 
              onClick={() => fileInputRef.current?.click()}
              disabled={isImporting}
-             className='px-6 py-2.5 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2'
+             className="px-6 py-2.5 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 active:scale-95 transition-all flex items-center justify-center gap-2"
            >
-             {isImporting ? <Loader2 className='w-4 h-4 animate-spin' /> : <FileUp className='w-4 h-4' />}
+             {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
              {isImporting ? `Importando` : 'Importar Lista'}
            </button>
         </div>
       </div>
-
-      {/* Main Content: Client List (Full Width) */}
-      <div className='flex-1 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 flex flex-col min-h-0 shadow-sm overflow-hidden relative'>
-        
-        {/* Tabs next to search matches filter */}
-        <div className='px-4 pt-4 border-b dark:border-zinc-850 bg-slate-50/50 dark:bg-zinc-950/20 flex items-center gap-4 overflow-x-auto no-scrollbar'>
+      <div className="flex-1 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 flex flex-col min-h-0 shadow-sm overflow-hidden relative">
+        <div className="px-4 pt-4 border-b dark:border-zinc-850 bg-slate-50/50 dark:bg-zinc-950/20 flex items-center gap-4 overflow-x-auto no-scrollbar">
           {(['Todos', 'Alerta', 'Crítico', 'Perda'] as const).map(tab => (
             <button 
               key={tab}
@@ -320,12 +364,11 @@ export default function CRMPage() {
              </div>
           )}
         </div>
-        
-        <div className='flex-1 overflow-y-auto custom-scrollbar'>
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
            {loading ? (
-              <div className='flex items-center justify-center h-40'><Loader2 className='w-6 h-6 text-emerald-600 animate-spin' /></div>
+              <div className="flex items-center justify-center h-40"><Loader2 className="w-6 h-6 text-emerald-600 animate-spin" /></div>
            ) : (
-              <div className='divide-y divide-slate-100 dark:divide-zinc-850'>
+              <div className="divide-y divide-slate-100 dark:divide-zinc-850">
                  {displayClients.map((client) => (
                     <div 
                       key={client.id}
@@ -335,10 +378,9 @@ export default function CRMPage() {
                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black uppercase bg-slate-100 dark:bg-zinc-850 text-slate-500 dark:text-zinc-400 group-hover:bg-emerald-600 group-hover:text-white transition-colors shrink-0">
                           {client.name?.substring(0, 2)}
                        </div>
-                       
-                       <div className='flex-1 min-w-0'>
-                          <div className='flex items-center gap-2'>
-                             <p className='text-sm font-black text-slate-900 dark:text-zinc-100 uppercase truncate pr-1'>{client.name}</p>
+                       <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                             <p className="text-sm font-black text-slate-900 dark:text-zinc-100 uppercase truncate pr-1">{client.name}</p>
                              {client.alerts?.length > 0 && (
                                <span className="flex gap-1 shrink-0">
                                  {client.alerts.filter((a: any) => activeTab === 'Todos' ? true : a.type === activeTab).slice(0, 1).map((a: any, i: number) => (
@@ -349,25 +391,23 @@ export default function CRMPage() {
                                </span>
                              )}
                           </div>
-                          <div className='flex items-center gap-2 mt-0.5'>
-                             <span className='px-1.5 py-0.5 bg-slate-100 dark:bg-zinc-800 text-[8px] font-bold text-slate-500 dark:text-zinc-400 rounded-md uppercase whitespace-nowrap tracking-widest'>
+                          <div className="flex items-center gap-2 mt-0.5">
+                             <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-zinc-800 text-[8px] font-bold text-slate-500 dark:text-zinc-400 rounded-md uppercase whitespace-nowrap tracking-widest">
                                 {client.cnpj || 'Sem CNPJ'}
                              </span>
-                             <p className='text-[10px] text-slate-400 dark:text-zinc-500 truncate uppercase font-bold tracking-tight'>
+                             <p className="text-[10px] text-slate-400 dark:text-zinc-500 truncate uppercase font-bold tracking-tight">
                                 {client.city ? `📍 ${client.city}` : 'Cidade não informada'}
                              </p>
                           </div>
                        </div>
-
-                       <div className='flex items-center gap-2 shrink-0'>
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteClient(client.id); }} className='p-2 md:opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-all'>
-                             <Trash2 className='w-4 h-4' />
+                       <div className="flex items-center gap-2 shrink-0">
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteClient(client.id); }} className="p-2 md:opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-all">
+                             <Trash2 className="w-4 h-4" />
                           </button>
-                          <ChevronRight className='w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition-colors' />
+                          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-500 transition-colors" />
                        </div>
                     </div>
                  ))}
-                 
                  {filteredClients.length > displayLimit && (
                     <button 
                       onClick={() => setDisplayLimit(prev => prev + 40)}
@@ -377,17 +417,73 @@ export default function CRMPage() {
                        Carregar mais clientes ({filteredClients.length - displayLimit} restantes)
                     </button>
                  )}
-
                  {filteredClients.length === 0 && (
-                   <div className="p-12 text-center opacity-40">
-                     <Building2 className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                     <p className="text-sm font-black uppercase tracking-widest">Nenhum cliente encontrado</p>
-                   </div>
+                    <div className="p-12 text-center opacity-40">
+                      <Building2 className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                      <p className="text-sm font-black uppercase tracking-widest">Nenhum cliente encontrado</p>
+                    </div>
                  )}
               </div>
            )}
         </div>
       </div>
+      <AnimatePresence>
+        {isAddingClient && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => !isSearchingCnpj && setIsAddingClient(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-200 dark:border-zinc-800 shadow-2xl overflow-hidden"
+            >
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Novo Cliente</h3>
+                  <button 
+                    onClick={() => setIsAddingClient(false)}
+                    disabled={isSearchingCnpj}
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-all"
+                  >
+                    <X className="w-5 h-5 text-slate-400" />
+                  </button>
+                </div>
+                <form onSubmit={handleAddClient} className="space-y-6">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">CNPJ da Empresa</label>
+                    <input 
+                      type="text"
+                      value={newCnpj}
+                      onChange={(e) => setNewCnpj(e.target.value)}
+                      placeholder="00.000.000/0000-00"
+                      className="w-full px-5 py-4 bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                      required
+                      autoFocus
+                    />
+                    <p className="mt-3 text-[10px] text-slate-400 font-medium leading-relaxed">
+                      Insira apenas o CNPJ. Buscaremos automaticamente todos os dados (Razão Social, Endereço, Localização) para você.
+                    </p>
+                  </div>
+                  <button 
+                    type="submit"
+                    disabled={isSearchingCnpj || !newCnpj}
+                    className="w-full py-4 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 disabled:opacity-50 disabled:scale-100 active:scale-95 transition-all flex items-center justify-center gap-3"
+                  >
+                    {isSearchingCnpj ? <Loader2 className="w-5 h-5 animate-spin" /> : <Building2 className="w-5 h-5" />}
+                    {isSearchingCnpj ? "Buscando..." : "Adicionar Cliente"}
+                  </button>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

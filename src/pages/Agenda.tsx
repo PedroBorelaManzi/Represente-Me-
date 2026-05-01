@@ -360,8 +360,8 @@ export default function Agenda() {
                               className="text-[9px] font-black p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 hover:border-emerald-300 transition-all cursor-pointer shadow-sm group/item flex flex-col gap-1 relative overflow-hidden"
                             >
                               <div className="absolute top-0 right-0 w-8 h-8 bg-emerald-500/10 rounded-full -mr-4 -mt-4" />
-                              <span className="truncate uppercase tracking-tight relative z-10">{event.title}</span>
-                              <span className="text-[7px] text-emerald-400/80 dark:text-emerald-500/60 font-bold relative z-10 uppercase">{event.time}</span>
+                              <span className="line-clamp-2 uppercase tracking-tight relative z-10 leading-tight">{event.title}</span>
+                              <span className="text-[7px] text-emerald-400/80 dark:text-emerald-500/60 font-bold relative z-10 uppercase shrink-0">{event.time}</span>
                             </div>
                           ))}
                         </div>

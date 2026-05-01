@@ -1,6 +1,7 @@
 ﻿import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./pages/LandingPitch";
-import Login from "./pages/Login";
+import Login from './pages/Login';
+import Register from './pages/Register';
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import MapPage from "./pages/Map";
@@ -28,7 +29,8 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
+          <Route path='/login' element={<Login />} />
+          <Route path='/register' element={<Register />} />
           
           {/* Protected Dashboard Routes */}
           <Route path="/dashboard" element={<ProtectedRoute />}>
