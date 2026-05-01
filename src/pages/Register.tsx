@@ -189,10 +189,7 @@ const Register = () => {
                         ? "bg-emerald-600 border-emerald-500 shadow-2xl text-white scale-105 z-10" 
                         : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 shadow-xl"
                     )}
-                    onClick={() => {
-                      setSelectedPlan(plan.id);
-                      setStep(2);
-                    }}
+                    
                   >
                     {plan.featured && (
                       <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-6 py-2 bg-amber-400 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg whitespace-nowrap">
@@ -359,3 +356,4 @@ const Register = () => {
 };
 
 export default Register;
+

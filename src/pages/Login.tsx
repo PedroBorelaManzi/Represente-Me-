@@ -67,16 +67,16 @@ const Login = () => {
         .single();
 
       if (customerError || !customer) {
-        throw new Error("E-mail nÃ£o encontrado em nossa base de assinantes.");
+        throw new Error("E-mail não encontrado em nossa base de assinantes.");
       }
 
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail);
       if (error) throw error;
 
       setResetStep("otp");
-      toast.success("CÃ³digo enviado para o seu e-mail!");
+      toast.success("Código enviado para o seu e-mail!");
     } catch (error: any) {
-      toast.error(error.message || "Erro ao solicitar recuperaÃ§Ã£o");
+      toast.error(error.message || "Erro ao solicitar recuperação");
     } finally {
       setResetLoading(false);
     }
@@ -94,7 +94,7 @@ const Login = () => {
       if (error) throw error;
       setResetStep("password");
     } catch (error: any) {
-      toast.error("CÃ³digo invÃ¡lido ou expirado.");
+      toast.error("Código inválido ou expirado.");
     } finally {
       setResetLoading(false);
     }
@@ -143,10 +143,10 @@ const Login = () => {
             >
               <h1 className="text-[84px] font-black text-slate-900 dark:text-zinc-100 leading-[0.9] mb-8 tracking-tighter">
                 O FUTURO DA <br />
-                <span className="text-emerald-600">REPRESENTAÃ‡ÃƒO.</span>
+                <span className="text-emerald-600">REPRESENTAÇÃO.</span>
               </h1>
               <p className="text-slate-500 dark:text-zinc-400 text-xl font-medium max-w-xl leading-relaxed">
-                A tecnologia que vocÃª precisa para dominar seu territÃ³rio e multiplicar suas vendas com inteligÃªncia e elegÃ¢ncia.
+                A tecnologia que você precisa para dominar seu território e multiplicar suas vendas com inteligência e elegância.
               </p>
             </motion.div>
           </div>
@@ -158,8 +158,8 @@ const Login = () => {
             className="relative z-10 grid grid-cols-2 gap-8"
           >
             {[
-              { icon: ShieldCheck, title: "SeguranÃ§a Total", desc: "Seus dados protegidos por criptografia de ponta." },
-              { icon: Boxes, title: "OrganizaÃ§Ã£o", desc: "Tudo o que vocÃª precisa em um sÃ³ lugar." }
+              { icon: ShieldCheck, title: "Segurança Total", desc: "Seus dados protegidos por criptografia de ponta." },
+              { icon: Boxes, title: "Organização", desc: "Tudo o que você precisa em um só lugar." }
             ].map((feature, i) => (
               <div key={i} className="group cursor-default">
                 <div className="flex items-center gap-3 mb-3">
@@ -327,7 +327,7 @@ const Login = () => {
                     type="submit"
                     className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all  dark:shadow-none flex items-center justify-center gap-2"
                   >
-                    {resetLoading ? <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Enviar CÃ³digo"}
+                    {resetLoading ? <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Enviar Código"}
                   </button>
                 </form>
               )}
@@ -354,7 +354,7 @@ const Login = () => {
                     type="submit"
                     className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all  dark:shadow-none flex items-center justify-center gap-2"
                   >
-                    {resetLoading ? <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Validar CÃ³digo"}
+                    {resetLoading ? <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Validar Código"}
                   </button>
                 </form>
               )}
@@ -362,7 +362,7 @@ const Login = () => {
               {resetStep === "password" && (
                 <form onSubmit={updatePassword} className="space-y-6">
                   <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                    Quase lÃ¡! Defina sua nova senha de acesso.
+                    Quase lá! Defina sua nova senha de acesso.
                   </p>
                   <div className="space-y-2">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Nova Senha</label>
@@ -392,7 +392,7 @@ const Login = () => {
                   </div>
                   <div className="space-y-2">
                     <h4 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Senha Atualizada!</h4>
-                    <p className="text-xs text-slate-500 font-medium">VocÃª jÃ¡ pode entrar no sistema com sua nova senha.</p>
+                    <p className="text-xs text-slate-500 font-medium">Você já pode entrar no sistema com sua nova senha.</p>
                   </div>
                   <button
                     onClick={() => setShowForgotModal(false)}
