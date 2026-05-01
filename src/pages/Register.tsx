@@ -19,7 +19,9 @@ import {
   Mail,
   Lock,
   User as UserIcon,
-  CheckCircle2
+  CheckCircle2,
+  Box,
+  BarChart3
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { toast } from "sonner";
@@ -28,58 +30,75 @@ import { cn } from '../lib/utils';
 
 const plans = [
   {
-    id: 'free',
-    name: 'Acesso Exclusivo',
-    price: '0',
+    id: 'exclusivo',
+    name: 'Exclusivo',
+    price: '97',
     period: '/mês',
-    description: 'Comece com o pé direito. Ideal para validar sua operação com baixo investimento.',
-    justification: 'Perfeito para representantes iniciantes que buscam organização básica sem custo inicial.',
+    description: 'Para quem está começando.',
+    justification: 'Ideal para validar sua operação com baixo investimento e organização básica.',
     features: [
-      { text: 'Até 1 empresa cadastrada', icon: Building2 },
-      { text: 'Acesso ao Mapa e CRM Básico', icon: MapIcon },
-      { text: 'Lançamento manual de pedidos', icon: Check },
-      { text: 'Indicadores básicos de faturamento', icon: Check }
+      { text: '1 Empresa cadastrada', icon: Building2 },
+      { text: 'Mapa Territorial Básico', icon: MapIcon },
+      { text: 'CRM Essencial', icon: Check },
+      { text: 'Suporte por E-mail', icon: Mail }
     ],
     featured: false,
     color: 'slate',
     icon: Trophy
   },
   {
-    id: 'premium',
-    name: 'Acesso Premium',
+    id: 'profissional',
+    name: 'Profissional',
     price: '147',
     period: '/mês',
-    description: 'O nível profissional. A tecnologia que você precisa para dominar seu território.',
+    description: 'Ideal para equipes em crescimento.',
     justification: 'A automação de busca de CNPJ economiza cerca de 10 horas de trabalho manual por mês.',
     features: [
-      { text: 'Até 3 empresas cadastradas', icon: Building2 },
-      { text: 'Pesquisa Automática de CNPJ', icon: Zap },
-      { text: 'Lançamento via IA (Gemini)', icon: Sparkles },
-      { text: 'Suporte Prioritário (WhatsApp)', icon: Star },
-      { text: 'Exportação completa de relatórios', icon: Check },
-      { text: 'Filtros avançados de inatividade', icon: Check }
+      { text: 'Até 5 Empresas', icon: Building2 },
+      { text: 'Busca CNPJ Automática', icon: Zap },
+      { text: 'Dashboard de Faturamento', icon: BarChart3 },
+      { text: 'Suporte via WhatsApp', icon: Star },
+      { text: 'Exportação de Relatórios', icon: Check }
     ],
     featured: true,
     color: 'emerald',
     icon: Gem
   },
   {
-    id: 'master',
-    name: 'Acesso Master',
-    price: '297',
+    id: 'corporativo',
+    name: 'Corporativo',
+    price: '197',
     period: '/mês',
-    description: 'Controle total da operação. Inteligência brasileira de ponta para grandes volumes.',
-    justification: 'Ideal para quem gerencia múltiplas frentes de vendas e precisa de BI avançado para decisões estratégicas.',
+    description: 'Para grandes volumes e IA.',
+    justification: 'Potencializado por Inteligência Artificial para processar pedidos e analisar mercado em tempo real.',
     features: [
       { text: 'Empresas Ilimitadas', icon: Infinity },
-      { text: 'Tudo do plano Premium', icon: Shield },
-      { text: 'Painel Master de Business Intelligence', icon: Zap },
-      { text: 'Gestão Completa de CRM Portfólio', icon: Users2 },
-      { text: 'Personalização de cores e logos', icon: Check }
+      { text: 'Lançamento via IA (Gemini)', icon: Sparkles },
+      { text: 'Radar Territorial Avançado', icon: MapIcon },
+      { text: 'Automação de Pedidos', icon: Zap },
+      { text: 'Integração com Inbox', icon: Mail }
     ],
     featured: false,
     color: 'zinc',
     icon: Crown
+  },
+  {
+    id: 'ultimate',
+    name: 'Ultimate',
+    price: '247',
+    period: '/mês',
+    description: 'A solução completa definitiva.',
+    justification: 'BI avançado e personalização total para grandes operações de representação comercial.',
+    features: [
+      { text: 'Tudo do Corporativo', icon: Shield },
+      { text: 'BI & Analytics Avançado', icon: BarChart3 },
+      { text: 'Personalização White-label', icon: Box },
+      { text: 'Suporte VIP 24/7', icon: Star },
+      { text: 'Treinamento de Equipe', icon: Users2 }
+    ],
+    featured: false,
+    color: 'indigo',
+    icon: Sparkles
   }
 ];
 
@@ -154,20 +173,20 @@ const Register = () => {
                 <h1 className="text-5xl md:text-6xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">
                   Escolha o seu <span className="text-emerald-600">nível de jogo</span>
                 </h1>
-                <p className="text-slate-500 dark:text-zinc-400 font-bold uppercase text-xs tracking-widest">
+                <p className="text-slate-50 dark:text-zinc-400 font-bold uppercase text-xs tracking-widest">
                   Selecione o plano que melhor se adapta à sua realidade atual.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {plans.map((plan) => (
                   <motion.div
                     key={plan.id}
                     whileHover={{ y: -8 }}
                     className={cn(
-                      "relative flex flex-col p-8 rounded-[48px] border transition-all duration-500 cursor-pointer",
+                      "relative flex flex-col p-6 rounded-[40px] border transition-all duration-500 cursor-pointer",
                       plan.featured 
-                        ? "bg-emerald-600 border-emerald-500 shadow-2xl text-white" 
+                        ? "bg-emerald-600 border-emerald-500 shadow-2xl text-white scale-105 z-10" 
                         : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 shadow-xl"
                     )}
                     onClick={() => {
@@ -176,42 +195,42 @@ const Register = () => {
                     }}
                   >
                     {plan.featured && (
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-6 py-2 bg-amber-400 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-6 py-2 bg-amber-400 text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-lg whitespace-nowrap">
                         Mais Popular
                       </div>
                     )}
-                    <div className="mb-8">
-                      <h3 className="text-xl font-black uppercase tracking-tight mb-2">{plan.name}</h3>
-                      <p className={cn("text-[10px] font-bold uppercase opacity-70", plan.featured ? "text-emerald-50" : "text-slate-400")}>
+                    <div className="mb-6">
+                      <h3 className="text-lg font-black uppercase tracking-tight mb-2">{plan.name}</h3>
+                      <p className={cn("text-[9px] font-bold uppercase opacity-70 leading-tight", plan.featured ? "text-emerald-50" : "text-slate-400")}>
                         {plan.description}
                       </p>
                     </div>
-                    <div className="flex items-baseline gap-1 mb-8">
+                    <div className="flex items-baseline gap-1 mb-6">
                       <span className="text-xs font-black opacity-50">R$</span>
-                      <span className="text-5xl font-black tracking-tighter">{plan.price}</span>
+                      <span className="text-4xl font-black tracking-tighter">{plan.price}</span>
                       <span className="text-[10px] font-black uppercase opacity-50">{plan.period}</span>
                     </div>
                     
-                    <div className={cn("p-4 rounded-2xl mb-8 text-[11px] font-bold leading-relaxed", plan.featured ? "bg-white/10" : "bg-slate-50 dark:bg-zinc-800")}>
+                    <div className={cn("p-4 rounded-2xl mb-6 text-[10px] font-bold leading-relaxed", plan.featured ? "bg-white/10" : "bg-slate-50 dark:bg-zinc-800")}>
                       <Sparkles className="w-4 h-4 mb-2 inline-block mr-2" />
                       {plan.justification}
                     </div>
 
-                    <div className="space-y-4 flex-1 mb-8">
+                    <div className="space-y-3 flex-1 mb-6">
                       {plan.features.map((feat, i) => (
                         <div key={i} className="flex items-center gap-3">
-                          <div className={cn("p-1.5 rounded-lg", plan.featured ? "bg-white/20" : "bg-emerald-50 dark:bg-emerald-950/30")}>
+                          <div className={cn("p-1.5 rounded-lg shrink-0", plan.featured ? "bg-white/20" : "bg-emerald-50 dark:bg-emerald-950/30")}>
                             <feat.icon className={cn("w-3 h-3", plan.featured ? "text-white" : "text-emerald-600")} />
                           </div>
-                          <span className="text-[10px] font-black uppercase tracking-tight">{feat.text}</span>
+                          <span className="text-[9px] font-black uppercase tracking-tight leading-none">{feat.text}</span>
                         </div>
                       ))}
                     </div>
                     <button className={cn(
-                      "w-full py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all",
+                      "w-full py-4 rounded-2xl font-black uppercase text-[9px] tracking-widest transition-all",
                       plan.featured ? "bg-white text-emerald-600" : "bg-slate-900 text-white"
                     )}>
-                      Selecionar Plano
+                      Selecionar
                     </button>
                   </motion.div>
                 ))}
