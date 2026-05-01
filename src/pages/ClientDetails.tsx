@@ -51,6 +51,14 @@ export default function ClientDetails() {
   
   const [clientAppointments, setClientAppointments] = useState<any[]>([]);
 
+  const allAvailableCategories = useMemo(() => {
+    const set = new Set(settings.categories || []);
+    files.forEach(f => { if(f.category) set.add(f.category); });
+    return Array.from(set);
+  }, [settings.categories, files]);
+
+
+
   useEffect(() => {
     if (user && id) {
       loadClientData();
@@ -223,11 +231,6 @@ export default function ClientDetails() {
     }
   };
 
-  const allAvailableCategories = useMemo(() => {
-    const set = new Set(settings.categories || []);
-    files.forEach(f => { if(f.category) set.add(f.category); });
-    return Array.from(set);
-  }, [settings.categories, files]);
 
   if (loading) {
     return (
