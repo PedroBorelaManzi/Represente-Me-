@@ -88,7 +88,7 @@ export default function Planos() {
         </motion.div>
         
         <h1 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-8 leading-[0.9]">
-            Escolha o seu <span className="text-emerald-600">nível de jogo</span>
+            Selecione o plano ideal para o <span className="text-emerald-600">seu negócio</span>
         </h1>
         <p className="text-slate-500 dark:text-zinc-400 max-w-2xl mx-auto font-black uppercase tracking-tight text-sm leading-relaxed mb-12">
             Aumente sua produtividade com ferramentas agentic e inteligência brasileira de ponta.

@@ -33,12 +33,12 @@ const plans = [
     id: 'exclusivo',
     name: 'Exclusivo',
     price: '97',
-    period: '/mês',
-    description: 'Para quem está começando.',
-    justification: 'Ideal para validar sua operação com baixo investimento e organização básica.',
+    period: '/mÃªs',
+    description: 'Para quem estÃ¡ comeando.',
+    justification: 'Ideal para validar sua operaÃ§Ã£o com baixo investimento e organizao bsica.',
     features: [
       { text: '1 Empresa cadastrada', icon: Building2 },
-      { text: 'Mapa Territorial Básico', icon: MapIcon },
+      { text: 'Mapa Territorial Bsico', icon: MapIcon },
       { text: 'CRM Essencial', icon: Check },
       { text: 'Suporte por E-mail', icon: Mail }
     ],
@@ -50,15 +50,15 @@ const plans = [
     id: 'profissional',
     name: 'Profissional',
     price: '147',
-    period: '/mês',
+    period: '/mÃªs',
     description: 'Ideal para equipes em crescimento.',
-    justification: 'A automação de busca de CNPJ economiza cerca de 10 horas de trabalho manual por mês.',
+    justification: 'A automao de busca de CNPJ economiza cerca de 10 horas de trabalho manual por mÃªs.',
     features: [
-      { text: 'Até 5 Empresas', icon: Building2 },
-      { text: 'Busca CNPJ Automática', icon: Zap },
+      { text: 'At 5 Empresas', icon: Building2 },
+      { text: 'Busca CNPJ Automtica', icon: Zap },
       { text: 'Dashboard de Faturamento', icon: BarChart3 },
       { text: 'Suporte via WhatsApp', icon: Star },
-      { text: 'Exportação de Relatórios', icon: Check }
+      { text: 'ExportaÃ§Ã£o de Relatrios', icon: Check }
     ],
     featured: true,
     color: 'emerald',
@@ -68,38 +68,20 @@ const plans = [
     id: 'corporativo',
     name: 'Corporativo',
     price: '197',
-    period: '/mês',
+    period: '/mÃªs',
     description: 'Para grandes volumes e IA.',
-    justification: 'Potencializado por Inteligência Artificial para processar pedidos e analisar mercado em tempo real.',
+    justification: 'Potencializado por Inteligncia Artificial para processar pedidos e analisar mercado em tempo real.',
     features: [
       { text: 'Empresas Ilimitadas', icon: Infinity },
-      { text: 'Lançamento via IA (Gemini)', icon: Sparkles },
-      { text: 'Radar Territorial Avançado', icon: MapIcon },
-      { text: 'Automação de Pedidos', icon: Zap },
-      { text: 'Integração com Inbox', icon: Mail }
+      { text: 'LanÃ§amento via IA (Gemini)', icon: Sparkles },
+      { text: 'Radar Territorial AvanÃ§ado', icon: MapIcon },
+      { text: 'AutomaÃ§Ã£o de Pedidos', icon: Zap },
+      { text: 'IntegraÃ§Ã£o com Inbox', icon: Mail }
     ],
     featured: false,
     color: 'zinc',
     icon: Crown
   },
-  {
-    id: 'ultimate',
-    name: 'Ultimate',
-    price: '247',
-    period: '/mês',
-    description: 'A solução completa definitiva.',
-    justification: 'BI avançado e personalização total para grandes operações de representação comercial.',
-    features: [
-      { text: 'Tudo do Corporativo', icon: Shield },
-      { text: 'BI & Analytics Avançado', icon: BarChart3 },
-      { text: 'Personalização White-label', icon: Box },
-      { text: 'Suporte VIP 24/7', icon: Star },
-      { text: 'Treinamento de Equipe', icon: Users2 }
-    ],
-    featured: false,
-    color: 'indigo',
-    icon: Sparkles
-  }
 ];
 
 const Register = () => {
@@ -171,10 +153,10 @@ const Register = () => {
             >
               <div className="text-center space-y-4">
                 <h1 className="text-5xl md:text-6xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">
-                  Escolha o seu <span className="text-emerald-600">nível de jogo</span>
+                  Selecione o plano ideal para o <span className="text-emerald-600">seu negÃ³cio</span>
                 </h1>
                 <p className="text-slate-50 dark:text-zinc-400 font-bold uppercase text-xs tracking-widest">
-                  Selecione o plano que melhor se adapta à sua realidade atual.
+                  Selecione o plano que melhor se adapta Ã  sua realidade atual.
                 </p>
               </div>
 
@@ -292,7 +274,7 @@ const Register = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full pl-12 pr-6 py-4 bg-slate-50/50 dark:bg-zinc-950/50 border border-slate-100 dark:border-zinc-800/50 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 text-sm font-bold outline-none"
-                        placeholder="••••••••"
+                        placeholder=""
                       />
                     </div>
                   </div>
@@ -338,7 +320,7 @@ const Register = () => {
               <div className="space-y-4">
                 <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Quase pronto!</h2>
                 <p className="text-slate-500 dark:text-zinc-400 font-medium text-sm leading-relaxed">
-                  Enviamos um e-mail de confirmação para <strong>{email}</strong>. Por favor, valide sua conta para começar a usar o sistema.
+                  Enviamos um e-mail de confirmao para <strong>{email}</strong>. Por favor, valide sua conta para comear a usar o sistema.
                 </p>
               </div>
               <button
