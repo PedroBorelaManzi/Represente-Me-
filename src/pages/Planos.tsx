@@ -113,7 +113,7 @@ export default function Planos() {
             >
               {plan.featured && (
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-8 py-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black uppercase tracking-[0.3em] rounded-full shadow-2xl z-10">
-                  Mais Popular
+                  Mais escolhido!
                 </div>
               )}
 
@@ -188,3 +188,4 @@ export default function Planos() {
     </div>
   );
 }
+
