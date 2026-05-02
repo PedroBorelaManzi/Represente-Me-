@@ -249,26 +249,32 @@ export default function ClientDetails() {
     }
   };
 
-  const handleFileChange = async (file: File | null) => {
+    const handleFileChange = async (file: File | null) => {
     setSelectedFile(file);
     if (!file) return;
 
     try {
       setIsAnalyzing(true);
+      toast.info("Lendo arquivo selecionado...", { id: "analyzing_toast" });
       const result = await processOrderFile(file, [], allAvailableCategories);
       
+      toast.dismiss("analyzing_toast");
+
       if (result.status === "ready") {
         if (result.value > 0) setOrderValue(result.value.toString().replace(".", ","));
         if (result.category) setSelectedCategory(result.category);
         toast.success("Dados extraídos do documento!");
+      } else {
+        toast.error("Não foi possível extrair dados automaticamente. Preencha os campos manualmente.");
       }
     } catch (err) {
+      toast.dismiss("analyzing_toast");
       console.error("Erro na análise:", err);
+      toast.error("Erro ao ler arquivo. Preencha manualmente.");
     } finally {
       setIsAnalyzing(false);
     }
   };
-
 
   const handleSaveNotes = async () => {
     try {
