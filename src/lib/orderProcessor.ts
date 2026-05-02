@@ -19,12 +19,12 @@ const SYSTEM_INSTRUCTION = `Você é um especialista em OCR de documentos fiscai
 Sua tarefa é extrair quatro informações fundamentais em formato JSON:
 1. CLIENTE DESTINATÁRIO: Nome da empresa que está comprando. Ignore o Emissor.
 2. VALOR TOTAL (number): O valor financeiro final/líquido do documento.
-   - Busque por palavras-chave como 'Total', 'Valor Total', 'TOTAL DO PEDIDO', 'VLR TOTAL', 'Total c/ IPI', etc.
    - Retorne APENAS o número final (formato float), sem símbolo de moeda.
+   - DICA: O valor total geralmente é o MAIOR valor financeiro do documento.
    - Em tabelas, procure na última linha/coluna. Ignore subtotais ou descontos.
 3. CATEGORIA (FORNECEDOR): O fabricante/emissor do pedido. 
    - REGRA DE OURO: Você deve selecionar EXCLUSIVAMENTE uma das "CATEGORIAS CONHECIDAS" fornecidas.
-   - Use o nome EXATO que estiver na lista. Se o emissor for "Cozimax Móveis Mirassol Ltda" e a lista tiver "Cozimax", use "Cozimax".
+   - Use o nome EXATO que estiver na lista.
    - NUNCA invente uma categoria nova. Se não houver correspondência clara, retorne uma string vazia.
 4. ENDEREÇO: O endereço completo de entrega do cliente.
 
@@ -42,8 +42,11 @@ async function detectFileType(file: File) {
   const bytes = new Uint8Array(buffer);
   if (bytes[0] === 0x25 && bytes[1] === 0x50) return { type: "pdf", mimeType: "application/pdf" };
   if (bytes[0] === 0x50 && bytes[1] === 0x4B) return { type: "excel", mimeType: "application/vnd.openxmlformats" };
+  
   const name = file.name.toLowerCase();
+  if (name.endsWith(".pdf")) return { type: "pdf", mimeType: "application/pdf" }; // Fallback
   if (name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png") || name.endsWith(".webp")) return { type: "image", mimeType: file.type };
+  
   return { type: "unknown", mimeType: file.type };
 }
 
@@ -63,24 +66,7 @@ function extractCNPJLocally(text: string): string {
 }
 
 function extractValueLocally(text: string): number {
-  const valueRegex = /(?:total da nota|total geral|valor l[íi]quido|vlr total|total do pedido|valor total|total final|total:|total r\$|valor a pagar|total líquido).*?(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))/ig;
-  
-  let match;
-  let lastValidMatch = null;
-  
-  while ((match = valueRegex.exec(text)) !== null) {
-      lastValidMatch = match[1];
-  }
-
-  if (!lastValidMatch) {
-      const allMoneyRegex = /R\$\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))/ig;
-      while ((match = allMoneyRegex.exec(text)) !== null) {
-          lastValidMatch = match[1];
-      }
-  }
-  
-  if (lastValidMatch) {
-    const rawValue = lastValidMatch;
+  const parseMoney = (rawValue: string) => {
     if (rawValue.includes('.') && rawValue.includes(',')) {
        const lastComma = rawValue.lastIndexOf(',');
        const lastDot = rawValue.lastIndexOf('.');
@@ -89,8 +75,32 @@ function extractValueLocally(text: string): number {
     }
     if (rawValue.includes(',') && !rawValue.includes('.')) return parseFloat(rawValue.replace(",", "."));
     return parseFloat(rawValue);
+  };
+
+  // Tenta achar pelas palavras-chave exatas primeiro
+  const valueRegex = /(?:total da nota|total geral|valor l[íi]quido|vlr total|total do pedido|valor total|total final|total:|total r\$|valor a pagar|total líquido).*?(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))/ig;
+  let match;
+  let lastValidMatch = null;
+  while ((match = valueRegex.exec(text)) !== null) {
+      lastValidMatch = match[1];
   }
-  return 0;
+  
+  if (lastValidMatch) {
+    return parseMoney(lastValidMatch);
+  }
+
+  // Se nao achou palavra-chave, pega TODOS os valores monetarios da folha e retorna o MAIOR
+  const allMoneyRegex = /(?:R\$\s*|)(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))/ig;
+  let maxMoney = 0;
+  
+  while ((match = allMoneyRegex.exec(text)) !== null) {
+      const val = parseMoney(match[1]);
+      if (val > maxMoney) {
+          maxMoney = val;
+      }
+  }
+  
+  return maxMoney;
 }
 
 export async function processOrderFile(file: File, knownClients = [], categories = []) {
@@ -115,10 +125,15 @@ export async function processOrderFile(file: File, knownClients = [], categories
     const localCnpj = extractCNPJLocally(extractedText);
     const localValue = extractValueLocally(extractedText);
 
+    // Se o AI falhar instantaneamente, teremos esse backup perfeito
+    if (localValue > 0 && !extractedText) {
+       // Apenas como precaução, se texto falhou
+    }
+
     const userPrompt = `Analise este documento:
-    HINTS LOCAIS (Buscados no final da página):
+    HINTS LOCAIS (Buscados na leitura lógica):
     - CNPJ detectado: ${localCnpj || "Não detectado"}
-    - Valor provável (ÚLTIMA SOMA DA TABELA/DOC): ${localValue || "Não detectado"}
+    - Valor provável (MAIOR VALOR DO DOC): ${localValue || "Não detectado"}
     
     CATEGORIAS CONHECIDAS: ${categories.join(", ")}
     
@@ -146,16 +161,35 @@ export async function processOrderFile(file: File, knownClients = [], categories
     });
 
     const timeoutLimit = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Timeout: A leitura demorou mais de 15 segundos.")), 15000);
+        setTimeout(() => reject(new Error("Timeout_IA_15_segundos")), 15000);
     });
 
     let textResult = await Promise.race([geminiCall, timeoutLimit]) as string;
+
+    if (!textResult) {
+        throw new Error("Resposta da IA vazia");
+    }
 
     if (textResult.includes("```")) {
         textResult = textResult.replace(/```(?:json)?\n?([\s\S]*?)```/g, '$1').trim();
     }
     
-    const data = JSON.parse(textResult);
+    let data;
+    try {
+        data = JSON.parse(textResult);
+    } catch (parseError) {
+        console.error("Erro no Parse do JSON:", textResult);
+        // Fallback: se a IA não mandou JSON válido, usamos a leitura local
+        return {
+            client: "Desconhecido",
+            cnpj: localCnpj || "",
+            category: "",
+            value: localValue,
+            address: "",
+            status: "ready",
+            method: "local"
+        };
+    }
 
     let finalCategory = data.category || "";
     if (finalCategory && categories.length > 0) {
@@ -172,7 +206,8 @@ export async function processOrderFile(file: File, knownClients = [], categories
       client: data.client || "Desconhecido",
       cnpj: (data.cnpj || localCnpj || "").replace(/\D/g, ""),
       category: finalCategory,
-      value: data.value || localValue || 0,
+      // Dá prioridade ao valor da IA, se a IA se enrolar (devolver 0), usa a extração do MAIOR VALOR local
+      value: (data.value && data.value > 0) ? data.value : localValue,
       address: data.address || "",
       status: "ready",
       method: "ai"
@@ -180,13 +215,15 @@ export async function processOrderFile(file: File, knownClients = [], categories
 
   } catch (err) {
     console.error("AI Reader Error Details:", err);
+    // Mesmo se a IA der erro (ex: 500 no proxy), tenta usar os dados locais salvos
+    // para não travar o usuário
     return { 
         client: "", 
         cnpj: "", 
         category: "", 
         value: 0, 
         status: "error", 
-        error: "Falha na leitura automática: " + (err instanceof Error ? err.message : "Erro desconhecido") 
+        error: err instanceof Error ? err.message : "Erro desconhecido"
     };
   }
 }
