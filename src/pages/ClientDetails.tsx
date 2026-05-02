@@ -50,7 +50,7 @@ export default function ClientDetails() {
   const [orderValue, setOrderValue] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // PersistÃªncia de estado do modal
+  // Persistencia de estado do modal
   useEffect(() => {
     const saved = sessionStorage.getItem(`upload_draft_${id}`);
     if (saved) {
@@ -195,17 +195,18 @@ export default function ClientDetails() {
           file_name: fileName,
           file_path: filePath,
           category: selectedCategory,
-          value: parseFloat(orderValue) || null
+          value: parseFloat(orderValue.replace(",", ".")) || null
         }]);
 
       if (dbError) throw dbError;
 
       // If it has a value, register as an order too
-      if (parseFloat(orderValue) > 0) {
+      const numericValue = parseFloat(orderValue.replace(",", "."));
+    if (numericValue > 0) {
         await supabase.from('orders').insert([{
           user_id: user.id,
           client_id: id,
-          value: parseFloat(orderValue),
+          value: parseFloat(orderValue.replace(",", ".")),
           category: selectedCategory,
           description: `Pedido via Upload: ${selectedFile.name}`
         }]);
@@ -257,7 +258,7 @@ export default function ClientDetails() {
         .eq('id', id);
       
       if (error) throw error;
-      toast.success("ObservaÃƒÂ§ÃƒÂµes salvas!");
+      toast.success("ObservaÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âµes salvas!");
     } catch (err) {
       toast.error("Erro ao salvar.");
     } finally {
@@ -278,7 +279,7 @@ export default function ClientDetails() {
     return (
       <div className="h-screen flex flex-col items-center justify-center gap-6">
         <AlertCircle className="w-16 h-16 text-red-500 opacity-20" />
-        <h2 className="text-xl font-black uppercase text-slate-400 tracking-widest">Cliente nÃƒÂ£o encontrado</h2>
+        <h2 className="text-xl font-black uppercase text-slate-400 tracking-widest">Cliente nÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o encontrado</h2>
         <Link to="/dashboard/clientes" className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs">Voltar para Carteira</Link>
       </div>
     );
@@ -317,14 +318,14 @@ export default function ClientDetails() {
         {/* LEFT COLUMN: INFO & NOTES */}
         <div className="lg:col-span-1 space-y-8">
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-8 space-y-6">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 border-b border-slate-50 dark:border-zinc-800 pb-4">InformaÃƒÂ§ÃƒÂµes de Contato</h3>
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 border-b border-slate-50 dark:border-zinc-800 pb-4">InformaÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âµes de Contato</h3>
             
             <div className="space-y-4">
               <div className="flex items-start gap-4">
                 <div className="p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg text-slate-400"><MapPin className="w-4 h-4" /></div>
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase">LocalizaÃƒÂ§ÃƒÂ£o</p>
-                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300 leading-relaxed">{client.address || "NÃƒÂ£o informado"}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase">LocalizaÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300 leading-relaxed">{client.address || "NÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o informado"}</p>
                 </div>
               </div>
 
@@ -340,7 +341,7 @@ export default function ClientDetails() {
                 <div className="p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg text-slate-400"><Mail className="w-4 h-4" /></div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase">E-mail Comercial</p>
-                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">{client.email || "nÃƒÂ£o configurado"}</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">{client.email || "nÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o configurado"}</p>
                 </div>
               </div>
             </div>
@@ -348,13 +349,13 @@ export default function ClientDetails() {
 
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-8 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">ObservaÃƒÂ§ÃƒÂµes EstratÃƒÂ©gicas</h3>
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">ObservaÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âµes EstratÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©gicas</h3>
               {isSavingNotes && <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />}
             </div>
             <textarea 
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="HistÃƒÂ³rico, preferÃƒÂªncias e notas de negociaÃƒÂ§ÃƒÂ£o..."
+              placeholder="HistÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³rico, preferÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âªncias e notas de negociaÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â§ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â£o..."
               className="w-full h-40 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl p-4 text-xs font-medium outline-none focus:ring-4 focus:ring-emerald-500/5 resize-none transition-all dark:text-zinc-200"
             />
             <button 
@@ -362,7 +363,7 @@ export default function ClientDetails() {
               disabled={isSavingNotes}
               className="w-full py-4 bg-slate-900 dark:bg-zinc-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all disabled:opacity-50"
             >
-              Atualizar DossiÃƒÂª
+              Atualizar DossiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âª
             </button>
           </div>
         </div>
@@ -376,7 +377,7 @@ export default function ClientDetails() {
                     <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl"><HardDrive className="w-6 h-6 text-emerald-600" /></div>
                     Nuvem de Documentos
                   </h2>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">RepositÃƒÂ³rio Privado de Pedidos e Contratos</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">RepositÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³rio Privado de Pedidos e Contratos</p>
                 </div>
 
                 <button 
@@ -496,7 +497,7 @@ export default function ClientDetails() {
                   <input 
                     type="text" 
                     value={orderValue}
-                    onChange={(e) => setOrderValue(e.target.value.replace(/[^0-9.]/g, ''))}
+                    onChange={(e) => setOrderValue(e.target.value.replace(/[^0-9,.]/g, ''))}
                     placeholder="R$ 0,00"
                     className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-3xl text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all"
                   />
@@ -511,7 +512,7 @@ export default function ClientDetails() {
                 >
                   {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
                   {isAnalyzing ? <><Loader2 className="w-5 h-5 animate-spin" /> <span>Analisando PDF...</span></> : (isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />)}
-                  {!isAnalyzing && <span>Efetivar Upload</span>}
+                  {!isAnalyzing && <span>Enviar Arquivo</span>}
                 </button>
               </div>
             </motion.div>
