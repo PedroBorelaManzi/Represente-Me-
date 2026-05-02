@@ -218,7 +218,7 @@ export default function ClientDetails() {
       setOrderValue("");
       loadClientData();
     } catch (err) {
-      toast.error("Erro no upload.");
+      console.error("Upload error details:", err); toast.error("Erro no upload: " + (err.message || "Token expirado. Refaça o login."));
     } finally {
       setIsUploading(false);
     }
