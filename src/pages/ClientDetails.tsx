@@ -230,15 +230,15 @@ export default function ClientDetails() {
       }
 
       toast.success("Arquivo anexado com sucesso!");
-      isUploadModalOpen(false);
-      selectedFile(null);
-      orderValue("");
+      setIsUploadModalOpen(false);
+      setSelectedFile(null);
+      setOrderValue("");
       loadClientData();
     } catch (err: any) {
       console.error("Upload error details:", err);
       toast.error("Erro no upload: " + (err.message || "Token expirado. Refaça o login."));
     } finally {
-      isUploading(false);
+      setIsUploading(false);
     }
   };
 
@@ -427,7 +427,7 @@ export default function ClientDetails() {
                 </div>
 
                 <button 
-                  onClick={() => { setOrderValue(""); setSelectedFile(null); setSelectedCategory(""); setIsUploadModalOpen(true); }}}
+                  onClick={() => { setOrderValue(""); setSelectedFile(null); setSelectedCategory(""); setIsUploadModalOpen(true); }}
                   className="flex items-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
                 >
                   <Upload className="w-4 h-4" /> Anexar Novo
