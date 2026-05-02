@@ -154,18 +154,24 @@ export async function processOrderFile(file: File, knownClients = [], categories
        imageMimeType = detected.mimeType;
     }
 
-    const geminiCall = geminiWithSystem(userPrompt, SYSTEM_INSTRUCTION, {
-      model: "gemini-2.0-flash",
-      imageData,
-      imageMimeType,
-      generationConfig: { responseMimeType: "application/json" },
-    });
+        let textResult = "";
+    try {
+        const geminiCall = geminiWithSystem(userPrompt, SYSTEM_INSTRUCTION, {
+          model: "gemini-2.0-flash",
+          imageData,
+          imageMimeType,
+          generationConfig: { responseMimeType: "application/json" },
+        });
 
-    const timeoutLimit = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Timeout_IA_15_segundos")), 15000);
-    });
+        const timeoutLimit = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("Timeout_IA_15_segundos")), 15000);
+        });
 
-    let textResult = await Promise.race([geminiCall, timeoutLimit]) as string;
+        textResult = await Promise.race([geminiCall, timeoutLimit]) as string;
+    } catch (iaError) {
+        console.warn("IA falhou, usando modo de backup local. Motivo:", iaError);
+        textResult = "{}"; // Força o JSON vazio para cair na leitura local
+    }
 
     if (!textResult) {
         throw new Error("Resposta da IA vazia");
