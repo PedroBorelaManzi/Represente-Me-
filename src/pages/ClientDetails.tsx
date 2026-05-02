@@ -265,7 +265,7 @@ export default function ClientDetails() {
         if (result.category) setSelectedCategory(result.category);
         toast.success("Dados extraídos do documento!");
       } else {
-        toast.error("Não foi possível extrair dados automaticamente. Preencha os campos manualmente.");
+        toast.error("Falha na leitura automática: " + (result.error || "Erro desconhecido"));
       }
     } catch (err) {
       toast.dismiss("analyzing_toast");
