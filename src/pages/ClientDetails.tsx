@@ -532,7 +532,7 @@ export default function ClientDetails() {
                   className="w-full py-6 bg-emerald-600 text-white rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-emerald-500/30 hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4"
                 >
                   {isAnalyzing ? (
-                    <><Loader2 className="w-5 h-5 animate-spin" /> <span>Analisando arquivo...
+                    <><Loader2 className="w-5 h-5 animate-spin" /> <span>Analisando arquivo...</span></>
                   ) : isUploading ? (
                     <><Loader2 className="w-5 h-5 animate-spin" /> <span>Enviando...</span></>
                   ) : (
