@@ -15,10 +15,9 @@ export interface OrderExtractionResult {
   method?: "local" | "ai";
 }
 
-
 const SYSTEM_INSTRUCTION = `Você é um especialista em OCR de documentos fiscais brasileiros.
 Sua tarefa é extrair quatro informações fundamentais em formato JSON:
-1. CLIENTE DESTINATÃRIO: Nome da empresa que está comprando. Ignore o Emissor.
+1. CLIENTE DESTINATÁRIO: Nome da empresa que está comprando. Ignore o Emissor.
 2. VALOR TOTAL (number): O valor financeiro final/líquido do documento.
    - Busque por palavras-chave como 'Total', 'Valor Total', 'TOTAL DO PEDIDO', 'VLR TOTAL', 'Total c/ IPI', etc.
    - Retorne APENAS o número final (formato float), sem símbolo de moeda.
@@ -64,11 +63,24 @@ function extractCNPJLocally(text: string): string {
 }
 
 function extractValueLocally(text: string): number {
-  const valueRegex = /(?:valor total da nota|total geral|valor l[íi]quido|vlr total|total do pedido|total\s*r\$|total:|valor total).*?(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))/i;
-  const match = text.match(valueRegex);
+  const valueRegex = /(?:total da nota|total geral|valor l[íi]quido|vlr total|total do pedido|valor total|total final|total:|total r\$|valor a pagar|total líquido).*?(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))/ig;
   
-  if (match?.[1]) {
-    const rawValue = match[1];
+  let match;
+  let lastValidMatch = null;
+  
+  while ((match = valueRegex.exec(text)) !== null) {
+      lastValidMatch = match[1];
+  }
+
+  if (!lastValidMatch) {
+      const allMoneyRegex = /R\$\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))/ig;
+      while ((match = allMoneyRegex.exec(text)) !== null) {
+          lastValidMatch = match[1];
+      }
+  }
+  
+  if (lastValidMatch) {
+    const rawValue = lastValidMatch;
     if (rawValue.includes('.') && rawValue.includes(',')) {
        const lastComma = rawValue.lastIndexOf(',');
        const lastDot = rawValue.lastIndexOf('.');
@@ -82,8 +94,6 @@ function extractValueLocally(text: string): number {
 }
 
 export async function processOrderFile(file: File, knownClients = [], categories = []) {
-  // Gemini is called via secure server proxy
-  
   try {
     const detected = await detectFileType(file);
     let extractedText = "";
@@ -102,18 +112,17 @@ export async function processOrderFile(file: File, knownClients = [], categories
       extractedText = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
     }
 
-
     const localCnpj = extractCNPJLocally(extractedText);
     const localValue = extractValueLocally(extractedText);
 
     const userPrompt = `Analise este documento:
-    HINTS LOCAIS (ExtraÃ­dos via Regex):
-    - CNPJ detectado: ${localCnpj || "NÃ£o detectado"}
-    - Valor provÃ¡vel: ${localValue || "NÃ£o detectado"}
+    HINTS LOCAIS (Buscados no final da página):
+    - CNPJ detectado: ${localCnpj || "Não detectado"}
+    - Valor provável (ÚLTIMA SOMA DA TABELA/DOC): ${localValue || "Não detectado"}
     
-    CATEGORIAS CONHECIDAS (USE APENAS UMA DESTAS): ${categories.join(", ")}
+    CATEGORIAS CONHECIDAS: ${categories.join(", ")}
     
-    CONTEÃšDO DO DOCUMENTO:
+    CONTEÚDO DO DOCUMENTO:
     ${extractedText.substring(0, 10000)}
     `;
 
@@ -129,25 +138,31 @@ export async function processOrderFile(file: File, knownClients = [], categories
        imageMimeType = detected.mimeType;
     }
 
-    let textResult = await geminiWithSystem(userPrompt, SYSTEM_INSTRUCTION, {
+    const geminiCall = geminiWithSystem(userPrompt, SYSTEM_INSTRUCTION, {
       model: "gemini-2.0-flash",
       imageData,
       imageMimeType,
       generationConfig: { responseMimeType: "application/json" },
     });
+
+    const timeoutLimit = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Timeout: A leitura demorou mais de 15 segundos.")), 15000);
+    });
+
+    let textResult = await Promise.race([geminiCall, timeoutLimit]) as string;
+
     if (textResult.includes("```")) {
         textResult = textResult.replace(/```(?:json)?\n?([\s\S]*?)```/g, '$1').trim();
     }
+    
     const data = JSON.parse(textResult);
 
-    // ValidaÃ§Ã£o final de categoria (ReforÃ§o Ã  instruÃ§Ã£o)
     let finalCategory = data.category || "";
     if (finalCategory && categories.length > 0) {
-        const found = categories.find(c => c.toLowerCase() === finalCategory.toLowerCase());
+        const found = categories.find((c: string) => c.toLowerCase() === finalCategory.toLowerCase());
         if (!found) {
-            // Tenta busca parcial se nÃ£o houver match exato
-            const partial = categories.find(c => finalCategory.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(finalCategory.toLowerCase()));
-            finalCategory = partial || ""; // Se nÃ£o encontrar nada parecido, zera.
+            const partial = categories.find((c: string) => finalCategory.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(finalCategory.toLowerCase()));
+            finalCategory = partial || ""; 
         } else {
             finalCategory = found;
         }
@@ -171,10 +186,7 @@ export async function processOrderFile(file: File, knownClients = [], categories
         category: "", 
         value: 0, 
         status: "error", 
-        error: "Falha na leitura IA acelerada: " + (err instanceof Error ? err.message : "Erro desconhecido") 
+        error: "Falha na leitura automática: " + (err instanceof Error ? err.message : "Erro desconhecido") 
     };
   }
 }
-
-
-
