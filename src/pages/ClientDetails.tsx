@@ -200,21 +200,28 @@ export default function ClientDetails() {
   };
 
   const saveNewCategory = async () => {
-    if (!newCategoryName.trim()) {
+    const trimmed = newCategoryName.trim();
+    if (!trimmed) {
       setIsCreatingCategory(false);
+      setNewCategoryName("");
       return;
     }
     const current = settings.categories || [];
-    if (current.includes(newCategoryName.trim())) {
-      setSelectedCategory(newCategoryName.trim());
+    if (current.includes(trimmed)) {
+      setSelectedCategory(trimmed);
       setIsCreatingCategory(false);
+      setNewCategoryName("");
       return;
     }
     
-    await updateSettings({ categories: [...current, newCategoryName.trim()] });
-    setSelectedCategory(newCategoryName.trim());
-    setIsCreatingCategory(false);
-    setNewCategoryName("");
+    try {
+      await updateSettings({ categories: [...current, trimmed] });
+      setSelectedCategory(trimmed);
+      setIsCreatingCategory(false);
+      setNewCategoryName("");
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleSaveNotes = async () => {
@@ -430,7 +437,7 @@ export default function ClientDetails() {
                       >
                         {allAvailableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                       </select>
-                      <button onClick={() => setIsCreatingCategory(true)} className="p-3 bg-emerald-600 text-white rounded-2xl"><Plus className="w-4 h-4" /></button>
+                      <button onClick={() => { setNewCategoryName(""); setIsCreatingCategory(true); }} className="p-3 bg-emerald-600 text-white rounded-2xl" type="button"><Plus className="w-4 h-4" /></button>
                     </div>
                   ) : (
                     <div className="flex gap-2">
@@ -446,7 +453,7 @@ export default function ClientDetails() {
                         className="flex-1 px-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-emerald-500 rounded-3xl text-xs font-black uppercase outline-none"
                         autoFocus
                       />
-                      <button onClick={saveNewCategory} className="px-6 bg-emerald-600 text-white rounded-3xl text-[10px] font-black uppercase tracking-widest">OK</button>
+                      <button onClick={saveNewCategory} className="px-6 bg-emerald-600 text-white rounded-3xl text-[10px] font-black uppercase tracking-widest" type="button">OK</button>
                     </div>
                   )}
                 </div>
