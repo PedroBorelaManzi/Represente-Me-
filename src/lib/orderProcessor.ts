@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+﻿import * as XLSX from "xlsx";
 import * as pdfjs from "pdfjs-dist";
 import { geminiWithSystem } from "./geminiProxy";
 
@@ -18,8 +18,11 @@ export interface OrderExtractionResult {
 
 const SYSTEM_INSTRUCTION = `Você é um especialista em OCR de documentos fiscais brasileiros.
 Sua tarefa é extrair quatro informações fundamentais em formato JSON:
-1. CLIENTE DESTINATÁRIO: Nome da empresa que está comprando. Ignore o Emissor.
-2. VALOR TOTAL: O valor final líquido do documento.
+1. CLIENTE DESTINATÃRIO: Nome da empresa que está comprando. Ignore o Emissor.
+2. VALOR TOTAL (number): O valor financeiro final/líquido do documento.
+   - Busque por palavras-chave como 'Total', 'Valor Total', 'TOTAL DO PEDIDO', 'VLR TOTAL', 'Total c/ IPI', etc.
+   - Retorne APENAS o número final (formato float), sem símbolo de moeda.
+   - Em tabelas, procure na última linha/coluna. Ignore subtotais ou descontos.
 3. CATEGORIA (FORNECEDOR): O fabricante/emissor do pedido. 
    - REGRA DE OURO: Você deve selecionar EXCLUSIVAMENTE uma das "CATEGORIAS CONHECIDAS" fornecidas.
    - Use o nome EXATO que estiver na lista. Se o emissor for "Cozimax Móveis Mirassol Ltda" e a lista tiver "Cozimax", use "Cozimax".
@@ -61,9 +64,21 @@ function extractCNPJLocally(text: string): string {
 }
 
 function extractValueLocally(text: string): number {
-  const valueRegex = /(?:valor total da nota|total geral|valor líquido|vlr total|total do pedido).*?(\d{1,3}(?:\.\d{3})*(?:,\d{2}))/i;
+  const valueRegex = /(?:valor total da nota|total geral|valor l[íi]quido|vlr total|total do pedido|total\s*r\$|total:|valor total).*?(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2}))/i;
   const match = text.match(valueRegex);
-  return match?.[1] ? parseFloat(match[1].replace(/\./g, "").replace(",", ".")) : 0;
+  
+  if (match?.[1]) {
+    const rawValue = match[1];
+    if (rawValue.includes('.') && rawValue.includes(',')) {
+       const lastComma = rawValue.lastIndexOf(',');
+       const lastDot = rawValue.lastIndexOf('.');
+       if (lastComma > lastDot) return parseFloat(rawValue.replace(/\./g, "").replace(",", "."));
+       else return parseFloat(rawValue.replace(/,/g, ""));
+    }
+    if (rawValue.includes(',') && !rawValue.includes('.')) return parseFloat(rawValue.replace(",", "."));
+    return parseFloat(rawValue);
+  }
+  return 0;
 }
 
 export async function processOrderFile(file: File, knownClients = [], categories = []) {
@@ -92,13 +107,13 @@ export async function processOrderFile(file: File, knownClients = [], categories
     const localValue = extractValueLocally(extractedText);
 
     const userPrompt = `Analise este documento:
-    HINTS LOCAIS (Extraídos via Regex):
-    - CNPJ detectado: ${localCnpj || "Não detectado"}
-    - Valor provável: ${localValue || "Não detectado"}
+    HINTS LOCAIS (ExtraÃ­dos via Regex):
+    - CNPJ detectado: ${localCnpj || "NÃ£o detectado"}
+    - Valor provÃ¡vel: ${localValue || "NÃ£o detectado"}
     
     CATEGORIAS CONHECIDAS (USE APENAS UMA DESTAS): ${categories.join(", ")}
     
-    CONTEÚDO DO DOCUMENTO:
+    CONTEÃšDO DO DOCUMENTO:
     ${extractedText.substring(0, 10000)}
     `;
 
@@ -125,14 +140,14 @@ export async function processOrderFile(file: File, knownClients = [], categories
     }
     const data = JSON.parse(textResult);
 
-    // Validação final de categoria (Reforço à instrução)
+    // ValidaÃ§Ã£o final de categoria (ReforÃ§o Ã  instruÃ§Ã£o)
     let finalCategory = data.category || "";
     if (finalCategory && categories.length > 0) {
         const found = categories.find(c => c.toLowerCase() === finalCategory.toLowerCase());
         if (!found) {
-            // Tenta busca parcial se não houver match exato
+            // Tenta busca parcial se nÃ£o houver match exato
             const partial = categories.find(c => finalCategory.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(finalCategory.toLowerCase()));
-            finalCategory = partial || ""; // Se não encontrar nada parecido, zera.
+            finalCategory = partial || ""; // Se nÃ£o encontrar nada parecido, zera.
         } else {
             finalCategory = found;
         }
