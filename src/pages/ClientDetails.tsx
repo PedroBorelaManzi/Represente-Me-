@@ -300,7 +300,7 @@ export default function ClientDetails() {
     return (
       <div className="h-screen flex flex-col items-center justify-center gap-6">
         <AlertCircle className="w-16 h-16 text-red-500 opacity-20" />
-        <h2 classnão encontrado</h2>
+        <h2 className="text-xl font-black uppercase text-slate-400 tracking-widest">Cliente não encontrado</h2>
         <Link to="/dashboard/clientes" className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs">Voltar para Carteira</Link>
       </div>
     );
@@ -384,7 +384,7 @@ export default function ClientDetails() {
               disabled={isSavingNotes}
               className="w-full py-4 bg-slate-900 dark:bg-zinc-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all disabled:opacity-50"
             >
-              Atualizar Dossiêê
+              Atualizar Dossiê
             </button>
           </div>
         </div>
