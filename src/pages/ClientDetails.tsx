@@ -346,7 +346,7 @@ export default function ClientDetails() {
                 <div className="p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg text-slate-400"><MapPin className="w-4 h-4" /></div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase">Localização</p>
-                  <p classNão informado"}</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300 leading-relaxed">{client.address || "Não informado"}</p>
                 </div>
               </div>
 
