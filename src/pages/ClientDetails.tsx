@@ -174,6 +174,10 @@ export default function ClientDetails() {
 
       const submitUpload = async () => {
     if (!selectedFile || !user || !id) return;
+    if (!selectedCategory) {
+      toast.error("Por favor, selecione uma empresa.");
+      return;
+    }
 
     try {
       setIsUploading(true);
@@ -423,7 +427,7 @@ export default function ClientDetails() {
                 </div>
 
                 <button 
-                  onClick={() => { setOrderValue(""); setSelectedFile(null); setIsUploadModalOpen(true); }}
+                  onClick={() => { setOrderValue(""); setSelectedFile(null); setSelectedCategory(""); setIsUploadModalOpen(true); }}}
                   className="flex items-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
                 >
                   <Upload className="w-4 h-4" /> Anexar Novo
@@ -502,6 +506,7 @@ export default function ClientDetails() {
                         onChange={(e) => setSelectedCategory(e.target.value)}
                         className="flex-1 bg-transparent px-4 py-2 text-xs font-black uppercase outline-none text-slate-900 dark:text-zinc-100"
                       >
+                        <option value="" disabled>SELECIONAR EMPRESA</option>
                         {allAvailableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                       </select>
                       <button onClick={() => { setNewCategoryName(""); setIsCreatingCategory(true); }} className="p-3 bg-emerald-600 text-white rounded-2xl" type="button"><Plus className="w-4 h-4" /></button>
