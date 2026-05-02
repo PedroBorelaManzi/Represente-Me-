@@ -200,7 +200,10 @@ export default function ClientDetails() {
   };
 
   const saveNewCategory = async () => {
-    if (!newCategoryName.trim()) return;
+    if (!newCategoryName.trim()) {
+      setIsCreatingCategory(false);
+      return;
+    }
     const current = settings.categories || [];
     if (current.includes(newCategoryName.trim())) {
       setSelectedCategory(newCategoryName.trim());
@@ -435,6 +438,10 @@ export default function ClientDetails() {
                         type="text" 
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveNewCategory();
+                          if (e.key === 'Escape') setIsCreatingCategory(false);
+                        }}
                         placeholder="Nome da empresa..."
                         className="flex-1 px-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-emerald-500 rounded-3xl text-xs font-black uppercase outline-none"
                         autoFocus
