@@ -423,7 +423,7 @@ export default function ClientDetails() {
                 </div>
 
                 <button 
-                  onClick={() => setIsUploadModalOpen(true)}
+                  onClick={() => { setOrderValue(""); setSelectedFile(null); setIsUploadModalOpen(true); }}
                   className="flex items-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
                 >
                   <Upload className="w-4 h-4" /> Anexar Novo
