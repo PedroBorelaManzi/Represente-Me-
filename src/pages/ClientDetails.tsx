@@ -172,20 +172,34 @@ export default function ClientDetails() {
     }
   };
 
-  const submitUpload = async () => {
+    const submitUpload = async () => {
     if (!selectedFile || !user || !id) return;
 
     try {
       setIsUploading(true);
       const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${selectedCategory}___${Date.now()}___${selectedFile.name}`;
-      const filePath = `${user.id}/${id}/${fileName}`;
+      const fileName = ${selectedCategory}______;
+      const filePath = ${user.id}//;
 
       const { error: uploadError } = await supabase.storage
         .from('client-documents')
         .upload(filePath, selectedFile);
 
       if (uploadError) throw uploadError;
+
+      // Conversao correta de valor padrao BR para float do banco
+      const rawVal = orderValue || "0";
+      let numericValue = 0;
+      if (rawVal.includes('.') && rawVal.includes(',')) {
+         const lastComma = rawVal.lastIndexOf(',');
+         const lastDot = rawVal.lastIndexOf('.');
+         if (lastComma > lastDot) numericValue = parseFloat(rawVal.replace(/\./g, "").replace(",", "."));
+         else numericValue = parseFloat(rawVal.replace(/,/g, ""));
+      } else if (rawVal.includes(',') && !rawVal.includes('.')) {
+         numericValue = parseFloat(rawVal.replace(",", "."));
+      } else {
+         numericValue = parseFloat(rawVal);
+      }
 
       const { error: dbError } = await supabase
         .from('client_files')
@@ -195,21 +209,26 @@ export default function ClientDetails() {
           file_name: fileName,
           file_path: filePath,
           category: selectedCategory,
-          value: parseFloat(orderValue.replace(",", ".")) || null
+          value: numericValue || null
         }]);
 
       if (dbError) throw dbError;
 
-      // If it has a value, register as an order too
-      const numericValue = parseFloat(orderValue.replace(",", "."));
-    if (numericValue > 0) {
+      // Se tem valor, e um pedido! Insere em orders e reseta o alerta do cliente
+      if (numericValue > 0) {
         await supabase.from('orders').insert([{
           user_id: user.id,
           client_id: id,
-          value: parseFloat(orderValue.replace(",", ".")),
+          value: numericValue,
           category: selectedCategory,
-          description: `Pedido via Upload: ${selectedFile.name}`
+          description: Pedido via Upload: 
         }]);
+
+        // LOGICA DE RESETAR ALERTA/PERDA: 
+        // Atualizamos o timestamp ou recarregamos para o dashboard ver que teve venda nova.
+        // O Dashboard e quem calcula "perdido", mas para garantir que ele recalcule a partir de agora:
+        // Se houver uma tabela de status por categoria, voce atualizaria aqui. Como o dashboard 
+        // le a tabela 'orders' para calcular a data, basta o insert no 'orders' acontecer!
       }
 
       toast.success("Arquivo anexado com sucesso!");
@@ -217,8 +236,9 @@ export default function ClientDetails() {
       setSelectedFile(null);
       setOrderValue("");
       loadClientData();
-    } catch (err) {
-      console.error("Upload error details:", err); toast.error("Erro no upload: " + (err.message || "Token expirado. Refaça o login."));
+    } catch (err: any) {
+      console.error("Upload error details:", err);
+      toast.error("Erro no upload: " + (err.message || "Token expirado. Refaça o login."));
     } finally {
       setIsUploading(false);
     }
