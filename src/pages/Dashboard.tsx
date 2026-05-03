@@ -1,411 +1,606 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { 
-  Users, 
-  Calendar as CalendarIcon, 
-  FileText, 
-  TrendingUp, 
-  Clock, 
-  ChevronRight, 
-  AlertCircle,
-  Building2,
-  Calendar,
-  CheckCircle2,
-  MoreVertical,
-  Plus,
-  RefreshCw,
-  Search,
-  Filter,
-  ArrowUpRight,
-  ArrowDownRight,
-  Loader2,
-  ChevronLeft,
-  Settings,
-  Bell
-} from "lucide-react";
-import { supabase } from "../lib/supabase";
+import React, { useState, useEffect, useMemo } from "react";
+import { Plus, ChevronLeft, ChevronRight, Clock, X, Home, Loader2, Users, Globe, RefreshCw, Calendar } from "lucide-react";
+import { supabase, logAudit } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addDays, isToday } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useSettings } from "../contexts/SettingsContext";
+import { cn } from "../lib/utils";
+import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../lib/googleSync";
+import { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
+import AppointmentForm from "../components/AppointmentForm";
+import RevenueChart from "../components/RevenueChart";
+import DailyNotes from "../components/DailyNotes";
 
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
-}
+type EventType = { 
+  id: string; 
+  title: string; 
+  time: string; 
+  date: string; 
+  client_id?: string;
+  google_event_id?: string;
+};
+
+// Extended to 22:00 (16 hours total from 07:00)
+const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); 
+
+const formatDateLocal = (date: Date) => {
+  if (!date || isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    totalClients: 0,
-    totalOrders: 0,
-    totalRevenue: 0,
-    activeAppointments: 0
-  });
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'month' | 'week' | 'day'>('month');
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  
+  const [selectedNoteDate, setSelectedNoteDate] = useState(new Date());
+  const [events, setEvents] = useState<EventType[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingEvent, setEditingEvent] = useState<Partial<EventType> | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [dragOverInfo, setDragOverInfo] = useState<{ dayIndex: number; hour: number } | null>(null);
+  const [googleConnected, setGoogleConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [connectedGoogle, setConnectedGoogle] = useState(false);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [userCategories, setUserCategories] = useState<string[]>([]);
+  const [allTimeCategories, setAllTimeCategories] = useState<string[]>([]);
+  const [monthlyOrders, setMonthlyOrders] = useState<any[]>([]);
 
-  const fetchDashboardData = useCallback(async () => {
+  const handlePrevMonth = () => {
+    const next = new Date(currentDate);
+    next.setMonth(next.getMonth() - 1);
+    setCurrentDate(next);
+  };
+
+  const handleNextMonth = () => {
+    const next = new Date(currentDate);
+    next.setMonth(next.getMonth() + 1);
+    setCurrentDate(next);
+  };
+
+    const weekDays = useMemo(() => { 
+    try { 
+      const start = new Date(currentDate); 
+      const day = start.getDay(); 
+      start.setDate(start.getDate() - day); 
+      start.setHours(0,0,0,0); 
+      return Array.from({ length: 7 }).map((_, i) => { 
+        const d = new Date(start); 
+        d.setDate(d.getDate() + i); 
+        return d; 
+      }); 
+    } catch(e) { 
+      console.error("weekDays error:", e); 
+      return []; 
+    } 
+  }, [currentDate]);
+
+  const isSameDay = (d1: Date, d2: string) => { 
+    if (!d1 || !d2) return false; 
+    return formatDateLocal(d1) === d2; 
+  };
+
+  const loadData = async () => {
     if (!user) return;
+    setLoading(true);
+
     try {
-      setLoading(true);
+      // Check Google Connection
+      const { data: tokenData } = await supabase
+        .from("user_google_tokens")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setGoogleConnected(!!tokenData);
+
+      // Fetch categories from user settings
+      const { data: settingsData } = await supabase
+        .from("user_settings")
+        .select("categories")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const cats = settingsData?.categories; setUserCategories(Array.isArray(cats) ? cats : []);
+
+      // Fetch all unique categories ever used by this user
+      const { data: allOrdersCats } = await supabase
+        .from("orders")
+        .select("category")
+        .eq("user_id", user.id);
       
-      const { count: clientsCount } = await supabase.from("clients").select("*", { count: 'exact', head: true });
-      const { data: ordersData } = await supabase.from("orders").select("value, created_at");
-      const { count: apptsCount } = await supabase.from("appointments").select("*", { count: 'exact', head: true }).gte('date', new Date().toISOString());
+            const catsMap = new Map<string, string>();
+      // Add from settings
+      if (Array.isArray(cats)) {
+        cats.forEach(c => {
+          if (c && c.trim()) {
+            const trimmed = c.trim();
+            catsMap.set(trimmed.toUpperCase(), trimmed);
+          }
+        });
+      }
+      // Add from orders
+      if (allOrdersCats) {
+        allOrdersCats.forEach(o => {
+          if (o.category && o.category.trim()) {
+            const trimmed = o.category.trim();
+            const key = trimmed.toUpperCase();
+            if (!catsMap.has(key)) catsMap.set(key, trimmed);
+          }
+        });
+      }
+      
+      setAllTimeCategories(Array.from(catsMap.values()));
 
-      const totalRevenue = ordersData?.reduce((acc, curr) => acc + (curr.value || 0), 0) || 0;
 
-      setStats({
-        totalClients: clientsCount || 0,
-        totalOrders: ordersData?.length || 0,
-        totalRevenue,
-        activeAppointments: apptsCount || 0
-      });
+      const { data: clientsData } = await supabase
+        .from("clients")
+        .select("id, name, city, state, faturamento, cnpj")
+        .eq("user_id", user.id)
+        .order("name");
+      setClients(clientsData || []);
 
-      const { data: recent } = await supabase.from("orders").select(`*, clients(name)`).order("created_at", { ascending: false }).limit(5);
-      setRecentOrders(recent || []);
+      const { data: appData } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("user_id", user.id);
+      setEvents(appData || []);
 
-      const { data: appts } = await supabase.from("appointments").select(`*, clients(name)`).order("date", { ascending: true });
-      setAppointments(appts || []);
+      // Fetch Monthly Orders for the chart
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
+      
+      const { data: ordersData } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("created_at", startOfMonth)
+        .lte("created_at", endOfMonth);
+      setMonthlyOrders(ordersData || []);
 
-    } catch (err) {
-      console.error("Error fetching dashboard data:", err);
-      toast.error("Erro ao carregar dados do painel");
+
+      // Fetch Holidays
+      const locations = await getClientLocations(user.id);
+      const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
+      setHolidays(fetchedHolidays);
+
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  };
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    logAudit('ACCESS_DASHBOARD'); loadData(); }, [user, currentDate.getFullYear(), currentDate.getMonth()]);
 
-  const handleSyncGoogle = async () => {
+  // Aggregate revenue data for the chart with dynamic categories
+  const revenueChartData = useMemo(() => { try {
+    const companyTotals: Record<string, number> = {};
+    const normalizedToOriginal: Record<string, string> = {};
+    
+    // 1. Initialize from EVERY category ever found (Settings + All Orders)
+    allTimeCategories.forEach(cat => {
+      if (cat && cat.trim()) {
+        const originalName = cat.trim();
+        const normalized = originalName.toLowerCase();
+        companyTotals[normalized] = 0;
+        normalizedToOriginal[normalized] = originalName;
+      }
+    });
+    
+    // 2. Sum revenue from CURRENT MONTH orders
+    monthlyOrders.forEach(order => {
+      const rawName = order.category;
+      if (rawName && rawName.trim()) {
+        const normalized = rawName.trim().toLowerCase();
+        companyTotals[normalized] = (companyTotals[normalized] || 0) + (Number(order.value) || 0);
+        if (!normalizedToOriginal[normalized]) normalizedToOriginal[normalized] = rawName.trim();
+      }
+    });
+
+    return Object.keys(companyTotals)
+      .map(norm => ({ 
+        name: normalizedToOriginal[norm], 
+        value: companyTotals[norm] 
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)); 
+    } catch (e) { console.error("Chart Logic Error:", e); return []; }
+  }, [monthlyOrders, allTimeCategories]);
+
+  const handleSync = async () => {
+    if (!user) return;
     setIsSyncing(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success("Agenda sincronizada com Google Calendar");
-      setConnectedGoogle(true);
-    } catch (err) {
-      toast.error("Erro ao sincronizar agenda");
-    } finally {
-      setIsSyncing(false);
+    const res = await syncGoogleEvents(user.id);
+    alert(res.message);
+    if (res.success) {
+      await loadData();
     }
+    setIsSyncing(false);
   };
 
-  const onDrop = async (e: React.DragEvent, hour: number, day: Date) => {
+  const handleGoogleConnect = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      alert("Erro: Client ID do Google não configurado.");
+      return;
+    }
+    const redirectUri = `${window.location.origin}/auth/callback/google`;
+    const scope = "https://www.googleapis.com/auth/calendar.events";
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&response_type=code&access_type=offline&prompt=consent`;
+    window.location.href = authUrl;
+  };
+
+  const onDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData("eventId", id);
+    const img = new Image();
+    img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    e.dataTransfer.setDragImage(img, 0, 0);
+  };
+
+  const onDragOver = (e: React.DragEvent, dayIndex: number, hour: number) => {
     e.preventDefault();
-    const apptId = e.dataTransfer.getData("appointmentId");
-    if (!apptId) return;
+    setDragOverInfo({ dayIndex, hour });
+  };
+
+    const onDrop = async (e: React.DragEvent, targetDate: Date, targetHour: number) => {
+    e.preventDefault();
+    setDragOverInfo(null);
+    const id = e.dataTransfer.getData("eventId");
+    if (!id) return;
 
     try {
-      const { data: appt } = await supabase.from('appointments').select('*').eq('id', apptId).single();
+      const appt = events.find(ev => ev.id === id);
       if (!appt) return;
 
-      const [startH, startM] = appt.time.split(' - ')[0].split(':').map(Number);
-      const [endH, endM] = appt.time.split(' - ')[1].split(':').map(Number);
-      
+      const [startH, startM] = appt.time.split(" - ")[0].split(":").map(Number);
+      const [endH, endM] = appt.time.split(" - ")[1].split(":").map(Number);
       const durationMin = (endH * 60 + endM) - (startH * 60 + startM);
       
-      const newDate = new Date(day);
-      newDate.setHours(hour, 0, 0, 0);
+      const finalStartH = targetHour;
+      const finalStartM = 0;
+      const newEndMin = (finalStartH * 60 + finalStartM) + durationMin;
+      const finalEndH = Math.floor(newEndMin / 60);
+      const finalEndM = newEndMin % 60;
+      
+      const newTime = `${String(finalStartH).padStart(2, "0")}:${String(finalStartM).padStart(2, "0")} - ${String(finalEndH).padStart(2, "0")}:${String(finalEndM).padStart(2, "0")}`;
+      const isoDate = formatDateLocal(targetDate);
 
-      let newTime = "";
-      if (durationMin > 0) {
-        const finalStartH = hour;
-        const finalStartM = 0;
-        const newEndMin = (finalStartH * 60 + finalStartM) + durationMin;
-        const finalEndH = Math.floor(newEndMin / 60);
-        const finalEndM = newEndMin % 60;
-        
-        newTime = `${String(finalStartH).padStart(2, '0')}:${String(finalStartM).padStart(2, '0')} - ${String(finalEndH).padStart(2, '0')}:${String(finalEndM).padStart(2, '0')}`;
-      } else {
-        newTime = `${String(hour).padStart(2, '0')}:00 - ${String(hour + 1).padStart(2, '0')}:00`;
-      }
-
-      const { error } = await supabase
-        .from('appointments')
-        .update({ date: newDate.toISOString().split('T')[0], time: newTime })
-        .eq('id', apptId);
-
+      setEvents(events.map(ev => ev.id === id ? { ...ev, date: isoDate, time: newTime } : ev));
+      
+      const { error } = await supabase.from("appointments").update({ date: isoDate, time: newTime }).eq("id", id);
       if (error) throw error;
-      toast.success("Compromisso reagendado");
-      fetchDashboardData();
+
+      await pushEventToGoogle(user.id, { ...appt, date: isoDate, time: newTime });
     } catch (err) {
       console.error("Error updating appointment:", err);
-      toast.error("Erro ao reagendar");
+      loadData();
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
-      </div>
-    );
-  }
+  const handleSave = async (payload: any) => {
+    if (!user) return;
+    setIsSaving(true);
+    const savePayload = { ...payload, user_id: user.id };
+    
+    let savedEvent = null;
+    if (editingEvent?.id) {
+      const { error } = await supabase.from("appointments").update(savePayload).eq("id", editingEvent.id);
+      if (!error) {
+        savedEvent = { ...editingEvent, ...savePayload };
+        setEvents(events.map(ev => ev.id === editingEvent.id ? savedEvent : ev));
+      }
+    } else {
+      const { data, error } = await supabase.from("appointments").insert([savePayload]).select().single();
+      if (!error && data) {
+        savedEvent = data;
+        setEvents([...events, data]);
+      }
+    }
+
+    if (savedEvent) {
+      await pushEventToGoogle(user.id, savedEvent);
+    }
+
+    setIsSaving(false);
+    setEditingEvent(null);
+  };
+
+  const handleDelete = async () => {
+    if (!editingEvent?.id || !window.confirm("Deseja realmente excluir este compromisso?")) return;
+    setIsSaving(true);
+    const { error } = await supabase.from("appointments").delete().eq("id", editingEvent.id);
+    if (!error) {
+        if (editingEvent.google_event_id) {
+          await deleteEventFromGoogle(user.id, editingEvent.google_event_id);
+        }
+        setEvents(events.filter(ev => ev.id !== editingEvent.id)); 
+        setEditingEvent(null); 
+      }
+    setIsSaving(false);
+  };
+
+  const openNewEventModal = (date: Date, hour?: number) => {
+    const timeStr = hour ? `${String(hour).padStart(2, '0')}:00 - ${String(hour + 1).padStart(2, '0')}:00` : "09:00 - 10:00";
+    setEditingEvent({ title: "", time: timeStr, date: formatDateLocal(date), client_id: "" });
+  };
+
+  const getEventPosition = (time: string) => {
+    try {
+      const start = time.split(" - ")[0];
+      const hour = parseInt(start.split(":")[0]);
+      const minute = parseInt(start.split(":")[1] || "0");
+      if (hour < 7 || hour > 22) return null;
+          return (hour - 7) * 60 + minute;
+    } catch { return null; }
+  };
+
+  const getEventHeight = (time: string) => {
+    try {
+      const parts = time.split(" - ");
+      const start = parts[0].split(":");
+      const end = parts[1].split(":");
+      const startMin = parseInt(start[0]) * 60 + parseInt(start[1] || "0");
+      const endMin = parseInt(end[0]) * 60 + parseInt(end[1] || "0");
+      const duration = endMin - startMin;
+      return Math.max(duration, 24); // Mínimo de 24px para visibilidade
+    } catch { return 48; }
+  };
+
+  const selectedDayEvents = useMemo(() => {
+    return events.filter(e => isSameDay(selectedNoteDate, e.date)).sort((a,b) => {
+        return a.time.localeCompare(b.time);
+    });
+  }, [events, selectedNoteDate]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="space-y-6 h-full flex flex-col">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-[0.8] mb-4">
-            Painel de Controle
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-tight">
+            <Home className="w-6 h-6 text-emerald-600" />
+            Início
           </h1>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Bem-vindo de volta ao seu centro de comando</p>
+          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">Sua agenda semanal sincronizada e faturamento.</p>
         </div>
+      </div>
+      
+      {/* 5 columns layout main container: 3 for agenda (60%), 2 for chart (40%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 flex-1 min-h-0">
         
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={handleSyncGoogle}
-            disabled={isSyncing}
-            className="flex items-center gap-3 px-6 py-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl font-black uppercase text-[10px] tracking-widest text-slate-600 dark:text-zinc-400 hover:border-emerald-500 transition-all active:scale-95 disabled:opacity-50">
-            {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            Sincronizar Google
-          </button>
-          <button className="p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95 group">
-            <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform" />
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          label="Total de Clientes" 
-          value={stats.totalClients} 
-          icon={<Users className="w-6 h-6" />} 
-          trend="+12%" 
-          trendUp={true} 
-        />
-        <StatCard 
-          label="Vendas Realizadas" 
-          value={stats.totalOrders} 
-          icon={<FileText className="w-6 h-6" />} 
-          trend="+5%" 
-          trendUp={true} 
-        />
-        <StatCard 
-          label="Faturamento Total" 
-          value={stats.totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} 
-          icon={<TrendingUp className="w-6 h-6" />} 
-          trend="+8%" 
-          trendUp={true} 
-        />
-        <StatCard 
-          label="Próximas Visitas" 
-          value={stats.activeAppointments} 
-          icon={<CalendarIcon className="w-6 h-6" />} 
-          trend="Estável" 
-          trendUp={null} 
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white dark:bg-zinc-900 rounded-[48px] border border-slate-100 dark:border-zinc-800 shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-slate-50 dark:border-zinc-800 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl">
-                  <Calendar className="w-6 h-6 text-emerald-600" />
-                </div>
-                <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Agenda de Visitas</h3>
-              </div>
-              <div className="flex bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl">
-                {(['month', 'week', 'day'] as const).map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => setView(v)}
-                    className={cn(
-                      "px-4 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all",
-                      view === v ? "bg-white dark:bg-zinc-700 text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                    )}
+        {/* Left Column: Agenda (Occupying ~60% - 3/5) */}
+        <div className="lg:col-span-3 bg-slate-100 dark:bg-zinc-800/40 shadow-inner ring-1 ring-slate-300/60 dark:ring-zinc-700/60 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden flex flex-col h-full min-h-[500px]">
+          <div className="p-4 border-b border-slate-300 dark:border-zinc-700/50 flex flex-col sm:flex-row sm:items-center justify-between bg-slate-100 dark:bg-zinc-800/40 z-40 gap-4">
+            <div className="flex items-center gap-4">
+              <h2 className="text-sm font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest leading-none">
+                {weekDays[0]?.toLocaleDateString('pt-BR', { month: 'long' })} {weekDays[0]?.getFullYear()}
+              </h2>
+              <div className="flex items-center gap-2">
+                {googleConnected && (
+                  <button 
+                    onClick={handleSync}
+                    disabled={isSyncing}
+                    className="p-2 rounded-xl text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-50 dark:text-emerald-400 dark:hover:bg-emerald-500/10"
+                    title="Sincronizar Agora"
                   >
-                    {v === 'month' ? 'Mês' : v === 'week' ? 'Semana' : 'Dia'}
+                    <RefreshCw className={cn("w-5 h-5", isSyncing && "animate-spin")} />
                   </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-4">
-                  <h4 className="text-2xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">
-                    {format(currentDate, "MMMM yyyy", { locale: ptBR })}
-                  </h4>
-                  <div className="flex gap-2">
-                    <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-2 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-lg transition-colors">
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-2 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-lg transition-colors">
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
+                )}
                 <button 
-                  onClick={() => setCurrentDate(new Date())}
-                  className="px-4 py-2 bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-100 transition-colors"
+                  onClick={handleGoogleConnect}
+                  className={cn(
+                    "p-2 rounded-xl transition-all",
+                    googleConnected ? "text-emerald-50" : "text-slate-400 hover:text-emerald-600"
+                  )}
+                  title={googleConnected ? "Google Conectado" : "Conectar Google Agenda"}
                 >
-                  Hoje
+                  <Globe className="w-5 h-5" />
                 </button>
               </div>
-
-              <div className="grid grid-cols-7 gap-px bg-slate-100 dark:bg-zinc-800 rounded-3xl overflow-hidden border border-slate-100 dark:border-zinc-800">
-                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
-                  <div key={day} className="bg-slate-50/50 dark:bg-zinc-800/50 py-4 text-center">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{day}</span>
-                  </div>
-                ))}
-                {eachDayOfInterval({
-                  start: startOfWeek(startOfMonth(currentDate)),
-                  end: endOfWeek(endOfMonth(currentDate))
-                }).map((day, idx) => {
-                  const dayAppts = appointments.filter(a => isSameDay(new Date(a.date), day));
-                  const isCurrentMonth = day.getMonth() === currentDate.getMonth();
-
-                  return (
-                    <div 
-                      key={idx} 
-                      className={cn(
-                        "bg-white dark:bg-zinc-900 min-h-[120px] p-4 transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-800/50 relative group",
-                        !isCurrentMonth && "opacity-30"
-                      )}
-                    >
-                      <span className={cn(
-                        "text-sm font-black transition-all",
-                        isToday(day) ? "bg-emerald-600 text-white w-8 h-8 flex items-center justify-center rounded-xl" : "text-slate-900 dark:text-zinc-100"
-                      )}>
-                        {format(day, 'd')}
-                      </span>
-                      
-                      <div className="mt-4 space-y-1">
-                        {dayAppts.slice(0, 3).map((appt) => (
-                          <div 
-                            key={appt.id}
-                            className="px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 border-l-2 border-emerald-500 rounded-r-md overflow-hidden"
-                          >
-                            <p className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase truncate">
-                              {appt.clients?.name}
-                            </p>
-                          </div>
-                        ))}
-                        {dayAppts.length > 3 && (
-                          <p className="text-[8px] font-black text-slate-400 uppercase px-2">+{dayAppts.length - 3} mais</p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-8">
-          <div className="bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-zinc-800 shadow-sm p-8">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Vendas Recentes</h3>
-              <button className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline">Ver Todas</button>
             </div>
             
-            <div className="space-y-4">
-              {recentOrders.map((order) => (
-                <div 
-                  key={order.id} 
-                  className="flex items-center justify-between p-4 bg-slate-50/50 dark:bg-zinc-800/50 rounded-2xl border border-transparent hover:border-slate-100 dark:hover:border-zinc-700 transition-all cursor-pointer group"
-                  onClick={() => navigate(`/clients/${order.client_id}`)}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white dark:bg-zinc-900 rounded-xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-zinc-800 group-hover:scale-110 transition-transform">
-                      <FileText className="w-6 h-6 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-black text-slate-900 dark:text-zinc-100 uppercase truncate max-w-[120px]">
-                        {order.clients?.name}
-                      </p>
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                        {format(new Date(order.created_at), "dd MMM, HH:mm", { locale: ptBR })}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-black text-slate-900 dark:text-zinc-100">
-                      {order.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center bg-slate-100 dark:bg-zinc-800 p-1.5 rounded-xl">
+                <button onClick={() => setCurrentDate(prev => { const d = new Date(prev); d.setDate(d.getDate() - 7); return d; })} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-zinc-400 transition-all"><ChevronLeft className="w-4 h-4" /></button>
+                <button onClick={() => setCurrentDate(prev => { const d = new Date(prev); d.setDate(d.getDate() + 7); return d; })} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-zinc-400 transition-all"><ChevronRight className="w-4 h-4" /></button>
+              </div>
+              <button 
+                onClick={() => openNewEventModal(selectedNoteDate)} 
+                className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-xs font-black transition-all shadow-lg shadow-emerald-100 dark:shadow-none uppercase tracking-wider"
+              >
+                <Plus className="w-4 h-4" /> Novo
+              </button>
             </div>
           </div>
 
-          <div className="bg-slate-900 rounded-[40px] p-8 text-white relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-emerald-500/30 transition-colors" />
-            <h3 className="text-xl font-black uppercase tracking-tight mb-6">Metas do Mês</h3>
-            <div className="space-y-6">
-              <div>
-                <div className="flex justify-between items-end mb-3">
-                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Faturamento</span>
-                  <span className="text-xs font-black uppercase">75%</span>
+          <div className="flex-1 flex flex-col overflow-hidden relative">
+            {/* Desktop Weekly Grid */}
+            <div className="hidden lg:flex flex-1 min-h-[960px] overflow-auto custom-scrollbar">
+              <div className="flex flex-col flex-1 min-w-[1000px] lg:min-w-0">
+                <div className="flex bg-slate-100/30 dark:bg-zinc-950/40 border-b border-slate-300 dark:border-zinc-700/50 sticky top-0 z-30 backdrop-blur-md">
+                  <div className="w-12 flex-shrink-0 sticky left-0 bg-slate-100 dark:bg-zinc-950/40 z-40 border-r border-slate-200 dark:border-zinc-800" />
+                  <div className="flex-1 grid grid-cols-7 divide-x divide-slate-300 dark:divide-zinc-700/50">
+                    {weekDays.map((date, i) => {
+                      const isToday = isSameDay(date, formatDateLocal(new Date()));
+                          return (
+                        <div 
+                          key={i} 
+                          className={cn(
+                            "py-2 text-center cursor-pointer hover:bg-slate-200/50 dark:hover:bg-zinc-700/30 transition-colors", 
+                            isToday ? "bg-emerald-50/50 dark:bg-emerald-500/10" : "",
+                            isSameDay(date, formatDateLocal(selectedNoteDate)) ? "ring-2 ring-emerald-500 ring-inset" : ""
+                          )}
+                          onClick={() => setSelectedNoteDate(date)}
+                        >
+                          <div className={cn("text-[6px] font-black uppercase tracking-widest", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500")}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
+                          <div className={cn("text-[10px] font-black", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-zinc-100")}>{date.getDate()}</div>
+
+                          {/* Holidays for this day */}
+                          { (holidays || []).filter(h => h && h.date === formatDateLocal(date)).map((h, idx) => (
+                            <div key={idx} className="mt-1 px-1 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-[6px] font-black text-amber-700 dark:text-amber-400 rounded-md border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm" title={h.name}>
+                              <span className="w-0.5 h-0.5 rounded-full bg-amber-500 flex-shrink-0" />
+                              <span className="truncate flex-1 min-w-0">{h.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: "75%" }}
-                    className="h-full bg-emerald-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between items-end mb-3">
-                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Novos Clientes</span>
-                  <span className="text-xs font-black uppercase">40%</span>
-                </div>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: "40%" }}
-                    className="h-full bg-blue-500"
-                  />
+
+                <div className="flex flex-1">
+                  <div className="w-12 flex flex-col bg-slate-100/20 dark:bg-zinc-950/20 border-r border-slate-300 dark:border-zinc-700/50 text-slate-400 flex-shrink-0 sticky left-0 z-30 shadow-sm">
+                    {HOURS.map(hour => (
+                      <div key={hour} className="h-[60px] text-[8px] font-black text-center py-2 -mt-2 tracking-tight flex items-center justify-center">{String(hour).padStart(2, '0')}:00</div>
+                    ))}
+                  </div>
+                  <div className="flex-1 grid grid-cols-7 divide-x divide-slate-300 dark:divide-zinc-700/50 relative">
+                    {weekDays.map((date, dayIdx) => {
+                      const dayEvents = (events || []).filter(e => e && isSameDay(date, e.date));
+                      const isToday = isSameDay(date, formatDateLocal(new Date()));
+                          return (
+                        <div key={dayIdx} className={cn("relative h-full", isToday ? "bg-emerald-50/5" : "")}>
+                          {HOURS.map(hour => (
+                            <div key={hour} className={cn("h-[60px] border-b border-slate-300 dark:border-zinc-700/50 cursor-pointer transition-colors", dragOverInfo?.dayIndex === dayIdx && dragOverInfo?.hour === hour ? "bg-emerald-500/10" : "hover:bg-slate-50/30")} onDragOver={(e) => onDragOver(e, dayIdx, hour)} onDrop={(e) => onDrop(e, date, hour)} onClick={() => openNewEventModal(date, hour)} />
+                          ))}
+                          <div className="absolute inset-0 pointer-events-none p-0.5">
+                            {dayEvents.map(event => {
+                              const top = getEventPosition(event.time);
+                              const height = getEventHeight(event.time);
+                              if (top === null) return null;
+                              const clientName = clients.find(c => c.id === event.client_id)?.name;
+                                  return (
+                                <div key={event.id} draggable onDragStart={(e) => onDragStart(e, event.id)} onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }} className="absolute left-0.5 right-0.5 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm rounded-lg p-1 transition-all cursor-grab active:cursor-grabbing z-10 overflow-hidden ring-1 ring-slate-900/5" style={{ top: `${top}px`, height: `${height}px` }}>
+                                  <div className="text-[8px] font-black text-slate-900 dark:text-zinc-100 mb-0.5 truncate leading-tight">{event.title}</div>
+                                  {clientName && <div className="text-[6px] font-black text-emerald-600 dark:text-emerald-400 uppercase truncate">@{clientName}</div>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Mobile Weekly List View */}
+            <div className="lg:hidden flex-1 flex flex-col bg-white dark:bg-zinc-900 overflow-hidden">
+                <div className="flex items-center gap-3 p-4 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-x-auto no-scrollbar scroll-smooth">
+                    {weekDays.map((date, i) => {
+                        const isSelected = isSameDay(date, formatDateLocal(selectedNoteDate));
+                        const isToday = isSameDay(date, formatDateLocal(new Date()));
+                        return (
+                            <button 
+                                key={i}
+                                onClick={() => { setSelectedNoteDate(date); }}
+                                className={cn(
+                                    "flex-shrink-0 flex flex-col items-center justify-center w-[54px] h-[78px] rounded-[22px] transition-all relative",
+                                    isSelected 
+                                      ? "bg-emerald-600 text-white shadow-[0_12px_24px_-8px_rgba(16,185,129,0.5)] scale-105 z-10" 
+                                      : "bg-slate-50 dark:bg-zinc-800/50 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-700"
+                                )}
+                            >
+                                <span className={cn("text-[9px] font-black uppercase tracking-tighter mb-1", isSelected ? "text-emerald-50" : "text-slate-400")}>
+                                    {date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
+                                </span>
+                                <span className={cn("text-base font-black", isSelected ? "text-white" : isToday ? "text-emerald-600" : "text-slate-700 dark:text-zinc-200")}>
+                                    {date.getDate()}
+                                </span>
+                                {isToday && !isSelected && <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-emerald-600" />}
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50 dark:bg-zinc-950">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Orquestração do Dia</h3>
+                        </div>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white dark:bg-zinc-900 px-3 py-1 rounded-full border border-slate-100 dark:border-zinc-800">
+                           {selectedNoteDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
+                        </span>
+                    </div>
+
+
+
+                    {selectedDayEvents.length > 0 ? (
+                        <div className="space-y-4">
+                            {selectedDayEvents.map(event => {
+                                const clientName = clients.find(c => c.id === event.client_id)?.name;
+                                return (
+                                    <button 
+                                        key={event.id}
+                                        onClick={() => setEditingEvent(event)}
+                                        className="w-full text-left p-5 bg-white dark:bg-zinc-900 rounded-[28px] border border-slate-100 dark:border-zinc-800 shadow-sm flex items-center gap-5 active:scale-[0.98] transition-all group"
+                                    >
+                                        <div className="flex flex-col items-center justify-center w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 rounded-[18px] border border-emerald-100 dark:border-emerald-500/20 flex-shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                            <Clock className="w-4 h-4 mb-1" />
+                                            <span className="text-[10px] font-black">{event.time.split(' - ')[0]}</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-sm font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight truncate leading-tight mb-1">{event.title}</h4>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">{event.time}</span>
+                                                {clientName && (
+                                                   <>
+                                                     <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-zinc-700" />
+                                                     <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">@{clientName}</span>
+                                                   </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-20 px-6 text-center bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-zinc-800 shadow-sm">
+                            <div className="w-20 h-20 bg-slate-50 dark:bg-zinc-800/50 rounded-full flex items-center justify-center mb-6">
+                                <Calendar className="w-10 h-10 text-slate-200 dark:text-zinc-700" />
+                            </div>
+                            <h4 className="text-base font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">Nada agendado</h4>
+                            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2 max-w-[200px] font-medium uppercase tracking-tight">Você não possui compromissos orquestrados para este dia.</p>
+                            <button 
+                                onClick={() => openNewEventModal(selectedNoteDate)}
+                                className="mt-8 px-8 py-4 bg-emerald-600 text-white rounded-[20px] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 dark:shadow-none active:scale-95 transition-all"
+                            >
+                                <Plus className="w-4 h-4 inline mr-2" /> Novo Registro
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
           </div>
         </div>
+
+        {/* Right Column: Revenue Chart (~40% - 2/5 Width) */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
+           <div className="h-[400px]">
+              <RevenueChart data={revenueChartData} loading={loading} currentDate={currentDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} />
+           </div>
+           <div className="h-[400px]">
+               <DailyNotes selectedDate={selectedNoteDate} />
+            </div>
+        </div>
+
       </div>
+
+      {editingEvent && (
+        <AppointmentForm 
+          appointment={editingEvent}
+          onClose={() => setEditingEvent(null)}
+          onSaved={loadData}
+          clients={clients}
+          onSave={handleSave}
+          onDelete={handleDelete}
+          isSaving={isSaving}
+        />
+      )}
     </div>
   );
 }
 
-function StatCard({ label, value, icon, trend, trendUp }: any) {
-  return (
-    <div className="bg-white dark:bg-zinc-900 p-8 rounded-[40px] border border-slate-100 dark:border-zinc-800 shadow-sm relative overflow-hidden group hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all">
-      <div className="relative z-10 flex flex-col h-full justify-between">
-        <div className="flex items-center justify-between mb-8">
-          <div className="p-3 bg-slate-50 dark:bg-zinc-800 text-emerald-600 rounded-2xl group-hover:scale-110 transition-transform">
-            {icon}
-          </div>
-          {trend && (
-            <div className={cn(
-              "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
-              trendUp === true ? "bg-emerald-100 text-emerald-700" : 
-              trendUp === false ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-700"
-            )}>
-              {trend}
-            </div>
-          )}
-        </div>
-        <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{label}</p>
-          <h3 className="text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter leading-none">{value}</h3>
-        </div>
-      </div>
-    </div>
-  );
-}
