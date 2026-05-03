@@ -1,4 +1,5 @@
-﻿import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+const fs = require('fs');
+const code = \import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { saveFileToIndexedDB, getFileFromIndexedDB, deleteFileFromIndexedDB } from '../lib/storage';
 
 interface UploadDraft {
@@ -42,7 +43,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
         try {
           const file = await getFileFromIndexedDB(key);
           if (file) {
-            console.log(`[UploadContext] Arquivo restaurado para: ${key} (${file.name})`);
+            console.log(\\\[UploadContext] Arquivo restaurado para: \\\ (\\\)\\\);
             setDrafts(prev => ({
               ...prev,
               [key]: { ...prev[key], file }
@@ -66,7 +67,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   }, [drafts]);
 
   const setDraft = async (clientId: string, partialDraft: Partial<UploadDraft>) => {
-    console.log(`[UploadContext] Atualizando rascunho para: ${clientId}`, partialDraft);
+    console.log(\\\[UploadContext] Atualizando rascunho para: \\\\\\, partialDraft);
     if (partialDraft.file !== undefined) {
       if (partialDraft.file) {
         await saveFileToIndexedDB(clientId, partialDraft.file);
@@ -85,7 +86,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   };
 
   const clearDraft = async (clientId: string) => {
-    console.log(`[UploadContext] Limpando rascunho: ${clientId}`);
+    console.log(\\\[UploadContext] Limpando rascunho: \\\\\\);
     await deleteFileFromIndexedDB(clientId);
     setDrafts(prev => {
       const newDrafts = { ...prev };
@@ -107,4 +108,5 @@ export const useUpload = () => {
     throw new Error('useUpload must be used within an UploadProvider');
   }
   return context;
-};
+};\;
+fs.writeFileSync('src/contexts/UploadContext.tsx', code);
