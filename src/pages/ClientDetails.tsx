@@ -1,3 +1,4 @@
+import { useUpload } from '../contexts/UploadContext';
 ﻿import React, { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { 
@@ -33,21 +34,33 @@ export default function ClientDetails() {
   const { id } = useParams();
   const { user } = useAuth();
   const { settings, updateSettings } = useSettings();
+  const { drafts, setDraft, clearDraft } = useUpload();
+  const draft = drafts[id || ""] || { file: null, category: "", value: "", isOpen: false };
+  
+  const selectedFile = draft.file;
+  const selectedCategory = draft.category;
+  const orderValue = draft.value;
+  const isUploadModalOpen = draft.isOpen;
+
+  const setSelectedFile = (file) => setDraft(id || "", { file });
+  const setSelectedCategory = (category) => setDraft(id || "", { category });
+  const setOrderValue = (value) => setDraft(id || "", { value });
+  const setIsUploadModalOpen = (isOpen) => setDraft(id || "", { isOpen });
   const navigate = useNavigate();
   
   const [client, setClient] = useState<any>(null);
   const [files, setFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  
   const [isUploading, setIsUploading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState("");
+  
+  
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
-  const [orderValue, setOrderValue] = useState("");
+  
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Modal state no longer uses sessionStorage
@@ -159,7 +172,7 @@ export default function ClientDetails() {
       const fileName = `${selectedCategory}___${Date.now()}___${selectedFile.name}`;
       const filePath = `${user.id}/${id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage.from("client_vault").upload(filePath, selectedFile);
+      const { error: uploadError } = await supabase.storage.from("client_vault").upload(filePath, selectedFile, { upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -177,22 +190,13 @@ export default function ClientDetails() {
          numericValue = parseFloat(rawVal);
       }
 
-      const { error: dbError } = await supabase.from("orders").insert([{
-        user_id: user.id,
-        client_id: id,
-        value: numericValue,
-        category: selectedCategory,
-        description: "Pedido via Upload: " + selectedFile.name,
-        file_name: fileName,
-        file_path: filePath
-      }]);
+      const { error: dbError } = await supabase.from("orders").upsert([{ user_id: user.id, client_id: id, category: selectedCategory, value: numericValue, file_name: fileName, file_path: filePath, status: "concluido" }], { onConflict: "client_id,file_path" });
 
       if (dbError) throw dbError;
 
       toast.success("Arquivo anexado com sucesso!");
       setIsUploadModalOpen(false);
-      setSelectedFile(null);
-      setOrderValue("");
+      clearDraft(id || "");
       loadClientData();
     } catch (err: any) {
       console.error("Upload error details:", err);
@@ -387,7 +391,7 @@ export default function ClientDetails() {
                 </div>
 
                 <button 
-                  onClick={() => { setOrderValue(""); setSelectedFile(null); setSelectedCategory(""); setIsUploadModalOpen(true); }}
+                  onClick={() => setIsUploadModalOpen(true)}
                   className="flex items-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
                 >
                   <Upload className="w-4 h-4" /> Anexar Novo

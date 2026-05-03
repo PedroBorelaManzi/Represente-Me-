@@ -215,7 +215,7 @@ export default function Layout() {
               return (
                 <Link
                   key={item.name}
-                  to={item.href}
+                  to={item.href} onClick={() => { if (location.pathname !== item.href) { setSidebarOpen(false); } }}
                   className={cn(
                     "group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all",
                     isActive

@@ -1,3 +1,4 @@
+import { useUpload } from '../contexts/UploadContext';
 import React, { useState, useEffect, useMemo } from "react";
 import { Plus, Search, FileText, Upload, Loader2, ShoppingBag, Trash2, ArrowUpRight, TrendingUp, DollarSign, Calendar, ChevronRight, Filter, MoreVertical, ShieldCheck, Zap, Layers, X, Sparkles, Navigation } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -14,16 +15,30 @@ export default function PedidosPage() {
   const { user } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
+  const { drafts, setDraft, clearDraft } = useUpload();
+  const manualDraft = drafts["manual_order"] || { file: null, category: "", value: "", isOpen: false, clientId: "" };
+  
+  const selectedFile = manualDraft.file;
+  const selectedCategory = manualDraft.category;
+  const orderValue = manualDraft.value;
+  const isManualModalOpen = manualDraft.isOpen;
+  const selectedClient = (manualDraft as any).clientId || "";
+
+  const setSelectedFile = (file) => setDraft("manual_order", { file });
+  const setSelectedCategory = (category) => setDraft("manual_order", { category });
+  const setOrderValue = (value) => setDraft("manual_order", { value });
+  const setIsManualModalOpen = (isOpen) => setDraft("manual_order", { isOpen });
+  const setSelectedClient = (clientId) => setDraft("manual_order", { clientId } as any);
   const [orders, setOrders] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   
-  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
-  const [selectedClient, setSelectedClient] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [orderValue, setOrderValue] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
+  
+  
+  
+  
   const [isSaving, setIsSaving] = useState(false);
   const [isAnalyzingManual, setIsAnalyzingManual] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
@@ -104,6 +119,7 @@ export default function PedidosPage() {
       }
       setIsManualModalOpen(false); loadData();
       toast.success("Pedido registrado com sucesso!");
+      clearDraft("manual_order");
     } catch (err: any) { toast.error(err.message); } finally { setIsSaving(false); }
   };
 
