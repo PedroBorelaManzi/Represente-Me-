@@ -190,7 +190,7 @@ export default function ClientDetails() {
          numericValue = parseFloat(rawVal);
       }
 
-      const { error: dbError } = await supabase.from("orders").upsert([{ user_id: user.id, client_id: id, category: selectedCategory, value: numericValue, file_name: fileName, file_path: filePath, status: "concluido" }], { onConflict: "client_id,file_path" });
+      const { error: dbError } = await supabase.from("orders").upsert([{ user_id: user.id, client_id: id, category: selectedCategory, value: numericValue, file_name: fileName, file_path: filePath }], { onConflict: "client_id,file_path" });
 
       if (dbError) throw dbError;
 

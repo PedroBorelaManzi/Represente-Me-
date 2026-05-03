@@ -110,7 +110,7 @@ export default function PedidosPage() {
       const formattedName = `${selectedCategory}___VALOR_${orderValue}___${cleanName}`;
       const path = `${user.id}/${cid}/${formattedName}`;
       await supabase.storage.from("client_vault").upload(path, selectedFile, { upsert: true });
-      await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: selectedCategory, value: parseFloat(orderValue), file_name: formattedName, file_path: path, status: "concluido" }], { onConflict: "client_id,file_path" });
+      await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: selectedCategory, value: parseFloat(orderValue), file_name: formattedName, file_path: path }], { onConflict: "client_id,file_path" });
       const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", cid).single();
       if (clientData) {
         const fat = clientData.faturamento || {};
@@ -149,7 +149,7 @@ export default function PedidosPage() {
       const formattedName = `${res.category}___VALOR_${res.value}___${cleanName}`;
       const path = `${user?.id}/${cid}/${formattedName}`;
       await supabase.storage.from("client_vault").upload(path, res.file, { upsert: true });
-      await supabase.from("orders").upsert([{ user_id: user?.id, client_id: cid, category: res.category, value: res.value, file_name: formattedName, file_path: path, status: "concluido" }], { onConflict: "client_id,file_path" });
+      await supabase.from("orders").upsert([{ user_id: user?.id, client_id: cid, category: res.category, value: res.value, file_name: formattedName, file_path: path }], { onConflict: "client_id,file_path" });
       const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", cid).single();
       if (clientData) {
         const fat = clientData.faturamento || {};
@@ -224,13 +224,7 @@ export default function PedidosPage() {
               <Zap className="w-4 h-4 md:w-5 md:h-5" />
               Lote IA
             </button>
-            <button 
-              onClick={() => setIsManualModalOpen(true)}
-              className="px-6 md:px-8 py-3 md:py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl md:rounded-[24px] font-black uppercase text-[9px] md:text-[11px] tracking-widest transition-all shadow-xl active:scale-95 flex items-center gap-2 md:gap-3 group whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4 md:w-5 md:h-5 group-hover:rotate-90 transition-transform" />
-              Novo Registro
-            </button>
+            
         </div>
       </div>
 
@@ -448,6 +442,7 @@ export default function PedidosPage() {
                        </div>
                     </div>
 
+                                        
                     <div className="grid grid-cols-2 gap-4 md:gap-6">
                        <div className="space-y-3 md:space-y-4">
                           <label className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest px-2">Representada</label>
@@ -458,7 +453,7 @@ export default function PedidosPage() {
                             className="w-full p-4 md:p-6 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[20px] md:rounded-[28px] text-[8px] md:text-[10px] font-black uppercase tracking-widest outline-none"
                           >
                              <option value="">SELECIONAR</option>
-                             {(settings.categories||[]).map((c: string)=>(<option key={c} value={c}>{c}</option>))}
+                             {Array.from(new Set(settings.categories || [])).map((c: string)=>(<option key={c} value={c}>{c}</option>))}
                           </select>
                        </div>
                        <div className="space-y-3 md:space-y-4">

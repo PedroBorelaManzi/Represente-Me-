@@ -2,46 +2,33 @@ const fs = require('fs');
 const file = 'src/pages/Pedidos.tsx';
 let content = fs.readFileSync(file, 'utf8');
 
-// Add import
-if (!content.includes('UploadContext')) {
-  content = "import { useUpload } from '../contexts/UploadContext';\n" + content;
-}
-
-// Replace local state with context for manual order
+// 1. Deduplicate categories in the select dropdown
 content = content.replace(
-  /const \[selectedClient, setSelectedClient\] = useState\(\"\"\);/,
-  ''
-);
-content = content.replace(
-  /const \[selectedCategory, setSelectedCategory\] = useState\(\"\"\);/,
-  ''
-);
-content = content.replace(
-  /const \[orderValue, setOrderValue\] = useState\(\"\"\);/,
-  ''
-);
-content = content.replace(
-  /const \[selectedFile, setSelectedFile\] = useState<File \| null>\(null\);/,
-  ''
-);
-content = content.replace(
-  /const \[isManualModalOpen, setIsManualModalOpen\] = useState\(false\);/,
-  ''
+  /\{\(settings\.categories\|\|\[\]\)\.map\(\(c: string\)=>\(<option key=\{c\} value=\{c\}>\{c\}<\/option>\)\)\}/,
+  '{Array.from(new Set(settings.categories || [])).map((c: string)=>(<option key={c} value={c}>{c}</option>))}'
 );
 
-// Add useUpload hook
-if (!content.includes('const { drafts, setDraft, clearDraft } = useUpload()')) {
-  content = content.replace(
-    /const navigate = useNavigate\(\);/,
-    'const navigate = useNavigate();\n  const { drafts, setDraft, clearDraft } = useUpload();\n  const manualDraft = drafts[\"manual_order\"] || { file: null, category: \"\", value: \"\", isOpen: false, clientId: \"\" };\n  \n  const selectedFile = manualDraft.file;\n  const selectedCategory = manualDraft.category;\n  const orderValue = manualDraft.value;\n  const isManualModalOpen = manualDraft.isOpen;\n  const selectedClient = (manualDraft as any).clientId || \"\";\n\n  const setSelectedFile = (file) => setDraft(\"manual_order\", { file });\n  const setSelectedCategory = (category) => setDraft(\"manual_order\", { category });\n  const setOrderValue = (value) => setDraft(\"manual_order\", { value });\n  const setIsManualModalOpen = (isOpen) => setDraft(\"manual_order\", { isOpen });\n  const setSelectedClient = (clientId) => setDraft(\"manual_order\", { clientId } as any);'
-  );
-}
+// 2. Add the Client select field back to the Manual Order Modal
+const clientSelect = \
+                    <div className=\"space-y-3 md:space-y-4\">
+                       <label className=\"text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest px-2\">Cliente (Destino)</label>
+                       <select 
+                         value={selectedClient} 
+                         onChange={e=>setSelectedClient(e.target.value)} 
+                         required 
+                         className=\"w-full p-4 md:p-6 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[20px] md:rounded-[28px] text-[8px] md:text-[10px] font-black uppercase tracking-widest outline-none\"
+                       >
+                          <option value=\"\">SELECIONAR CLIENTE</option>
+                          {Array.from(new Map(clients.map(c => [c.id, c])).values()).map((c: any)=>(<option key={c.id} value={c.id}>{c.name}</option>))}
+                       </select>
+                    </div>
+\;
 
-// Clear draft on success
+// Insert before the grid of category/value
 content = content.replace(
-  /setIsManualModalOpen\(false\); loadData\(\);\s*toast\.success\(\"Pedido registrado com sucesso!\"\);/,
-  'setIsManualModalOpen(false); loadData();\n      toast.success(\"Pedido registrado com sucesso!\");\n      clearDraft(\"manual_order\");'
+  /<div className=\"grid grid-cols-2 gap-4 md:gap-6\">/,
+  clientSelect + '\n                    <div className=\"grid grid-cols-2 gap-4 md:gap-6\">'
 );
 
 fs.writeFileSync(file, content);
-console.log('Fixed Pedidos.tsx with Context');
+console.log('Fixed duplicate categories and added client select to Pedidos.tsx');
