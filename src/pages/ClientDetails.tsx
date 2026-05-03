@@ -1,6 +1,6 @@
 import { useUpload } from '../contexts/UploadContext';
 import React, { useState, useEffect, useMemo } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate } from "router-dom";
 import { 
   User, 
   MapPin, 
@@ -14,12 +14,12 @@ import {
   ChevronRight,
   FileText,
   Download,
-  Trash2,
-  Plus,
-  X,
-  Loader2,
-  HardDrive,
-  Upload,
+  Trash2, 
+  Plus, 
+  X, 
+  Loader2, 
+  HardDrive, 
+  Upload, 
   AlertCircle,
   Briefcase
 } from "lucide-react";
@@ -52,8 +52,7 @@ export default function ClientDetails() {
   const [files, setFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const [isUploading, setIsUploading] = useState(false);
-  
+  const [isUploading, setIsUploading[ = useState(false);
   
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -62,21 +61,32 @@ export default function ClientDetails() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-
-  // Modal state no longer uses sessionStorage
-  
   const [clientAppointments, setClientAppointments] = useState<any[]>([]);
 
   const allAvailableCategories = useMemo(() => {
     const map = new Map();
-    (settings.categories || []).forEach(c => { const t = c.trim(); if(t) map.set(t.toUpperCase(), t); });
-    files.forEach(f => { if(f.category) { const t = f.category.trim(); if(t) map.set(t.toUpperCase(), t); } });
-    return Array.from(map.values()).sort();
+    // Prefer global settings
+    (settings.categories || []).forEach(c => { 
+      const t = c.trim(); 
+      if(t) {
+        const key = t.toUpperCase();
+        if (!map.has(key)) map.set(key, t);
+      }
+    });
+    // Add historical ones only if not present
+    files.forEach(f => { 
+      if(f.category) { 
+        const t = f.category.trim(); 
+        if(t) {
+          const key = t.toUpperCase();
+          if (!map.has(key)) map.set(key, t);
+        }
+      } 
+    });
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
   }, [settings.categories, files]);
 
-
-
-  useEffect(() => {
+  uceEffect(() => {
     if (user && id) {
       loadClientData();
     }
@@ -85,7 +95,6 @@ export default function ClientDetails() {
   const loadClientData = async () => {
     try {
       setLoading(true);
-      // Load Client
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .select('*')
@@ -95,25 +104,18 @@ export default function ClientDetails() {
       if (clientError) throw clientError;
       setClient(clientData);
       setNotes(clientData.notes || "");
-      // setSelectedCategory removed to preserve draft
 
-      // Load Files
       const { data: filesData } = await supabase.from("orders").select("*").eq("client_id", id).not("file_name", "is", null).order("created_at", { ascending: false });
-      if (filesData) {
-        setFiles(filesData);
-      }
-
-      // Load Appointments
+      if (filesData) setFiles(filesData);
+Ð
       const { data: apptData } = await supabase
         .from('appointments')
-        .select('*')
+        .select("*")
         .eq('client_id', id)
         .order('date', { ascending: false });
-      setClientAppointments(apptData || []);
+      setClientAppoinments(apptData || []);
 
-      // Log access
       import('../lib/supabase').then(({ logAudit }) => logAudit('ACCESS_CLIENT_DETAILS', { client_id: id, client_name: clientData.name }));
-
     } catch (err) {
       console.error("Error loading client details:", err);
       toast.error("Erro ao carregar dados do cliente.");
@@ -124,20 +126,13 @@ export default function ClientDetails() {
 
   const handleFileDelete = async (fileName: string, filePath: string, fileId: string) => {
     if (!window.confirm("Deseja realmente excluir este arquivo?")) return;
-    
     try {
-      let storageError = null;
       if (filePath) {
-        const res = await supabase.storage.from("client_vault").remove([filePath]);
-        storageError = res.error;
+        await supabase.storage.from("client_vault").remove([filePath]);
       }
-      if (storageError) throw storageError;
-
       const { error: dbError } = await supabase.from("orders").delete().eq("id", fileId);
-      
       if (dbError) throw dbError;
-
-      toast.success("Arquivo removido com sucesso!");
+      toast.success("Arquivo removido com success!");
       setFiles(prev => prev.filter(f => f.id !== fileId));
     } catch (err) {
       toast.error("Erro ao remover arquivo.");
@@ -147,9 +142,7 @@ export default function ClientDetails() {
   const handleDownload = async (fileName: string, filePath: string) => {
     try {
       const { data, error } = await supabase.storage.from("client_vault").download(filePath);
-      
       if (error) throw error;
-      
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
@@ -160,7 +153,7 @@ export default function ClientDetails() {
     }
   };
 
-      const submitUpload = async () => {
+  const submitUpload = async () => {
     if (!selectedFile || !user || !id) return;
     if (!selectedCategory) {
       toast.error("Por favor, selecione uma empresa.");
@@ -169,15 +162,12 @@ export default function ClientDetails() {
 
     try {
       setIsUploading(true);
-      const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${selectedCategory}___${Date.now()}___${selectedFile.name}`;
+      const fileName = `${selectedCategory}___${Date.now()}__]${selectedFile.name}`;
       const filePath = `${user.id}/${id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage.from("client_vault").upload(filePath, selectedFile, { upsert: true });
-
       if (uploadError) throw uploadError;
 
-      // Conversao correta de valor padrao BR para float do banco
       const rawVal = orderValue || "0";
       let numericValue = 0;
       if (rawVal.includes('.') && rawVal.includes(',')) {
@@ -191,22 +181,27 @@ export default function ClientDetails() {
          numericValue = parseFloat(rawVal);
       }
 
-      const { error: dbError } = await supabase.from("orders").upsert([{ user_id: user.id, client_id: id, category: selectedCategory, value: numericValue, file_name: fileName, file_path: filePath }], { onConflict: "client_id,file_path" });
+      const { error: dbError } = await supabase.from("roders").upsert(({ 
+        user_id: user.id, 
+        client_id: id, 
+        category: selectedCategory, 
+        value: numericValue, 
+        file_name: fileName, 
+        file_path: filePath 
+      }], { onConflict: "client_id,file_path" });
 
       if (dbError) throw dbError;
 
-      toast.success("Arquivo anexado com sucesso!");
+      toast.success("Arquivo anexado com success!");
       setIsUploadModalOpen(false);
-      clearDraft(id || "");
+      await clearDraft(id || "");
       loadClientData();
     } catch (err: any) {
-      console.error("Upload error details:", err);
-      toast.error("Erro no upload: " + (err.message || "Token expirado. RefaÃƒÆ’Ã‚Â§a o login."));
+      toast.error("Erro no upload: " + (err.message || "Erro desconhecido"));
     } finally {
       setIsUploading(false);
     }
   };
-
 
   const saveNewCategory = async () => {
     const trimmed = newCategoryName.trim();
@@ -216,8 +211,9 @@ export default function ClientDetails() {
       return;
     }
     const current = settings.categories || [];
-    if (current.includes(trimmed)) {
-      setSelectedCategory(trimmed);
+    const exists = current.some(c => c.toLowerCase() === trimmed.toK£rCase());
+    if (exists) {
+      setSelectedCategory(current.find(c => c.toLowerCase() === trimmed.toLowerCase()) || trimmed);
       setIsCreatingCategory(false);
       setNewCategoryName("");
       return;
@@ -233,28 +229,26 @@ export default function ClientDetails() {
     }
   };
 
-    const handleFileChange = async (file: File | null) => {
+  const handleFileChange = async (file: File | null) => {
     setSelectedFile(file);
-    setOrderValue(""); // Clear value when file changes
+    setOrderValue(""); 
     if (!file) return;
 
     try {
       setIsAnalyzing(true);
       toast.info("Lendo arquivo selecionado...", { id: "analyzing_toast" });
       const result = await processOrderFile(file, [], allAvailableCategories);
-      
       toast.dismiss("analyzing_toast");
 
       if (result.status === "ready") {
         if (result.value > 0) setOrderValue(result.value.toString().replace(".", ","));
         if (result.category) setSelectedCategory(result.category);
-        toast.success("Dados extraÃƒÆ’Ã‚Â­dos do documento!");
+        toast.success("Dados extraÃ­dos do documento!");
       } else {
-        toast.error("Falha na leitura automÃƒÆ’Ã‚Â¡tica: " + (result.error || "Erro desconhecido"));
+        toast.error("Falha na leitura automÃ¡tica.");
       }
     } catch (err) {
       toast.dismiss("analyzing_toast");
-      console.error("Erro na anÃƒÆ’Ã‚Â¡lise:", err);
       toast.error("Erro ao ler arquivo. Preencha manualmente.");
     } finally {
       setIsAnalyzing(false);
@@ -264,278 +258,6 @@ export default function ClientDetails() {
   const handleSaveNotes = async () => {
     try {
       setIsSavingNotes(true);
-      const { error } = await supabase
-        .from('clients')
-        .update({ notes })
-        .eq('id', id);
-      
+      const { error } = await supabase.from('clients').update({ notes }).eq('id', id);
       if (error) throw error;
-      toast.success("OBSERVAÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã¢â‚¬Â¢ES ESTRATÃƒÆ’Ã¢â‚¬Â°GICAS salvas!");
-    } catch (err) {
-      toast.error("Erro ao salvar.");
-    } finally {
-      setIsSavingNotes(false);
-    }
-  };
-
-
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <Loader2 className="w-12 h-12 animate-spin text-emerald-600 opacity-20" />
-      </div>
-    );
-  }
-
-  if (!client) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center gap-6">
-        <AlertCircle className="w-16 h-16 text-red-500 opacity-20" />
-        <h2 className="text-xl font-black uppercase text-slate-400 tracking-widest">Cliente nÃƒÆ’Ã‚Â£o encontrado</h2>
-        <Link to="/dashboard/clientes" className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs">Voltar para Carteira</Link>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-8 pb-20 max-w-7xl mx-auto">
-      {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-4">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors">
-            <ArrowLeft className="w-3 h-3" /> Voltar
-          </button>
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-emerald-600 rounded-[32px] flex items-center justify-center text-white shadow-xl shadow-emerald-500/20">
-              <User className="w-10 h-10" />
-            </div>
-            <div>
-              <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-none">{client.name}</h1>
-              <div className="flex items-center gap-4 mt-3">
-                <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-[10px] font-black uppercase rounded-full">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Ativo no Radar
-                </span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CNPJ: {client.cnpj}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          <button className="px-8 py-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl font-black uppercase text-[10px] tracking-widest text-slate-600 dark:text-zinc-400 hover:border-emerald-500 transition-all active:scale-95">Editar Cadastro</button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT COLUMN: INFO & NOTES */}
-        <div className="lg:col-span-1 space-y-8">
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-8 space-y-6">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 border-b border-slate-50 dark:border-zinc-800 pb-4">INFORMAÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã¢â‚¬Â¢ES de Contato</h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg text-slate-400"><MapPin className="w-4 h-4" /></div>
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase">LocalizaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o</p>
-                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300 leading-relaxed">{client.address || "NÃƒÆ’Ã‚Â£o informado"}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg text-slate-400"><Phone className="w-4 h-4" /></div>
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase">Telefone</p>
-                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">{client.phone || "(---) ---- ----"}</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg text-slate-400"><Mail className="w-4 h-4" /></div>
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase">E-mail Comercial</p>
-                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">{client.email || "nÃƒÆ’Ã‚Â£o configurado"}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-8 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">OBSERVAÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã¢â‚¬Â¢ES ESTRATÃƒÆ’Ã¢â‚¬Â°GICAS</h3>
-              {isSavingNotes && <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />}
-            </div>
-            <textarea 
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="HistÃƒÆ’Ã‚Â³rico, preferÃƒÆ’Ã‚Âªncias e notas de negociaÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â£o..."
-              className="w-full h-40 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl p-4 text-xs font-medium outline-none focus:ring-4 focus:ring-emerald-500/5 resize-none transition-all dark:text-zinc-200"
-            />
-            <button 
-              onClick={handleSaveNotes}
-              disabled={isSavingNotes}
-              className="w-full py-4 bg-slate-900 dark:bg-zinc-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all disabled:opacity-50"
-            >
-              Atualizar DossiÃƒÆ’Ã‚Âª
-            </button>
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: FILES & TIMELINE */}
-        <div className="lg:col-span-2 space-y-8">
-           <div className="bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-200 dark:border-zinc-800 shadow-sm p-8 flex flex-col h-full min-h-[600px]">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-slate-50 dark:border-zinc-850">
-                <div>
-                  <h2 className="text-xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 uppercase tracking-tight">
-                    <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl"><HardDrive className="w-6 h-6 text-emerald-600" /></div>
-                    NUVEM DE DOCUMENTOS
-                  </h2>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">RepositÃƒÆ’Ã‚Â³rio Privado de Pedidos e Contratos</p>
-                </div>
-
-                <button 
-                  onClick={() => { setOrderValue(""); setSelectedFile(null); setIsUploadModalOpen(true); }}
-                  className="flex items-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
-                >
-                  <Upload className="w-4 h-4" /> Anexar Novo
-                </button>
-              </div>
-
-              <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-                {files.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center opacity-20 py-20">
-                    <FileText className="w-20 h-20 mb-6 stroke-[1]" />
-                    <p className="font-black uppercase text-xs tracking-[0.2em]">Cofre Digital Vazio</p>
-                  </div>
-                ) : (
-                  files.map((file) => {
-                    const parts = file.file_name?.split("___") || [];
-                    const actualName = parts.length > 2 ? parts.slice(2).join("___") : (parts.length > 1 ? parts.slice(1).join("___") : file.file_name);
-                    const orderValue = file.value ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(file.value) : null;
-
-                    return (
-                      <div key={file.id} className="flex items-center justify-between p-6 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-3xl hover:border-emerald-200 transition-all group">
-                        <div className="flex items-center gap-6">
-                           <div className="w-14 h-14 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-zinc-800 group-hover:scale-110 transition-transform">
-                              <FileText className="w-7 h-7 text-emerald-600" />
-                           </div>
-                           <div>
-                              <div className="flex items-center gap-2 mb-1.5">
-                                <span className="px-3 py-1 bg-emerald-600 text-white text-[8px] font-black uppercase tracking-widest rounded-full">{file.category || "Geral"}</span>
-                                {orderValue && <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-[8px] font-black uppercase tracking-widest rounded-full">{orderValue}</span>}
-                              </div>
-                              <h4 className="text-sm font-black text-slate-900 dark:text-zinc-100 truncate max-w-xs uppercase tracking-tight">{actualName}</h4>
-                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-2">
-                                <Calendar className="w-3 h-3" /> {new Date(file.created_at).toLocaleDateString('pt-BR')}
-                              </p>
-                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                           <button onClick={() => handleDownload(file.file_name, file.file_path)} className="p-3 bg-white dark:bg-zinc-800 text-slate-400 hover:text-emerald-600 rounded-xl shadow-sm border border-slate-100 dark:border-zinc-800"><Download className="w-4 h-4" /></button>
-                           <button onClick={() => handleFileDelete(file.file_name, file.file_path, file.id)} className="p-3 bg-white dark:bg-zinc-800 text-slate-400 hover:text-red-500 rounded-xl shadow-sm border border-slate-100 dark:border-zinc-800"><Trash2 className="w-4 h-4" /></button>
-                        </div>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-           </div>
-        </div>
-      </div>
-
-      {/* Upload Modal - High Fidelity */}
-      <AnimatePresence>
-        {isUploadModalOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsUploadModalOpen(false)} className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl" />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white dark:bg-zinc-900 rounded-[48px] border border-white/20 shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
-            >
-              <div className="p-10 border-b border-slate-50 dark:border-zinc-850 flex items-center justify-between">
-                <div>
-                   <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-none">Anexar Documento</h3>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Upload Seguro para Nuvem</p>
-                </div>
-                <button onClick={() => setIsUploadModalOpen(false)} className="p-3 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-red-500 transition-all"><X className="w-5 h-5"/></button>
-              </div>
-
-              <div className="p-10 space-y-8">
-                <div className="space-y-4">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest px-2">Empresa do Pedido</label>
-                  {!isCreatingCategory ? (
-                    <div className="flex gap-2 p-2 bg-slate-50 dark:bg-zinc-950 rounded-3xl border border-slate-100 dark:border-zinc-800">
-                      <select 
-                        value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
-                        className="flex-1 bg-transparent px-4 py-2 text-xs font-black uppercase outline-none text-slate-900 dark:text-zinc-100"
-                      >
-                        <option value="" disabled>SELECIONAR EMPRESA</option>
-                        {allAvailableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                      </select>
-                      <button onClick={() => { setNewCategoryName(""); setIsCreatingCategory(true); }} className="p-3 bg-emerald-600 text-white rounded-2xl" type="button"><Plus className="w-4 h-4" /></button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveNewCategory();
-                          if (e.key === 'Escape') setIsCreatingCategory(false);
-                        }}
-                        placeholder="Nome da empresa..."
-                        className="flex-1 px-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-emerald-500 rounded-3xl text-xs font-black uppercase outline-none"
-                        autoFocus
-                      />
-                      <button onClick={saveNewCategory} className="px-6 bg-emerald-600 text-white rounded-3xl text-[10px] font-black uppercase tracking-widest" type="button">OK</button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest px-2">Arquivo Local</label>
-                  <input 
-                    type="file" 
-                    onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
-                    className="block w-full text-[10px] font-bold text-slate-500 file:mr-4 file:py-4 file:px-8 file:rounded-3xl file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-slate-900 file:text-white hover:file:bg-emerald-600 transition-all cursor-pointer"
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest px-2">Valor Total do Pedido</label>
-                  <input 
-                    type="text" 
-                    value={orderValue}
-                    onChange={(e) => setOrderValue(e.target.value.replace(/[^0-9,.]/g, ''))}
-                    placeholder="R$ 0,00"
-                    className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-3xl text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all"
-                  />
-                </div>
-              </div>
-
-                            <div className="p-10 bg-slate-50 dark:bg-zinc-950 border-t border-slate-100 dark:border-zinc-850">
-                <button 
-                  onClick={submitUpload}
-                  disabled={!selectedFile || isUploading || !selectedCategory || !orderValue || parseFloat(orderValue.replace(",", ".")) <= 0 || isAnalyzing}
-                  className="w-full py-6 bg-emerald-600 text-white rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-emerald-500/30 hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4"
-                >
-                  {isAnalyzing ? (
-                    <><Loader2 className="w-5 h-5 animate-spin" /> <span>Analisando arquivo...</span></>
-                  ) : isUploading ? (
-                    <><Loader2 className="w-5 h-5 animate-spin" /> <span>Enviando...</span></>
-                  ) : (
-                    <><Upload className="w-5 h-5" /> <span>Enviar Arquivo</span></>
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
+      toast.success("OBSERVAÃ‡Å5ôU5E$L8”t”426Çf2"“°Ð¢Ò6F6‚†W'"’°Ð¢Fö7BæW'&÷"‚$W'&òò6Çf"â"“°Ð¢Òf–æÆÇ’°Ð¢6WD—56f–ætæ÷FW2†fÇ6R“°Ð¢ÐÐ¢Ó°Ð Ð¢–b†ÆöF–ær’°Ð¢&WGW&â€Ð¢ÆF—b6Æ74æÖSÒ&‚×67&VVâfÆW‚—FV×2Ö6VçFW"§W7F–g’Ö6VçFW"#àÐ¢ÄÆöFW#"6Æ74æÖSÒ'rÓ"‚Ó"æ–ÖFR×7–âFW‡BÖVÖW&ÆBÓc÷6—G’Ó#"óàÐ¢ÂöF—càÐ¢“°Ð¢ÐÐ Ð¢–b‚6Æ–VçB’°Ð¢&WGW&â€Ð¢ÆF—b6Æ74æÖSÒ&‚×67&VVâfÆW‚fÆW‚Ö6öÂ—FV×2Ö6VçFW"§W7F–g’Ö6VçFW"vÓb#àÐ¢ÄÆW'D6—&6ÆR6Æ74æÖSÒ'rÓb‚ÓbFW‡B×&VBÓS÷6—G’Ó#"óàÐ¢Æƒ"6Æ74æÖSÒ'FW‡B×†ÂföçBÖ&Æ6²WW&66RFW‡B×6ÆFRÓCG&6¶–ær×v–FW7B#ä6Æ–VçFRì:6òVæ6öçG&FóÂöƒ#àÐ¢ÄÆ–æ²FóÒ"öF6†&ö&Bö6Æ–VçFW2"6Æ74æÖSÒ'‚Ó‚’ÓB&r×6ÆFRÓ“FW‡B×v†—FR&÷VæFVBÓ'†ÂföçBÖ&Æ6²WW&66RFW‡B×‡2#åföÇF"&6'FV—&ÂôÆ–æ³àÐ¢ÂöF—càÐ¢“°Ð¢ÐÐ Ð¢&WGW&â€Ð¢ÆF—b6Æ74æÖSÒ&fÆW‚fÆW‚Ö6öÂvÓ‚"Ó#Ö‚×rÓw†Â×‚ÖWFò#àÐ¢ÆF—b6Æ74æÖSÒ&fÆW‚fÆW‚Ö6öÂÖBÆfÆW‚×&÷rÖBÆ—FV×2ÖVæB§W7F–g’Ö&WGvVVâvÓb#àÐ¢ÆF—b6Æ74æÖSÒ'76R×’ÓB#àÐ¢Æ'WGFöâöä6Æ–6³×²‚’Óâæf–vFR‚Ó—Ò6Æ74æÖSÒ&fÆW‚—FV×2Ö6VçFW"vÓ"FW‡BÕ³…ÒföçBÖ&Æ6²WW&66RG&6¶–ær×v–FW7BFW‡B×6ÆFRÓC†÷fW#§FW‡BÖVÖW&ÆBÓcG&ç6—F–öâÖ6öÆ÷'2#àÐ¢Ä'&÷tÆVgB6Æ74æÖSÒ'rÓ2‚Ó2"óâföÇF Ð¢Âö'WGFöãàÐ¢ÆF—b6Æ74æÖSÒ&fÆW‚—FV×2Ö6VçFW"vÓb#àÐ¢ÆF—b6Æ74æÖSÒ'rÓ#‚Ó#&rÖVÖW&ÆBÓc&÷VæFVBÕ³3'…ÒfÆW‚—FV×2Ö6VçFW"§W7F–g’Ö6VçFW"FW‡B×v†—FR6†F÷r×†Â6†F÷rÖVÖW&ÆBÓSó##àÐ¢ÅW6W"6Æ74æÖSÒ'rÓ‚Ó"óàÐ¢ÂöF—càÐ¢ÆF—càÐ¢Æƒ6Æ74æÖSÒ'FW‡BÓ7†ÂÖBÇFW‡BÓW†ÂföçBÖ&Æ6²FW‡B×6ÆFRÓ“F&³§FW‡B×¦–æ2ÓWW&66RG&6¶–ær×F–v‡FW"ÆVF–ærÖæöæR#ç¶6Æ–VçBææÖWÓÂöƒàÐ¢ÆF—b6Æ74æÖSÒ&fÆW‚—FV×2Ö6VçFW"vÓB×BÓ2#àÐ¢Ç7â6Æ74æÖSÒ&fÆW‚—FV×2Ö6VçFW"vÓãR‚Ó2’Ó&rÖVÖW&ÆBÓSF&³¦&rÖVÖW&ÆBÓ“ó#FW‡BÖVÖW&ÆBÓcFW‡BÕ³…ÒföçBÖ&Æ6²WW&66R&÷VæFVBÖgVÆÂ#àÐ¢ÆF—b6Æ74æÖSÒ'rÓãR‚ÓãR&÷VæFVBÖgVÆÂ&rÖVÖW&ÆBÓSæ–ÖFR×VÇ6R"óâF—fòæò&F Ð¢Â÷7ãàÐ¢Ç7â6Æ74æÖSÒ'FW‡BÕ³…ÒföçBÖ&öÆBFW‡B×6ÆFRÓCWW&66RG&6¶–ær×v–FW7B#ä4å£¢¶6Æ–VçBæ6ç§ÓÂ÷7ãàÐ¢ÂöF—càÐ¢ÂöF—càÐ¢ÂöF—càÐ¢ÂöF—càÐ¢ÆF—b6Æ74æÖSÒ&fÆW‚vÓ2#àÐ¢Æ'WGFöâ6Æ74æÖSÒ'‚Ó‚’ÓB&r×v†—FRF&³¦&r×¦–æ2Ó“&÷&FW"&÷&FW"×6ÆFRÓ#F&³¦&÷&FW"×¦–æ2Óƒ&÷VæFVBÓ'†ÂföçBÖ&Æ6²WW&66RFW‡BÕ³…ÒG&6¶–ær×v–FW7BFW‡B×6ÆFRÓcF&³§FW‡B×¦–æ2ÓC†÷fW#¦&÷&FW"ÖVÖW&ÆBÓSG&ç6—F–öâÖÆÂ7F—fS§66ÆRÓ“R#äVF—F"6F7G&óÂö'WGFöãàÐ¢ÂöF—càÐ¢ÂöF—càÐ Ð¢ÆF—b6Æ74æÖSÒ&w&–Bw&–BÖ6öÇ2ÓÆrÆw&–BÖ6öÇ2Ó2vÓ‚#àÐ¢ÆF—b6Æ74æÖSÒ&ÆrÆ6öÂ×7âÓ76R×’Ó‚#àÐ¢ÆF—b6Æ74æÖSÒ&&r×v†—FRF&³¦&r×¦–æ2Ó“&÷VæFVBÓ'†Â&÷&FW"&÷&FW"×6ÆFRÓ#F&³¦&÷&FW"×¦–æ2Óƒ6†F÷r×6ÒÓ‚76R×’Ób#àÐ¢Æƒ26Æ74æÖSÒ'FW‡B×6ÒföçBÖ&Æ6²WW&66RG&6¶–ær×v–FW7BFW‡B×6ÆFRÓC&÷&FW"Ö"&÷&FW"×6ÆFRÓSF&³¦&÷&FW"×¦–æ2Óƒ"ÓB#ä”ädõ$Ô8}L‘”½¹Ñ…Ñ¼ð½ Ìø4(€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰ÍÁ…”µä´Ðˆø4(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµÍÑ…ÉÐ…À´Ðˆø4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰À´È‰œµÍ±…Ñ”´ÔÀ‘…É¬é‰œµé¥¹Œ´àÀÀÉ½Õ¹‘•µ±œÑ•áÐµÍ±…Ñ”´ÐÀÀˆøñ5…ÁA¥¸±…ÍÍ9…µ”õ‰Ü´Ð ´Ðˆ€¼øð½‘¥Øø4(€€€€€€€€€€€€€€€€ñ‘¥Øø4(€€€€€€€€€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰Ñ•áÐµlÄÁÁát™½¹Ðµ‰±…¬Ñ•áÐµÍ±…Ñ”´ÐÀÀÕÁÁ•É…Í”ˆù1½…±¥é‡Ÿ¼ð½Àø4(€€€€€€€€€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰Ñ•áÐµáÌ™½¹Ðµ‰½±Ñ•áÐµÍ±…Ñ”´ÜÀÀ‘…É¬éÑ•áÐµé¥¹Œ´ÌÀÀ±•…‘¥¹œµÉ•±…á…‘¼ˆùí±¥•¹Ð¹…‘‘É•ÍÌñð€‰;¼¥¹™½Éµ…‘¼‰ôð½Àø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµÍÑ…ÉÐ…À´Ðˆø4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰À´È‰œµÍ±…Ñ”´ÔÀ‘…É¬é‰œµé¥¹Œ´àÀÀÉ½Õ¹‘•µ±œÑ•áÐµÍ±…Ñ”´ÐÀÀˆøñA¡½¹”±…ÍÍ9…µ”õ‰Ü´Ð ´Ðˆ€¼øð½‘¥Øø4(€€€€€€€€€€€€€€€€ñ‘¥Øø4(€€€€€€€€€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰Ñ•áÐµlÄÁÁát™½¹Ðµ‰±…¬Ñ•áÐµÍ±…Ñ”´ÐÀÀÕÁÁ•É…Í”ˆùQ•±•™½¹”ð½Àø4(€€€€€€€€€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰Ñ•áÐµáÌ™½¹Ðµ‰½±Ñ•áÐµÍ±…Ñ”´ÜÀÀ‘…É¬éÑ•áÐµé¥¹Œ´ÌÀÀˆùí±¥•¹Ð¹Á¡½¹”ñð€ˆ ´´´¤€´´´´€´´´´‰ôð½Àø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµÍÑ…ÉÐ…À´Ðˆø4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰À´È‰œµÍ±…Ñ”´ÔÀ‘…É¬é‰œµé¥¹Œ´àÀÀÉ½Õ¹‘•µ±œÑ•áÐµÍ±…Ñ”´ÐÀÀˆøñ5…¥°±…ÍÍ9…µ”õ‰Ü´Ð ´Ðˆ€¼øð½‘¥Øø4(€€€€€€€€€€€€€€€€ñ‘¥Øø4(€€€€€€€€€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰Ñ•áÐµlÄÁÁát™½¹Ðµ‰±…¬Ñ•áÐµÍ±…Ñ”´ÐÀÀÕÁÁ•É…Í”ˆùµµ…¥°½µ•É¥…°ð½Àø4(€€€€€€€€€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰Ñ•áÐµáÌ™½¹Ðµ‰½±Ñ•áÐµÍ±…Ñ”´ÜÀÀ‘…É¬éÑ•áÐµé¥¹Œ´ÌÀÀˆùí±¥•¹Ð¹•µ…¥°ñð€‰»¼½¹™¥ÕÉ…‘¼‰ôð½Àø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰‰œµÝ¡¥Ñ”‘…É¬é‰œµé¥¹Œ´äÀÀÉ½Õ¹‘•´Éá°‰½É‘•È‰½É‘•ÈµÍ±…Ñ”´ÈÀÀ‘…É¬é‰½É‘•Èµé¥¹Œ´àÀÀÍ¡…‘½ÜµÍ´À´àÍÁ…”µä´Ðˆø4(€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È©ÕÍÑ¥™äµ‰•ÑÝ••¸ˆø4(€€€€€€€€€€€€€€ñ Ì±…ÍÍ9…µ”ô‰Ñ•áÐµÍ´™½¹Ðµ‰±…¬ÕÁÁ•É…Í”ÑÉ…­¥¹œµÝ¥‘•ÍÐÑ•áÐµÍ±…Ñ”´ÐÀÀˆù=	MIYT×ÑTÕU0âQÒPÐTÏÚÏƒBˆÚ\ÔØ]š[™Ó›Ý\È	‰ˆØY\ŒˆÛ\ÜÓ˜[YOXËMM[š[X]K\Ü[ˆ^Y[Y\˜[MLˆÏŸCBˆÙ]ƒBˆ^\™HBˆ˜[YO^Û›Ý\ßCBˆÛÚ[™ÙO^ÊJHOˆÙ]›Ý\ÊK\™Ù]˜[YJ_CBˆXÙZÛ\H’\Ý0ìÜšXÛË™Y™\°ê›˜ÚX\ÈH›Ý\ÈH™YÛØÚXpéðèÛË‹‹ˆƒBˆÛ\ÜÓ˜[YOHËY[M™Ë\Û]KML\šÎ˜™Ë^š[˜ËNML›Ü™\ˆ›Ü™\‹\Û]KLL\šÎ˜›Ü™\‹^š[˜ËN›Ý[™YLžM^^È›Û[YY][HÝ][™K[›Û™H›ØÝ\Îœš[™ËM›ØÝ\Îœš[™ËY[Y\˜[MLÍH™\Ú^™K[›Û™H˜[œÚ][Û‹X[\šÎ^^š[˜ËLŒƒBˆÏƒBˆ]ÛˆBˆÛ˜6Æ–6³×¶†æFÆU6fTæ÷FW7ÐÐ¢F—6&ÆVC×¶—56f–ævä÷FW'ÐÐ¢6Æ74æÖSÒ'rÖgVÆÂ’ÓB&r×6ÆFRÓ“F&³¦&r×¦–æ2ÓƒFW‡B×v†—FR&÷VæFVB×†ÂFW‡BÕ³…ÒföçBÖ&Æ6²WW&66RG&6¶–ær×v–FW7B†÷fW#¦&rÖVÖW&ÆBÓcG&ç6—F–öâÖÆÂF—6&ÆVC¦÷6—G’ÓS#àÐ¢GVÆ—¦"F÷76œ:€Ð¢Âö'WGFöãàÐ¢ÂöF—càÐ¢ÂöF—càÐ Ð¢ÆF—b6Æ74æÖSÒ&ÆrÆ6öÂ×7âÓ"76R×’Ó‚#àÐ¢ÆF—b6Æ74æÖSÒ&&r×v†—FRF&³¦&r×¦–æ2Ó“&÷VæFVBÕ³3'…Ò&÷&FW"&÷&FW"×6ÆFRÓ#F&³¦&÷&FW"×¦–æ2Óƒ6†F÷r×6ÒÓ‚fÆW‚fÆW‚Ö6öÂ‚ÖgVÆÂÖ–âÖ‚Õ³c…Ò#àÐ¢ÆF—b6Æ74æÖSÒ&fÆW‚fÆW‚Ö6öÂÖBÆfÆW‚×&÷rÖBÆ—FV×2Ö6VçFW"§W7F–g’Ö&WGvVVâvÓbÖ"Ó"Ób&÷&FW"Ö"&÷&FW"×6ÆFRÓSF&³¦&r×¦–æ2ÓƒS#àÐ¢ÆF—càÐ¢Æƒ"6Æ74æÖSÒ'FW‡B×†ÂföçBÖ&Æ6²FW‡B×6ÆFRÓ“F&³§FW‡B×¦–æ2ÓfÆW‚—FV×2Ö6VçFW"vÓ2WW&66RG&6¶–ær×F–v‡B#àÐ¢ÆF—b6Æ74æÖSÒ'Ó"&rÖVÖW&ÆBÓSF&³¦&rÖVÖW&ÆBÓSó&÷VæFVB×†Â#ãÄ†&DG&—b6Æ74æÖSÖ'rÓb‚ÓbFW‡BÖVÖW&ÆBÓc"óãÂöF—càÐ¢åUdTÒDRDô5TÔTåDõ0Ð¢Âöƒ#àÐ¢Ç6Æ74æÖSÒ'FW‡BÕ³…ÒföçBÖ&Æ6²FW‡B×6ÆFRÓCWW&66RG&6¶–ær×v–FW7B×BÓ#å&W÷6—L;7&–ò&—fFòFRVF–F÷2R6öçG&F÷3Â÷àÐ¢ÂöF—càÐ Ð¢Æ'WGFöâ Ð¢öæ±¥¬õí…Íå¹Œ€ ¤€ôøì…Ý…¥Ð±•…ÉÉ…™Ð¡¥ñð€ˆˆ¤ìÍ•Ñ%ÍUÁ±½…‘5½‘…±=Á•¸¡ÑÉÕ”¤ìõô4(€€€€€€€€€€€€€€€€€±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È…À´ÌÁà´ØÁä´Ð‰œµ•µ•É…±´ØÀÀ¡½Ù•Èé‰œµ•µ•É…±´ÜÀÀÑ•áÐµÝ¡¥Ñ”É½Õ¹‘•´Éá°™½¹Ðµ‰±…¬ÕÁÁ•É…Í”Ñ•áÐµlÄÁÁátÑÉ…­¥¹œµÝ¥‘•ÍÐÍ¡…‘½Üµ±œÍ¡…‘½Üµ•µ•É…±´ÔÀÀ¼ÈÀÑÉ…¹Í¥Ñ¥½¸µ…±°…Ñ¥Ù”éÍ…±”´äÔˆ4(€€€€€€€€€€€€€€€€ø4(€€€€€€€€€€€€€€€€€€ñUÁ±½…±…ÍÍ9…µ”õ‰Ü´Ð ´Ðˆ€¼ø¹•á…È9½Ù¼4(€€€€€€€€€€€€€€€€ð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à´ÄÍÁ…”µä´Ð½Ù•É™±½Üµäµ…ÕÑ¼ÁÈ´ÈÕÍÑ½´µÍÉ½±±‰…Èˆø4(€€€€€€€€€€€€€€€í™¥±•Ì¹±•¹Ñ €ôôô€À€ü€ 4(€€€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰ µ™Õ±°™±•à™±•àµ½°¥Ñ•µÌµ•¹Ñ•È©ÕÍÑ¥™äµ•¹Ñ•ÈÑ•áÐµ•¹Ñ•È½Á…¥Ñä´ÈÀÁä´ÈÀˆø4(€€€€€€€€€€€€€€€€€€€€ñ¥±•Q•áÐ±…ÍÍ9…µ”ô‰Ü´ÈÀ ´ÈÀµˆ´ØÍÑÉ½­”µlÅtˆ€¼ø4(€€€€€€€€€€€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰™½¹Ðµ‰±…¬ÕÁÁ•É…Í”Ñ•áÐµáÌÑÉ…­¥¹œµlÀ¸É•µtˆù½™É”¥¥Ñ…°Y…é¥¼ð½Àø4(€€€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€¤€è€ 4(€€€€€€€€€€€€€€€€€™¥±•Ì¹µ…À ¡™¥±”¤€ôøì4(€€€€€€€€€€€€€€€€€€€½¹ÍÐÁ…ÉÑÌ€ô™¥±”¹™¥±•}¹…µ”ü¹ÍÁ±¥Ð ‰}}|ˆ¤ñðmtì4(€€€€€€€€€€€€€€€€€€€½¹ÍÐ…ÑÕ…±9…µ”€ôÁ…ÉÑÌ¹±•¹Ñ €ø€È€üÁ…ÉÑÌ¹Í±¥” È¤¹©½¥¸ ‰}}|ˆ¤€è€¡Á…ÉÑÌ¹±•¹Ñ €ø€Ä€üÁ…ÉÑÌ¹Í±¥” Ä¤¹©½¥¸ ‰}}|ˆ¤€è™¥±”¹™¥±•}¹…µ”¤ì4(€€€€€€€€€€€€€€€€€€€½¹ÍÐÙ…±MÑÈ€ô™¥±”¹Ù…±Õ”€ü¹•Ü%¹Ñ°¹9Õµ‰•É½Éµ…Ð ÍÁÐµ	Hœ°ìÍÑå±”è€ÕÉÉ•¹äœ°ÕÉÉ•¹äè€	I0œô¤¹™½Éµ…Ð¡™¥±”¹Ù…±Õ”¤€è¹Õ±°ì4(4(€€€€€€€€€€€€€€€€€€€É•ÑÕÉ¸€ 4(€€€€€€€€€€€€€€€€€€€€€€ñ‘¥Ø­•äõí™¥±”¹¥‘ô±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È©ÕÍÑ¥™äµ‰•ÑÝ••¸À´Ø‰œµÍ±…Ñ”´ÔÀ‘…É¬é‰œµé¥¹Œ´äÔÀ‰½É‘•È‰½É‘•ÈµÍ±…Ñ”´ÄÀÀ‘…É¬é‰½É‘•Èµé¥¹Œ´àÀÀÉ½Õ¹‘•´Íá°¡½Ù•Èé‰½É‘•Èµ•µ•É…±´ÈÀÀÑÉ…¹Í¥Ñ¥½¸µ…±°É½ÕÀˆø4(€€€€€€€€€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È…À´Øˆø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰Ü´ÄÐ ´ÄÐ‰œµÝ¡¥Ñ”‘…É¬é‰œµé¥¹Œ´äÀÀÉ½Õ¹‘•´Éá°™±•à¥Ñ•µÌµ•¹Ñ•È©ÕÍÑ¥™äµ•¹Ñ•ÈÍ¡…‘½ÜµÍ´‰½É‘•È‰½É‘•ÈµÍ±…Ñ”´ÄÀÀ‘…É¬é‰½É‘•Èµé¥¹Œ´àÀÀÉ½ÕÀµ¡½Ù•ÈéÍ…±”´ÄÄÀÑÉ…¹Í¥Ñ¥½¸µÑÉ…¹Í™½É´ˆø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ¥±•Q•áÐ±…ÍÍ9…µ”ô‰Ü´Ü ´ÜÑ•áÐµ•µ•É…±´ØÀÀˆ€¼ø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ‘¥Øø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È…À´Èµˆ´Ä¸Ôˆø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÍÁ…¸±…ÍÍ9…µ”ô‰Áà´ÌÁä´Ä‰œµ•µ•É…±´ØÀÀÑ•áÐµÝ¡¥Ñ”Ñ•áÐµláÁát™½¹Ðµ‰±…¬ÕÁÁ•É…Í”ÑÉ…­¥¹œµÝ¥‘•ÍÐÉ½Õ¹‘•µ™Õ±°ˆùí™¥±”¹…Ñ•½Éäñð€‰•É…°‰ôð½ÍÁ…¸ø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€íÙ…±MÑÈ€˜˜€ñÍÁ…¸±…ÍÍ9…µ”ô‰Áà´ÌÁä´Ä‰œµ•µ•É…±´ÔÀ‘…É¬é‰œµ•µ•É…±´äÀÀ¼ÈÀÑ•áÐµ•µ•É…±´ØÀÀÑ•áÐµláÁát™½¹Ðµ‰±…¬ÕÁÁ•É…Í”ÑÉ…­¥¹œµÝ¥‘•ÍÐÉ½Õ¹‘•µ™Õ±°ˆùíÙ…±MÑÉôð½ÍÁ…¸ùô4(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ Ð±…ÍÍ9…µ”ô‰Ñ•áÐµÍ´™½¹Ðµ‰±…¬Ñ•áÐµÍ±…Ñ”´äÀÀ‘…É¬éÑ•áÐµé¥¹Œ´ÄÀÀÑÉÕ¹…Ñ”µ…àµÜµáÌÕœ•É…Í”ÑÉ…­¥¹œµÑ¥¡Ðˆùí…ÑÕ…±9…µ•ôð½ Ðø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰Ñ•áÐµlåÁát™½¹Ðµ‰±…¬Ñ•áÐµÍ±…Ñ”´ÐÀÀÕÁÁ•É…Í”ÑÉ…­¥¹œµÝ¥‘•ÍÐµÐ´Ä™±•à¥Ñ•µÌµ•¹Ñ•È…À´Èˆø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ…±•¹‘…È±…ÍÍ9…µ”õ‰Ü´Ì ´Ìˆ€¼øí¹•Ü…Ñ”¡™¥±”¹É•…Ñ•‘}…Ð¤¹±½…±•…Ñ•MÑÉ¥¹œ ÁÐµ	Hœ¥ô4(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½Àø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È…À´È½Á…¥Ñä´ÀÉ½ÕÀµ¡½Ù•Èé½Á…¥Ñä´ÄÀÀÑÉ…¹Í¥Ñ¥½¸µ½Á…¥Ñäˆø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸½¹±¥¬õì ¤€ôø¡…¹‘±•½Ý¹±½…¡™¥±”¹™¥±•}¹…µ”°™¥±”¹™¥±•}Á…Ñ ¥ô±…ÍÍ9…µ”ô‰À´Ì‰œµÝ¡¥Ñ”‘…É¬é‰œµé¥¹Œ´àÀÀÑ•áÐµÍ±…Ñ”´ÐÀÀ¡½Ù•ÈéÑ•áÐµ•µ•É…±´ØÀÀÉ½Õ¹‘•µá°Í¡…‘½ÜµÍ´‰½É‘•È‰½É‘•ÈµÍ±…Ñ”´ÄÀÀ‘…É¬é‰½É‘•Èµé¥¹Œ´àÀÀˆøñ½Ý¹±½…±…ÍÍ9…µ”õ‰Ü´Ð ´Ðˆ€¼øð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸½¹±¥¬õì ¤€ôø¡…¹‘±•¥±••±•Ñ”¡™¥±”¹™¥±•}¹…µ”°™¥±”¹™¥±•}Á…Ñ °™¥±”¹¥¥ô±…ÍÍ9…µ”ô‰À´Ì‰œµÝ¡¥Ñ”‘…É¬é‰œµé¥¹Œ´àÀÀÑ•áÐµÍ±…Ñ”´ÐÀÀ¡½Ù•ÈéÑ•áÐµÉ•´ÔÀÀÉ½Õ¹‘•µá°Í¡…‘½ÜµÍ´‰½É‘•È‰½É‘•ÈµÍ±…Ñ”´ÄÀÀ‘…É¬é‰½É‘•Èµé¥¹Œ´àÀÀˆøñQÉ…Í È±…ÍÍ9…µ”ô‰Ü´Ð ´Ðˆ€¼øð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€€€€€¤4(€€€€€€€€€€€€€€€€€ô¤4(€€€€€€€€€€€€€€€€¥ô4(€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€ð½‘¥Øø4(€€€€€€ð½‘¥Øø4(4(€€€€€€ñ¹¥µ…Ñ•AÉ•Í•¹”ø4(€€€€€€€í¥ÍUÁ±½…‘5½‘…±=Á•¸€˜˜€ 4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™¥á•¥¹Í•Ð´ÀèµlÈÀÁt™±•à¥Ñ•µÌµ•¹Ñ•È©ÕÍÑ¥™äµ•¹Ñ•ÈÀ´Ðˆø4(€€€€€€€€€€€€ñµ½Ñ¥½¸¹‘¥Ø¥¹¥Ñ¥…°õíì½Á…¥Ñäè€Àõô…¹¥µ…Ñ”õíì½Á…¥Ñäè€Äõô•á¥Ðõíì½Á…¥Ñäè€Àõô½¹±¥¬õì ¤€ôøÍ•Ñ%ÍUÁ±½…‘5½‘…±=Á•¸¡™…±Í”¥ô±…ÍÍ9…µ”ô‰…‰Í½±ÕÑ”¥¹Í•Ð´À‰œµÍ±…Ñ”´äÀÀ¼àÀ‰…­‘É½Àµ‰±ÕÈµá°ˆ€¼ø4(€€€€€€€€€€€€ñµ½Ñ¥½¸¹‘¥Ø€4(€€€€€€€€€€€€€¥¹¥Ñ¥…°õíì½Á…¥Ñäè€À°Í…±”è€À¸ä°äè€ÈÀõô4(€€€€€€€€€€€€€…¹¥µ…Ñ”õíì½Á…¥Ñäè€Ä°Í…±”è€Ä°äè€Àõô4(€€€€€€€€€€€€€•á¥Ðõíì½Á…¥Ñäè€À°Í…±”è€À¸ä°äè€ÈÀõô4(€€€€€€€€€€€€€±…ÍÍ9…µ”ô‰‰œµÝ¡¥Ñ”‘…É¬é‰œµé¥¹Œ´äÀÀÉ½Õ¹‘•µlÐáÁát‰½É‘•È‰½É‘•ÈµÝ¡¥Ñ”¼ÈÀÍ¡…‘½Ü´Éá°Üµ™Õ±°µ…àµÜµµÉ•±…Ñ¥Ù”è´ÄÀ½Ù•É™±½Üµ¡¥‘‘•¸ˆ4(€€€€€€€€€€€€ø4(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰À´ÄÀ‰½É‘•Èµˆ‰½É‘•ÈµÍ±…Ñ”´ÔÀ‘…É¬é‰½É‘•Èµé¥¹Œ´àÔÀ™±•à¥Ñ•µÌµ•¹Ñ•È©ÕÍÑ¥™äµ‰•ÑÝ••¸ˆø4(€€€€€€€€€€€€€€€€ñ‘¥Øø4(€€€€€€€€€€€€€€€€€€€ñ Ì±…ÍÍ9…µ”ô‰Ñ•áÐµá°™½¹Ðµ‰±…¬Ñ•áÐµÍ±…Ñ”´äÀÀ‘…É¬éÑ•áÐµé¥¹Œ´ÄÀÀÕÁÁ•É…Í”ÑÉ…­¥¹œµÑ¥¡Ñ•È±•…‘¥¹œµ¹½¹”ˆù¹•á…È½Õµ•¹Ñ¼ð½ Ìø4(€€€€€€€€€€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰Ñ•áÐµlÄÁÁát™½¹Ðµ‰±…¬Ñ•áÐµÍ±…Ñ”´ÐÀÀÕÁÁ•É…Í”ÑÉ…­¥¹œµÝ¥‘•ÍÐµÐ´ÄˆùUÁ±½…M•ÕÉ¼Á…É„9ÕÙ•´ð½Àø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸½¹±¥¬õì ¤€ôøÍ•Ñ%ÍUÁ±½…‘5½‘…±=Á•¸¡™…±Í”¥ô±…ÍÍ9…µ”ô‰À´Ì‰œµÍ±…Ñ”´ÔÀ‘…É¬é‰œµé¥¹Œ´àÀÀÉ½Õ¹‘•´Éá°Ñ•áÐµÍ±…Ñ”´ÐÀÀ¡½Ù•ÈéÑ•áÐµÉ•´ÔÀÀÑÉ…¹Í¥Ñ¥½¸µ…±°ˆøñ`±…ÍÍ9…µ”ô‰Ü´Ô ´Ôˆ¼øð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰À´ÄÀÍÁ…”µä´àˆø4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰ÍÁ…”µä´Ðˆø4(€€€€€€€€€€€€€€€€€€ñ±…‰•°±…ÍÍ9…µ”ô‰Ñ•áÐµlåÁát™½¹Ðµ‰±…¬ÕÁÁ•É…Í”Ñ•áÐµÍ±…Ñ”´ÐÀÀÑÉ…­¥¹œµÝ¥‘•ÍÐÁà´ÈˆùµÁÉ•Í„‘¼A•‘¥‘¼ð½±…‰•°ø4(€€€€€€€€€€€€€€€€€íÅ¥ÍÉ•…Ñ¥¹…Ñ•½Éä€ü€ 4(€€€€€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à…À´ÈÀ´È‰œµÍ±…Ñ”´ÔÀ‘…É¬é‰œµé¥¹Œ´äÔÀÉ½Õ¹‘•´Íá°‰½É‘•È‰½É‘•ÈµÍ±…Ñ”´ÄÀÀ‘…É¬é‰½É‘•Èµé¥¹Œ´àÀÀˆø4(€€€€€€€€€€€€€€€€€€€€€€ñÍ•±•Ð€4(€€€€€€€€€€€€€€€€€€€€€€€Ù…±Õ”õíÍ•±•Ñ•‘…Ñ•½Éåô4(€€€€€€€€€€€€€€€€€€€€€€€½¹¡…¹”õì¡”¤€ôøÍ•ÑM•±•Ñ•‘…Ñ•½Éä¡”¹Ñ…É•Ð¹Ù…±Õ”¥ô4(€€€€€€€€€€€€€€€€€€€€€€€±…ÍÍ9…µ”ô‰™±•à´Ä‰œµÑÉ…¹ÍÁ…É•¹ÐÁà´ÐÁä´ÈÑ•áÐµáÌ™½¹Ðµ‰±…¬ÕÁÁ•É…Í”½ÕÑ±¥¹”µ¹½¹”Ñ•áÐµÍ±…Ñ”´äÀÀ‘…É¬éÑ•áÐµé¥¹Œ´ÄÀÀˆ4(€€€€€€€€€€€€€€€€€€€€€€ø4(€€€€€€€€€€€€€€€€€€€€€€€€ñ½ÁÑ¥½¸Ù…±Õ”ôˆˆ‘¥Í…‰±•ùM1%=9H5AIMð½½ÁÑ¥½¸ø4(€€€€€€€€€€€€€€€€€€€€€€€í…±±Ù…¥±…‰±•…Ñ•½É¥•Ì¹µ…À¡…Ð€ôø€ñ½ÁÑ¥½¸­•äõí…ÑôÙ…±Õ”õí…Ñôùí…Ñôð½½ÁÑ¥½¸ø¥ô4(€€€€€€€€€€€€€€€€€€€€€€ð½Í•±•Ðø4(€€€€€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸½¹±¥¬õì ¤€ôøìÍ•Ñ9•Ý…Ñ•½Éå9…µ” ˆˆ¤ìÍ•Ñ%ÍÉ•…Ñ¥¹…Ñ•½Éä¡ÑÉÕ”¤ìõô±…ÍÍ9…µ”ô‰À´Ì‰œµ•µ•É…±´ØÀÀÑ•áÐµÝ¡¥Ñ”É½Õ¹‘•´Éá°ˆÑåÁ”ô‰‰ÕÑÑ½¸ˆøñA±ÕÌ±…ÍÍ9…µ”ô‰Ü´Ð ´Ðˆ€¼øð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€€€¤€è€ 4(€€€€€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à…À´Èˆø4(€€€€€€€€€€€€€€€€€€€€€€ñ¥¹ÁÕÐ€4(€€€€€€€€€€€€€€€€€€€€€€€ÑåÁ”ô‰Ñ•áÐˆ€4(€€€€€€€€€€€€€€€€€€€€€€€Ù…±Õ”õí¹•Ý…Ñ•½Éå9…µ•ô4(€€€€€€€€€€€€€€€€€€€€€€€½¹¡…¹”õì¡”¤€ôøÍ•Ñ9•Ý…Ñ•½Éå9…µ”¡”¹Ñ…É•Ð¹Ù…±Õ”¥ô4(€€€€€€€€€€€€€€€€€€€€€€€½¹-•å½Ý¸õì¡”¤€ôøì4(€€€€€€€€€€€€€€€€€€€€€€€€€¥˜€¡”¹­•ä€ôôô€¹Ñ•Èœ¤Í…Ù•9•Ý…Ñ•½Éä ¤ì4(€€€€€€€€€€€€€€€€€€€€€€€€€¥˜€¡”¹­•ä€ôôô€Í…Á”œ¤Í•Ñ%ÍÉ•…Ñ¥¹…Ñ•½Éä¡™…±Í”¤ì4(€€€€€€€€€€€€€€€€€€€€€€€õô4(€€€€€€€€€€€€€€€€€€€€€€€Á±…•¡½±‘•Èô‰9½µ”‘„•µÁÉ•Í„¸¸¸ˆ4(€€€€€€€€€€€€€€€€€€€€€€€±…ÍÍ9…µ”ô‰™±•à´ÄÁà´ØÁä´Ð‰œµÍ±…Ñ”´ÔÀ‘…É¬é‰œµé¥¹Œ´äÔÀ‰½É‘•È‰½É‘•Èµ•µ•É…±´ÔÀÀÉ½Õ¹‘•´Íá°Ñ•áÐµáÌ™½¹Ðµ‰±…¬ÕÁÁ•É…Í”½ÕÑ±¥¹”µ¹½¹”ˆ4(€€€€€€€€€€€€€€€€€€€€€€€…ÕÑ½½ÕÌ4(€€€€€€€€€€€€€€€€€€€€€€¼ø4(€€€€€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸½¹±¥¬õíÍ…Ù•9•Ý…Ñ•½Éåô±…ÍÍ9…µ”ô‰Áà´Ø‰œµ•µ•É…±´ØÀÀÑ•áÐµÝ¡¥Ñ”É½Õ¹‘•´Íá°Ñ•áÐµlÄÁÁát™½¹Ðµ‰±…¬ÕÁÁ•É…Í”ÑÉ…­¥¹œµÝ¥‘•ÍÐˆÑåÁ”ô‰‰ÕÑÑ½¸ˆù=,ð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€€€€€¥ô4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰ÍÁ…”µä´Ðˆø4(€€€€€€€€€€€€€€€€€€ñ±…‰•°±…ÍÍ9…µ”ô‰Ñ•áÐµlåÁát™½¹Ðµ‰±…¬ÕÁÁ•É…Í”Ñ•áÐµÍ±…Ñ”´ÐÀÀÑÉ…­¥¹œµÝ¥‘•ÍÐÁà´ÈˆùÉÅÕ¥Ù¼1½…°ð½±…‰•°ø4(€€€€€€€€€€€€€€€€€€ñ¥¹ÁÕÐ€4(€€€€€€€€€€€€€€€€€€€ÑåÁ”ô‰™¥±”ˆ€4(€€€€€€€€€€€€€€€€€€€½¹¡…¹”õì¡”¤€ôø¡…¹‘±•¥±•¡…¹”¡”¹Ñ…É•Ð¹™¥±•Ìü¹lÁtñð¹Õ±°¥ô4(€€€€€€€€€€€€€€€€€€€±…ÍÍ9…µ”ô‰‰±½¬Üµ™Õ±°Ñ•áÐµlÄÁÁát™½¹Ðµ‰½±Ñ•áÐµÍ±…Ñ”´ÔÀÀ™¥±”éµÈ´Ð™¥±”éÁä´Ð™¥±”éÁà´à™¥±”éÉ½Õ¹‘•´Íá°™¥±”é‰½É‘•È°À™¥±”éÑ•áÐµlÄÁÁát™¥±”é™½¹Ðµ‰±…¬™¥±”éÕÁÁ•É…Í”™¥±”éÑÉ…­¥¹œµÝ¥‘•ÍÐ™¥±”é‰œµÍ±…Ñ”´äÀÀ™¥±”éÑ•áÐµÝ¡¥Ñ”¡½Ù•Èé™¥±”é‰œµ•µ•É…±´ØÀÀÑÉ…¹Í¥Ñ¥½¸µ…±°ÕÉÍ½ÈµÁ½¥¹Ñ•Èˆ4(€€€€€€€€€€€€€€€€€€¼ø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰ÍÁ…”µä´Ðˆø4(€€€€€€€€€€€€€€€€€€ñ±…‰•°±…ÍÍ9…µ”ô‰Ñ•áÐµlåÁát™½¹Ðµ‰±…¬ÕÁÁ•É…Í”Ñ•áÐµÍ±…Ñ”´ÐÀÀÑÉ…­¥¹œµÝ¥‘•ÍÐÁà´ÈˆùY…±½ÈQ½Ñ…°‘¼A•‘¥‘¼ð½±…‰•°ø4(€€€€€€€€€€€€€€€€€€ñ¥¹ÁÕÐ€4(€€€€€€€€€€€€€€€€€€€ÑåÁ”ô‰Ñ•áÐˆ€4(€€€€€€€€€€€€€€€€€€€Ù…±Õ”õí½É‘•ÉY…±Õ•ô4(€€€€€€€€€€€€€€€€€€€½¹¡…¹”õì¡”¤€ôøÍ•Ñ=É‘•ÉY…±Õ”¡”¹Ñ…É•Ð¹Ù…±Õ”¹É•Á±…” ½mxÀ´ä°¹t½œ°€œœ¤¥ô4(€€€€€€€€€€€€€€€€€€€Á±…•¡½±‘•Èô‰H€À°ÀÀˆ4(€€€€€€€€€€€€€€€€€€€±…ÍÍ9…µ”ô‰Üµ™Õ±°Áà´àÁä´Ô‰œµÍ±…Ñ”´ÔÀ‘…É¬é‰œµé¥¹Œ´äÔÀ‰½É‘•È‰½É‘•ÈµÍ±…Ñ”´ÄÀÀ‘…É¬é‰½É‘•ÈLC%¹Œ´àÀÀÉ½Õ¹‘•´Íá°Ñ•áÐµÍ´™½¹Ðµ‰±…¬Ñ•áÐµÍ±…Ñ”´äÀÀ‘…É¬éÑ•áÐµé¥¹Œ´ÄÀÀ½ÕÑ±¥¹”µ¹½¹”™½ÕÌéÉ¥¹œµà™½ÕÌéÉ¥¹œµ•µ•É…±´ÔÀÀ¼ÄÀÑÉ…¹Í¥Ñ¥½¸µ…±°ˆ4(€€€€€€€€€€€€€€€€€€¼ø4(€€€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€€€ð½‘¥Øø4(4(€€€€€€€€€€€€€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰À´ÄÀ‰œµÍ±…Ñ”´ÔÀ‘…É¬é‰œµé¥¹Œ´äÔÀ‰½É‘•ÈµÐ‰½É‘•ÈµÍ±…Ñ”´ÄÀÀ‘…É¬é‰½É‘•Èµé¥¹Œ´àÔÀˆø4(€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸€4(€€€€€€€€€€€€€€€€€½¹±¥¬õíÍÕ‰µ¥ÑUÁ±½…‘ô4(€€€€€€€€€€€€€€€€€‘¥Í…‰±•õì…Í•±•Ñ•‘¥±”ñð¥ÍUÁ±½…‘¥¹œñð€…Í•±•Ñ•‘…Ñ•½Éäñð€…½É‘•ÉY…±Õ”ñðÁ…ÉÍ•±½…Ð¡½É‘•ÉY…±Õ”¹É•Á±…” ˆ°ˆ°€ˆ¸ˆ¤¤€ðô€Àñð¥Í¹…±åé¥¹ô4(€€€€€€€€€€€€€€€€€±…ÍÍ9…µ”ô‰Üµ™Õ±°Áä´Ø‰œµ•µ•É…±´ØÀÀÑ•áÐµÝ¡¥Ñ”É½Õ¹‘•µlÌÉÁát™½¹Ðµ‰±…¬ÕÁÁ•É…Í”Ñ•áÐµáÌÑÉ…­¥¹œµlÀ¸É•µtÍ¡…‘½Ü´Éá°Í¡…‘½Üµ•µ•É…±´ÔÀÀ¼ÌÀ¡½Ù•Èé‰œµ•µ•É…±´ÜÀÀÑÉ…¹Í¥Ñ¥½¸µ…±°…Ñ¥Ù”éÍ…±”´äÔ‘¥Í…‰±•é½Á…¥Ñä´ÔÀ™±•à¥Ñ•µÌµ•¹Ñ•È©ÕÍÑ¥™äµ•¹Ñ•È…À´Ðˆø4(€€€€€€€€€€€€€€€€€í¥Í¹…±åé¥¹œ€ü€ 4(€€€€€€€€€€€€€€€€€€€€ðøñ1½…‘•ÈÈ±…ÍÍ9…µ”ô‰Ü´Ô ´Ô…¹¥µ…Ñ”µÍÁ¥¸ˆ€¼ø€ñÍÁ…¸ù¹…±¥Í…¹‘¼…ÉÅÕ¥Ù¼¸¸¸ð½ÍÁ…¸øð½ˆ¼ø4(€€€€€€€€€€€€€€€€€‚H(€è¥ÍUÁ±½…‘¥¹œ€ü€ 4(€€€€€€€€€€€€€€€€€€€€ðøñ1½…‘•ÈÈ±…ÍÍ9…µ”ô‰Ü´Ô ´Ô…¹¥µ…Ñ”µÍÁ¥¸ˆ€¼ø€ñÍÁ…¸ù¹Ù¥…¹‘¼¸¸¸ð½ÍÁ…¸øð¼ø4(€€€€€€€€€€€€€€€€€€¤€è€ 4(€€€€€€€€€€€€€€€€€€€€ðøñUÁ±½…±…ÍÍ9…µ”ô‰Ü´Ô ´Ôˆ€¼ø€ñÍÁ…¸ù¹Ù¥…ÈÉÅÕ¥Ù¼ð½ÍÁ…¸øð¼ø4(€€€€€€€€€€€€€€€€€€¥ô4(€€€€€€€€€€€€€€€€ð½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€€€€€ð½µ½Ñ¥½¸¹‘¥Øø4(€€€€€€€€€€ð½‘¥Øø4(€€€€€€€€¥ô4(€€€€€€ð½¹¥µ…Ñ•AÉ•Í•¹”ø4(€€€€ð½‘¥Øø4(€€¤ì4)ô4(
