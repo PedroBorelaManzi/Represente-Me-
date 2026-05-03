@@ -50,28 +50,7 @@ export default function ClientDetails() {
   const [orderValue, setOrderValue] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  // Persistencia de estado do modal
-  useEffect(() => {
-    const saved = sessionStorage.getItem(`upload_draft_${id}`);
-    if (saved) {
-      const draft = JSON.parse(saved);
-      setSelectedCategory(draft.category || "");
-      setOrderValue(draft.value || "");
-      setIsUploadModalOpen(draft.isOpen || false);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    if (isUploadModalOpen) {
-      sessionStorage.setItem(`upload_draft_${id}`, JSON.stringify({
-        category: selectedCategory,
-        value: orderValue,
-        isOpen: isUploadModalOpen
-      }));
-    } else {
-      sessionStorage.removeItem(`upload_draft_${id}`);
-    }
-  }, [id, selectedCategory, orderValue, isUploadModalOpen]);
+  // Modal state no longer uses sessionStorage
   
   const [clientAppointments, setClientAppointments] = useState<any[]>([]);
 
@@ -105,10 +84,9 @@ export default function ClientDetails() {
       setSelectedCategory(settings.categories?.[0] || "");
 
       // Load Files
-      const { data: filesData } = await supabase.rpc("list_user_files", { u_id: user?.id });
+      const { data: filesData } = await supabase.from("orders").select("*").eq("client_id", id).not("file_name", "is", null).order("created_at", { ascending: false });
       if (filesData) {
-        const clientFiles = filesData.filter((f: any) => f.client_id === id);
-        setFiles(clientFiles);
+        setFiles(filesData);
       }
 
       // Load Appointments
@@ -134,16 +112,14 @@ export default function ClientDetails() {
     if (!window.confirm("Deseja realmente excluir este arquivo?")) return;
     
     try {
-      const { error: storageError } = await supabase.storage
-        .from('client-documents')
-        .remove([filePath]);
-      
+      let storageError = null;
+      if (filePath) {
+        const res = await supabase.storage.from("client_vault").remove([filePath]);
+        storageError = res.error;
+      }
       if (storageError) throw storageError;
 
-      const { error: dbError } = await supabase
-        .from('client_files')
-        .delete()
-        .eq('id', fileId);
+      const { error: dbError } = await supabase.from("orders").delete().eq("id", fileId);
       
       if (dbError) throw dbError;
 
@@ -156,9 +132,7 @@ export default function ClientDetails() {
 
   const handleDownload = async (fileName: string, filePath: string) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('client-documents')
-        .download(filePath);
+      const { data, error } = await supabase.storage.from("client_vault").download(filePath);
       
       if (error) throw error;
       
@@ -185,9 +159,7 @@ export default function ClientDetails() {
       const fileName = `${selectedCategory}___${Date.now()}___${selectedFile.name}`;
       const filePath = `${user.id}/${id}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('client-documents')
-        .upload(filePath, selectedFile);
+      const { error: uploadError } = await supabase.storage.from("client_vault").upload(filePath, selectedFile);
 
       if (uploadError) throw uploadError;
 
@@ -205,29 +177,17 @@ export default function ClientDetails() {
          numericValue = parseFloat(rawVal);
       }
 
-      const { error: dbError } = await supabase
-        .from('client_files')
-        .insert([{
-          user_id: user.id,
-          client_id: id,
-          file_name: fileName,
-          file_path: filePath,
-          category: selectedCategory,
-          value: numericValue || null
-        }]);
+      const { error: dbError } = await supabase.from("orders").insert([{
+        user_id: user.id,
+        client_id: id,
+        value: numericValue,
+        category: selectedCategory,
+        description: "Pedido via Upload: " + selectedFile.name,
+        file_name: fileName,
+        file_path: filePath
+      }]);
 
       if (dbError) throw dbError;
-
-      // Se tem valor, e um pedido! Insere em orders e reseta o alerta do cliente
-      if (numericValue > 0) {
-        await supabase.from('orders').insert([{
-          user_id: user.id,
-          client_id: id,
-          value: numericValue,
-          category: selectedCategory,
-          description: `Pedido via Upload: ${selectedFile.name}`
-        }]);
-      }
 
       toast.success("Arquivo anexado com sucesso!");
       setIsUploadModalOpen(false);
