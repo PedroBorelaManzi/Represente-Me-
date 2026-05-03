@@ -1,5 +1,5 @@
-﻿import { useUpload } from '../contexts/UploadContext';
-ï»¿import React, { useState, useEffect, useMemo } from "react";
+import { useUpload } from '../contexts/UploadContext';
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { 
   User, 
@@ -459,7 +459,7 @@ export default function ClientDetails() {
                    <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-none">Anexar Documento</h3>
                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Upload Seguro para Nuvem</p>
                 </div>
-                <div className=\"flex items-center gap-2\"><button onClick={() => { if(confirm(\"Deseja limpar todos os campos deste rascunho?\")) { clearDraft(id || \"\"); } }} className=\"p-3 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-amber-500 transition-all text-[9px] font-black uppercase tracking-widest flex items-center gap-2\">Limpar</button><button onClick={() => setIsUploadModalOpen(false)} className=\"p-3 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-red-500 transition-all\"><X className=\"w-5 h-5\"/></button></div>
+                <div className="flex items-center gap-2"><button onClick={() => { if(confirm("Deseja limpar todos os campos deste rascunho?")) { clearDraft(id || ""); } }} className="p-3 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-amber-500 transition-all text-[9px] font-black uppercase tracking-widest flex items-center gap-2">Limpar</button><button onClick={() => setIsUploadModalOpen(false)} className="p-3 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-red-500 transition-all"><X className="w-5 h-5"/></button></div>
               </div>
 
               <div className="p-10 space-y-8">
