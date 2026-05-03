@@ -45,7 +45,10 @@ export default function ClientDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { currentFile, setDraft, clearDraft, isProcessing } = useUpload();
+  const { drafts, setDraft, clearDraft } = useUpload();
+  const draft = drafts[id || ""] || { file: null, category: "", value: "", isOpen: false };
+  const currentFile = draft.file;
+  const isProcessing = false; // Temporário se não houver no context
   const [client, setClient] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [files, setFiles] = useState<any[]>([]);
@@ -53,9 +56,9 @@ export default function ClientDetails() {
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadValue, setUploadValue] = useState("");
-  const [uploadCategory, setUploadCategory] = useState("");
+  // draft.isOpen substituído por draft.isOpen
+  const [uploadValue, setUploadValue] = useState(draft.value || "");
+  const [uploadCategory, setUploadCategory] = useState(draft.category || "");
   const [newCategoryName, setNewCategoryName] = useState("");
   const [userCategories, setUserCategories] = useState<string[]>([]);
   const [isSavingCategory, setIsSavingCategory] = useState(false);
@@ -90,6 +93,17 @@ export default function ClientDetails() {
   useEffect(() => {
     loadData();
   }, [id, user]);
+  useEffect(() => {
+    if (uploadValue !== draft.value || uploadCategory !== draft.category) {
+      setDraft(id || "", { value: uploadValue, category: uploadCategory });
+    }
+  }, [uploadValue, uploadCategory]);
+
+  useEffect(() => {
+    if (draft.value !== uploadValue) setUploadValue(draft.value || "");
+    if (draft.category !== uploadCategory) setUploadCategory(draft.category || "");
+  }, [draft.value, draft.category]);
+
 
   const allAvailableCategories = useMemo(() => {
     const categoryMap = new Map();
@@ -182,8 +196,8 @@ export default function ClientDetails() {
       if (dbError) throw dbError;
 
       toast.success("Pedido enviado com sucesso!");
-      clearDraft();
-      setShowUploadModal(false);
+      clearDraft(id || "");
+      setDraft(id || "", { isOpen: false });
       setUploadValue("");
       setUploadCategory("");
       loadData();
@@ -240,10 +254,10 @@ export default function ClientDetails() {
         <div className="flex gap-3">
           <button 
             onClick={() => {
-              clearDraft();
+              clearDraft(id || "");
               setUploadValue("");
               setUploadCategory("");
-              setShowUploadModal(true);
+              setDraft(id || "", { isOpen: true });
             }} 
             className="flex items-center gap-3 px-8 py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-3xl font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-emerald-500/20 transition-all active:scale-95 group"
           >
@@ -399,7 +413,7 @@ export default function ClientDetails() {
       </div>
 
       <AnimatePresence>
-        {showUploadModal && (
+        {draft.isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -410,7 +424,7 @@ export default function ClientDetails() {
               <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl -mr-24 -mt-24" />
               
               <button 
-                onClick={() => setShowUploadModal(false)}
+                onClick={() => setDraft(id || "", { isOpen: false })}
                 className="absolute top-8 right-8 p-3 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors bg-slate-50 dark:bg-zinc-800 rounded-2xl"
               >
                 <X className="w-5 h-5" />
@@ -443,7 +457,7 @@ export default function ClientDetails() {
                           </div>
                           <button 
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); clearDraft(); }}
+                            onClick={(e) => { e.stopPropagation(); clearDraft(id || ""); }}
                             className="text-[10px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest"
                           >
                             Remover Arquivo
@@ -461,7 +475,7 @@ export default function ClientDetails() {
                             className="absolute inset-0 opacity-0 cursor-pointer"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
-                              if (file) setDraft(file);
+                              if (file) setDraft(id || "", { file });
                             }}
                             accept="image/*,.pdf"
                           />
