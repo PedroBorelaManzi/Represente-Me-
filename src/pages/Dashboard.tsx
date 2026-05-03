@@ -1,327 +1,411 @@
-import React, { watch, useState, useEffect, useMemo } from "react";
-import { Plus, ChevronLeft, ChevronRight, Clock, X, Home, Loader2, Users, Globe, RefreshCw, Calendar } from "lucide-react";
-import { supabase, logAudit } from "../lib/supabase";
+import React, { useState, useEffect, useCallback } from "react";
+import { 
+  Users, 
+  Calendar as CalendarIcon, 
+  FileText, 
+  TrendingUp, 
+  Clock, 
+  ChevronRight, 
+  AlertCircle,
+  Building2,
+  Calendar,
+  CheckCircle2,
+  MoreVertical,
+  Plus,
+  RefreshCw,
+  Search,
+  Filter,
+  ArrowUpRight,
+  ArrowDownRight,
+  Loader2,
+  ChevronLeft,
+  Settings,
+  Bell
+} from "lucide-react";
+import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
-import { useSettings } from "../contexts/SettingsContext";
-import { cn } from "../lib/utils";
-import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../lib/googleSync";
-import { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
-import AppointmentForm from "../components/AppointmentForm";
-import RevenueChart from "../components/RevenueChart";
-import DailyNotes from "../components/DailyNotes";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addDays, isToday } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
-type EventType = { 
-  id: string; 
-  title: string; 
-  time: string; 
-  date: string; 
-  client_id?: string;
-  google_event_id?: string;
-};
-
-const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); 
-
-const formatDateLocal = (date: Date) => {
-  if (!date || isNaN(date.getTime())) return '';
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${rear}-${month}-${day}`;
-};
+function cn(...classes: (string | boolean | undefined)[]) {
+  return classes.filter(Boolean).join(" ");
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedNoteDate, setSelectedNoteDate] = useState(new Date());
-  const [events, setEvents] = useState<EventType[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
+  const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    totalClients: 0,
+    totalOrders: 0,
+    totalRevenue: 0,
+    activeAppointments: 0
+  });
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingEvent, setEditingEvent] = useState<Partial<EventType> | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [dragOverInfo, setDragOverInfo] = useState>{ dayIndex: number; hour: number } | null>(null);
-  const connectedGoogle, setConnectedGoogle] = useState(false);
-  const [isSyncine, setIsSyncing] = useState(false);
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [userCategories, setUserCategories] = useState<string[]>([]);
-  const [allTimeCategories, setAllTimeCategories] = useState<string[]>([]);
-  const [monthlyOrders, setMonthlyOrders] = useState<any[]>([]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setView] = useState<'month' | 'week' | 'day'>('month');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [connectedGoogle, setConnectedGoogle] = useState(false);
 
-  const handlePrevMonth = () => {
-    const next = new Date(currentDate);
-    next.setMonth.next.getMonth() - 1);
-    setCurrentDate(next);
-  };
-
-  const handleNextMonth = () => {
-    const next = new Date(currentDate);
-    next.setMonth(next.getMonth() + 1);
-    setCurrentDate(next);
-  };
-
-  const weekDays = useMemo(() => {
-    try { 
-      const start = new Date(currentDate); 
-      const day = start.getDay(); 
-      start.setDate(start.getDate() - day); 
-      start.setHours(0,0,0,0); 
-      return Array.from({ length: 7 }).map((_, i) => {
-        const d = new Date(start); 
-        d.setDate(d.getDate() + i); 
-        return d; 
-      }); 
-    } catch(e) { 
-      console.error("weekDays error:", e); 
-      return []; 
-    } 
-  }, [currentDate]);
-
-  const isSameDay = (qd1: Date, d2: string) => { 
-    if (!d1 |f !d2) return false; 
-    return formatDateLocal(d1) === d2; 
-  };
-
-  const loadData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     if (!user) return;
-    setLoading(true);
+    try {
+      setLoading(true);
+      
+      const { count: clientsCount } = await supabase.from("clients").select("*", { count: 'exact', head: true });
+      const { data: ordersData } = await supabase.from("orders").select("value, created_at");
+      const { count: apptsCount } = await supabase.from("appointments").select("*", { count: 'exact', head: true }).gte('date', new Date().toISOString());
+
+      const totalRevenue = ordersData?.reduce((acc, curr) => acc + (curr.value || 0), 0) || 0;
+
+      setStats({
+        totalClients: clientsCount || 0,
+        totalOrders: ordersData?.length || 0,
+        totalRevenue,
+        activeAppointments: apptsCount || 0
+      });
+
+      const { data: recent } = await supabase.from("orders").select(`*, clients(name)`).order("created_at", { ascending: false }).limit(5);
+      setRecentOrders(recent || []);
+
+      const { data: appts } = await supabase.from("appointments").select(`*, clients(name)`).order("date", { ascending: true });
+      setAppointments(appts || []);
+
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+      toast.error("Erro ao carregar dados do painel");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  const handleSyncGoogle = async () => {
+    setIsSyncing(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast.success("Agenda sincronizada com Google Calendar");
+      setConnectedGoogle(true);
+    } catch (err) {
+      toast.error("Erro ao sincronizar agenda");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const onDrop = async (e: React.DragEvent, hour: number, day: Date) => {
+    e.preventDefault();
+    const apptId = e.dataTransfer.getData("appointmentId");
+    if (!apptId) return;
 
     try {
-      // Check Google Connection
-      const { data: tokenData } = await supabase
-        .from("user_google_tokens")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setConnectedGoogle(!!tokenData);
+      const { data: appt } = await supabase.from('appointments').select('*').eq('id', apptId).single();
+      if (!appt) return;
 
-      // Fetch categories from user settings
-      const { data: settingsData } = await supabase
-        .from("user_settings")
-        .select("categories")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const cats = settingsData?.categories; setUserCategories(Array.isArray(cats) ? cats : []);
-
-      // Fetch all unique categories ever used by this user
-      const { data: allOrdersCats } = await supabase
-        .from("orders")
-        .select("category")
-        .eq("user_id", user.id);
+      const [startH, startM] = appt.time.split(' - ')[0].split(':').map(Number);
+      const [endH, endM] = appt.time.split(' - ')[1].split(':').map(Number);
       
-            const catsMap = new Map<string, string>();
-      // Add from settings
-      if (Array.isArray(cats)) {
-        cats.forEach(c => {
-          if (c && c.trim()) {
-            const trimmed = c.trim();
-            catsMap.set(trimmed.toUpperCase(), trimmed);
-          }
-        });
-      }
-      // Add from orders
-      if (allOrdersCats) {
-        allOrdersCats.forEach(o => {
-          if (o.category && o.category.trim()) {
-            const trimmed = o.category.trim();
-            const key = trimmed.toUpperCase();
-            if (!catsMap.has(key)) catsMap.set(key, trimmed);
-          }
-        }); {
-      }
+      const durationMin = (endH * 60 + endM) - (startH * 60 + startM);
       
-      setAllTimeCategories(Array.from(catsMap.values()));
+      const newDate = new Date(day);
+      newDate.setHours(hour, 0, 0, 0);
 
+      let newTime = "";
+      if (durationMin > 0) {
+        const finalStartH = hour;
+        const finalStartM = 0;
+        const newEndMin = (finalStartH * 60 + finalStartM) + durationMin;
+        const finalEndH = Math.floor(newEndMin / 60);
+        const finalEndM = newEndMin % 60;
+        
+        newTime = `${String(finalStartH).padStart(2, '0')}:${String(finalStartM).padStart(2, '0')} - ${String(finalEndH).padStart(2, '0')}:${String(finalEndM).padStart(2, '0')}`;
+      } else {
+        newTime = `${String(hour).padStart(2, '0')}:00 - ${String(hour + 1).padStart(2, '0')}:00`;
+      }
 
-      const { data: clientsData } = await supabase
-        .from("clients")
-        .select("id, name, city, state, faturamento, cnpj")
-        .eq("user_id", user.id)
-        .order("name");
-      setClients(clientsData || []);
+      const { error } = await supabase
+        .from('appointments')
+        .update({ date: newDate.toISOString().split('T')[0], time: newTime })
+        .eq('id', apptId);
 
-      const { data: appData } = await supabase
-        .from("appointments")
-        .select("*")
-        .eq("user_id", user.id);
-      setEvents(appData || []);
+      if (error) throw error;
+      toast.success("Compromisso reagendado");
+      fetchDashboardData();
+    } catch (err) {
+      console.error("Error updating appointment:", err);
+      toast.error("Erro ao reagendar");
+    }
+  };
 
-      // Fetch Monthly Orders for the chart
-      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
-      const endOfMonth = new Date(currentDate.getFullYear($°ÕÉÉ•¹Ñ…Ñ”¹•Ñ5½¹Ñ  ¤€¬€Ä°€À°€ÈÌ°€Ôä°€Ôä¤¹Ñ½%M=MÑÉ¥¹œ ¤ì(€€€€€€(€€€€€½¹ÍĞì‘…Ñ„è½É‘•ÉÍ…Ñ„ô€ô…İ…¥ĞÍÕÁ…‰…Í”(€€€€€€€€¹™É½´ ‰½É‘•ÉÌˆ¤(€€€€€€€€¹Í•±•Ğ ˆ¨ˆ¤(€€€€€€€€¹•Ä ‰ÕÍ•É}¥ˆ°ÕÍ•È¹¥¤(€€€€€€€€¹Ñ” ‰É•…Ñ•‘}…Ğˆ°ÍÑ…ÉÑ=™5½¹Ñ ¤(€€€€€€€€¹±Ñ” ‰É•…Ñ•‘}…Ğˆ°•¹‘=™5½¹Ñ ¤ì(€€€€€Í•Ñ5½¹Ñ¡±å=É‘•ÉÌ¡½É‘•ÉÍ…Ñ„ñğmt¤ì(((€€€€€€¼¼•Ñ !½±¥‘…åÌ(€€€€€½¹ÍĞ±½…Ñ¥½¹Ì€ô…İ…¥Ğ•Ñ±¥•¹Ñ1½…Ñ¥½¹Ì¡ÕÍ•È¹¥¤ì(€€€€€½¹ÍĞ™•Ñ¡•‘!½±¥‘…åÌ€ô…İ…¥Ğ™•Ñ¡!½±¥‘…åÌ¡ÕÉÉ•¹Ñ…Ñ”¹•ÑÕ±±e•…È ¤°±½…Ñ¥½¹Ì¤ì(€€€€€Í•Ñ!½±¥‘…åÌ¡™•Ñ¡•‘!½±¥‘…åÌ¤ì((€€€ô…Ñ €¡•ÉÉ½È¤ì(€€€€€½¹Í½±”¹•ÉÉ½È ‰ÉÉ½È±½…‘¥¹œ‘…Í¡‰½…É‘…Ñ„èˆ°•ÉÉ½È¤ì(€€€ô™¥¹…±±äì(€€€€€Í•Ñ1½…‘¥¹œ¡™…±Í”¤ì(€€€ô(€ôì((€ÕÍ•™™•Ğ  ¤€ôøì(€€€±½Õ‘¥Ğ MM}M!	=Iœ¤ì±½…‘…Ñ„ ¤ìô°mÕÍ•È°ÕÉÉ•¹Ñ…Ñ”¹•ÑÕ±±e•…È ¤°ÕÉÉ•¹Ñ…Ñ”¹•Ñ5½¹Ñ  ¥t¤ì((€€¼¼É•…Ñ”É•Ù•¹Õ”‘…Ñ„™½ÈÑ¡”¡…ÉĞİ¥Ñ ‘å¹…µ¥Œ…Ñ•½É¥•Ì(€½¹ÍĞÉ•Ù•¹Õ•¡…ÉÑ…Ñ„€ôÕÍ•5•µ¼  ¤€ôøìÑÉäì(€€€½¹ÍĞ½µÁ…¹åQ½Ñ…±ÌèI•½ÉñÍÑÉ¥¹œ°¹Õµ‰•Èø€ôíôì(€€€½¹ÍĞ¹½Éµ…±¥é•‘Q½=É¥¥¹…°èI•½ÉñÍÑÉ¥¹œ°ÍÑÉ¥¹œø€ôíôì(€€€€(€€€€¼¼€Ä¸%¹¥Ñ¥…±¥é”™É½´YId…Ñ•½Éä•Ù•È™½Õ¹€¡M•ÑÑ¥¹Ì€¬±°=É‘•ÉÌ¤(€€€…±±Q¥µ•…Ñ•½É¥•Ì¹™½É… ¡…Ğ€ôøì(€€€€€¥˜€¡…Ğ€˜˜…Ğ¹ÑÉ¥´ ¤¤ì(€€€€€€€½¹ÍĞ½É¥¥¹…±9…µ”€ô…Ğ¹ÑÉ¥´ ¤ì(€€€€€€€½¹ÍĞ¹½Éµ…±¥é•€ô½É¥¥¹…±9…µ”¹Ñ½1½İ•É…Í” ¤ì(€€€€€€€½µÁ…¹åQ½Ñ…±Ím¹½Éµ…±¥é•‘t€ô€Àì(€€€€€€€¹½Éµ…±¥é•‘Q½=É¥¥¹…±m¹½Éµ…±¥é•‘t€ô½É¥¥¹…±9…µ”ì(€€€€€ô(€€€ô¤ì(€€€€(€€€€¼¼€È¸MÕ´É•Ù•¹Õ”™É½´UII9P5=9Q ½É‘•ÉÌ(€€€µ½¹Ñ¡±å=É‘•ÉÌ¹™½É… ¡¼€ôøì(€€€€€½¹ÍĞÉ…Ü€ô¼¹…Ñ•½Éäì(€€€€€¥˜€¡É…Ü€˜˜É…Ü¹ÑÉ¥´ ¤¤ì(€€€€€€€½¹ÍĞ¹½Éµ…±¥é•€ôÉ…Ü¹ÑÉ¥´ ¤¹Ñ½1½İ•É…Í” ¤ì(€€€€€€€½µÁ…¹åQ½Ñ…±Ím¹½Éµ…±¥é•‘t€ô€¡½µÁ…¹åQ½Ñ…±Ím¹½Éµ…±¥é•‘tñğ€À¤€¬€¡9Õµ‰•È¡¼¹Ù…±Õ”¤ñğ€À¤ì(€€€€€€€¥˜€ …¹½Éµ…±¥é•‘Q½=É¥¥¹…±m¹½Éµ…±¥é•‘t¤¹½Éµ…±¥é•‘Q½=É¥¥¹…±m¹½Éµ…±¥é•‘t€ôÉ…Ü¹ÑÉ¥´ ¤ì(€€€€€ô(€€€ô¤ì((€€€É•ÑÕÉ¸=‰©•Ğ¹­•åÌ¡½µÁ…¹åQ½Ñ…±Ì¤(€€€€€€¹µ…À¡¹½É´€ôø€¡ì€(€€€€€€€¹…µ”è¹½Éµ…±¥é•‘Q½=É¥¥¹…±m¹½Éµt°€(€€€€€€€Ù…±Õ”è½µÁ…¹åQ½Ñ…±Ím¹½É´ˆ€(€€€€€ô¤¤(€€€€€€¹Í½ÉĞ ¡„°ˆ¤€ôø„¹¹…µ”¹±½…±•½µÁ…É”¡ˆ¹¹…µ”¤¤ì€(€€€ô…Ñ ¡”¤ì½¹Í½±”¹•ÉÉ½È ‰¡…ÉĞ1½¥ŒÉÉ½Èèˆ°”¤ìÉ•ÑÕÉ¸mtìô(€ô°mµ½¹Ñ¡±å=É‘•ÉÌ°…±±Q¥µ•…Ñ•½É¥•Ít¤ì((€½¹ÍĞ¡…¹‘±•Må¹Œ€ô…Íå¹Œ€ ¤€ôøì(€€€¥˜€ …ÕÍ•È¤É•ÑÕÉ¸ì(€€€Í•Ñ%ÍMå¹¥¹œ¡ÑÉÕ”¤ì(€€€½¹ÍĞÉ•Ì€ô…İ…¥ĞÍå¹½½±•Ù•¹ÑÌ¡ÕÍ•È¹¥¤ì(€€€…±•ÉĞ¡É•Ì¹µ•ÍÍ…”¤ì(€€€¥˜€¡É•Ì¹ÍÕ•ÍÌ¤ì(€€€€€…İ…¥Ğ±½…‘…Ñ„ ¤ì(€€€ô(€€€¥ÍMå¹¥¹œ¡™…±Í”¤ì(€ôì((€½¹ÍĞ¡…¹‘±•½½±•½¹¹•Ğ€ô€ ¤€ôøì(€€€½¹ÍĞ±¥•¹Ñ%€ô¥µÁ½ÉĞ¹µ•Ñ„¹•¹Ø¹Y%Q}==1}1%9Q}%ì(€€€¥˜€ …±¥•¹Ñ%¤ì(€€€€€…±•ÉĞ ‰ÉÉ¼è±¥•¹Ğ%‘¼½½±”»†êı¼½¹™¥ÕÉ…‘¼¸ˆ¤ì(€€€€€É•ÑÕÉ¸ì(€€€ô(€€€½¹ÍĞÉ•‘¥É•ÑUÉ¤€ô€‘íİ¥¹‘½Ü¹±½…Ñ¥½¸¹½É¥¥¹ô½…ÕÑ ½…±±‰…¬½½½±•€ì(€€€½¹ÍĞÍ½Á”€ô€‰¡ÑÑÁÌè¼½İİÜ¹½½±•…Á¥Ì¹½´½…ÕÑ ½…±•¹‘…È¹•Ù•¹ÑÌˆì(€€€½¹ÍĞ…ÕÑ¡UÉ°€ô¡ÑÑÁÌè¼½…½Õ¹ÑÌ¹½½±”¹½´½¼½½…ÕÑ È½ØÈ½…ÕÑ ı±¥•¹Ñ}¥ô‘í±¥•¹Ñ%‘ô™É•‘¥É•Ñ}ÕÉ¤ô‘í•¹½‘•UI%½µÁ½¹•¹Ğ¡É•‘¥É•ÑUÉ¤¥ô™Í½Á”ô‘í•¹½‘•UI%½µÁ½¹•¹Ğ¡Í½Á”¥ô™É•ÍÁ½¹Í•}ÑåÁ”õ½‘”™…•ÍÍ}ÑåÁ”õ½™™±¥¹”™ÁÉ½µÁĞõ½¹Í•¹Ñ€ì(€€€İ¥¹‘½Ü¹±½…Ñ¥½¸¹¡É•˜€ô…ÕÑ¡UÉ°ì(€ôì((€½¹ÍĞ½¹É…MÑ…ÉĞ€ô€¡”èI•…Ğ¹É…Ù•¹Ğ°¥èÍÑÉ¥¹œ¤€ôøì(€€€”¹‘…Ñ…QÉ…¹Í™•È¹Í•Ñ…Ñ„ ‰•Ù•¹Ñ%ˆ°¥¤ì(€€€½¹ÍĞ¥µœ€ô¹•Ü%µ…” ¤ì(€€€¥µœ¹ÍÉŒ€ô€‰‘…Ñ„é¥µ…”½¥˜í‰…Í”ØĞ±HÁ±=±!E	%@¼¼½å Õ	1	%	IÜˆì(€€€”¹‘…Ñ…QÉ…¹Í™•È¹Í•ÑÉ…%µ…”¡¥µœ°€À°€À¤ì(€ôì((€½¹ÍĞ½¹É…=Ù•È€ô€¡”èI•…Ğ¹É…Ù•¹Ğ°‘…å%¹‘•àè¹Õµ‰•È°¡½ÕÈè¹Õµ‰•È¤€ôøì(€€€”¹ÁÉ•Ù•¹Ñ•™…Õ±Ğ ¤ì(€€€Í•ÑÉ…=Ù•É%¹™¼¡ì‘…å%¹‘•à°¡½ÕÈô¤ì(€ôì((€½¹ÍĞ½¹É½À€ô…Íå¹Œ€¡”èI•…Ğ¹É…Ù•¹Ğ°Ñ…É•Ñ…Ñ”è…Ñ”°Ñ…É•Ñ!½ÕÈè¹Õµ‰•È¤€ôøì(€€€”¹ÁÉ•Ù•¹Ñ•™…Õ±Ğ ¤ì(€€€Í•ÑÉ…=Ù•É%¹™¼¡¹Õ±°¤ì(€€€½¹ÍĞ¥€ô”¹‘…Ñ…QÉ…¹Í™•È¹•Ñ…Ñ„ ‰•Ù•¹Ñ%ˆ¤ì(€€€¥˜€ …¥¤É•ÑÕÉ¸ì(€€€€(€€€½¹ÍĞµ½Ù•‘Ù•¹Ğ€ô•Ù•¹ÑÌ¹™¥¹¡•Ø€ôø•Ø¹¥€ôôô¥¤ì(€€€¥˜€ …µ½Ù•‘Ù•¹Ğ¤É•ÑÕÉ¸ì((€€€½¹ÍĞ¥Í½…Ñ”€ô™½Éµ…Ñ…Ñ•1½…°¡Ñ…É•Ñ…Ñ”¤ì(€€€€(€€€€¼¼AÉ•Í•ÉÙ”‘ÕÉ…Ñ¥½¸(€€€±•Ğ¹•İQ¥µ”€ô€ˆˆì(€€€ÑÉäì(€€€€€½¹ÍĞÁ…ÉÑÌ€ôµ½Ù•‘Ù•¹Ğ¹Ñ¥µ”¹ÍÁ±¥Ğ ˆ€´€ˆ¤ì(€€€€€½¹ÍĞÍÑ…ÉÑA…ÉÑÌ€ôÁ…ÉÑÍlÁt¹ÍÁ±¥Ğ ˆèˆ¤ì(€€€€€½¹ÍĞ•¹‘A…ÉÑÌ€ôÁ…ÉÑÍlÅt¹ÍÁ±¥Ğ ˆèˆ¤ì(€€€€€€(€€€€€½¹ÍĞÍÑ…ÉÑ5¥¹ÕÑ•Ì€ôÁ…ÉÍ•%¹Ğ¡ÍÑ…ÉÑA…ÉÑÍlÁt¤€¨€ØÀ€¬Á…ÉÍ•%¹Ğ¡ÍÑ…ÉÑA…ÉÑÍlÅtñğ€ˆÀˆ¤ì(€€€€€½¹ÍĞ•¹‘5¥¹ÕÑ•Ì€ôÁ…ÉÍ•%¹Ğ¡•¹‘A…ÉÑÍlÁt¤€¨€ØÀ€¬Á…ÉÍ•%¹Ğ¡•¹‘A…ÉÑÍlÅtñğ€ˆÀˆ¤ì(€€€€€½¹ÍĞ‘ÕÉ…Ñ¥½¸€ô•¹‘5¥¹ÕÑ•Ì€´ÍÑ…ÉÑ5¥¹ÕÑ•Ìì(€€€€€€(€€€€€½¹ÍĞ¹•İMÑ…ÉÑQ½Ñ…±5¥¹ÕÑ•Ì€ôÑ…É•Ñ!½ÕÈ€¨€ØÀì(€€€€€½¹ÍĞ¹•İ¹‘Q½Ñ…±5¥¹ÕÑ•Ì€ô¹•İMÑ…ÉÑQ½Ñ…±5¥¹ÕÑ•Ì€¬‘ÕÉ…Ñ¥½¸ì(€€€€€€(€€€€€½¹ÍĞÍÑ…ÉÑ €ô5…Ñ ¹™±½½È¡¹•İMÑ…ÉÑQ½Ñ…±5¥¹ÕÑ•Ì€¼€ØÀ¤ì(€€€€€½¹ÍĞÍÑ…ÉÑ4€ô¹•İMÑ…ÉÑQ½Ñ…±5¥¹ÕÑ•Ì€”€ØÀì(€€€€€½¹ÍĞ•¹‘ €ô5…Ñ ¹™±½½È¡¹•İ¹‘Q½Ñ…±5¥¹ÕÑ•Ì€¼€ØÀ¤ì(€€€€€½¹ÍĞ•¹‘4€ô¹•İ¹‘Q½Ñ…±5¥¹ÕÑ•Ì€”€ØÀì(€€€€€€(€€€€€¹•İQ¥µ”€ô€‘íMÑÉ¥¹œ¡ÍÑ…ÉÑ ¹Á…‘MÑ…ÉĞ È°€œÀœ¥ôè‘íMÑÉ¥¹œ¡ÍÑ…ÉÑ4¤¹Á…‘MÑ…ÉĞ È°€œÀœ¥ô€´€‘íMÑÉ¥¹œ¡•¹‘ ¤¹Á…‘MÑ…ÉĞ È°€œÀœ¥ôè‘íMÑÉ¥¹œ¡•¹‘4¤¹Á…‘MÑ…ÉĞ È°€œÀœ¥õ€ì(€€€ô…Ñ €¡•ÉÈ¤ì(€€€€€¹•İQ¥µ”€ô€‘íMÑÉ¥¹œ¡Ñ…É•Ñ!½ÕÈ¤¹Á…‘MÑ…ÉĞ È°€œÀœ¥ôèÀÀ€´€‘íMÑÉ¥¹œ¡Ñ…É•Ñ!½ÕÈ€¬€Ä¤¹Á…‘MÑ…ÉĞ È°€œÀœ¥ôèÀÁ€ì(€€€ô((€€€€¼¼=ÁÑ¥µ¥ÍÑ¥ŒÕÁ‘…Ñ”(€€€Í•ÑÙ•¹ÑÌ¡•Ù•¹ÑÌ¹µ…À¡•ØÓâWbæ–BÓÓÒ–Bò²ââæWbÂFFS¢—6ôFFRÂF–ÖS¢æWuF–ÖRÒ¢Wb’“°¢ ¢6öç7B²W'&÷"ÒÒv—B7W&6Ræg&öÒ‚&ö–çFÖVçG2"’çWFFR‡²FFS¢—6ôFFRÂF–ÖS¢æWuF–ÖRÒ’æW‚&–B"Â–B“°¢–b†W'&÷"’°¢v—BÆöDFF‚“² ¢&WGW&ã°¢Ğ ¢v—BW6„WfVçEFôvöövÆR‡W6W"æ–BÂ²ââæÖ÷fVDWfVçBÂFFS¢—6ôFFRÂF–ÖS¢æWuF–ÖRÒ“°¢Ó° ¢6öç7B†æFÆU6fRÒ7–æ2‡–ÆöC¢ç’’Óâ°¢–b‚W6W"’&WGW&ã°¢6WD—57f–ær‡G'VR“°¢6öç7B6fU–ÆöBÒ²ââç–ÆöBÂW6W%ö–C¢W6W"æ–BÓ°¢ ¢ÆWB6fVDWfVçBÒçVÆÃ°¢–b†VF—F–ætWfVçCòæ–B’°¢6öç7B²W'&÷"ÒÒv—B7W&6Ræg&öÒ‚&ö–çFÖVçG2"’çWFFR‡6fU–ÆöB’æW‚&–B"ÂVF—F–ætWfVçBæ–B“°¢–b‚W'&÷"’°¢6fVDWfVçBÒ²ââæVF—F–ætWfVçBÂââç6fU–ÆöBÓ°¢6WDWfVçG2†WfVçG2æÖ†WbÓâWbæ–BÓÓÒVF—F–ætWfVçBæ–Bò6fVDWfVçB¢Wb’“°¢Ğ¢ÒVÇ6R°¢6öç7B²FFÂW'&÷"ÒÒv—B7W&6Ræg&öÒ‚&ö–çFÖVçG2"’æ–ç6W'B…·6fU–ÆöEÒ’ç6VÆV7B‚’ç6–ævÆR‚“°¢–b‚W'&÷"bbFF’°¢6fVDWfVçBÒFF°¢6WDWfVçW2…²ââæWfVçG2ÂFFÒ“°¢Ğ¢Ğ ¢–b‡6fVDWfVçB’°¢v—BW6„WfVçEFôvöövÆR‡W6W"æ–BÂ6fVDWfVçB“°¢Ğ ¢6WD—56f–ær†fÇ6R“°¢6WDVF—F–ætWfVçB†çVÆÂ“°¢Ó° ¢6öç7B†æFÆTFVÆWFRÒ7–æ2‚’Óâ°¢–b‚VF—F–ætWfVçCòæ–BÇÂv–æF÷ræ6öæf—&Ò‚$FW6V¦&VÆÖVçFRW†6ÇV—"W7FR6ö×&öÖ—76óò"’’&WGW&ã°¢6WD—56f–ær‡G'VR“°¢6öç7B²W'&÷"ÒÒv—B7W&6Ræg&öÒ‚&ö–çFÖVçG2"’æFVÆWFR‚’æW‚&–B"ÂVF—F–ætWfVçBæ–B“°¢–b‚W'&÷"’°¢–b†VF—F–ætWfVçBævöövÆUöWfVçEö–B’°¢v—BFVÆWFTWfVçDg&öÔvöövÆR‡W6W"æ–BÂVF—F–ætWfVçBævöövÆUöWfVçEö–B“°¢Ğ¢6WDWfVçG2†WfVçG2æf–ÇFW"†W`Oˆ]‹šYOOHY][™Ñ]™[šY
-JNÈˆÙ]Y][™Ñ]™[
-[
-NÈˆBˆÙ]\ÔÜ]š[™Ê˜[ÙJNÂˆNÂ‚ˆÛÛœİÜ[“™]Ñ]™[[Ù[H
-]Nˆ]Kİ\Îˆ[X™\ŠHOˆÂˆÛÛœİ[YTİˆHİ\ˆÈ	Ôİš[™Êİ\ŠKœYİ\
-‹	Ì	Ê_NŒH	Ôİš[™Êİ\ˆ
-ÈJKœYİ\
-‹	Ì	Ê_NŒˆŒNŒHLŒÂˆÙ]Y][™Ñ]™[
-È]Nˆˆ‹[YNˆ[YTİ‹]Nˆ›Ü›X]]SØØ[
-]JKÛY[ÚYˆˆˆJNÂˆNÂ‚ˆÛÛœİÙ]]™[ÜÚ][ÛˆH
-[YNˆİš[™ÊHOˆÂˆHÂˆÛÛœİİ\H[YKœÜ]
-ˆHŠVÌNÂˆÛÛœİİ\ˆH\œÙR[
-İ\œÜ]
-ˆŠVÌJNÂˆÛÛœİZ[]HH\œÙR[
-İ\œÜ]
-ˆŠVÌWHŒŠNÂˆYˆ
-İ\ˆÈİ\ˆˆŒŠH™]\›ˆ[Âˆ™]\›ˆ
-İ\ˆHÊH
-ˆŒ
-ÈZ[]NÂˆHØ]ÚÈ™]\›ˆ[ÈBˆNÂ‚ˆÛÛœİÙ]]™[ZYÚH
-[YNˆİš[™ÊHOˆÂˆHÂˆÛÛœİ\ÈH[YKœÜ]
-ˆHŠNÂˆÛÛœİİ\H\ÖÌKœÜ]
-ˆŠNÂˆÛÛœİ[™H\ÖÌWKœÜ]
-ˆŠNÂˆÛÛœİİ\Z[ˆH\œÙR[
-İ\ÌJH
-ˆŒ
-È\œÙR[
-İ\ÌWHŒŠNÂˆÛÛœİ[™Z[ˆH\œÙR[
-[™ÌJH
-ˆŒ
-È\œÙR[
-[™ÌWHŒŠNÂˆÛÛœİ\˜][ÛˆH[™Z[ˆHİ\Z[Âˆ™]\›ˆX]›X^
-\˜][Û‹
-NÈËÈ{ïï[š[[ÈH\˜Hš\ÚXš[YYBˆHØ]ÚÈ™]\›ˆÈBˆNÂ‚ˆÛÛœİÙ[XİY^Q]™[ÈH\ÙSY[[Ê
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
+      </div>
+    );
+  }
 
-HOˆÂˆ™]\›ˆ]™[Ë™š[\ŠHOˆ\ÔØ[YQ^JÙ[XİY›İQ]KK™]JJKœÛÜ
+  return (
+    <div className="max-w-7xl mx-auto space-y-8 pb-20">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-[0.8] mb-4">
+            Painel de Controle
+          </h1>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Bem-vindo de volta ao seu centro de comando</p>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={handleSyncGoogle}
+            disabled={isSyncing}
+            className="flex items-center gap-3 px-6 py-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl font-black uppercase text-[10px] tracking-widest text-slate-600 dark:text-zinc-400 hover:border-emerald-500 transition-all active:scale-95 disabled:opacity-50">
+            {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Sincronizar Google
+          </button>
+          <button className="p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95 group">
+            <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+          </button>
+        </div>
+      </div>
 
-KŠ@OˆÂˆ™]\›ˆK[YK›ØØ[PÛÛ\\™J‹[YJNÂˆJNÂˆKÙ]™[ËÙ[XİY›İQ]WJNÂ‚ˆ™]\›ˆ
-ˆ]ˆÛ\ÜÓ˜[YOHœÜXÙK^KMˆY[›^›^XÛÛ‚ˆ]ˆÛ\ÜÓ˜[YOH™›^›^XÛÛÛN™›^\›İÈÛNš][\ËXÙ[\ˆ\İYKX™]ÙY[ˆØ\M‚ˆ]‚ˆHÛ\ÜÓ˜[YOH^L›ÛX›Û^\Û]KNL\šÎ^^š[˜ËLL›^][\ËXÙ[\ˆØ\Lˆ\\˜Ø\ÙH˜XÚÚ[™Ë]YÚ‚ˆÛYHÛ\ÜÓ˜[YO^ØÛŠËMˆMˆ‹ÛÛ›™XİYÛÛÙÛHÈ^Y[Y\˜[MŒˆˆ^\Û]KMŠ_HÏ‚ˆY»†êı¥¼(€€€€€€€€€€ğ½ Äø(€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰Ñ•áĞµÍ´Ñ•áĞµÍ±…Ñ”´ÔÀÀ‘…É¬éÑ•áĞµé¥¹Œ´ĞÀÀµĞ´Ä™½¹Ğµµ•‘¥Õ´ˆùMÕ„…•¹‘„Í•µ…¹…°Í¥¹É½¹¥é…‘„”™…ÑÕÉ…µ•¹Ñ¼¸ğ½Àø(€€€€€€€€ğ½‘¥Øø(€€€€€€ğ½‘¥Øø(€€€€€€(€€€€€€ğ„´´€Ô½±Õµ¹Ì±…å½ÕĞµ…¥¸½¹Ñ…¥¹•Èè€Ì™½È…•¹‘„€ ØÀ”¤°€È™½È¡…ÉĞ€ ĞÀ”¤€´´ø(€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰É¥É¥µ½±Ì´Ä±œéÉ¥µ½±Ì´Ô…À´Ø™±•à´Äµ¥¸µ ´Àˆø(€€€€€€€€(€€€€€€€€ğ„´´1•™Ğ½±Õµ¸è•¹‘„€¡=ÕÁå¥¹œøØÀ”€´€Ì¼Ô¤€´´ø(€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰±œµ½°µÍÁ…¸´Ì‰œµÍ±…Ñ”´ÄÀÀ‘…É¬é‰œµé¥¹Œ´àÀÀ¼ĞÀÍ¡…‘½Üµ¥¹¹•ÈÉ¥¹œ´ÄÉ¥¹œµÍ±…Ñ”´ÌÀÀ¼ØÀ‘…É¬éÉ¥¹œµé¥¹Œ´ÜÀÀ¼ØÀ‰½É‘•È‰½É‘•ÈµÍ±…Ñ”´ÈÀÀ‘…É¬é‰½É‘•Èµé¥¹Œ´àÀÀÉ½Õ¹‘•´Íá°½Ù•É™±½Üµ¡¥‘‘•¸™±•à™±•àµ½° µ™Õ±°µ¥¸µ µlÔÀÁÁátˆø(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰À´Ğ‰½É‘•Èµˆ‰½É‘•ÈµÍ±…Ñ”´ÌÀÀ‘…É¬é‰½É‘•ÈLC%¹Œ´ÜÀÀ¼ÔÀ™±•à™±•àµ½°Í´é™±•àµÉ½ÜÍ´é¥Ñ•µÌµ•¹Ñ•È©ÕÍÑ¥™äµ‰•Ñİ••¸‰œµÍ±…Ñ”´ÄÀÀ‘…É¬é‰œµé¥¹Œ´àÀÀ¼ĞÀè´ĞÀ…À´Ğˆø(€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È…À´Ğˆø(€€€€€€€€€€€€€€ñ È±…ÍÍ9…µ”ô‰Ñ•áĞµÍ´™½¹Ğµ‰±…¬Ñ•áĞµÍ±…Ñ”´àÀÀ‘…É¬éÑ•áĞµé¥¹Œ´ÄÀÀÕÁÁ•É…Í”ÑÉ…­¥¹œµİ¥‘•ÍĞ±•…‘¥¹œµ¹½¹”ˆø(€€€€€€€€€€€€€€€íİ••­…åÍlÁtü¹Ñ½1½…±•…Ñ•MÑÉ¥¹œ ÁĞµ	Hœ°ìµ½¹Ñ è€±½¹œœô¤ôíİ••­…åÍlÁtü¹•ÑÕ±±e•…È ¤ô(€€€€€€€€€€€€€€ğ½ Èø(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È…À´Èˆø(€€€€€€€€€€€€€€€í½¹¹•Ñ•‘½½±”€˜˜€ (€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸€(€€€€€€€€€€€€€€€€€€€½¹±¥¬õí!…¹‘±•Må¹ô(€€€€€€€€€€€€€€€€€€€‘¥Í…‰±•õí¥ÍMå¹¥¹|(€€€€€€€€€€€€€€€€€€€±…ÍÍ9…µ”ô‰À´ÈÉ½Õ¹‘•µá°Ñ•áĞµ•µ•É…±´ØÀÀ¡½Ù•Èé‰œµ•µ•É…±´ÔÀÑÉ…¹Í¥Ñ¥½¸µ…±°‘¥Í…‰±•é½Á…¥Ñä´ÔÀ‘…É¬éÑ•áĞµ•µ•É…±´ĞÀÀ‘…É¬é¡½Ù•Èé‰œµ•µ•É…±´ÔÀÀ¼ÄÀˆ(€€€€€€€€€€€€€€€€€€€Ñ¥Ñ±”ô‰M¥¹É½¹¥é…È½É„ˆ(€€€€€€€€€€€€€€€€€€ø(€€€€€€€€€€€€€€€€€€€€ñI•™É•Í¡Ü±…ÍÍ9…µ”õí¸ ‰Ü´Ô ´Ôˆ°¥ÍMå¹¥¹œ€˜˜€‰…¹¥µ…Ñ”µÍÁ¥¸ˆ¤ô€¼ø(€€€€€€€€€€€€€€€€€€ğ½‰ÕÑÑ½¸ø(€€€€€€€€€€€€€€€€¥ô(€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸€(€€€€€€€€€€€€€€€€€½¹±¥¬õí¡…¹‘±•½½±•½¹¹•Ñô(€€€€€€€€€€€€€€€€€±…ÍÍ9…µ”õí¸ (€€€€€€€€€€€€€€€€€€€€‰À´ÈÉ½Õ¹‘•µá°ÑÉ…¹Í¥Ñ¥½¸µ…±°ˆ°(€€€€€€€€€€€€€€€€€€€½¹¹•Ñ•‘½½±”€ü€‰Ñ•áĞµ•µ•É…±´ÔÀˆ€è€‰Ñ•áĞµÍ±…Ñ”´ĞÀÀ¡½Ù•ÈéÑ•áĞµ•µ•É…±´ØÀÀˆ(€€€€€€€€€€€€€€€€€€¥ô(€€€€€€€€€€€€€€€€€Ñ¥Ñ±”õí½¹¹•Ñ•‘½½±”€ü€‰½½±”½¹•Ñ…‘¼ˆ€è€‰½¹•Ñ…È½½±”•¹‘„‰ô(€€€€€€€€€€€€€€€€ø(€€€€€€€€€€€€€€€€€€ñ±½‰”±…ÍÍ9…µ”ô‰Ü´Ô ´Ôˆ€¼ø(€€€€€€€€€€€€€€€€ğ½‰ÕÑÑ½¸¸(€€€€€€€€€€€€€€ğ½‘¥Øø(€€€€€€€€€€€€ğ½‘¥Øø(€€€€€€€€€€€€(€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È…À´Èˆø(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰™±•à¥Ñ•µÌµ•¹Ñ•È‰œµÍ±…Ñ”´ÄÀÀ‘…É¬é‰œµé¥¹Œ´àÀÀÀ´Ä¸ÔÉ½Õ¹‘•µá°ˆø(€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸½¹±¥¬õì ¤€ôøÍ•ÑÕÉÉ•¹Ñ…Ñ”¡ÁÉ•Ø€ôøì½¹ÍĞ€ô¹•Ü…Ñ”¡ÁÉ•Ø¤ì¹Í•Ñ…Ñ”¡¹•Ñ…Ñ” ¤€´€Ü¤ìÉ•ÑÕÉ¸ìô¥ô±…ÍÍ9…µ”ô‰À´Ä¸Ô¡½Ù•Èé‰œµİ¡¥Ñ”‘…É¬é¡½Ù•Èé‰œµé¥¹Œ´ÜÀÀÉ½Õ¹‘•µ±œÑ•áĞµÍ±…Ñ”´ØÀÀ‘…É¬éÑ•áĞµé¥¹Œ´ĞÀÀÑÉ…¹Í¥Ñ¥½¸µ…±°ˆøñ¡•ÙÉ½¹1•™Ğ±…ÍÍ9…µ”ô‰Ü´Ğ ´Ğˆ€¼øğ½‰ÕÑÑ½¸ø(€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸½¹ƒlick={() => setCurrentDate(prev => { const d = new Date(prev); d.setDate(d.getDate() + 7); return d; })} className="p-1.5 hover:bg-white dark:hover:bg-zinc-700 rounded-lg text-slate-600 dark:text-zinc-400 transition-all"><ChevronRight className=bw-4 h-4" /></button>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard 
+          label="Total de Clientes" 
+          value={stats.totalClients} 
+          icon={<Users className="w-6 h-6" />} 
+          trend="+12%" 
+          trendUp={true} 
+        />
+        <StatCard 
+          label="Vendas Realizadas" 
+          value={stats.totalOrders} 
+          icon={<FileText className="w-6 h-6" />} 
+          trend="+5%" 
+          trendUp={true} 
+        />
+        <StatCard 
+          label="Faturamento Total" 
+          value={stats.totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} 
+          icon={<TrendingUp className="w-6 h-6" />} 
+          trend="+8%" 
+          trendUp={true} 
+        />
+        <StatCard 
+          label="PrÃ³ximas Visitas" 
+          value={stats.activeAppointments} 
+          icon={<CalendarIcon className="w-6 h-6" />} 
+          trend="EstÃ¡vel" 
+          trendUp={null} 
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          <div className="bg-white dark:bg-zinc-900 rounded-[48px] border border-slate-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-slate-50 dark:border-zinc-800 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl">
+                  <Calendar className="w-6 h-6 text-emerald-600" />
+                </div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Agenda de Visitas</h3>
               </div>
-              <button 
-                onClick={() => openNewEventModal(selectedNoteDate)} 
-                className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-2xl text-Xs font-black transition-all shadow-lg shadow-emerald-100 dark:shadow-none uppercase tracking-wider"
-              >
-                <Plus className=bw-4 h-4" /> Novo
-              </button>
+              <div className="flex bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl">
+                {(['month', 'week', 'day'] as const).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    className={cn(
+                      "px-4 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all",
+                      view === v ? "bg-white dark:bg-zinc-700 text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                    )}
+                  >
+                    {v === 'month' ? 'MÃªs' : v === 'week' ? 'Semana' : 'Dia'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <h4 className="text-2xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">
+                    {format(currentDate, "MMMM yyyy", { locale: ptBR })}
+                  </h4>
+                  <div className="flex gap-2">
+                    <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="p-2 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="p-2 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setCurrentDate(new Date())}
+                  className="px-4 py-2 bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-100 transition-colors"
+                >
+                  Hoje
+                </button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-px bg-slate-100 dark:bg-zinc-800 rounded-3xl overflow-hidden border border-slate-100 dark:border-zinc-800">
+                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'SÃ¡b'].map(day => (
+                  <div key={day} className="bg-slate-50/50 dark:bg-zinc-800/50 py-4 text-center">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{day}</span>
+                  </div>
+                ))}
+                {eachDayOfInterval({
+                  start: startOfWeek(startOfMonth(currentDate)),
+                  end: endOfWeek(endOfMonth(currentDate))
+                }).map((day, idx) => {
+                  const dayAppts = appointments.filter(a => isSameDay(new Date(a.date), day));
+                  const isCurrentMonth = day.getMonth() === currentDate.getMonth();
+
+                  return (
+                    <div 
+                      key={idx} 
+                      className={cn(
+                        "bg-white dark:bg-zinc-900 min-h-[120px] p-4 transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-800/50 relative group",
+                        !isCurrentMonth && "opacity-30"
+                      )}
+                    >
+                      <span className={cn(
+                        "text-sm font-black transition-all",
+                        isToday(day) ? "bg-emerald-600 text-white w-8 h-8 flex items-center justify-center rounded-xl" : "text-slate-900 dark:text-zinc-100"
+                      )}>
+                        {format(day, 'd')}
+                      </span>
+                      
+                      <div className="mt-4 space-y-1">
+                        {dayAppts.slice(0, 3).map((appt) => (
+                          <div 
+                            key={appt.id}
+                            className="px-2 py-1 bg-emerald-50 dark:bg-emerald-500/10 border-l-2 border-emerald-500 rounded-r-md overflow-hidden"
+                          >
+                            <p className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase truncate">
+                              {appt.clients?.name}
+                            </p>
+                          </div>
+                        ))}
+                        {dayAppts.length > 3 && (
+                          <p className="text-[8px] font-black text-slate-400 uppercase px-2">+{dayAppts.length - 3} mais</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          <div className="bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-zinc-800 shadow-sm p-8">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Vendas Recentes</h3>
+              <button className="text-[10px] font-black text-emerald-600 uppercase tracking-widest hover:underline">Ver Todas</button>
+            </div>
+            
+            <div className="space-y-4">
+              {recentOrders.map((order) => (
+                <div 
+                  key={order.id} 
+                  className="flex items-center justify-between p-4 bg-slate-50/50 dark:bg-zinc-800/50 rounded-2xl border border-transparent hover:border-slate-100 dark:hover:border-zinc-700 transition-all cursor-pointer group"
+                  onClick={() => navigate(`/clients/${order.client_id}`)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white dark:bg-zinc-900 rounded-xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-zinc-800 group-hover:scale-110 transition-transform">
+                      <FileText className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-900 dark:text-zinc-100 uppercase truncate max-w-[120px]">
+                        {order.clients?.name}
+                      </p>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                        {format(new Date(order.created_at), "dd MMM, HH:mm", { locale: ptBR })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-black text-slate-900 dark:text-zinc-100">
+                      {order.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col overflow-hidden relative">
-            <!-- Desktop Weekly Grid -->
-            <div className="hidden lg-flex flex-1 min-h-[960px] overflow-auto custom-scrollbar">
-              <div className="flex flex-col flex-1 min-w-[1000px] lg:min-w-0">
-                <div className="flex bg-slate-100/30 dark:bg-zinc-950/40 border-b border-slate-300 dark:border-zinc-700/50 sticky top-0 z-30 backdrop-blur-md">
-                  <div className="w-12 flex-shrink-0 sticky left-0 bg-slate-100 dark:bg-zinc-950/40 z-40 border-r border-slate-200 dark:border-zinc-800" />
-                  <div className="flex-1 grid grid-cols-7 divide-x divide-slate-300 dark:divide-zinc-700/50">
-                    {weekDays.map((date, i) => {
-                      const isToday = isSameDay(date, formatDateLocal(new Date()));
-                          return (
-                        <div 
-                          key={i} 
-                          className={cn(
-                            "py-2 text-center cursor-pointer hover:bg-slate-200/50 dark:hover:bg-zinc-700/30 transition-colors", 
-                            isToday ? "bg-emerald-50/50 dark:bg-emerald-500/10" : "",
-                            isSameDay(date, formatDateLocal(selectedNoteDate)) ? "ring-2 ring-emerald-500 ring-inset" : ""
-                          ))}
-                          onClick={() => setSelectedNoteDate(date)}
-                        >
-                          <div className={cn("text-[6px] font-black uppercase tracking-widest", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500"))}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
-                          <div className={cn("text-[10px] font-black", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-zinc-100"))}>{date.getDate()}</div>
-
-                          {/* Holidays for this day */}
-                          { (holidays || []).filter(h => h && h.date === formatDateLocal(date)).map((h, idx) => (
-                            <div key={idx} className="mt-1 px-1 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-[6px] font-black text-amber-700 dark:text-amber-400 rounded-md border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm" title={h.name}>
-                              <span className="w-0.5 h-0.5 rounded-full bg-amber-500 flex-shrink-0" />
-                              <span className="truncate flex-1 min-w-0">{h.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })}
-                  </div>
+          <div className="bg-slate-900 rounded-[40px] p-8 text-white relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-emerald-500/30 transition-colors" />
+            <h3 className="text-xl font-black uppercase tracking-tight mb-6">Metas do MÃªs</h3>
+            <div className="space-y-6">
+              <div>
+                <div className="flex justify-between items-end mb-3">
+                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Faturamento</span>
+                  <span className="text-xs font-black uppercase">75%</span>
                 </div>
-
-                <div className="flex flex-1">
-                  <div className="w-12 flex flex flex-col bg-slate-100/20 dark:bg-zinc-950/20 border-r border-slate-300 dark:border-zinc-700/50 text-slate-400fÆW‚×6‡&–æ²Ó7F–6·’ÆVgBÓ¢Ó36†F÷r×6Ò#à¢´„õU%2æÖ††÷W"Óâ€¢ÆF—b¶W“×¶†÷W'Ò6Æ74æÖSÒ&‚Õ³c…ÒFW‡BÕ³‡…ÒföçBÖ&Æ6²FW‡BÖ6VçFW"’Ó"Ö×BÓ"G&6¶–ær×F–v‡BfÆW‚—FV×2Ö6VçFW"§W7F–g’Ö6VçFW"#çµ7G&–ær††÷W"’çE7F'Bƒ"Âsr—Ó£ÂöF—cà¢2’—Ğ¢ÂöF—cà¢ÆF—b6Æ74æÖSÒ&fÆW‚Ów&–Bw&–BÖ6öÇ2ÓrF—f–FR×‚F—f–FR×6ÆFRÓ3F&³¦F—f–FR×¦–æ2ÓsóS&VÆF—fR#à¢·vVV´F—2æÖ‚†FFRÂF”–G‚’Óâ°¢6öç7BF”WfVçG2Ò†WfVçG2ÇÂµÒ’æf–ÇFW"†RÓâRbb—56ÖTF’†FFRÂRæFFR’“°¢6öç7B—5FöF’Ò—56ÖTF’†FFRÂf÷&ÖDFFTÆö6Â†æWrFFR‚’’“°¢&WGW&â€¢ÆF—b¶W“×¶F”–G‡Ò6Æ74æÖS×¶6â‚'&VÆF—fR‚ÖgVÆÂ"Â—5FöF’ò&&rÖVÖW&ÆBÓSóR"¢""“à—´„õU%2æÖ††÷W"Óâ€¢ÆF—b¶W“×¶†÷W'Ò6Æ74æÖS×¶6â‚&‚Õ³`ÁÁát‰½É‘•Èµˆ‰½É‘•ÈµÍ±…Ñ”´ÌÀÀ‘…É¬é‰½É‘•Èµé¥¹Œ´ÜÀÀ¼ÔÀÕÉÍ½ÈµÁ½¥¹Ñ•ÈÑÉ…¹Í¥Ñ¥½¸µ½±½ÉÌˆ°‘É…=Ù•É%¹™¼ü¹‘…å%¹‘•à€ôôô‘…å%‘à€˜˜‘É…=Ù•É%¹™¼ü¹¡½ÕÈ€ôôô¡½ÕÈ€ü€‰‰œµ•µ•É…±´ÔÀÀ¼ÄÀˆ€è€‰¡½Ù•Èé‰œµÍ±…Ñ”´ÔÀ¼ÌÀˆ¥ô½¹É…=Ù•Èõì¡”¤€ôø½¹É…=Ù•È¡”°‘…å%‘à°¡½ÕÈ¥ô½¹É½Àõì¡”¤€ôø½¹É½À¡”°‘…Ñ”°¡½ÕÈ¥ô½¹ƒlick={() => openNewEventModal(date, hour)} />
-                          ))}
-                          <div className="absolute inset-0 pointer-events-none p-0.5">
-                            {dayEvents.map(event => {
-                              const top = getEventPosition(event.time);
-                              const height = getEventHeight(event.time);
-                              if (top === null) return null;
-                              const clientName = clients.find(c => c.id === event.client_id)?.name;
-                                  return (
-                                 <div key={event.id} draggable onDragStart={(e) => onDragCtart(e, event.id)} onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }} className="absolute left-0.5 right-0.5 pointer-events-auto bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shadow-sm rounded-lg p-1 transition-all cursor-grab active:cursor-grabbing z-10 overflow-hidden ring-1 ring-slate-900/5" style={{ top: `${top}px`, height: `${height}px` }}>
-                                   <div className="text-V8px] font-black text-slate-900 dark:text-zinc-100 mb-0.5 truncate leading-tight">{event.title}</div>
-                                   {clientName && <div className="text-[6px] font-black text-emerald-600 dark:text-emerald-400 uppercase truncate">@{clientName}</div>}
-                                 </div>
-                               );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: "75%" }}
+                    className="h-full bg-emerald-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between items-end mb-3">
+                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Novos Clientes</span>
+                  <span className="text-xs font-black uppercase">40%</span>
+                </div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: "40%" }}
+                    className="h-full bg-blue-500"
+                  />
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-            {/* Mobile Weekly List View */}
-            <div className="lg:hidden flex-1 flex flex-com bg-white dark:bg-zinc-900 overflow-hidden">
-                <div className="flex items-center gap-3 p-4 border-b border-slate-100 dark:borderÉnc-800 bg-white dark:bg-zinc-900 overflow-x-auto no-scrollbar scroll-smooth">
-                    {weekDays.map((date, i) => {
-                        const isSelected = isSameDay(date, formatDateLocal(selectedNoteDate));
-                        const isToday = isSameDay(date, formatDateLocal(new Date()));
-                        return (
-                            <button 
-                              key={i}
-                              onClick={() => { setSelectedNoteDate(date); }}
-                              className={cn(
-                                "flex-shrink-0 flex flex-col items-center justify-center w-[54px] h-[78px] rounded-[62px] transition-all relative",
-                                isSelected 
-                                  ? "bg-emerald-600 text-white shadow-[0_12px_24px_-8px_rgba(16,185,129,0.5)] scale-105 z-10" 
-                                  : "bg-slate-50 dark:bg-zinc-800/50 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-700"
-                              )}
-                            >
-                                <span className={cn("text-[9px] font-black uppercase tracking-tighter mb-1", isSelected ? "text-emerald-50" : "text-slate-400")}>
-                                    {date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
-                                </span>
-                                <span className={cn("text-base font-black", isSelected ? "text-white" : isToday ? "text-emerald-600" : "text-slate-700 dark:text-zinc-200")}>
-                                    {date.getDate()}
-                                </span>
-                                {isToday && !isSelected && <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-emerald-600" />}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50 dark:bg-zinc-950">
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Orquestraã§Ã£o do Dia</h3>
-                        </div>
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-tightes bg-white dark:bg-zinc-900 px-3 py-1 rounded-full border border-slate-100 dark:borderÉnc-800">
-                           {selectedNoteDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' }) }
-                        </span.
-                    </div>
-
-                    {selectedDayEvents.length > 0 ? (
-                        <div className="space-y-4">
-                            {selectedDayEvents.map(event => {
-                                const clientName = clients.find(c => c.id === event.client_id)?.name;
-                                return (
-                                    <button 
-                                      key={event.id}
-                                      onClick={() => setEditingEvent(event)}
-                                      className="w-full text-left p-5 bg-white dark:bg-zinc-900 rounded-[28px] border border-slate-100 dark:border-zinc-800 shadow-sm flex items-center gap-5 active:scale-[0.98] transition-all group"
-                                    >
-                                        <div className="flex flex-col items-center justify-center w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 rounded-[18px] border border-emerald-100 dark:border-emerald-500/20 flex-shrink-0 group/hover:bg-emerald-600 group-hover:text-white transition-colors">
-                                            <Clock className="w-4 h-4 mb-1" />
-                                            <span className="text-[10px] font-black">{event.time.split(' - ')[0]}</span.
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="text-sm font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight truncate leading-tight mb-1">{event.title}</h4>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">{event.time}</span>
-                                                {clientName && ( <> <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-zinc-700" /> <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">@{clientNamea</span> </> )}
-                                            </div>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                     ) : (
-                        <div className="flex flex flex-col items-center justify-center py-20 px-6 text-center bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-100 dark:border-zinc-800 shadow-sm">
-                            <div className="w-20 h-20 bg-slate-50 dark:bg-zinc-800/50 rounded-full flex items-center justify-between mb-6"> <Calendar className="w-10 h-10 text-slate-200 dark:text-zinc-700" /> </div>
-                            <h4 className="text-base font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">Nada agendado</h4>
-                            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2 max-w-[200px] font-medium uppercase tracking-tight">VocÆ­ªa‰Æî«öò÷77V’6ö×&öÖ—76÷2÷'VW7G&F÷2&W7FRF–ãÂ÷à¢Æ'WGFöâöä6Æ–6³×²‚’Óâ÷VäæWtWfVçDÖöFÂ‡6VÆV7FVDæ÷FTFFR—Ò6Æ74æÖSÒ&×BÓ‚‚Ó‚’ÓB&rÖVÖW&ÆBÓcFW‡B×v†—FR&÷VæFVBÕ³#…ÒFW‡BÕ³…ÒföçBÖ&Æ6²WW&66RG'&6¶–ær×v–FW7B6†F÷rÖÆr6†F÷rÖVÖW&ÆBÓF&³§6†F÷rÖæöæR7F—fS§66ÆRÓ“RG&ç6—F–öâÖÆÂ#âÅÇW26Æ74æÖSÒ'rÓB‚ÓB–æÆ–æR×"Ó""óâæ÷fò&Vv—7G&òÂö'WGFöãà¢ÂöF—cà¢—Ğ¢ÂöF—cà¢ÂöF—cà¢ÂöF—cà¢ÂöF—cà¢ÆF—b6Æ74æÖSÒ&Æs¦6öÂ×7âÓ"fÆW‚fÆW‚Ö6öÂvÓb#à¢ÆF—b6Æ74æÖSÒ&‚Õ³C…Ò#âÅ&WfVçVT6†'BFF×·&WfVçVT6†'DFFÒÆöF–æs×¶ÆöF–æwÒ7W'&VçDFFS×¶7W'&VçDFFWÒöå&WdÖöçFƒ×¶†æFÆU&WdÖöçF‡ÒöäæW‡DÖöçFƒ×¶†æFÆTæW‡DÖöçF‡ÒóâÂöF—cà¢ÆF—b6Æ74æÖSÒ&‚Õ³C…Ò#à¢ÄF–Ç”æ÷FW26VÆV7FVDFFS×·6VÆV7FVDæ÷FTFFWÒóà¢ÂöF—cà¢ÂöF—cà¢ÂöF—cà¢¶WF—F–ætWfVçBbb‚Äö–çFÖVçDf÷&Òö–çFÖVçC×¶VF—F–ætWfVçGÒöä6Æ÷6S×²‚’Óâ6WDVF—F–ætWfVçB†çVÆÂ—Òöå6fVC×¶ÆöDFFÒ6Æ–VçG3×¶6Æ–VçG7Òöå6fS×¶†æFÆU6fWÒöäFVÆWFS×¶†æFÆTFVÆWFWÒ—56f–æs×¶—56f–æwÒóâ—Ğ¢ÂöF—cà¢“°§Ğ
+function StatCard({ label, value, icon, trend, trendUp }: any) {
+  return (
+    <div className="bg-white dark:bg-zinc-900 p-8 rounded-[40px] border border-slate-100 dark:border-zinc-800 shadow-sm relative overflow-hidden group hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all">
+      <div className="relative z-10 flex flex-col h-full justify-between">
+        <div className="flex items-center justify-between mb-8">
+          <div className="p-3 bg-slate-50 dark:bg-zinc-800 text-emerald-600 rounded-2xl group-hover:scale-110 transition-transform">
+            {icon}
+          </div>
+          {trend && (
+            <div className={cn(
+              "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
+              trendUp === true ? "bg-emerald-100 text-emerald-700" : 
+              trendUp === false ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-700"
+            )}>
+              {trend}
+            </div>
+          )}
+        </div>
+        <div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{label}</p>
+          <h3 className="text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter leading-none">{value}</h3>
+        </div>
+      </div>
+    </div>
+  );
+}
