@@ -48,7 +48,42 @@ export default function EmailClient() {
   const [replySubject, setReplySubject] = useState("");
 
   // Search State
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");`n  const [resolvedBody, setResolvedBody] = useState("");
+
+  // 5. Resolve Inline Images (cid:)
+  useEffect(() => {
+    if (selectedEmail && selectedEmail.isHtml) {
+      resolveInlineImages(selectedEmail);
+    } else {
+      setResolvedBody("");
+    }
+  }, [selectedEmail]);
+
+  async function resolveInlineImages(email: EmailMessage) {
+    let html = email.fullBody || "";
+    setResolvedBody(html); 
+
+    if (!email.attachments || email.attachments.length === 0 || !user || !selectedAccount) return;
+
+    const inlineAttachments = email.attachments.filter(att => att.contentId && html.includes(`cid:${att.contentId}`));
+    if (inlineAttachments.length === 0) return;
+
+    let updatedHtml = html;
+    let changed = false;
+
+    for (const att of inlineAttachments) {
+       try {
+         const res = await downloadAttachmentFromApi(user.id, selectedAccount.provider, email.id, att.id, selectedAccount.email);
+         if (res.success && res.data) {
+           const base64Data = res.data.replace(/-/g, '+').replace(/_/g, '/');
+           const dataUrl = `data:${att.mimeType};base64,${base64Data}`;
+           updatedHtml = updatedHtml.split(`cid:${att.contentId}`).join(dataUrl);
+           changed = true;
+         }
+       } catch (err) {}
+    }
+    if (changed) setResolvedBody(updatedHtml);
+  }
 
   // 1. Load Connected Accounts
   useEffect(() => {
@@ -573,25 +608,35 @@ export default function EmailClient() {
 
                   <div className="space-y-8">
                     {selectedEmail.isHtml ? (
-                      <div className="bg-white dark:bg-zinc-800 rounded-3xl overflow-hidden border border-slate-100 dark:border-zinc-800 min-h-[300px] shadow-sm">
-                        <iframe
-                          srcDoc={getOptimizedHtml(selectedEmail.fullBody || selectedEmail.preview)}
+                      <div className="bg-white dark:bg-zinc-800 rounded-3xl overflow-hidden border border-slate-100 dark:border-zinc-800 shadow-sm transition-all duration-500">
+                                                <iframe
+                          srcDoc={getOptimizedHtml(resolvedBody || selectedEmail.fullBody || selectedEmail.preview)}
                           title="Email Content"
-                          className="w-full min-h-[400px] md:min-h-[600px] border-none"
-                          sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts"
+                          className="w-full border-none transition-all duration-300"
+                          style={{ height: '200px', minHeight: '100px' }}
+                          sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin"
                           onLoad={(e) => {
                              const iframe = e.currentTarget;
-                             // Delay to ensure rendering is complete
-                             setTimeout(() => {
+                             const updateHeight = () => {
                                if (iframe.contentWindow) {
                                   try {
-                                    const height = iframe.contentWindow.document.documentElement.scrollHeight;
-                                    iframe.style.height = (height + 40) + 'px';
+                                    const body = iframe.contentWindow.document.body;
+                                    const html = iframe.contentWindow.document.documentElement;
+                                    const height = Math.max(
+                                      body.scrollHeight, body.offsetHeight,
+                                      html.clientHeight, html.scrollHeight, html.offsetHeight
+                                    );
+                                    iframe.style.height = (height + 20) + 'px';
                                   } catch (err) {
-                                    iframe.style.height = '800px';
+                                    iframe.style.height = '600px';
                                   }
                                }
-                             }, 100);
+                             };
+                             
+                             updateHeight();
+                             setTimeout(updateHeight, 500);
+                             setTimeout(updateHeight, 1500);
+                             setTimeout(updateHeight, 3000);
                           }}
                         />
                       </div>
@@ -898,3 +943,7 @@ function ComposeBalloon({
     </AnimatePresence>
   );
 }
+
+
+
+

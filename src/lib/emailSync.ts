@@ -20,7 +20,7 @@ export interface EmailMessage {
     id: string;
     filename: string;
     mimeType: string;
-    size: number;
+    size: number; contentId?: string;
   }[];
 }
 
@@ -173,11 +173,15 @@ export async function fetchEmailsFromApi(
               }
               
               if (part.filename && part.body?.attachmentId) {
+                const findPartHeader = (n: string) => part.headers?.find((h: any) => h.name.toLowerCase() === n.toLowerCase())?.value || "";
+                const contentId = findPartHeader("Content-ID").replace(/[<>]/g, "") || findPartHeader("X-Attachment-Id");
+                
                 attachments.push({
                   id: part.body.attachmentId,
                   filename: part.filename,
                   mimeType: part.mimeType,
-                  size: part.body.size || 0
+                  size: part.body.size || 0,
+                  contentId: contentId || undefined
                 });
               }
             });
@@ -376,3 +380,4 @@ function formatTime(dateStr: string) {
   }
   return d.toLocaleDateString([], { day: '2-digit', month: 'short' });
 }
+
