@@ -285,7 +285,8 @@ export default function EmailClient() {
     const style = `
       <style>
         :root { color-scheme: light dark; }
-        html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; overflow: hidden; }
+        html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; }
+        body { display: table; width: 100%; table-layout: fixed; }
         body { 
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
           font-size: 16px; 
@@ -316,7 +317,8 @@ export default function EmailClient() {
         pre, code { white-space: pre-wrap; word-break: break-all; }
         .dark-mode { color: #f4f4f5; background-color: #18181b; }
         @media (max-width: 600px) {
-          html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; overflow: hidden; }
+          html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; }
+        body { display: table; width: 100%; table-layout: fixed; }
         body { padding: 12px; font-size: 15px; }
           .no-mobile-padding { padding: 0 !important; }
         }
@@ -625,16 +627,11 @@ export default function EmailClient() {
                                                           const updateHeight = () => {
                                if (iframe.contentWindow) {
                                   try {
-                                    // Reset to small height to get true scrollHeight
                                     iframe.style.height = "10px";
-                                    const doc = iframe.contentWindow.document;
-                                    const height = Math.max(
-                                      doc.body.scrollHeight, 
-                                      doc.documentElement.scrollHeight
-                                    );
-                                    iframe.style.height = (height + 30) + "px";
+                                    const height = iframe.contentWindow.document.body.getBoundingClientRect().height;
+                                    iframe.style.height = (Math.max(height, 50) + 40) + "px";
                                   } catch (err) {
-                                    iframe.style.height = "600px";
+                                    iframe.style.height = "auto";
                                   }
                                }
                              };
@@ -949,6 +946,8 @@ function ComposeBalloon({
     </AnimatePresence>
   );
 }
+
+
 
 
 
