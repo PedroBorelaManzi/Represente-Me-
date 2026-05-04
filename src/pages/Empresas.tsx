@@ -46,6 +46,11 @@ export default function EmpresasPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [clients, setClients] = useState<any[]>([]);
 
+  const formatCurrency = (val: any) => {
+    const num = Number(val) || 0;
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(num);
+  };
+
   useEffect(() => {
     if (user) loadOrders();
   }, [user]);
@@ -87,7 +92,7 @@ export default function EmpresasPage() {
     setViewDate(d);
   };
 
-  const registerNewClient = async (name, cnpj, address) => {
+  const registerNewClient = async (name: string, cnpj: string, address: string) => {
     const cleanCnpj = cnpj ? cnpj.replace(/\D/g, "") : "";
     const cleanName = name?.trim();
     
@@ -128,7 +133,7 @@ export default function EmpresasPage() {
     return data;
   };
 
-  const handleFileSelect = async (e) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (selectedFiles.length + files.length > 10) {
       toast.error("Você pode enviar no máximo 10 pedidos por vez.");
@@ -171,7 +176,7 @@ export default function EmpresasPage() {
     }
   };
 
-  const removeFile = (index) => {
+  const removeFile = (index: number) => {
     setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
   };
 
@@ -222,7 +227,7 @@ export default function EmpresasPage() {
           await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", cid);
         }
         successCount++;
-      } catch (err) {
+      } catch (err: any) {
         console.error("Erro ao processar arquivo:", item.file.name, err);
         toast.error("Erro no arquivo " + item.file.name + ": " + err.message);
       }
@@ -248,238 +253,7 @@ export default function EmpresasPage() {
   }, [allOrders, viewDate]);
 
   const combinedCategories = useMemo(() => {
-    const catsMap = new Map();
-    if (settings?.categories) {
-      settings.categories.forEach(cat => {
-        if (cat && cat.trim()) {
-          const trimmed = cat.trim();
-          catsMap.set(trimmed.toUpperCase(), trimmed);
-        }
-      });
-    }
-    if (Array.isArray(allOrders)) {
-      allOrders.forEach(o => { 
-        if (o && o.category && o.category.trim()) {
-          const trimmed = o.category.trim();
-          const key = trimmed.toUpperCase();
-          if (!catsMap.has(key)) catsMap.set(key, trimmed);
-        }
-      });
-    }
-    return Array.from(catsMap.values());
-  }, [allOrders, settings?.categories]);
-
-  const catTotals = useMemo(() => {
-    const currentMonthly = monthlyOrders || [];
-    return combinedCategories.reduce((acc, cat) => {
-      acc[cat] = currentMonthly
-        .filter(o => o && o.category && o.category.toLowerCase() === cat.toLowerCase())
-        .reduce((sum, o) => sum + (Number(o.value) || 0), 0);
-      return acc;
-    }, {});
-  }, [combinedCategories, monthlyOrders]);
-
-  const totalGeral = useMemo(() => (monthlyOrders || []).reduce((sum, o) => sum + (Number(o.value) || 0), 0), [monthlyOrders]);
-
-  const ordersToday = useMemo(() => {
-    const today = new Date().toLocaleDateString("en-CA");
-    return (allOrders || []).filter(o => o && o.created_at && o.created_at.startsWith(today)).length;
-  }, [allOrders]);
-
-  const filteredOrders = useMemo(() => {
-    const currentMonthly = monthlyOrders || [];
-    if (selectedCategory === "all") return currentMonthly;
-    return currentMonthly.filter(o => o && o.category && o.category.toLowerCase() === selectedCategory.toLowerCase());
-  }, [selectedCategory, monthlyOrders]);
-
-  const handleUpdateCompany = async () => {
-    if (!managingCompany || !editName.trim()) return;
-    try {
-      const updatedCategories = settings.categories.map(c => c === managingCompany ? editName.trim() : c);
-      await updateSettings({ categories: updatedCategories });
-      await supabase.from("orders").update({ category: editName.trim() }).eq("user_id", user?.id).eq("category", managingCompany);
-      toast.success("Empresa atualizada!");
-      setManagingCompany(null);
-      loadOrders();
-    } catch (err) {
-      toast.error("Erro ao atualizar.");
-    }
-  };
-
-  const handleDeleteCompany = async (name) => {
-    if (!window.confirm("Deseja realmente excluir a empresa " + name + "?")) return;
-    try {
-      const updatedCategories = settings.categories.filter(c => c !== name);
-      await updateSettings({ categories: updatedCategories });
-      toast.success("Empresa removida.");
-      setManagingCompany(null);
-    } catch (err) {
-      toast.error("Erro ao remover.");
-    }
-  };
-
-  const addCategory = async () => {
-    const trimmedCat = newCat.trim();
-    if (!trimmedCat) {
-      toast.error("Por favor, digite o nome da empresa.");
-      return;
-    }
-    try {
-      const currentCategories = settings.categories || [];
-      if (currentCategories.some(c => c.toLowerCase() === trimmedCat.toLowerCase())) {
-        toast.error("Empresa \"" + trimmedCat + "\" já está cadastrada.");
-        return;
-      }
-      await updateSettings({ categories: [...currentCategories, trimmedCat] });
-      toast.success("Empresa \"" + trimmedCat + "\" cadastrada com sucesso!");
-      setIsAddModalOpen(false);
-      setNewCat("");
-    } catch (err) {
-      toast.error("Erro ao cadastrar.");
-    }
-  };
-  return (cleanResCnpj && clientCnpj === cleanResCnpj) || (clientName && clientName === cleanResName);
-        });
-
-        let cid = match?.id;
-        if (!match) {
-          const n = await registerNewClient(item.client, item.cnpj, item.address || "");
-          if (n) cid = n.id;
-        }
-
-        if (!cid) throw new Error("Não foi possível identificar ou cadastrar o cliente.");
-
-        const cleanName = item.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
-        const formattedName = (item.category || 'GERAL') + "___VALOR_" + item.value + "___" + cleanName;
-        const path = user?.id + "/" + cid + "/" + formattedName;
-
-        await supabase.storage.from("client_vault").upload(path, item.file, { upsert: true });
-        await supabase.from("orders").upsert([{ 
-          user_id: user?.id, 
-          client_id: cid, 
-          category: item.category || 'GERAL', 
-          value: parseFloat(item.value), 
-          file_name: formattedName, 
-          file_path: path 
-        }], { onConflict: "client_id,file_path" });
-
-        const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", cid).single();
-        if (clientData) {
-          const fat = clientData.faturamento || {};
-          const updatedFat = { ...fat, [item.category || 'GERAL']: (Number(fat[item.category || 'GERAL'] || 0) + parseFloat(item.value)) };
-          await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", cid);
-        }
-        successCount++;
-      } catch (err) {
-        console.error("Erro ao processar arquivo:", item.file.name, err);
-        toast.error("Erro no arquivo " + item.file.name + ": " + err.message);
-      }
-    }
-
-    if (successCount > 0) {
-      toast.success(successCount + " pedidos processados com sucesso!");
-      loadOrders();
-      setSelectedFiles([]);
-      setIsUploadModalOpen(false);
-    }
-    setIsUploading(false);
-  };
-rom "react";
-import { 
-  Building2, 
-  Plus, 
-  FileText, 
-  ChevronLeft, 
-  ChevronRight, 
-  TrendingUp, 
-  Settings, 
-  X, 
-  Check, 
-  Loader2, 
-  Upload, 
-  ShoppingBag, 
-  ArrowUpRight, 
-  Zap,
-  LayoutGrid
-} from "lucide-react";
-import { supabase } from "../lib/supabase";
-import { useAuth } from "../contexts/AuthContext";
-import { useSettings } from "../contexts/SettingsContext";
-import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
-import { cn } from "../lib/utils";
-
-export default function EmpresasPage() {
-  const { user } = useAuth();
-  const { settings, updateSettings } = useSettings();
-  const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [allOrders, setAllOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [newCat, setNewCat] = useState("");
-  const [viewDate, setViewDate] = useState(new Date());
-  const [managingCompany, setManagingCompany] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-
-  const formatCurrency = (val: any) => {
-    const num = Number(val) || 0;
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(num);
-  };
-
-  useEffect(() => {
-    if (user) loadOrders();
-  }, [user]);
-
-  const loadOrders = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*, client:clients(name)")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setAllOrders(data || []);
-    } catch (err) {
-      console.error("Error loading orders:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const nextMonth = () => {
-    const d = new Date(viewDate);
-    d.setMonth(d.getMonth() + 1);
-    setViewDate(d);
-  };
-
-  const prevMonth = () => {
-    const d = new Date(viewDate);
-    d.setMonth(d.getMonth() - 1);
-    setViewDate(d);
-  };
-
-  const monthlyOrders = useMemo(() => {
-    const month = viewDate.getMonth();
-    const year = viewDate.getFullYear();
-  
-
-
-  return (allOrders || []).filter(o => {
-      if (!o || !o.created_at) return false;
-      const d = new Date(o.created_at);
-      return d.getMonth() === month && d.getFullYear() === year;
-    });
-  }, [allOrders, viewDate]);
-
-    const combinedCategories = useMemo(() => {
     const catsMap = new Map<string, string>();
-    
-    // Primeiro as categorias das configurações
     if (settings?.categories) {
       settings.categories.forEach((cat: string) => {
         if (cat && cat.trim()) {
@@ -488,8 +262,6 @@ export default function EmpresasPage() {
         }
       });
     }
-    
-    // Depois as categorias dos pedidos (apenas se não existirem nas configurações)
     if (Array.isArray(allOrders)) {
       allOrders.forEach(o => { 
         if (o && o.category && o.category.trim()) {
@@ -515,7 +287,7 @@ export default function EmpresasPage() {
   const totalGeral = useMemo(() => (monthlyOrders || []).reduce((sum, o) => sum + (Number(o.value) || 0), 0), [monthlyOrders]);
 
   const ordersToday = useMemo(() => {
-    const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD
+    const today = new Date().toLocaleDateString("en-CA");
     return (allOrders || []).filter(o => o && o.created_at && o.created_at.startsWith(today)).length;
   }, [allOrders]);
 
@@ -525,22 +297,12 @@ export default function EmpresasPage() {
     return currentMonthly.filter(o => o && o.category && o.category.toLowerCase() === selectedCategory.toLowerCase());
   }, [selectedCategory, monthlyOrders]);
 
-  
   const handleUpdateCompany = async () => {
     if (!managingCompany || !editName.trim()) return;
     try {
-      const updatedCategories = settings.categories.map((c: string) => 
-        c === managingCompany ? editName.trim() : c
-      );
+      const updatedCategories = settings.categories.map((c: string) => c === managingCompany ? editName.trim() : c);
       await updateSettings({ categories: updatedCategories });
-      
-      // Update orders if they use this category
-      const { error } = await supabase
-        .from("orders")
-        .update({ category: editName.trim() })
-        .eq("user_id", user?.id)
-        .eq("category", managingCompany);
-      
+      await supabase.from("orders").update({ category: editName.trim() }).eq("user_id", user?.id).eq("category", managingCompany);
       toast.success("Empresa atualizada!");
       setManagingCompany(null);
       loadOrders();
@@ -561,42 +323,27 @@ export default function EmpresasPage() {
     }
   };
 
-  
   const addCategory = async () => {
     const trimmedCat = newCat.trim();
     if (!trimmedCat) {
       toast.error("Por favor, digite o nome da empresa.");
       return;
     }
-    
     try {
       const currentCategories = settings.categories || [];
-      
-      // Check if already exists (case-insensitive)
       if (currentCategories.some((c: string) => c.toLowerCase() === trimmedCat.toLowerCase())) {
         toast.error("Empresa \"" + trimmedCat + "\" já está cadastrada.");
         return;
       }
-
-      console.log("Cadastranão empresa:", trimmedCat);
-      
-      await updateSettings({ 
-        categories: [...currentCategories, trimmedCat] 
-      });
-      
+      await updateSettings({ categories: [...currentCategories, trimmedCat] });
       toast.success("Empresa \"" + trimmedCat + "\" cadastrada com sucesso!");
-      setNewCat("");
       setIsAddModalOpen(false);
-      
-      // Trigger a reload of the categories in the dashboard logic if needed
-      if (typeof loadOrders === 'function') loadOrders();
-      
+      setNewCat("");
+      loadOrders();
     } catch (err) {
-      console.error("Erro ao cadastrar empresa:", err);
-      toast.error("Erro ao salvar no banco de dados.");
+      toast.error("Erro ao cadastrar.");
     }
   };
-
 
   return (
     <div className="flex flex-col gap-6 md:gap-10 pb-20 overflow-x-hidden">
@@ -695,7 +442,6 @@ export default function EmpresasPage() {
               </div>
               <div className="flex items-end justify-between">
                 <p className="text-xl md:text-2xl font-black tracking-tighter">Todas as Empresas</p>
-                
               </div>
             </button>
 
@@ -727,8 +473,8 @@ export default function EmpresasPage() {
                 </div>
               ))}
             </div>
+          </div>
         </div>
-            </div>
 
         <div className="lg:col-span-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-20">
@@ -746,7 +492,7 @@ export default function EmpresasPage() {
                     
                     <div className="flex justify-between items-start mb-4 md:mb-6 relative z-10">
                       <div>
-                        <span className="text-[7px] md:text-[8px] font-black text-slate-400 dark:text-zinc-600 uppercase tracking-[0.2em] mb-1 block">Processamenão</span>
+                        <span className="text-[7px] md:text-[8px] font-black text-slate-400 dark:text-zinc-600 uppercase tracking-[0.2em] mb-1 block">Processamento</span>
                         <span className="text-[10px] md:text-xs font-black text-slate-900 dark:text-zinc-100">{order.created_at ? new Date(order.created_at).toLocaleDateString("pt-BR") : "---"}</span>
                       </div>
                       <div className="text-right">
@@ -759,7 +505,7 @@ export default function EmpresasPage() {
                       <p className="text-[7px] md:text-[8px] font-black text-emerald-400 uppercase tracking-widest leading-none mb-2">Cliente Adquirente</p>
                       <Link to={'/dashboard/clientes/' + order.client_id} className="block">
                         <h4 className="text-sm md:text-base font-black uppercase text-slate-900 dark:text-zinc-100 truncate hover:text-emerald-600 transition-colors leading-tight">
-                          {order.client?.name || "Cliente Desconhecida"}
+                          {order.client?.name || "Cliente Desconhecido"}
                         </h4>
                       </Link>
                     </div>
@@ -780,6 +526,7 @@ export default function EmpresasPage() {
           </div>
         </div>
       </div>
+
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -800,7 +547,7 @@ export default function EmpresasPage() {
           </div>
         )}
 
-                {isUploadModalOpen && (
+        {isUploadModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !isUploading && setIsUploadModalOpen(false)} className="absolute inset-0 bg-slate-900/90 backdrop-blur-2xl" />
              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white dark:bg-zinc-900 p-6 md:p-14 rounded-[40px] md:rounded-[70px] shadow-2xl relative z-10 w-full max-w-5xl h-[85vh] flex flex-col border border-white/10 overflow-hidden">
@@ -836,8 +583,6 @@ export default function EmpresasPage() {
                     </div>
                   ) : (
                     <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-                      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
-                        
                       <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b border-slate-100 dark:border-zinc-800 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 dark:bg-zinc-900/50">
                         <div className="col-span-3">Arquivo</div>
                         <div className="col-span-3">Cliente (IA)</div>
@@ -854,7 +599,6 @@ export default function EmpresasPage() {
                             key={idx} 
                             className="grid grid-cols-12 gap-4 items-center p-4 md:p-6 bg-white dark:bg-zinc-950 rounded-2xl md:rounded-[32px] border border-slate-100 dark:border-zinc-800 group hover:shadow-lg transition-all"
                           >
-                            {/* Arquivo */}
                             <div className="col-span-12 md:col-span-3 flex items-center gap-3">
                               <div className="p-2 bg-slate-50 dark:bg-zinc-900 rounded-lg">
                                 <FileText className="w-4 h-4 text-emerald-600" />
@@ -862,7 +606,6 @@ export default function EmpresasPage() {
                               <p className="text-[10px] font-bold text-slate-900 dark:text-zinc-100 uppercase truncate" title={item.file.name}>{item.file.name}</p>
                             </div>
 
-                            {/* Cliente */}
                             <div className="col-span-12 md:col-span-3">
                               <input 
                                 value={item.client}
@@ -872,7 +615,6 @@ export default function EmpresasPage() {
                               />
                             </div>
 
-                            {/* Representada */}
                             <div className="col-span-12 md:col-span-3">
                               <select 
                                 value={item.category}
@@ -880,14 +622,13 @@ export default function EmpresasPage() {
                                 className="w-full bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl px-3 py-2 text-[10px] font-black uppercase outline-none focus:ring-1 focus:ring-emerald-500"
                               >
                                 <option value="">SELECIONAR...</option>
-                                {settings.categories?.map(cat => (
+                                {settings.categories?.map((cat: string) => (
                                   <option key={cat} value={cat}>{cat}</option>
                                 ))}
                                 <option value="GERAL">GERAL</option>
                               </select>
                             </div>
 
-                            {/* Valor */}
                             <div className="col-span-9 md:col-span-2 relative">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-400">R$</span>
                               <input 
@@ -898,7 +639,6 @@ export default function EmpresasPage() {
                               />
                             </div>
 
-                            {/* Ações */}
                             <div className="col-span-3 md:col-span-1 text-right">
                               {item.status === 'processing' ? (
                                 <Loader2 className="w-4 h-4 animate-spin text-emerald-600 ml-auto" />
@@ -970,5 +710,3 @@ export default function EmpresasPage() {
     </div>
   );
 }
-
-
