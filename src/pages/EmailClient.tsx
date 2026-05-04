@@ -60,7 +60,7 @@ export default function EmailClient() {
     }
   }, [selectedEmail]);
 
-      async function resolveInlineImages(email: EmailMessage) {
+        async function resolveInlineImages(email: EmailMessage) {
     let html = email.fullBody || "";
     setResolvedBody(html); 
     setAttachmentDataUrls({}); // Reset for new email
@@ -89,17 +89,21 @@ export default function EmailClient() {
         const res = await downloadAttachmentFromApi(user.id, selectedAccount.provider, email.id, att.id, selectedAccount.email);
         if (res.success && res.data) {
           const base64Data = res.data.replace(/-/g, "+").replace(/_/g, "/");
-          const dataUrl = `data:${att.mimeType};base64,${base64Data}`;
+          const dataUrl = "data:" + att.mimeType + ";base64," + base64Data;
           
-          setAttachmentDataUrls(prev => ({ ...prev, [att.id]: dataUrl }));
+          setAttachmentDataUrls(prev => {
+            const next = { ...prev };
+            next[att.id] = dataUrl;
+            return next;
+          });
 
           if (att.contentId) {
              const cleanCid = att.contentId.replace(/[<>]/g, "");
              // Replace both direct and URL-encoded versions
-             updatedHtml = updatedHtml.split(`cid:${att.contentId}`).join(dataUrl);
-             updatedHtml = updatedHtml.split(`cid:${cleanCid}`).join(dataUrl);
-             updatedHtml = updatedHtml.split(`cid:${encodeURIComponent(att.contentId)}`).join(dataUrl);
-             updatedHtml = updatedHtml.split(`cid:${encodeURIComponent(cleanCid)}`).join(dataUrl);
+             updatedHtml = updatedHtml.split("cid:" + att.contentId).join(dataUrl);
+             updatedHtml = updatedHtml.split("cid:" + cleanCid).join(dataUrl);
+             updatedHtml = updatedHtml.split("cid:" + encodeURIComponent(att.contentId)).join(dataUrl);
+             updatedHtml = updatedHtml.split("cid:" + encodeURIComponent(cleanCid)).join(dataUrl);
              changed = true;
           }
         }
@@ -978,6 +982,8 @@ function ComposeBalloon({
     </AnimatePresence>
   );
 }
+
+
 
 
 
