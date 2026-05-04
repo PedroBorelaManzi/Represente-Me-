@@ -1,41 +1,40 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { 
-  Building2, 
-  Mail, 
-  Phone, 
+  User, 
   MapPin, 
+  Phone, 
+  Mail, 
+  Building2, 
   Calendar, 
-  FileText, 
   Clock, 
-  Download, 
-  Trash2, 
-  Plus, 
-  History, 
-  CheckCircle2, 
-  AlertCircle,
-  TrendingUp,
-  Target, 
+  TrendingUp, 
+  ArrowLeft,
   ChevronRight,
-  User,
-  ExternalLink,
-  ChevronLeft,
-  Loader2,
-  Filter,
-  ArrowRight,
-  Upload,
+  FileText,
+  Download,
+  Trash2,
+  Plus,
   X,
+  Loader2,
+  HardDrive,
+  Upload,
+  AlertCircle,
+  Briefcase,
+  ExternalLink,
+  CheckCircle2,
   CreditCard,
-  Briefcase
+  Filter
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
+import { useSettings } from "../contexts/SettingsContext";
 import { useUpload } from "../contexts/UploadContext";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import { processOrderFile } from "../lib/orderProcessor";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(" ");
@@ -43,555 +42,544 @@ function cn(...classes: (string | boolean | undefined)[]) {
 
 export default function ClientDetails() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
+  const { settings } = useSettings();
   const { drafts, setDraft, clearDraft } = useUpload();
+  const navigate = useNavigate();
+  
   const draft = drafts[id || ""] || { file: null, category: "", value: "", isOpen: false };
   const currentFile = draft.file;
-  const isProcessing = false; // Temporário se não houver no context
+  
   const [client, setClient] = useState<any>(null);
-  const [orders, setOrders] = useState<any[]>([]);
   const [files, setFiles] = useState<any[]>([]);
-  const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
+  
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-  // draft.isOpen substituído por draft.isOpen
+  const [newCategoryName, setNewCategoryName] = useState("");
+  
+  const [notes, setNotes] = useState("");
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  
+  // Local states for form that sync with draft
   const [uploadValue, setUploadValue] = useState(draft.value || "");
   const [uploadCategory, setUploadCategory] = useState(draft.category || "");
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [userCategories, setUserCategories] = useState<string[]>([]);
-  const [isSavingCategory, setIsSavingCategory] = useState(false);
-
-  const loadData = async () => {
-    if (!id || !user) return;
-    setLoading(true);
-    try {
-      const { data: clientData } = await supabase.from("clients").select("*").eq("id", id).single();
-      if (clientData) setClient(clientData);
-
-      const { data: ordersData } = await supabase.from("orders").select("*").eq("client_id", id).order("created_at", { ascending: false });
-      if (ordersData) setOrders(ordersData || []);
-
-      const { data: filesData } = await supabase.from("orders").select("*").eq("client_id", id).not("file_name", "is", null).order("created_at", { ascending: false });
-      if (filesData) setFiles(filesData || []);
-
-      const { data: apptData } = await supabase.from('appointments').select('*').eq('client_id', id).order('date', { ascending: false });
-      if (apptData) setAppointments(apptData || []);
-
-      const { data: settingsData } = await supabase.from('user_settings').select('categories').eq('user_id', user.id).maybeSingle();
-      if (settingsData) setUserCategories(settingsData.categories || []);
-
-    } catch (err) {
-      console.error("Error loading client data:", err);
-      toast.error("Erro ao carregar dados do cliente");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    loadData();
-  }, [id, user]);
+    if (user && id) {
+      loadClientData();
+    }
+  }, [user, id]);
+
+  // Sync local state to draft
   useEffect(() => {
     if (uploadValue !== draft.value || uploadCategory !== draft.category) {
       setDraft(id || "", { value: uploadValue, category: uploadCategory });
     }
   }, [uploadValue, uploadCategory]);
 
+  // Sync draft to local state (when modal opens or file is processed)
   useEffect(() => {
     if (draft.value !== uploadValue) setUploadValue(draft.value || "");
     if (draft.category !== uploadCategory) setUploadCategory(draft.category || "");
   }, [draft.value, draft.category]);
 
-
-  const allAvailableCategories = useMemo(() => {
-    const categoryMap = new Map();
-    userCategories.forEach(cat => {
-      if (cat) categoryMap.set(cat.toLowerCase().trim(), cat);
-    });
-    orders.forEach(order => {
-      if (order.category) {
-        const normalized = order.category.toLowerCase().trim();
-        if (!categoryMap.has(normalized)) {
-          categoryMap.set(normalized, order.category);
-        }
-      }
-    });
-    return Array.from(categoryMap.values()).sort();
-  }, [userCategories, orders]);
-
-  useEffect(() => {
-    const handleFileProcess = async () => {
-      if (currentFile && !isProcessing) {
-        try {
-          const result = await processOrderFile(currentFile);
-          if (result.value) {
-            setUploadValue(result.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
-          }
-          if (result.category) {
-            setUploadCategory(result.category);
-          }
-        } catch (err) {
-          console.error("Error processing file:", err);
-        }
-      }
-    };
-    handleFileProcess();
-  }, [currentFile, isProcessing]);
-
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim() || !user) return;
-    setIsSavingCategory(true);
+  const loadClientData = async () => {
     try {
-      const updatedCategories = [...userCategories, newCategoryName.trim()];
-      const { error } = await supabase.from('user_settings').upsert({ user_id: user.id, categories: updatedCategories });
-      if (error) throw error;
-      setUserCategories(updatedCategories);
-      setUploadCategory(newCategoryName.trim());
-      setIsCreatingCategory(false);
-      setNewCategoryName("");
-      toast.success("Categoria criada com sucesso!");
+      setLoading(true);
+      // Load Client
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (clientError) throw clientError;
+      setClient(clientData);
+      setNotes(clientData.notes || "");
+
+      // Load Files (Orders with file_path)
+      const { data: ordersData } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('client_id', id)
+        .not('file_path', 'is', null)
+        .order('created_at', { ascending: false });
+      
+      setFiles(ordersData || []);
+
+      // Log access
+      import('../lib/supabase').then(({ logAudit }) => logAudit('ACCESS_CLIENT_DETAILS', { client_id: id, client_name: clientData.name }));
+
     } catch (err) {
-      console.error("Error saving category:", err);
-      toast.error("Erro ao criar categoria");
+      console.error("Error loading client details:", err);
+      toast.error("Erro ao carregar dados do cliente.");
     } finally {
-      setIsSavingCategory(false);
+      setLoading(false);
     }
   };
 
-  const submitUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentFile || !id || !user) {
-      toast.error("Selecione um arquivo primeiro");
-      return;
-    }
-
-    setIsUploading(true);
+  const handleFileDelete = async (fileId: string, filePath: string) => {
+    if (!window.confirm("Deseja realmente excluir este arquivo?")) return;
+    
     try {
-      const cleanValue = uploadValue.replace(/\./g, '').replace(',', '.');
-      const numericValue = parseFloat(cleanValue);
-
-      if (isNaN(numericValue)) {
-        toast.error("Valor inválido");
-        return;
+      const { error: storageError } = await supabase.storage
+        .from('client_vault')
+        .remove([filePath]);
+      
+      if (storageError) {
+          // Fallback case: if bucket was different before
+          await supabase.storage.from('orders').remove([filePath]);
       }
 
-      const fileExt = currentFile.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      const { error: dbError } = await supabase
+        .from('orders')
+        .update({ file_path: null, file_name: null })
+        .eq('id', fileId);
+      
+      if (dbError) throw dbError;
 
-      const { error: uploadError } = await supabase.storage.from('orders').upload(filePath, currentFile);
+      toast.success("Arquivo removido com sucesso!");
+      loadClientData();
+    } catch (err) {
+      toast.error("Erro ao remover arquivo.");
+    }
+  };
+
+  const handleDownload = async (fileName: string, filePath: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('client_vault')
+        .download(filePath);
+      
+      if (error) {
+          // Fallback to orders bucket
+          const { data: d2, error: e2 } = await supabase.storage.from('orders').download(filePath);
+          if (e2) throw e2;
+          const url = URL.createObjectURL(d2);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          return;
+      }
+      
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+    } catch (err) {
+      toast.error("Erro ao baixar arquivo.");
+    }
+  };
+
+  const submitUpload = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!currentFile || !user || !id || !uploadCategory) {
+        toast.error("Preencha todos os campos obrigatórios");
+        return;
+    }
+
+    try {
+      setIsUploading(true);
+      const cleanValue = uploadValue.replace(/\./g, '').replace(',', '.');
+      const numericValue = parseFloat(cleanValue) || 0;
+
+      const cleanFileName = currentFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
+      const formattedName = `${uploadCategory}___VALOR_${uploadValue}___${cleanFileName}`;
+      const filePath = `${user.id}/${id}/${formattedName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('client_vault')
+        .upload(filePath, currentFile, { upsert: true });
+
       if (uploadError) throw uploadError;
 
-      const { error: dbError } = await supabase.from('orders').insert([{
-        client_id: id,
-        user_id: user.id,
-        value: numericValue,
-        category: uploadCategory,
-        file_path: filePath,
-        file_name: currentFile.name
-      }]);
+      const { error: dbError } = await supabase
+        .from('orders')
+        .insert([{
+          user_id: user.id,
+          client_id: id,
+          value: numericValue,
+          category: uploadCategory,
+          file_name: currentFile.name,
+          file_path: filePath,
+          description: `Pedido via Upload: ${currentFile.name}`
+        }]);
 
       if (dbError) throw dbError;
 
-      toast.success("Pedido enviado com sucesso!");
+      // Update client total faturamento if needed
+      const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", id).single();
+      if (clientData) {
+        const fat = clientData.faturamento || {};
+        const updatedFat = { ...fat, [uploadCategory]: (Number(fat[selectedCategory] || 0) + numericValue) };
+        await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", id);
+      }
+
+      toast.success("Arquivo anexado com sucesso!");
       clearDraft(id || "");
       setDraft(id || "", { isOpen: false });
       setUploadValue("");
       setUploadCategory("");
-      loadData();
+      loadClientData();
     } catch (err: any) {
       console.error("Upload error:", err);
-      toast.error(err.message || "Erro ao enviar arquivo");
+      toast.error(err.message || "Erro no upload.");
     } finally {
       setIsUploading(false);
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setDraft(id || "", { file });
+    setIsProcessingFile(true);
+    
+    try {
+        const result = await processOrderFile(file, [client.name], settings.categories || []);
+        if (result.value) {
+            setUploadValue(result.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+        }
+        if (result.category) {
+            setUploadCategory(result.category);
+        }
+    } catch (err) {
+        console.error("Error processing file:", err);
+    } finally {
+        setIsProcessingFile(false);
+    }
+  };
+
+  const saveNewCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    const current = settings.categories || [];
+    if (current.includes(newCategoryName.trim())) {
+      setUploadCategory(newCategoryName.trim());
+      setIsCreatingCategory(false);
+      return;
+    }
+    
+    // Save to user_settings
+    try {
+        const updatedCategories = [...current, newCategoryName.trim()];
+        const { error } = await supabase.from('user_settings').upsert({ user_id: user?.id, categories: updatedCategories });
+        if (error) throw error;
+        
+        setUploadCategory(newCategoryName.trim());
+        setIsCreatingCategory(false);
+        setNewCategoryName("");
+        toast.success("Categoria criada com sucesso!");
+    } catch (err) {
+        toast.error("Erro ao criar categoria");
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    try {
+      setIsSavingNotes(true);
+      const { error } = await supabase
+        .from('clients')
+        .update({ notes })
+        .eq('id', id);
+      
+      if (error) throw error;
+      toast.success("Observações salvas!");
+    } catch (err) {
+      toast.error("Erro ao salvar.");
+    } finally {
+      setIsSavingNotes(false);
+    }
+  };
+
+  const allAvailableCategories = useMemo(() => {
+    const categoryMap = new Map();
+    (settings.categories || []).forEach(cat => {
+      if (cat) categoryMap.set(cat.toLowerCase().trim(), cat);
+    });
+    files.forEach(f => {
+      if (f.category) {
+        const normalized = f.category.toLowerCase().trim();
+        if (!categoryMap.has(normalized)) {
+          categoryMap.set(normalized, f.category);
+        }
+      }
+    });
+    return Array.from(categoryMap.values()).sort();
+  }, [settings.categories, files]);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
+      <div className="h-screen flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-emerald-600 opacity-20" />
       </div>
     );
   }
 
   if (!client) {
     return (
-      <div className="text-center py-20">
-        <AlertCircle className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-        <h2 className="text-2xl font-black text-slate-900 uppercase">Cliente não encontrado</h2>
-        <button onClick={() => navigate(-1)} className="mt-6 text-emerald-600 font-bold uppercase text-xs">Voltar</button>
+      <div className="h-screen flex flex-col items-center justify-center gap-6">
+        <AlertCircle className="w-16 h-16 text-red-500 opacity-20" />
+        <h2 className="text-xl font-black uppercase text-slate-400 tracking-widest">Cliente não encontrado</h2>
+        <Link to="/dashboard/clientes" className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs">Voltar para Carteira</Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto pb-20 space-y-8">
+    <div className="flex flex-col gap-8 pb-20 max-w-7xl mx-auto">
+      {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-4">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-400 hover:text-emerald-600 transition-colors group">
-            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Painel de Clientes</span>
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors">
+            <ArrowLeft className="w-3 h-3" /> Voltar
           </button>
-          <div>
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-[0.8] mb-4">
-              {client.name}
-            </h1>
-            <div className="flex flex-wrap gap-4 items-center">
-              <div className="px-4 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-500/20">
-                Cliente Ativo
-              </div>
-              <div className="flex items-center gap-2 text-slate-400">
-                <Building2 className="w-4 h-4" />
-                <span className="text-[10px] font-black uppercase tracking-widest">{client.category || 'Sem Categoria'}</span>
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 bg-emerald-600 rounded-[32px] flex items-center justify-center text-white shadow-xl shadow-emerald-500/20">
+              <User className="w-10 h-10" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-none">{client.name}</h1>
+              <div className="flex items-center gap-4 mt-3">
+                <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-[10px] font-black uppercase rounded-full">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Ativo no Radar
+                </span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">CNPJ: {client.cnpj}</span>
               </div>
             </div>
           </div>
         </div>
 
         <div className="flex gap-3">
-          <button 
-            onClick={() => {
-              clearDraft(id || "");
-              setUploadValue("");
-              setUploadCategory("");
-              setDraft(id || "", { isOpen: true });
-            }} 
-            className="flex items-center gap-3 px-8 py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-3xl font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-emerald-500/20 transition-all active:scale-95 group"
-          >
-            <Plus className="w-4 h-4" />
-            Anexar Novo
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
+          <button onClick={() => navigate(`/dashboard/clientes`)} className="px-8 py-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl font-black uppercase text-[10px] tracking-widest text-slate-600 dark:text-zinc-400 hover:border-emerald-500 transition-all active:scale-95">Editar Cadastro</button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white dark:bg-zinc-900 rounded-[48px] border border-slate-100 dark:border-zinc-800 shadow-sm overflow-hidden">
-            <div className="p-8 border-b border-slate-50 dark:border-zinc-800 flex items-center justify-between bg-slate-50/30 dark:bg-zinc-800/30">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-100 dark:border-zinc-800">
-                  <Briefcase className="w-6 h-6 text-emerald-600" />
-                </div>
+        {/* LEFT COLUMN: INFO & NOTES */}
+        <div className="lg:col-span-1 space-y-8">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-8 space-y-6">
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 border-b border-slate-50 dark:border-zinc-800 pb-4">Informações de Contato</h3>
+            
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg text-slate-400"><MapPin className="w-4 h-4" /></div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Histórico de Pedidos</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gestão de faturamento e documentos</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase">Localização</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300 leading-relaxed">{client.address || "Não informado"}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg text-slate-400"><Phone className="w-4 h-4" /></div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase">Telefone</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">{client.phone || "(---) ---- ----"}</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg text-slate-400"><Mail className="w-4 h-4" /></div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase">E-mail Comercial</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">{client.email || "não configurado"}</p>
                 </div>
               </div>
             </div>
-            
-            <div className="p-8">
-              {orders.length === 0 ? (
-                <div className="text-center py-20 bg-slate-50 dark:bg-zinc-800/50 rounded-[32px] border-2 border-dashed border-slate-100 dark:border-zinc-800">
-                  <div className="w-20 h-20 bg-white dark:bg-zinc-900 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-                    <History className="w-10 h-10 text-slate-200" />
-                  </div>
-                  <h4 className="text-lg font-black text-slate-900 dark:text-zinc-100 uppercase mb-2">Sem pedidos registrados</h4>
-                  <p className="text-slate-400 text-xs font-medium max-w-[240px] mx-auto">Comece anexando o primeiro pedido deste cliente para gerar indicadores.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <motion.div 
-                      key={order.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="group flex items-center justify-between p-6 bg-slate-50/50 dark:bg-zinc-800/50 hover:bg-white dark:hover:bg-zinc-800 rounded-[32px] border border-transparent hover:border-slate-100 dark:hover:border-zinc-700 transition-all hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none"
-                    >
-                      <div className="flex items-center gap-6">
-                        <div className="w-14 h-14 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-zinc-800 group-hover:scale-110 transition-transform">
-                          <FileText className="w-6 h-6 text-emerald-600" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-3 mb-1">
-                            <h4 className="font-black text-slate-900 dark:text-zinc-100 uppercase text-xs">Pedido #{order.id.slice(0, 6)}</h4>
-                            <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-full text-[9px] font-black uppercase tracking-widest">
-                              {order.category || 'Venda'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-4 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
-                            <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {format(new Date(order.created_at), "dd 'de' MMM, yyyy", { locale: ptBR })}</span>
-                            {order.file_name && <span className="flex items-center gap-1.5"><Download className="w-3.5 h-3.5" /> {order.file_name}</span>}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-8">
-                        <div className="text-right">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Valor Total</p>
-                          <p className="text-xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter">
-                            {order.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                          </p>
-                        </div>
-                        {order.file_path && (
-                          <a 
-                            href={supabase.storage.from('orders').getPublicUrl(order.file_path).data.publicUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 text-slate-400 hover:text-emerald-600 hover:border-emerald-600 transition-all shadow-sm"
-                          >
-                            <ExternalLink className="w-5 h-5" />
-                          </a>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+          </div>
+
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-8 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Observações Estratégicas</h3>
+              {isSavingNotes && <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />}
             </div>
+            <textarea 
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Histórico, preferências e notas de negociação..."
+              className="w-full h-40 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl p-4 text-xs font-medium outline-none focus:ring-4 focus:ring-emerald-500/5 resize-none transition-all dark:text-zinc-200"
+            />
+            <button 
+              onClick={handleSaveNotes}
+              disabled={isSavingNotes}
+              className="w-full py-4 bg-slate-900 dark:bg-zinc-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all disabled:opacity-50"
+            >
+              Atualizar Dossiê
+            </button>
           </div>
         </div>
 
-        <div className="space-y-8">
-          <div className="bg-slate-900 rounded-[48px] p-8 text-white relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-emerald-500/30 transition-colors" />
-            <div className="relative z-10 space-y-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-xl">
-                  <User className="w-6 h-6 text-emerald-400" />
+        {/* RIGHT COLUMN: FILES & TIMELINE */}
+        <div className="lg:col-span-2 space-y-8">
+           <div className="bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-200 dark:border-zinc-800 shadow-sm p-8 flex flex-col h-full min-h-[600px]">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-slate-50 dark:border-zinc-850">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 uppercase tracking-tight">
+                    <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl"><HardDrive className="w-6 h-6 text-emerald-600" /></div>
+                    Nuvem de Documentos
+                  </h2>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Repositório Privado de Pedidos e Contratos</p>
                 </div>
-                <h3 className="text-xl font-black uppercase tracking-tight">Contato</h3>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="p-5 bg-white/5 rounded-3xl border border-white/10 hover:bg-white/10 transition-all">
-                  <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-2">E-mail Principal</p>
-                  <p className="text-sm font-bold truncate">{client.email || 'Não informado'}</p>
-                </div>
-                <div className="p-5 bg-white/5 rounded-3xl border border-white/10 hover:bg-white/10 transition-all">
-                  <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-2">Telefone Comercial</p>
-                  <p className="text-sm font-bold">{client.phone || 'Não informado'}</p>
-                </div>
-                <div className="p-5 bg-white/5 rounded-3xl border border-white/10 hover:bg-white/10 transition-all">
-                  <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-2">Endereço de Faturamento</p>
-                  <p className="text-sm font-bold leading-relaxed">{client.address || 'Não informado'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <div className="bg-white dark:bg-zinc-900 rounded-[48px] p-8 border border-slate-100 dark:border-zinc-800 shadow-sm">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl">
-                <TrendingUp className="w-6 h-6 text-emerald-600" />
+                <button 
+                  onClick={() => setDraft(id || "", { isOpen: true })}
+                  className="flex items-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                >
+                  <Upload className="w-4 h-4" /> Anexar Novo
+                </button>
               </div>
-              <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Status</h3>
-            </div>
-            
-            <div className="space-y-6">
-              <div>
-                <div className="flex justify-between items-end mb-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Frequência de Compra</span>
-                  <span className="text-xs font-black text-emerald-600 uppercase">Saudável</span>
-                </div>
-                <div className="h-3 bg-slate-50 dark:bg-zinc-800 rounded-full overflow-hidden p-1">
-                  <div className="h-full bg-emerald-500 rounded-full w-[85%]" />
-                </div>
+
+              <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+                {files.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-20 py-20">
+                    <FileText className="w-20 h-20 mb-6 stroke-[1]" />
+                    <p className="font-black uppercase text-xs tracking-[0.2em]">Cofre Digital Vazio</p>
+                  </div>
+                ) : (
+                  files.map((file) => {
+                    const parts = file.file_name?.split("___") || [];
+                    const actualName = parts.length > 2 ? parts.slice(2).join("___") : (parts.length > 1 ? parts.slice(1).join("___") : file.file_name);
+                    const orderValueStr = file.value ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(file.value) : null;
+
+                    return (
+                      <div key={file.id} className="flex items-center justify-between p-6 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-3xl hover:border-emerald-200 transition-all group">
+                        <div className="flex items-center gap-6">
+                           <div className="w-14 h-14 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 dark:border-zinc-800 group-hover:scale-110 transition-transform">
+                              <FileText className="w-7 h-7 text-emerald-600" />
+                           </div>
+                           <div>
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className="px-3 py-1 bg-emerald-600 text-white text-[8px] font-black uppercase tracking-widest rounded-full">{file.category || "Geral"}</span>
+                                {orderValueStr && <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-[8px] font-black uppercase tracking-widest rounded-full">{orderValueStr}</span>}
+                              </div>
+                              <h4 className="text-sm font-black text-slate-900 dark:text-zinc-100 truncate max-w-xs uppercase tracking-tight">{actualName}</h4>
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-2">
+                                <Calendar className="w-3 h-3" /> {new Date(file.created_at).toLocaleDateString('pt-BR')}
+                              </p>
+                           </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <button onClick={() => handleDownload(file.file_name, file.file_path)} className="p-3 bg-white dark:bg-zinc-800 text-slate-400 hover:text-emerald-600 rounded-xl shadow-sm border border-slate-100 dark:border-zinc-800"><Download className="w-4 h-4" /></button>
+                           <button onClick={() => handleFileDelete(file.id, file.file_path)} className="p-3 bg-white dark:bg-zinc-800 text-slate-400 hover:text-red-500 rounded-xl shadow-sm border border-slate-100 dark:border-zinc-800"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
               </div>
-              <div className="pt-6 border-t border-slate-50 dark:border-zinc-800 grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Ticket Médio</p>
-                  <p className="text-lg font-black text-slate-900 dark:text-zinc-100 leading-none tracking-tighter">
-                    {orders.length > 0 
-                      ? (orders.reduce((acc, curr) => acc + curr.value, 0) / orders.length).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-                      : 'R$ 0,00'
-                    }
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Faturado</p>
-                  <p className="text-lg font-black text-emerald-600 leading-none tracking-tighter">
-                    {orders.reduce((acc, curr) => acc + curr.value, 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+           </div>
         </div>
       </div>
 
+      {/* Upload Modal - High Fidelity */}
       <AnimatePresence>
         {draft.isOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-            <motion.div
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDraft(id || "", { isOpen: false })} className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl" />
+            <motion.div 
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-full max-w-xl bg-white dark:bg-zinc-900 rounded-[48px] p-10 shadow-2xl relative overflow-hidden"
+              className="bg-white dark:bg-zinc-900 rounded-[48px] border border-white/20 shadow-2xl w-full max-w-md relative z-10 overflow-hidden"
             >
-              <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl -mr-24 -mt-24" />
-              
-              <button 
-                onClick={() => setDraft(id || "", { isOpen: false })}
-                className="absolute top-8 right-8 p-3 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors bg-slate-50 dark:bg-zinc-800 rounded-2xl"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="mb-10">
-                <div className="w-16 h-16 rounded-[24px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-6">
-                  <Upload className="w-8 h-8" />
+              <div className="p-10 border-b border-slate-50 dark:border-zinc-850 flex items-center justify-between">
+                <div>
+                   <h3 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-none">Anexar Documento</h3>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Upload Seguro para Nuvem</p>
                 </div>
-                <h3 className="text-3xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-none mb-2">Anexar Pedido</h3>
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Envie o documento e registre os detalhes da venda</p>
+                <button onClick={() => setDraft(id || "", { isOpen: false })} className="p-3 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-400 hover:text-red-500 transition-all"><X className="w-5 h-5"/></button>
               </div>
 
-              <form onSubmit={submitUpload} className="space-y-8">
-                <div className="space-y-6">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Documento do Pedido (PDF/Imagem)</label>
-                    <div className={cn(
-                      "p-10 border-2 border-dashed rounded-[32px] transition-all flex flex-col items-center justify-center text-center group",
-                      currentFile ? "bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-500/30" : "bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-700 hover:border-emerald-500/50"
-                    )}>
-                      {currentFile ? (
-                        <div className="space-y-4">
-                          <div className="w-16 h-16 bg-white dark:bg-zinc-900 rounded-3xl flex items-center justify-center mx-auto shadow-sm border border-emerald-100 dark:border-emerald-500/20">
-                            <FileText className="w-8 h-8 text-emerald-600" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-black text-slate-900 dark:text-zinc-100 uppercase mb-1">{currentFile.name}</p>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase">{(currentFile.size / 1024).toFixed(1)} KB</p>
-                          </div>
-                          <button 
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); clearDraft(id || ""); }}
-                            className="text-[10px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest"
-                          >
-                            Remover Arquivo
-                          </button>
+              <div className="p-10 space-y-8">
+                <div className="space-y-4">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest px-2">Empresa do Pedido</label>
+                  {!isCreatingCategory ? (
+                    <div className="flex gap-2 p-2 bg-slate-50 dark:bg-zinc-950 rounded-3xl border border-slate-100 dark:border-zinc-800">
+                      <select 
+                        value={uploadCategory}
+                        onChange={(e) => setUploadCategory(e.target.value)}
+                        className="flex-1 bg-transparent px-4 py-2 text-xs font-black uppercase outline-none text-slate-900 dark:text-zinc-100"
+                      >
+                        <option value="">Selecione...</option>
+                        {allAvailableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                      </select>
+                      <button onClick={() => setIsCreatingCategory(true)} className="p-3 bg-emerald-600 text-white rounded-2xl"><Plus className="w-4 h-4" /></button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="Nome da empresa..."
+                        className="flex-1 px-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-emerald-500 rounded-3xl text-xs font-black uppercase outline-none"
+                        autoFocus
+                      />
+                      <button onClick={saveNewCategory} className="px-6 bg-emerald-600 text-white rounded-3xl text-[10px] font-black uppercase tracking-widest">OK</button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest px-2">Arquivo Local</label>
+                  <div className={cn(
+                    "relative p-8 border-2 border-dashed rounded-[32px] transition-all flex flex-col items-center justify-center text-center group",
+                    currentFile ? "bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-500/30" : "bg-slate-50 dark:bg-zinc-800/50 border-slate-100 dark:border-zinc-700 hover:border-emerald-500/50"
+                  )}>
+                    {isProcessingFile ? (
+                        <div className="py-4">
+                            <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mx-auto mb-2" />
+                            <p className="text-[10px] font-black uppercase text-slate-400">Analisando Documento...</p>
                         </div>
-                      ) : (
-                        <>
-                          <div className="w-16 h-16 bg-white dark:bg-zinc-900 rounded-3xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                            <Upload className="w-6 h-6 text-slate-300 group-hover:text-emerald-500 transition-colors" />
-                          </div>
-                          <p className="text-xs font-black text-slate-900 dark:text-zinc-100 uppercase mb-2">Selecione ou arraste o arquivo</p>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Tamanho máximo: 10MB</p>
-                          <input
-                            type="file"
-                            className="absolute inset-0 opacity-0 cursor-pointer"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) setDraft(id || "", { file });
-                            }}
-                            accept="image/*,.pdf"
-                          />
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Valor da Venda</label>
-                      <div className="relative group">
-                        <CreditCard className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-emerald-600 transition-colors" />
-                        <input
-                          required
-                          type="text"
-                          value={uploadValue}
-                          onChange={(e) => setUploadValue(e.target.value)}
-                          placeholder="0,00"
-                          className="w-full pl-16 pr-8 py-5 bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-700 rounded-3xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 text-sm font-bold transition-all outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Empresa do Pedido</label>
-                      <div className="relative">
-                        <Filter className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                        <select
-                          value={uploadCategory}
-                          onChange={(e) => {
-                            if (e.target.value === 'NEW') {
-                              setIsCreatingCategory(true);
-                            } else {
-                              setUploadCategory(e.target.value);
-                            }
-                          }}
-                          className="w-full pl-16 pr-8 py-5 bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-700 rounded-3xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 text-sm font-bold transition-all outline-none appearance-none"
-                        >
-                          <option value="">Selecione...</option>
-                          {allAvailableCategories.map((cat) => (
-                            <option key={cat} value={cat}>{cat}</option>
-                          ))}
-                          <option value="NEW" className="text-emerald-600 font-bold">+ Nova Empresa</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4">
-                  <button
-                    disabled={isUploading || !currentFile}
-                    type="submit"
-                    className="w-full flex items-center justify-center gap-3 py-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-emerald-500/30 transition-all active:scale-98 disabled:opacity-50"
-                  >
-                    {isUploading ? (
-                      <Loader2 className="w-6 h-6 animate-spin" />
+                    ) : currentFile ? (
+                        <div className="space-y-2">
+                             <FileText className="w-8 h-8 text-emerald-600 mx-auto" />
+                             <p className="text-[10px] font-black text-slate-900 dark:text-zinc-100 uppercase truncate max-w-[200px]">{currentFile.name}</p>
+                             <button type="button" onClick={() => clearDraft(id || "")} className="text-[8px] font-black text-red-500 uppercase tracking-widest">Remover</button>
+                        </div>
                     ) : (
-                      <>
-                        <CheckCircle2 className="w-5 h-5" />
-                        Confirmar e Enviar
-                      </>
+                        <>
+                            <Upload className="w-6 h-6 text-slate-300 group-hover:text-emerald-500 mb-2" />
+                            <p className="text-[10px] font-black text-slate-400 uppercase">Clique para selecionar</p>
+                            <input 
+                                type="file" 
+                                onChange={handleFileChange}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                            />
+                        </>
                     )}
-                  </button>
+                  </div>
                 </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
-      <AnimatePresence>
-        {isCreatingCategory && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-[40px] p-10 shadow-2xl relative"
-            >
-              <div className="mb-8">
-                <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-6">
-                  <Plus className="w-7 h-7 text-emerald-600" />
+                <div className="space-y-4">
+                  <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest px-2">Valor Total do Pedido (OPCIONAL)</label>
+                  <div className="relative">
+                    <CreditCard className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                    <input 
+                        type="text" 
+                        value={uploadValue}
+                        onChange={(e) => setUploadValue(e.target.value.replace(/[^0-9,.]/g, ''))}
+                        placeholder="0,00"
+                        className="w-full pl-16 pr-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-3xl text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all"
+                    />
+                  </div>
                 </div>
-                <h3 className="text-2xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">Nova Empresa</h3>
-                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Adicione uma nova empresa à sua lista</p>
               </div>
 
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Nome da Empresa</label>
-                  <input
-                    autoFocus
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-700 rounded-[24px] focus:ring-4 focus:ring-emerald-500/10 outline-none font-bold"
-                    placeholder="Nome da empresa..."
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setIsCreatingCategory(false)}
-                    className="flex-1 py-4 bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 rounded-2xl font-black uppercase text-[10px] tracking-widest"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    disabled={isSavingCategory || !newCategoryName.trim()}
-                    onClick={handleCreateCategory}
-                    className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 disabled:opacity-50"
-                  >
-                    {isSavingCategory ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Salvar"}
-                  </button>
-                </div>
+              <div className="p-10 bg-slate-50 dark:bg-zinc-950 border-t border-slate-100 dark:border-zinc-850">
+                <button 
+                  onClick={submitUpload}
+                  disabled={!currentFile || isUploading || !uploadCategory}
+                  className="w-full py-6 bg-emerald-600 text-white rounded-[32px] font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-emerald-500/30 hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4"
+                >
+                  {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                  <span>Efetivar Upload</span>
+                </button>
               </div>
             </motion.div>
           </div>
