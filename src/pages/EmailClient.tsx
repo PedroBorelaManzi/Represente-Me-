@@ -285,7 +285,8 @@ export default function EmailClient() {
     const style = `
       <style>
         :root { color-scheme: light dark; }
-        html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; overflow: hidden; }`n        body { 
+        html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; overflow: hidden; }
+        body { 
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
           font-size: 16px; 
           line-height: 1.6; 
@@ -315,7 +316,8 @@ export default function EmailClient() {
         pre, code { white-space: pre-wrap; word-break: break-all; }
         .dark-mode { color: #f4f4f5; background-color: #18181b; }
         @media (max-width: 600px) {
-          html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; overflow: hidden; }`n        body { padding: 12px; font-size: 15px; }
+          html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; overflow: hidden; }
+        body { padding: 12px; font-size: 15px; }
           .no-mobile-padding { padding: 0 !important; }
         }
       </style>
@@ -947,6 +949,8 @@ function ComposeBalloon({
     </AnimatePresence>
   );
 }
+
+
 
 
 
