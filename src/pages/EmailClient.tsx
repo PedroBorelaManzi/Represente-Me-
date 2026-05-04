@@ -305,52 +305,59 @@ export default function EmailClient() {
   };
 
   // Helper to optimize email body for mobile
-  const getOptimizedHtml = (html: string) => {
-    const meta = `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">`;
-    const style = `
-      <style>
-        :root { color-scheme: light dark; }
-        html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; }
-        body { display: table; width: 100%; table-layout: fixed; }
-        body { 
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-          font-size: 16px; 
-          line-height: 1.6; 
-          color: #1a1a1a; 
-          margin: 0; 
-          padding: 16px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          -webkit-text-size-adjust: 100%;
-          max-width: 100vw;
-          box-sizing: border-box;
-        }
-        img { 
-          max-width: 100% !important; 
-          height: auto !important; 
-          display: block;
-          margin: 10px 0;
-        }
-        table { 
-          width: 100% !important; 
-          max-width: 100% !important;
-          height: auto !important; 
-          table-layout: fixed !important; 
-          border-collapse: collapse !important;
-        }
-        a { color: #059669; text-decoration: none; }
-        pre, code { white-space: pre-wrap; word-break: break-all; }
-        .dark-mode { color: #f4f4f5; background-color: #18181b; }
-        @media (max-width: 600px) {
-          html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; }
-        body { display: table; width: 100%; table-layout: fixed; }
-        body { padding: 12px; font-size: 15px; }
-          .no-mobile-padding { padding: 0 !important; }
-        }
-      </style>
-    `;
-    const isDark = document.documentElement.classList.contains('dark');
-    return `<!DOCTYPE html><html><head>${meta}${style}</head><body class="${isDark ? 'dark-mode' : ''}">${html}</body></html>`;
+    const getOptimizedHtml = (html: string) => {
+    const meta = "<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'>";
+    const style = "<style>" +
+        ":root { color-scheme: light dark; }" +
+        "html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; }" +
+        "body { display: table; width: 100%; table-layout: fixed; }" +
+        "body {" +
+          "font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;" +
+          "font-size: 16px;" +
+          "line-height: 1.6;" +
+          "color: #1a1a1a;" +
+          "margin: 0;" +
+          "padding: 16px;" +
+          "word-wrap: break-word;" +
+          "overflow-wrap: break-word;" +
+          "-webkit-text-size-adjust: 100%;" +
+          "max-width: 100vw;" +
+          "box-sizing: border-box;" +
+        "}" +
+        "img {" +
+          "max-width: 100% !important;" +
+          "height: auto !important;" +
+          "display: block;" +
+          "margin: 10px 0;" +
+        "}" +
+        "table {" +
+          "width: 100% !important;" +
+          "max-width: 100% !important;" +
+          "height: auto !important;" +
+          "table-layout: fixed !important;" +
+          "border-collapse: collapse !important;" +
+        "}" +
+        "a { color: #059669; text-decoration: none; }" +
+        "pre, code { white-space: pre-wrap; word-break: break-all; }" +
+        ".dark-mode { color: #f4f4f5; background-color: #18181b; }" +
+        "@media (max-width: 600px) {" +
+          "html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; }" +
+          "body { display: table; width: 100%; table-layout: fixed; }" +
+          "body { padding: 12px; font-size: 15px; }" +
+          ".no-mobile-padding { padding: 0 !important; }" +
+        "}" +
+      "</style>";
+    
+    return "<!DOCTYPE html>" +
+      "<html>" +
+        "<head>" +
+          meta +
+          style +
+        "</head>" +
+        "<body class='' + (isDarkMode ? 'dark-mode' : '') + ''>" +
+          html +
+        "</body>" +
+      "</html>";
   };
 
   if (!selectedAccount) {
@@ -982,6 +989,7 @@ function ComposeBalloon({
     </AnimatePresence>
   );
 }
+
 
 
 
