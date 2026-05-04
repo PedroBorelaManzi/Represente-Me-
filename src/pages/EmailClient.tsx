@@ -4,6 +4,7 @@ import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { getGoogleEmailAuthUrl, getMicrosoftEmailAuthUrl, fetchEmailsFromApi, sendEmailViaApi, EmailMessage, EmailProvider, downloadAttachmentFromApi, fetchGoogleContacts } from "../lib/emailSync";
 import { useAuth } from "../contexts/AuthContext";
+import { useSettings } from "../contexts/SettingsContext";
 import { supabase } from "../lib/supabase";
 
 type ConnectedAccount = {
@@ -22,6 +23,7 @@ interface Contact {
 
 export default function EmailClient() {
   const { user } = useAuth();
+  const { settings } = useSettings();
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<ConnectedAccount | null>(null);
   
@@ -49,7 +51,8 @@ export default function EmailClient() {
 
       // Search State
   const [searchQuery, setSearchQuery] = useState("");
-  const [resolvedBody, setResolvedBody] = useState("");`n  const [attachmentDataUrls, setAttachmentDataUrls] = useState<Record<string, string>>({});
+  const [resolvedBody, setResolvedBody] = useState("");
+  const [attachmentDataUrls, setAttachmentDataUrls] = useState<Record<string, string>>({});
 
   // 5. Resolve Inline Images (cid:)
   useEffect(() => {
@@ -354,7 +357,7 @@ export default function EmailClient() {
           meta +
           style +
         "</head>" +
-        "<body class='' + (isDarkMode ? 'dark-mode' : '') + ''>" +
+        "<body class='" + (settings.theme === 'dark' ? 'dark-mode' : '') + "'>" +
           html +
         "</body>" +
       "</html>";
@@ -562,7 +565,7 @@ export default function EmailClient() {
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-1">
                            <span className={cn("text-xs font-black truncate pr-2", email.unread ? "text-slate-900 dark:text-zinc-100" : "text-slate-500 italic")}>
-                             {currentFolder === 'sent' ? `Para: ${email.to}` : email.from}
+                             {currentFolder === 'sent' ? 'Para: ' + email.to : email.from}
                            </span>
                            <span className="text-[10px] font-black text-slate-400 shrink-0">{email.time}</span>
                         </div>
@@ -598,7 +601,7 @@ export default function EmailClient() {
                      <button 
                        onClick={() => {
                          setReplyTo(selectedEmail.fromEmail || "");
-                         setReplySubject(`Re: ${selectedEmail.subject}`);
+                         setReplySubject('Re: ' + selectedEmail.subject);
                          setIsComposing(true);
                        }}
                        className="p-3 rounded-2xl hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-slate-500 hover:text-emerald-600 transition-colors border border-slate-100 dark:border-zinc-800 flex items-center gap-2 font-black uppercase text-[10px] tracking-widest"
@@ -989,6 +992,9 @@ function ComposeBalloon({
     </AnimatePresence>
   );
 }
+
+
+
 
 
 
