@@ -1,4 +1,390 @@
-﻿import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { processOrderFile } from "../lib/orderProcessor";
+import { getHighPrecisionCoordinates } from "../lib/geminiGeocoding";
+import { 
+  Building2, 
+  Plus, 
+  FileText, 
+  ChevronLeft, 
+  ChevronRight, 
+  TrendingUp, 
+  Settings, 
+  X, 
+  Check, 
+  Loader2, 
+  Upload, 
+  ShoppingBag, 
+  ArrowUpRight, 
+  Zap,
+  LayoutGrid,
+  Trash2,
+  Sparkles
+} from "lucide-react";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
+import { useSettings } from "../contexts/SettingsContext";
+import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
+import { cn } from "../lib/utils";
+
+export default function EmpresasPage() {
+  const { user } = useAuth();
+  const { settings, updateSettings } = useSettings();
+  const navigate = useNavigate();
+  
+  const [allOrders, setAllOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [newCat, setNewCat] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [viewDate, setViewDate] = useState(new Date());
+  const [managingCompany, setManagingCompany] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<any[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [clients, setClients] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user) loadOrders();
+  }, [user]);
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*, client:clients(id, name, cnpj, city, state)")
+        .eq("user_id", user?.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setAllOrders(data || []);
+
+      const { data: c } = await supabase
+        .from("clients")
+        .select("id, name, cnpj")
+        .eq("user_id", user?.id)
+        .order("name");
+      setClients(c || []);
+    } catch (err) {
+      console.error("Error loading data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const nextMonth = () => {
+    const d = new Date(viewDate);
+    d.setMonth(d.getMonth() + 1);
+    setViewDate(d);
+  };
+
+  const prevMonth = () => {
+    const d = new Date(viewDate);
+    d.setMonth(d.getMonth() - 1);
+    setViewDate(d);
+  };
+
+  const registerNewClient = async (name, cnpj, address) => {
+    const cleanCnpj = cnpj ? cnpj.replace(/\D/g, "") : "";
+    const cleanName = name?.trim();
+    
+    if (cleanCnpj) {
+      const { data: existing } = await supabase.from("clients").select("id").eq("cnpj", cleanCnpj).eq("user_id", user?.id).maybeSingle();
+      if (existing) return existing;
+    }
+    
+    if (cleanName) {
+      const { data: existingName } = await supabase.from("clients").select("id").eq("name", cleanName).eq("user_id", user?.id).maybeSingle();
+      if (existingName) return existingName;
+    }
+
+    let lat = -23.5505, lng = -46.6333;
+    if (address) {
+      try {
+        const coords = await getHighPrecisionCoordinates(address, name, cnpj);
+        if (coords) { lat = coords.lat; lng = coords.lng; }
+      } catch (e) {}
+    }
+
+    const { data, error } = await supabase
+      .from("clients")
+      .insert([{ 
+        user_id: user?.id, 
+        name: cleanName, 
+        cnpj: cleanCnpj, 
+        address: address || "", 
+        lat, 
+        lng, 
+        status: "Ativo" 
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    loadOrders();
+    return data;
+  };
+
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (selectedFiles.length + files.length > 10) {
+      toast.error("Você pode enviar no máximo 10 pedidos por vez.");
+      return;
+    }
+
+    const newFiles = files.map(file => ({
+      file,
+      client: "Identificando...",
+      category: "",
+      value: 0,
+      status: 'processing',
+      cnpj: "",
+      address: ""
+    }));
+
+    setSelectedFiles(prev => [...prev, ...newFiles]);
+
+    for (let i = 0; i < newFiles.length; i++) {
+      const file = newFiles[i].file;
+      try {
+        const res = await processOrderFile(file, clients.map(c => c.name), settings.categories || []);
+        
+        setSelectedFiles(prev => prev.map(item => 
+          item.file === file ? {
+            ...item,
+            client: res.client || "Desconhecido",
+            category: res.category || "",
+            value: res.value || 0,
+            status: 'ready',
+            cnpj: res.cnpj || "",
+            address: res.address || ""
+          } : item
+        ));
+      } catch (err) {
+        setSelectedFiles(prev => prev.map(item => 
+          item.file === file ? { ...item, status: 'error', client: "Erro na leitura" } : item
+        ));
+      }
+    }
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
+  };
+
+  const handleProcessUpload = async () => {
+    if (selectedFiles.length === 0) return;
+    setIsUploading(true);
+    let successCount = 0;
+
+    for (const item of selectedFiles) {
+      if (item.status === 'processing') continue;
+      
+      try {
+        const cleanResCnpj = item.cnpj?.replace(/\D/g, "");
+        const cleanResName = item.client?.trim().toLowerCase();
+        
+        let match = clients.find(c => {
+          const clientCnpj = c.cnpj?.replace(/\D/g, "");
+          const clientName = c.name?.trim().toLowerCase();
+          return (cleanResCnpj && clientCnpj === cleanResCnpj) || (clientName && clientName === cleanResName);
+        });
+
+        let cid = match?.id;
+        if (!match) {
+          const n = await registerNewClient(item.client, item.cnpj, item.address || "");
+          if (n) cid = n.id;
+        }
+
+        if (!cid) throw new Error("Não foi possível identificar ou cadastrar o cliente.");
+
+        const cleanName = item.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
+        const formattedName = (item.category || 'GERAL') + "___VALOR_" + item.value + "___" + cleanName;
+        const path = user?.id + "/" + cid + "/" + formattedName;
+
+        await supabase.storage.from("client_vault").upload(path, item.file, { upsert: true });
+        await supabase.from("orders").upsert([{ 
+          user_id: user?.id, 
+          client_id: cid, 
+          category: item.category || 'GERAL', 
+          value: parseFloat(item.value), 
+          file_name: formattedName, 
+          file_path: path 
+        }], { onConflict: "client_id,file_path" });
+
+        const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", cid).single();
+        if (clientData) {
+          const fat = clientData.faturamento || {};
+          const updatedFat = { ...fat, [item.category || 'GERAL']: (Number(fat[item.category || 'GERAL'] || 0) + parseFloat(item.value)) };
+          await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", cid);
+        }
+        successCount++;
+      } catch (err) {
+        console.error("Erro ao processar arquivo:", item.file.name, err);
+        toast.error("Erro no arquivo " + item.file.name + ": " + err.message);
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(successCount + " pedidos processados com sucesso!");
+      loadOrders();
+      setSelectedFiles([]);
+      setIsUploadModalOpen(false);
+    }
+    setIsUploading(false);
+  };
+
+  const monthlyOrders = useMemo(() => {
+    const month = viewDate.getMonth();
+    const year = viewDate.getFullYear();
+    return (allOrders || []).filter(o => {
+      if (!o || !o.created_at) return false;
+      const d = new Date(o.created_at);
+      return d.getMonth() === month && d.getFullYear() === year;
+    });
+  }, [allOrders, viewDate]);
+
+  const combinedCategories = useMemo(() => {
+    const catsMap = new Map();
+    if (settings?.categories) {
+      settings.categories.forEach(cat => {
+        if (cat && cat.trim()) {
+          const trimmed = cat.trim();
+          catsMap.set(trimmed.toUpperCase(), trimmed);
+        }
+      });
+    }
+    if (Array.isArray(allOrders)) {
+      allOrders.forEach(o => { 
+        if (o && o.category && o.category.trim()) {
+          const trimmed = o.category.trim();
+          const key = trimmed.toUpperCase();
+          if (!catsMap.has(key)) catsMap.set(key, trimmed);
+        }
+      });
+    }
+    return Array.from(catsMap.values());
+  }, [allOrders, settings?.categories]);
+
+  const catTotals = useMemo(() => {
+    const currentMonthly = monthlyOrders || [];
+    return combinedCategories.reduce((acc, cat) => {
+      acc[cat] = currentMonthly
+        .filter(o => o && o.category && o.category.toLowerCase() === cat.toLowerCase())
+        .reduce((sum, o) => sum + (Number(o.value) || 0), 0);
+      return acc;
+    }, {});
+  }, [combinedCategories, monthlyOrders]);
+
+  const totalGeral = useMemo(() => (monthlyOrders || []).reduce((sum, o) => sum + (Number(o.value) || 0), 0), [monthlyOrders]);
+
+  const ordersToday = useMemo(() => {
+    const today = new Date().toLocaleDateString("en-CA");
+    return (allOrders || []).filter(o => o && o.created_at && o.created_at.startsWith(today)).length;
+  }, [allOrders]);
+
+  const filteredOrders = useMemo(() => {
+    const currentMonthly = monthlyOrders || [];
+    if (selectedCategory === "all") return currentMonthly;
+    return currentMonthly.filter(o => o && o.category && o.category.toLowerCase() === selectedCategory.toLowerCase());
+  }, [selectedCategory, monthlyOrders]);
+
+  const handleUpdateCompany = async () => {
+    if (!managingCompany || !editName.trim()) return;
+    try {
+      const updatedCategories = settings.categories.map(c => c === managingCompany ? editName.trim() : c);
+      await updateSettings({ categories: updatedCategories });
+      await supabase.from("orders").update({ category: editName.trim() }).eq("user_id", user?.id).eq("category", managingCompany);
+      toast.success("Empresa atualizada!");
+      setManagingCompany(null);
+      loadOrders();
+    } catch (err) {
+      toast.error("Erro ao atualizar.");
+    }
+  };
+
+  const handleDeleteCompany = async (name) => {
+    if (!window.confirm("Deseja realmente excluir a empresa " + name + "?")) return;
+    try {
+      const updatedCategories = settings.categories.filter(c => c !== name);
+      await updateSettings({ categories: updatedCategories });
+      toast.success("Empresa removida.");
+      setManagingCompany(null);
+    } catch (err) {
+      toast.error("Erro ao remover.");
+    }
+  };
+
+  const addCategory = async () => {
+    const trimmedCat = newCat.trim();
+    if (!trimmedCat) {
+      toast.error("Por favor, digite o nome da empresa.");
+      return;
+    }
+    try {
+      const currentCategories = settings.categories || [];
+      if (currentCategories.some(c => c.toLowerCase() === trimmedCat.toLowerCase())) {
+        toast.error("Empresa \"" + trimmedCat + "\" já está cadastrada.");
+        return;
+      }
+      await updateSettings({ categories: [...currentCategories, trimmedCat] });
+      toast.success("Empresa \"" + trimmedCat + "\" cadastrada com sucesso!");
+      setIsAddModalOpen(false);
+      setNewCat("");
+    } catch (err) {
+      toast.error("Erro ao cadastrar.");
+    }
+  };
+  return (cleanResCnpj && clientCnpj === cleanResCnpj) || (clientName && clientName === cleanResName);
+        });
+
+        let cid = match?.id;
+        if (!match) {
+          const n = await registerNewClient(item.client, item.cnpj, item.address || "");
+          if (n) cid = n.id;
+        }
+
+        if (!cid) throw new Error("Não foi possível identificar ou cadastrar o cliente.");
+
+        const cleanName = item.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
+        const formattedName = (item.category || 'GERAL') + "___VALOR_" + item.value + "___" + cleanName;
+        const path = user?.id + "/" + cid + "/" + formattedName;
+
+        await supabase.storage.from("client_vault").upload(path, item.file, { upsert: true });
+        await supabase.from("orders").upsert([{ 
+          user_id: user?.id, 
+          client_id: cid, 
+          category: item.category || 'GERAL', 
+          value: parseFloat(item.value), 
+          file_name: formattedName, 
+          file_path: path 
+        }], { onConflict: "client_id,file_path" });
+
+        const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", cid).single();
+        if (clientData) {
+          const fat = clientData.faturamento || {};
+          const updatedFat = { ...fat, [item.category || 'GERAL']: (Number(fat[item.category || 'GERAL'] || 0) + parseFloat(item.value)) };
+          await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", cid);
+        }
+        successCount++;
+      } catch (err) {
+        console.error("Erro ao processar arquivo:", item.file.name, err);
+        toast.error("Erro no arquivo " + item.file.name + ": " + err.message);
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(successCount + " pedidos processados com sucesso!");
+      loadOrders();
+      setSelectedFiles([]);
+      setIsUploadModalOpen(false);
+    }
+    setIsUploading(false);
+  };
+rom "react";
 import { 
   Building2, 
   Plus, 
@@ -80,7 +466,10 @@ export default function EmpresasPage() {
   const monthlyOrders = useMemo(() => {
     const month = viewDate.getMonth();
     const year = viewDate.getFullYear();
-    return (allOrders || []).filter(o => {
+  
+
+
+  return (allOrders || []).filter(o => {
       if (!o || !o.created_at) return false;
       const d = new Date(o.created_at);
       return d.getMonth() === month && d.getFullYear() === year;
@@ -411,27 +800,146 @@ export default function EmpresasPage() {
           </div>
         )}
 
-        {isUploadModalOpen && (
+                {isUploadModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
-             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsUploadModalOpen(false)} className="absolute inset-0 bg-slate-900/90 backdrop-blur-2xl" />
+             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => !isUploading && setIsUploadModalOpen(false)} className="absolute inset-0 bg-slate-900/90 backdrop-blur-2xl" />
              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white dark:bg-zinc-900 p-6 md:p-14 rounded-[40px] md:rounded-[70px] shadow-2xl relative z-10 w-full max-w-5xl h-[85vh] flex flex-col border border-white/10 overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-2 bg-emerald-600" />
                 <div className="flex justify-between items-center mb-8 md:mb-14">
                    <div>
-                      <h3 className="text-2xl md:text-4xl font-black uppercase text-slate-900 dark:text-zinc-100 tracking-tighter mb-1">Upload de Faturamenão</h3>
+                      <h3 className="text-2xl md:text-4xl font-black uppercase text-slate-900 dark:text-zinc-100 tracking-tighter mb-1">ENVIAR PEDIDOS</h3>
                       <div className="flex items-center gap-2 md:gap-3">
                         <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Processamenão Neural Ativo</p>
+                        <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Processamento Neural Ativo</p>
                       </div>
                    </div>
-                   <button onClick={() => setIsUploadModalOpen(false)} className="p-3 md:p-5 bg-slate-50 dark:bg-zinc-800 rounded-2xl md:rounded-3xl text-slate-400 hover:text-red-500 transition-all shadow-sm active:scale-90"><X className="w-6 h-6 md:w-7 md:h-7"/></button>
+                   <button onClick={() => !isUploading && setIsUploadModalOpen(false)} className="p-3 md:p-5 bg-slate-50 dark:bg-zinc-800 rounded-2xl md:rounded-3xl text-slate-400 hover:text-red-500 transition-all shadow-sm active:scale-90"><X className="w-6 h-6 md:w-7 md:h-7"/></button>
                 </div>
-                <div onClick={() => { setIsUploadModalOpen(false); navigate("/dashboard/pedidos"); }} className="flex-1 border-4 border-dashed border-slate-100 dark:border-zinc-800 rounded-[32px] md:rounded-[60px] flex flex-col items-center justify-center text-center p-6 md:p-16 hover:bg-emerald-50/10 transition-all cursor-pointer group relative overflow-hidden">
-                   <div className="p-8 md:p-14 bg-white dark:bg-zinc-900 rounded-[32px] md:rounded-[50px] shadow-2xl text-emerald-600 mb-6 md:mb-10 group-hover:scale-110 transition-all duration-500">
-                      <Upload className="w-12 h-12 md:w-20 md:h-20" />
-                   </div>
-                   <h4 className="text-xl md:text-2xl font-black uppercase text-slate-900 dark:text-zinc-100 mb-2 md:mb-4 tracking-tight">Enviar Pedidos</h4>
-                   <p className="text-slate-400 text-sm md:text-lg max-w-sm font-medium leading-relaxed italic mx-auto">Clique para ir à central de pedidos e registrar via IA ou manualmente.</p>
+
+                <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+                  {selectedFiles.length === 0 ? (
+                    <div className="flex-1 border-4 border-dashed border-slate-100 dark:border-zinc-800 rounded-[32px] md:rounded-[60px] flex flex-col items-center justify-center text-center p-6 md:p-16 hover:bg-emerald-50/10 transition-all cursor-pointer group relative overflow-hidden">
+                      <input 
+                        type="file" 
+                        multiple 
+                        accept=".pdf,.jpg,.jpeg,.png,.xlsx,.csv" 
+                        onChange={handleFileSelect}
+                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                      />
+                      <div className="p-8 md:p-14 bg-white dark:bg-zinc-900 rounded-[32px] md:rounded-[50px] shadow-2xl text-emerald-600 mb-6 md:mb-10 group-hover:scale-110 transition-all duration-500">
+                        <Upload className="w-12 h-12 md:w-20 md:h-20" />
+                      </div>
+                      <h4 className="text-xl md:text-2xl font-black uppercase text-slate-900 dark:text-zinc-100 mb-2 md:mb-4 tracking-tight">ENVIAR PEDIDOS</h4>
+                      <p className="text-slate-400 text-sm md:text-lg max-w-sm font-medium leading-relaxed italic mx-auto">
+                        arraste ou selecione os seus pedidos aqui, para enviarmos para o sistema, você pode enviar até 10 pedidos por vez.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex flex-col gap-6 overflow-hidden">
+                      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3">
+                        
+                      <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 border-b border-slate-100 dark:border-zinc-800 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 dark:bg-zinc-900/50">
+                        <div className="col-span-3">Arquivo</div>
+                        <div className="col-span-3">Cliente (IA)</div>
+                        <div className="col-span-3">Representada</div>
+                        <div className="col-span-2">Valor</div>
+                        <div className="col-span-1 text-right"></div>
+                      </div>
+
+                      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3 pt-2">
+                        {selectedFiles.map((item, idx) => (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            key={idx} 
+                            className="grid grid-cols-12 gap-4 items-center p-4 md:p-6 bg-white dark:bg-zinc-950 rounded-2xl md:rounded-[32px] border border-slate-100 dark:border-zinc-800 group hover:shadow-lg transition-all"
+                          >
+                            {/* Arquivo */}
+                            <div className="col-span-12 md:col-span-3 flex items-center gap-3">
+                              <div className="p-2 bg-slate-50 dark:bg-zinc-900 rounded-lg">
+                                <FileText className="w-4 h-4 text-emerald-600" />
+                              </div>
+                              <p className="text-[10px] font-bold text-slate-900 dark:text-zinc-100 uppercase truncate" title={item.file.name}>{item.file.name}</p>
+                            </div>
+
+                            {/* Cliente */}
+                            <div className="col-span-12 md:col-span-3">
+                              <input 
+                                value={item.client}
+                                onChange={e => setSelectedFiles(prev => prev.map((it, i) => i === idx ? {...it, client: e.target.value} : it))}
+                                placeholder="Nome do Cliente"
+                                className="w-full bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl px-3 py-2 text-[10px] font-black uppercase outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+
+                            {/* Representada */}
+                            <div className="col-span-12 md:col-span-3">
+                              <select 
+                                value={item.category}
+                                onChange={e => setSelectedFiles(prev => prev.map((it, i) => i === idx ? {...it, category: e.target.value} : it))}
+                                className="w-full bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl px-3 py-2 text-[10px] font-black uppercase outline-none focus:ring-1 focus:ring-emerald-500"
+                              >
+                                <option value="">SELECIONAR...</option>
+                                {settings.categories?.map(cat => (
+                                  <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                                <option value="GERAL">GERAL</option>
+                              </select>
+                            </div>
+
+                            {/* Valor */}
+                            <div className="col-span-9 md:col-span-2 relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-400">R$</span>
+                              <input 
+                                type="number"
+                                value={item.value}
+                                onChange={e => setSelectedFiles(prev => prev.map((it, i) => i === idx ? {...it, value: e.target.value} : it))}
+                                className="w-full bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl pl-8 pr-3 py-2 text-[10px] font-black uppercase outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+
+                            {/* Ações */}
+                            <div className="col-span-3 md:col-span-1 text-right">
+                              {item.status === 'processing' ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-emerald-600 ml-auto" />
+                              ) : (
+                                <button onClick={() => removeFile(idx)} className="p-2 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-300 hover:text-red-500 transition-all rounded-lg ml-auto">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      <div className="flex flex-col md:flex-row gap-4 pt-4 border-t dark:border-zinc-800">
+                        <button 
+                          disabled={isUploading}
+                          onClick={() => setSelectedFiles([])}
+                          className="flex-1 py-4 md:py-6 bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 rounded-[20px] md:rounded-[32px] font-black uppercase text-[10px] md:text-xs tracking-widest transition-all disabled:opacity-50"
+                        >
+                          Limpar Tudo
+                        </button>
+                        <button 
+                          disabled={isUploading}
+                          onClick={handleProcessUpload}
+                          className="flex-[2] py-4 md:py-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[20px] md:rounded-[32px] font-black uppercase text-[10px] md:text-xs tracking-widest shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50"
+                        >
+                          {isUploading ? (
+                            <>
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                              Processando com IA...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-5 h-5" />
+                              Enviar para o Sistema
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
              </motion.div>
           </div>
