@@ -72,15 +72,19 @@ export default function EmailClient() {
     let updatedHtml = html;
     let changed = false;
 
-    for (const att of inlineAttachments) {
+        for (const att of inlineAttachments) {
        try {
          const res = await downloadAttachmentFromApi(user.id, selectedAccount.provider, email.id, att.id, selectedAccount.email);
          if (res.success && res.data) {
            const base64Data = res.data.replace(/-/g, "+").replace(/_/g, "/");
            const dataUrl = "data:" + att.mimeType + ";base64," + base64Data;
+           // Replace both direct and URL-encoded cid
            updatedHtml = updatedHtml.split("cid:" + att.contentId).join(dataUrl);
+           updatedHtml = updatedHtml.split("cid:" + encodeURIComponent(att.contentId)).join(dataUrl);
            changed = true;
          }
+       } catch (err) {}
+    }
        } catch (err) {}
     }
     if (changed) setResolvedBody(updatedHtml);
@@ -283,7 +287,7 @@ export default function EmailClient() {
     const style = `
       <style>
         :root { color-scheme: light dark; }
-        body { 
+        html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; overflow: hidden; }`n        body { 
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
           font-size: 16px; 
           line-height: 1.6; 
@@ -313,7 +317,7 @@ export default function EmailClient() {
         pre, code { white-space: pre-wrap; word-break: break-all; }
         .dark-mode { color: #f4f4f5; background-color: #18181b; }
         @media (max-width: 600px) {
-          body { padding: 12px; font-size: 15px; }
+          html, body { height: auto !important; min-height: 0 !important; margin: 0; padding: 0; overflow: hidden; }`n        body { padding: 12px; font-size: 15px; }
           .no-mobile-padding { padding: 0 !important; }
         }
       </style>
@@ -615,21 +619,22 @@ export default function EmailClient() {
                           title="Email Content"
                           className="w-full border-none transition-all duration-300"
                           style={{ height: '200px', minHeight: '100px' }}
-                          sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin"
+                          sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin" referrerPolicy="no-referrer"
                           onLoad={(e) => {
                              const iframe = e.currentTarget;
-                             const updateHeight = () => {
+                                                          const updateHeight = () => {
                                if (iframe.contentWindow) {
                                   try {
-                                    const body = iframe.contentWindow.document.body;
-                                    const html = iframe.contentWindow.document.documentElement;
+                                    // Reset to small height to get true scrollHeight
+                                    iframe.style.height = "10px";
+                                    const doc = iframe.contentWindow.document;
                                     const height = Math.max(
-                                      body.scrollHeight, body.offsetHeight,
-                                      html.clientHeight, html.scrollHeight, html.offsetHeight
+                                      doc.body.scrollHeight, 
+                                      doc.documentElement.scrollHeight
                                     );
-                                    iframe.style.height = (height + 20) + 'px';
+                                    iframe.style.height = (height + 30) + "px";
                                   } catch (err) {
-                                    iframe.style.height = '600px';
+                                    iframe.style.height = "600px";
                                   }
                                }
                              };
@@ -944,6 +949,10 @@ function ComposeBalloon({
     </AnimatePresence>
   );
 }
+
+
+
+
 
 
 
