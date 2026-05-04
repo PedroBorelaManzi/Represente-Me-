@@ -47,8 +47,9 @@ export default function EmailClient() {
   const [replyTo, setReplyTo] = useState("");
   const [replySubject, setReplySubject] = useState("");
 
-  // Search State
-  const [searchQuery, setSearchQuery] = useState("");`n  const [resolvedBody, setResolvedBody] = useState("");
+    // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [resolvedBody, setResolvedBody] = useState("");
 
   // 5. Resolve Inline Images (cid:)
   useEffect(() => {
@@ -66,6 +67,42 @@ export default function EmailClient() {
     if (!email.attachments || email.attachments.length === 0 || !user || !selectedAccount) return;
 
     const inlineAttachments = email.attachments.filter(att => att.contentId && html.includes(`cid:${att.contentId}`));
+    if (inlineAttachments.length === 0) return;
+
+    let updatedHtml = html;
+    let changed = false;
+
+    for (const att of inlineAttachments) {
+       try {
+         const res = await downloadAttachmentFromApi(user.id, selectedAccount.provider, email.id, att.id, selectedAccount.email);
+         if (res.success && res.data) {
+           const base64Data = res.data.replace(/-/g, "+").replace(/_/g, "/");
+           const dataUrl = "data:" + att.mimeType + ";base64," + base64Data;
+           updatedHtml = updatedHtml.split("cid:" + att.contentId).join(dataUrl);
+           changed = true;
+         }
+       } catch (err) {}
+    }
+    if (changed) setResolvedBody(updatedHtml);
+  }`));
+    if (inlineAttachments.length === 0) return;
+
+    let updatedHtml = html;
+    let changed = false;
+
+    for (const att of inlineAttachments) {
+       try {
+         const res = await downloadAttachmentFromApi(user.id, selectedAccount.provider, email.id, att.id, selectedAccount.email);
+         if (res.success && res.data) {
+           const base64Data = res.data.replace(/-/g, '+').replace(/_/g, '/');
+           const dataUrl = `data:${att.mimeType};base64,${base64Data}`;
+           updatedHtml = updatedHtml.split(`cid:${att.contentId}`).join(dataUrl);
+           changed = true;
+         }
+       } catch (err) {}
+    }
+    if (changed) setResolvedBody(updatedHtml);
+  }`));
     if (inlineAttachments.length === 0) return;
 
     let updatedHtml = html;
@@ -943,6 +980,9 @@ function ComposeBalloon({
     </AnimatePresence>
   );
 }
+
+
+
 
 
 
