@@ -49,7 +49,7 @@ export default function EmailClient() {
 
       // Search State
   const [searchQuery, setSearchQuery] = useState("");
-  const [resolvedBody, setResolvedBody] = useState("");
+  const [resolvedBody, setResolvedBody] = useState("");`n  const [attachmentDataUrls, setAttachmentDataUrls] = useState<Record<string, string>>({});
 
   // 5. Resolve Inline Images (cid:)
   useEffect(() => {
@@ -60,31 +60,52 @@ export default function EmailClient() {
     }
   }, [selectedEmail]);
 
-    async function resolveInlineImages(email: EmailMessage) {
+      async function resolveInlineImages(email: EmailMessage) {
     let html = email.fullBody || "";
     setResolvedBody(html); 
+    setAttachmentDataUrls({}); // Reset for new email
 
     if (!email.attachments || email.attachments.length === 0 || !user || !selectedAccount) return;
 
-    const inlineAttachments = email.attachments.filter(att => att.contentId && html.includes("cid:" + att.contentId));
-    if (inlineAttachments.length === 0) return;
-
+    // Find all cid references in the HTML
+    const cidRegex = /cid:([^"'\s>)]+)/g;
+    const matches = Array.from(html.matchAll(cidRegex));
+    
     let updatedHtml = html;
     let changed = false;
 
-    for (const att of inlineAttachments) {
-       try {
-         const res = await downloadAttachmentFromApi(user.id, selectedAccount.provider, email.id, att.id, selectedAccount.email);
-         if (res.success && res.data) {
-           const base64Data = res.data.replace(/-/g, "+").replace(/_/g, "/");
-           const dataUrl = "data:" + att.mimeType + ";base64," + base64Data;
-           // Replace both direct and URL-encoded cid
-           updatedHtml = updatedHtml.split("cid:" + att.contentId).join(dataUrl);
-           updatedHtml = updatedHtml.split("cid:" + encodeURIComponent(att.contentId)).join(dataUrl);
-           changed = true;
-         }
-       } catch (err) {}
+    // Fetch images and CIDs
+    const attachmentsToFetch = email.attachments.filter(att => 
+      att.mimeType.startsWith("image/") || 
+      matches.some(m => {
+        const cleanMatch = m[1].replace(/[<>]/g, "");
+        const cleanAttCid = att.contentId?.replace(/[<>]/g, "");
+        return cleanMatch === cleanAttCid;
+      })
+    );
+
+    for (const att of attachmentsToFetch) {
+      try {
+        const res = await downloadAttachmentFromApi(user.id, selectedAccount.provider, email.id, att.id, selectedAccount.email);
+        if (res.success && res.data) {
+          const base64Data = res.data.replace(/-/g, "+").replace(/_/g, "/");
+          const dataUrl = `data:${att.mimeType};base64,${base64Data}`;
+          
+          setAttachmentDataUrls(prev => ({ ...prev, [att.id]: dataUrl }));
+
+          if (att.contentId) {
+             const cleanCid = att.contentId.replace(/[<>]/g, "");
+             // Replace both direct and URL-encoded versions
+             updatedHtml = updatedHtml.split(`cid:${att.contentId}`).join(dataUrl);
+             updatedHtml = updatedHtml.split(`cid:${cleanCid}`).join(dataUrl);
+             updatedHtml = updatedHtml.split(`cid:${encodeURIComponent(att.contentId)}`).join(dataUrl);
+             updatedHtml = updatedHtml.split(`cid:${encodeURIComponent(cleanCid)}`).join(dataUrl);
+             changed = true;
+          }
+        }
+      } catch (err) {}
     }
+
     if (changed) setResolvedBody(updatedHtml);
   }
 
@@ -654,29 +675,40 @@ export default function EmailClient() {
                         <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
                           <Paperclip className="w-4 h-4" /> Anexos ({selectedEmail.attachments.length})
                         </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                           {selectedEmail.attachments.map(att => (
-                            <div key={att.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-800/50 border border-slate-100 dark:border-zinc-800 rounded-2xl group hover:border-emerald-500/30 transition-all">
-                              <div className="flex items-center gap-4 min-w-0">
-                                <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-900 flex items-center justify-center text-slate-400">
-                                  <FileText className="w-5 h-5" />
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-xs font-bold text-slate-900 dark:text-zinc-100 truncate pr-2">{att.filename}</p>
-                                  <p className="text-[10px] font-medium text-slate-400 uppercase">{(att.size / 1024).toFixed(1)} KB</p>
-                                </div>
-                              </div>
-                              <button 
-                                onClick={() => handleDownloadAttachment(att.id, att.filename)}
-                                className="p-2.5 bg-white dark:bg-zinc-900 text-slate-400 hover:text-emerald-600 rounded-xl border border-slate-100 dark:border-zinc-800 shadow-sm opacity-0 group-hover:opacity-100 transition-all"
-                              >
-                                <Download className="w-4 h-4" />
-                              </button>
+                            <div 
+                              key={att.id} 
+                              onClick={() => handleDownloadAttachment(att.id, att.filename)}
+                              className="group cursor-pointer flex flex-col bg-slate-50 dark:bg-zinc-800/30 border border-slate-200 dark:border-zinc-800 rounded-xl overflow-hidden hover:border-emerald-500/50 transition-all shadow-sm"
+                            >
+                               <div className="h-28 bg-white dark:bg-zinc-900 flex items-center justify-center relative overflow-hidden">
+                                  {att.mimeType.startsWith("image/") ? (
+                                    <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-zinc-800">
+                                       <img src={attachmentDataUrls[att.id] || "#"} alt="" className="w-full h-full object-cover" />
+                                       <FileText className="w-8 h-8 text-slate-300 absolute" />
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col items-center gap-2">
+                                      <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
+                                        <FileText className="w-6 h-6 text-red-500" />
+                                      </div>
+                                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">PDF</span>
+                                    </div>
+                                  )}
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                                    <Download className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
+                                  </div>
+                               </div>
+                               <div className="p-3 bg-white dark:bg-zinc-950 border-t border-slate-100 dark:border-zinc-800">
+                                  <p className="text-[10px] font-bold text-slate-700 dark:text-zinc-300 truncate mb-1">{att.filename}</p>
+                                  <p className="text-[9px] font-medium text-slate-400 uppercase">{(att.size / 1024).toFixed(0)} KB</p>
+                               </div>
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                        </div>
+                      )}
                   </div>
                 </div>
              </div>
@@ -946,6 +978,10 @@ function ComposeBalloon({
     </AnimatePresence>
   );
 }
+
+
+
+
 
 
 
