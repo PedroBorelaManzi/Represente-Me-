@@ -18,16 +18,16 @@ export interface OrderExtractionResult {
 
 const SYSTEM_INSTRUCTION = `Você é um especialista em OCR de documentos fiscais brasileiros.
 Sua tarefa é extrair quatro informações fundamentais em formato JSON:
-1. CLIENTE DESTINATÁRIO: Nome da empresa que está comprando. Ignore o Emissor.
-2. VALOR TOTAL (number): O valor financeiro final/líquido do documento.
-   - Retorne APENAS o número final (formato float), sem símbolo de moeda.
-   - DICA: O valor total geralmente é o MAIOR valor financeiro do documento.
-   - Em tabelas, procure na última linha/coluna. Ignore subtotais ou descontos.
-3. CATEGORIA (FORNECEDOR): O fabricante/emissor do pedido. 
-   - REGRA DE OURO: Você deve selecionar EXCLUSIVAMENTE uma das "CATEGORIAS CONHECIDAS" fornecidas.
-   - Use o nome EXATO que estiver na lista.
-   - NUNCA invente uma categoria nova. Se não houver correspondência clara, retorne uma string vazia.
-4. ENDEREÇO: O endereço completo de entrega do cliente.
+1. CLIENTE DESTINATÁRIO: Nome da empresa que está comprando.
+2. CNPJ CLIENTE: Extraia o CNPJ do cliente comprador (Destinatário).
+3. VALOR TOTAL (number): O valor financeiro final/líquido do documento.
+   - Retorne APENAS o número final (float), sem símbolos.
+   - O valor total é geralmente o MAIOR valor financeiro do documento.
+4. CATEGORIA (FORNECEDOR/REPRESENTADA): O fabricante ou emissor do pedido.
+   - REGRA CRÍTICA: Você DEVE selecionar uma das "CATEGORIAS CONHECIDAS" fornecidas.
+   - Se o nome do emissor no documento for semelhante a uma categoria conhecida (ex: "Indústria Cozimax" -> "Cozimax"), selecione a categoria conhecida.
+   - Retorne a categoria exatamente como escrita na lista. Se não houver correspondência mínima, retorne uma string vazia.
+5. ENDEREÇO: O endereço completo de entrega/faturamento do cliente comprador.
 
 Retorne APENAS um objeto JSON válido seguindo este esquema:
 {

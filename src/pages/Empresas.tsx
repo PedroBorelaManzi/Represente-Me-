@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
+import { SearchableClientPicker } from "../components/SearchableClientPicker";
 
 export default function EmpresasPage() {
   const { user } = useAuth();
@@ -157,10 +158,22 @@ export default function EmpresasPage() {
       try {
         const res = await processOrderFile(file, clients.map(c => c.name), settings.categories || []);
         
+        // Match client by CNPJ or Name immediately
+        const cleanResCnpj = res.cnpj?.replace(/\D/g, "");
+        const cleanResName = res.client?.trim().toLowerCase();
+        
+        const match = clients.find(c => {
+          const clientCnpj = c.cnpj?.replace(/\D/g, "");
+          const clientName = c.name?.trim().toLowerCase();
+          return (cleanResCnpj && clientCnpj === cleanResCnpj) || (clientName && clientName === cleanResName);
+        });
+
         setSelectedFiles(prev => prev.map(item => 
           item.file === file ? {
             ...item,
-            client: res.client || "Desconhecido",
+            client: match ? match.name : (res.client || "Desconhecido"),
+            clientId: match ? match.id : null,
+            isNewClient: !match && !!res.cnpj,
             category: res.category || "",
             value: res.value || 0,
             status: 'ready',
@@ -198,8 +211,8 @@ export default function EmpresasPage() {
           return (cleanResCnpj && clientCnpj === cleanResCnpj) || (clientName && clientName === cleanResName);
         });
 
-        let cid = match?.id;
-        if (!match) {
+        let cid = item.clientId || match?.id;
+        if (!cid && (item.cnpj || item.client)) {
           const n = await registerNewClient(item.client, item.cnpj, item.address || "");
           if (n) cid = n.id;
         }
@@ -606,13 +619,27 @@ export default function EmpresasPage() {
                               <p className="text-[10px] font-bold text-slate-900 dark:text-zinc-100 uppercase truncate" title={item.file.name}>{item.file.name}</p>
                             </div>
 
+                            {/* Cliente */}
                             <div className="col-span-12 md:col-span-3">
-                              <input 
-                                value={item.client}
-                                onChange={e => setSelectedFiles(prev => prev.map((it, i) => i === idx ? {...it, client: e.target.value} : it))}
-                                placeholder="Nome do Cliente"
-                                className="w-full bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl px-3 py-2 text-[10px] font-black uppercase outline-none focus:ring-1 focus:ring-emerald-500"
+                              <SearchableClientPicker 
+                                clients={clients}
+                                value={item.clientId || ""}
+                                onChange={(id) => {
+                                  const client = clients.find(c => c.id === id);
+                                  setSelectedFiles(prev => prev.map((it, i) => i === idx ? {
+                                    ...it, 
+                                    clientId: id, 
+                                    client: client ? client.name : it.client,
+                                    isNewClient: !id && !!it.cnpj
+                                  } : it));
+                                }}
                               />
+                              {item.isNewClient && !item.clientId && (
+                                <div className="mt-1 flex items-center gap-1.5 px-2">
+                                  <Sparkles className="w-3 h-3 text-emerald-500" />
+                                  <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Novo Cliente Identificado</span>
+                                </div>
+                              )}
                             </div>
 
                             <div className="col-span-12 md:col-span-3">
@@ -622,10 +649,10 @@ export default function EmpresasPage() {
                                 className="w-full bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl px-3 py-2 text-[10px] font-black uppercase outline-none focus:ring-1 focus:ring-emerald-500"
                               >
                                 <option value="">SELECIONAR...</option>
-                                {settings.categories?.map((cat: string) => (
+                                {settings.categories?.filter(c => c !== 'GERAL').map(cat => (
                                   <option key={cat} value={cat}>{cat}</option>
                                 ))}
-                                <option value="GERAL">GERAL</option>
+
                               </select>
                             </div>
 
@@ -635,8 +662,11 @@ export default function EmpresasPage() {
                                 type="number"
                                 value={item.value}
                                 onChange={e => setSelectedFiles(prev => prev.map((it, i) => i === idx ? {...it, value: e.target.value} : it))}
-                                className="w-full bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl pl-8 pr-3 py-2 text-[10px] font-black uppercase outline-none focus:ring-1 focus:ring-emerald-500"
+                                className="w-full bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl pl-8 pr-3 py-2 text-[10px] font-black uppercase outline-none focus:ring-1 focus:ring-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-20">
+                                <Settings className="w-3 h-3" />
+                              </div>
                             </div>
 
                             <div className="col-span-3 md:col-span-1 text-right">
