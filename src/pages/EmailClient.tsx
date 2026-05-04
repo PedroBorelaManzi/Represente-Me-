@@ -60,7 +60,7 @@ export default function EmailClient() {
     }
   }, [selectedEmail]);
 
-  async function resolveInlineImages(email: EmailMessage) {
+    async function resolveInlineImages(email: EmailMessage) {
     let html = email.fullBody || "";
     setResolvedBody(html); 
 
@@ -72,7 +72,7 @@ export default function EmailClient() {
     let updatedHtml = html;
     let changed = false;
 
-        for (const att of inlineAttachments) {
+    for (const att of inlineAttachments) {
        try {
          const res = await downloadAttachmentFromApi(user.id, selectedAccount.provider, email.id, att.id, selectedAccount.email);
          if (res.success && res.data) {
@@ -83,8 +83,6 @@ export default function EmailClient() {
            updatedHtml = updatedHtml.split("cid:" + encodeURIComponent(att.contentId)).join(dataUrl);
            changed = true;
          }
-       } catch (err) {}
-    }
        } catch (err) {}
     }
     if (changed) setResolvedBody(updatedHtml);
@@ -949,6 +947,7 @@ function ComposeBalloon({
     </AnimatePresence>
   );
 }
+
 
 
 
