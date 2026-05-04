@@ -681,6 +681,8 @@ function ComposeBalloon({
   const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [attachments, setAttachments] = useState<{file: File, base64: string}[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     if (isOpen) {
@@ -713,6 +715,27 @@ function ComposeBalloon({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const base64 = ev.target?.result as string;
+        setAttachments(prev => [...prev, { file, base64 }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   async function handleSend() {
     if (!to) { alert("Por favor, preencha o destinatário."); return; }
     if (!body) { alert("Por favor, preencha a mensagem."); return; }
@@ -720,10 +743,16 @@ function ComposeBalloon({
 
     setIsSending(true);
     try {
-      const res = await sendEmailViaApi(userId, provider, to, subject, body, emailAccount);
+      const attData = attachments.map(a => ({
+        filename: a.file.name,
+        content: a.base64,
+        mimeType: a.file.type
+      }));
+
+      const res = await sendEmailViaApi(userId, provider, to, subject, body, emailAccount, attData);
       if (res.success) {
         onClose();
-        setTo(""); setSubject(""); setBody("");
+        setTo(""); setSubject(""); setBody(""); setAttachments([]);
       } else {
         alert("Erro no envio: " + res.error);
       }
@@ -751,7 +780,7 @@ function ComposeBalloon({
           transition={{ type: "spring", damping: 30, stiffness: 300 }}
           className={cn(
             "fixed bottom-0 right-0 sm:right-10 w-full sm:w-[550px] bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-2xl sm:rounded-t-[40px] z-[100] flex flex-col",
-            isMinimized ? "h-[80px]" : "h-[100dvh] sm:h-[650px]"
+            isMinimized ? "h-[80px]" : "h-[100dvh] sm:h-[750px]"
           )}
         >
           <div className="bg-slate-900 p-6 sm:rounded-t-[40px] flex items-center justify-between shrink-0">
@@ -813,14 +842,47 @@ function ComposeBalloon({
                <input type="text" placeholder="Qual o assunto hoje? (Opcional)" value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full bg-transparent border-b border-slate-100 dark:border-zinc-800 py-3 text-sm font-bold outline-none focus:border-emerald-500 transition-colors dark:text-zinc-100 placeholder:text-slate-300"/>
              </div>
 
-             <div className="flex-1 space-y-1">
-               <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Mensagem</p>
-               <textarea placeholder="Sua história começa aqui..." value={body} onChange={(e) => setBody(e.target.value)} className="w-full h-full bg-transparent border-none outline-none resize-none text-sm leading-relaxed dark:text-zinc-200 placeholder:text-slate-300 focus:ring-0 shadow-none"/>
+             <div className="flex-1 flex flex-col min-h-0 space-y-4">
+               <div className="flex-1 space-y-1">
+                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest pl-1">Mensagem</p>
+                 <textarea placeholder="Sua história começa aqui..." value={body} onChange={(e) => setBody(e.target.value)} className="w-full h-full bg-transparent border-none outline-none resize-none text-sm leading-relaxed dark:text-zinc-200 placeholder:text-slate-300 focus:ring-0 shadow-none"/>
+               </div>
+
+               {attachments.length > 0 && (
+                 <div className="flex flex-wrap gap-2 pt-2">
+                   {attachments.map((att, idx) => (
+                     <div key={idx} className="group relative flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl animate-in zoom-in-95 duration-200">
+                        <FileText className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-zinc-400 truncate max-w-[120px]">{att.file.name}</span>
+                        <button 
+                          onClick={() => removeAttachment(idx)}
+                          className="p-1 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                     </div>
+                   ))}
+                 </div>
+               )}
              </div>
 
              <div className="pt-4 sm:pt-6 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0 pb-6 sm:pb-0">
                 <div className="flex items-center gap-2">
-                   <button className="p-4 text-emerald-600 bg-emerald-50 rounded-2xl hover:bg-emerald-100 transition-colors"><Sparkles className="w-5 h-5" /></button>
+                   <input 
+                     type="file" 
+                     ref={fileInputRef} 
+                     className="hidden" 
+                     onChange={handleFileChange} 
+                     multiple 
+                   />
+                   <button 
+                     onClick={() => fileInputRef.current?.click()}
+                     className="p-4 text-slate-500 hover:text-emerald-600 bg-slate-50 dark:bg-zinc-900 rounded-2xl hover:bg-emerald-50 transition-all border border-slate-100 dark:border-zinc-800 shadow-sm"
+                     title="Anexar arquivos"
+                   >
+                     <Paperclip className="w-5 h-5" />
+                   </button>
+                   <button className="p-4 text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl hover:bg-emerald-100 transition-colors"><Sparkles className="w-5 h-5" /></button>
                 </div>
                 <button 
                   disabled={isSending}

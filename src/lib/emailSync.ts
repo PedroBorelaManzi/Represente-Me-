@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+﻿import { supabase } from './supabase';
 
 export type EmailProvider = 'google' | 'microsoft';
 
@@ -225,21 +225,54 @@ export async function fetchEmailsFromApi(
 }
 
 // 4. SEND EMAIL
-export async function sendEmailViaApi(userId: string, provider: EmailProvider, to: string, subject: string, body: string, emailAccount?: string) {
+export async function sendEmailViaApi(
+  userId: string, 
+  provider: EmailProvider, 
+  to: string, 
+  subject: string, 
+  body: string, 
+  emailAccount?: string,
+  attachments?: { filename: string, content: string, mimeType: string }[]
+) {
   const token = await getValidEmailToken(userId, provider, emailAccount);
   if (!token) return { success: false, error: "Token não disponível" };
 
   if (provider === 'google') {
     try {
-      const utf8Subject = `=?utf-8?B?${btoa(new TextEncoder().encode(subject).reduce((p, c) => p + String.fromCharCode(c), ""))}?=`;
-      const emailLines = [
+      const boundary = "----------" + Math.random().toString(36).substring(2);
+      const utf8Subject = `=?utf-8?B?${btoa(new TextEncoder().encode(subject).reduce((p, c) => p + String.fromCharCode(c), "")) }?=`;
+      
+      let emailLines = [
         `To: ${to}`,
         `Subject: ${utf8Subject}`,
+        'MIME-Version: 1.0',
+        `Content-Type: multipart/mixed; boundary="${boundary}"`,
+        '',
+        `--${boundary}`,
         'Content-Type: text/html; charset=utf-8',
         'MIME-Version: 1.0',
         '',
-        body
+        body,
+        ''
       ];
+
+      if (attachments && attachments.length > 0) {
+        attachments.forEach(att => {
+          const base64Data = att.content.includes(',') ? att.content.split(',')[1] : att.content;
+          
+          emailLines.push(`--${boundary}`);
+          emailLines.push(`Content-Type: ${att.mimeType}`);
+          emailLines.push('MIME-Version: 1.0');
+          emailLines.push('Content-Transfer-Encoding: base64');
+          emailLines.push(`Content-Disposition: attachment; filename="${att.filename}"`);
+          emailLines.push('');
+          emailLines.push(base64Data);
+          emailLines.push('');
+        });
+      }
+
+      emailLines.push(`--${boundary}--`);
+
       const raw = btoa(new TextEncoder().encode(emailLines.join('\r\n')).reduce((p, c) => p + String.fromCharCode(c), ""))
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
