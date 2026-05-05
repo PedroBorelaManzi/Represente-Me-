@@ -69,7 +69,8 @@ function extractCNPJLocally(text: string): string {
 function extractCategoryLocally(text: string, categories: string[]): string {
   if (!categories || categories.length === 0 || !text) return "";
   
-  const normalizedText = text.toLowerCase();
+  // Limpeza super agressiva: remove pontuações, acentos, traços, etc.
+  const normalizedText = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, " ");
   
   // Create an array of objects to store the match score
   const matches = categories.map(cat => {
@@ -78,15 +79,18 @@ function extractCategoryLocally(text: string, categories: string[]): string {
     const words = normalizedCat.split(/\s+/);
     let score = 0;
     
+    const cleanCat = normalizedCat.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]/g, " ");
+    
     // Exact match is best
-    if (normalizedText.includes(normalizedCat)) {
+    if (normalizedText.includes(cleanCat)) {
       score += 100;
     }
     
     // Partial word matches (e.g., "Cozimax" matching "Indústria Cozimax")
-    words.forEach(word => {
+    const cleanWords = cleanCat.split(/\s+/);
+    cleanWords.forEach(word => {
         if (word.length > 3 && normalizedText.includes(word)) {
-            score += 10;
+            score += 15;
         }
     });
 
@@ -278,4 +282,4 @@ export async function processOrderFile(file: File, knownClients = [], categories
     };
   }
 }
-// v2.2 - Motor Híbrido de Identificação c/ Similaridade Local Dinâmica
+// v2.3 - Motor Híbrido Blindado contra Pontuação e Acentos
