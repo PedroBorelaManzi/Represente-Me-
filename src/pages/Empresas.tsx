@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
-import { SearchableClientPicker } from "../components/SearchableClientPicker";
+import { SearchableClientPicker } from "../components/SearchableClientPicker"; // Motor Híbrido V2
 
 export default function EmpresasPage() {
   const { user } = useAuth();
@@ -740,3 +740,5 @@ export default function EmpresasPage() {
     </div>
   );
 }
+
+// v2.1 - UI Polishing e Match de Clientes
