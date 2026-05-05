@@ -66,6 +66,44 @@ function extractCNPJLocally(text: string): string {
   return "";
 }
 
+function extractCategoryLocally(text: string, categories: string[]): string {
+  if (!categories || categories.length === 0 || !text) return "";
+  
+  const normalizedText = text.toLowerCase();
+  
+  // Create an array of objects to store the match score
+  const matches = categories.map(cat => {
+    const normalizedCat = cat.toLowerCase().trim();
+    // Split category into words to check partial matches
+    const words = normalizedCat.split(/\s+/);
+    let score = 0;
+    
+    // Exact match is best
+    if (normalizedText.includes(normalizedCat)) {
+      score += 100;
+    }
+    
+    // Partial word matches (e.g., "Cozimax" matching "Indústria Cozimax")
+    words.forEach(word => {
+        if (word.length > 3 && normalizedText.includes(word)) {
+            score += 10;
+        }
+    });
+
+    return { category: cat, score };
+  });
+
+  // Sort by highest score
+  matches.sort((a, b) => b.score - a.score);
+  
+  // Return the best match if it has a meaningful score
+  if (matches[0] && matches[0].score > 0) {
+      return matches[0].category;
+  }
+  
+  return "";
+}
+
 function extractValueLocally(text: string): number {
   const parseMoney = (rawValue: string) => {
     if (rawValue.includes('.') && rawValue.includes(',')) {
@@ -125,6 +163,7 @@ export async function processOrderFile(file: File, knownClients = [], categories
 
     const localCnpj = extractCNPJLocally(extractedText);
     const localValue = extractValueLocally(extractedText);
+    const localCategory = extractCategoryLocally(extractedText, categories as string[]);
 
     // Se o AI falhar instantaneamente, teremos esse backup perfeito
     if (localValue > 0 && !extractedText) {
@@ -199,7 +238,12 @@ export async function processOrderFile(file: File, knownClients = [], categories
     }
 
     let finalCategory = data.category || "";
-    if (finalCategory && categories.length > 0) {
+    
+    // Priority 1: Local similarity matching if it found a strong match
+    if (localCategory) {
+        finalCategory = localCategory;
+    } else if (finalCategory && categories.length > 0) {
+        // Priority 2: AI result matching known categories
         const found = categories.find((c: string) => c.toLowerCase() === finalCategory.toLowerCase());
         if (!found) {
             const partial = categories.find((c: string) => finalCategory.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(finalCategory.toLowerCase()));
@@ -234,4 +278,4 @@ export async function processOrderFile(file: File, knownClients = [], categories
     };
   }
 }
-// v2.1 - Motor Híbrido de Identificação
+// v2.2 - Motor Híbrido de Identificação c/ Similaridade Local Dinâmica
