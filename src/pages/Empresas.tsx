@@ -63,6 +63,7 @@ export default function EmpresasPage() {
         .from("orders")
         .select("*, client:clients(id, name, cnpj, city, state)")
         .eq("user_id", user?.id)
+        .not("file_path", "is", null) // Filtrar pedidos sem arquivo (fantasmas)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -288,6 +289,8 @@ export default function EmpresasPage() {
   }, [allOrders, settings?.categories]);
 
   const catTotals = useMemo(() => {
+    // Garantir que estamos calculando APENAS sobre pedidos que realmente existem no banco
+    // e têm arquivos válidos (já filtrados no loadOrders)
     const currentMonthly = monthlyOrders || [];
     return combinedCategories.reduce((acc: any, cat: string) => {
       acc[cat] = currentMonthly
@@ -741,4 +744,4 @@ export default function EmpresasPage() {
   );
 }
 
-// v2.1 - UI Polishing e Match de Clientes
+// v2.3 - Sincronização Total de Faturamento
