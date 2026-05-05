@@ -121,29 +121,46 @@ export default function ClientDetails() {
   };
 
   const handleFileDelete = async (fileId: string, filePath: string) => {
-    if (!window.confirm("Deseja realmente excluir este arquivo?")) return;
+    if (!window.confirm("Deseja realmente excluir este pedido e descontar do faturamento?")) return;
     
     try {
+      // 1. Get the order details before deleting to deduct from client's total
+      const { data: orderData } = await supabase.from('orders').select('*').eq('id', fileId).single();
+      
+      // 2. Remove file from storage
       const { error: storageError } = await supabase.storage
         .from('client_vault')
         .remove([filePath]);
       
       if (storageError) {
-          // Fallback case: if bucket was different before
           await supabase.storage.from('orders').remove([filePath]);
       }
 
+      // 3. Delete the order completely from database (instead of just nullifying the file path)
       const { error: dbError } = await supabase
         .from('orders')
-        .update({ file_path: null, file_name: null })
+        .delete()
         .eq('id', fileId);
       
       if (dbError) throw dbError;
 
-      toast.success("Arquivo removido com sucesso!");
+      // 4. Update the client's faturamento to deduct the deleted order's value
+      if (orderData && orderData.value && orderData.category) {
+          const { data: clientData } = await supabase.from('clients').select('faturamento').eq('id', id).single();
+          if (clientData) {
+              const fat = clientData.faturamento || {};
+              const currentCatTotal = Number(fat[orderData.category]) || 0;
+              const newTotal = Math.max(0, currentCatTotal - Number(orderData.value));
+              
+              const updatedFat = { ...fat, [orderData.category]: newTotal };
+              await supabase.from('clients').update({ faturamento: updatedFat }).eq('id', id);
+          }
+      }
+
+      toast.success("Pedido removido com sucesso!");
       loadClientData();
     } catch (err) {
-      toast.error("Erro ao remover arquivo.");
+      toast.error("Erro ao remover pedido.");
     }
   };
 
