@@ -161,61 +161,69 @@ export default function DailyNotes({ selectedDate, className }: DailyNotesProps)
     )}>
       <div className="flex flex-col gap-4 mb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl border border-emerald-100 dark:border-emerald-500/20">
-              {activeMode === 'notes' ? <StickyNote className="w-5 h-5 text-emerald-600" /> : <ListTodo className="w-5 h-5 text-emerald-600" />}
-            </div>
-            <div>
-              <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{activeMode === 'notes' ? 'Anotações do Dia' : 'Tarefas do Dia'}</h2>
-              <p className="text-[11px] font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mt-0.5">
-                {formattedDateDisplay}
-              </p>
-            </div>
+          <div className="flex items-center gap-2">
+            {/* Botão de Anotações */}
+            <button 
+              onClick={() => setActiveMode('notes')}
+              className={cn(
+                "flex items-center gap-3 p-2.5 rounded-[22px] transition-all text-left",
+                activeMode === 'notes' 
+                  ? "bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 shadow-sm" 
+                  : "opacity-30 hover:opacity-60"
+              )}
+            >
+              <div className="p-2 bg-emerald-500/10 rounded-xl">
+                <StickyNote className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Anotações</h2>
+                <p className="text-[10px] font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mt-0.5">
+                  {formattedDateDisplay}
+                </p>
+              </div>
+            </button>
+
+            {/* Botão de Tarefas */}
+            <button 
+              onClick={() => setActiveMode('tasks')}
+              className={cn(
+                "flex items-center gap-3 p-2.5 rounded-[22px] transition-all text-left",
+                activeMode === 'tasks' 
+                  ? "bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 shadow-sm" 
+                  : "opacity-30 hover:opacity-60"
+              )}
+            >
+              <div className="p-2 bg-emerald-500/10 rounded-xl">
+                <ListTodo className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Tarefas</h2>
+                <p className="text-[10px] font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mt-0.5">
+                  {formattedDateDisplay}
+                </p>
+              </div>
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
-             <div className="flex bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl">
-                <button 
-                  onClick={() => setActiveMode('notes')}
-                  className={cn(
-                    "p-2 rounded-lg transition-all",
-                    activeMode === 'notes' ? "bg-white dark:bg-zinc-700 text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                  )}
-                  title="Notas"
-                >
-                  <Type className="w-4 h-4" />
-                </button>
-                <button 
-                  onClick={() => setActiveMode('tasks')}
-                  className={cn(
-                    "p-2 rounded-lg transition-all",
-                    activeMode === 'tasks' ? "bg-white dark:bg-zinc-700 text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                  )}
-                  title="Checklist"
-                >
-                  <ListTodo className="w-4 h-4" />
-                </button>
-             </div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-           <div className="flex items-center gap-2">
               <AnimatePresence mode="wait">
                 {saveStatus === 'saving' && (
-                  <motion.div initial={{ opacity: 0, x: 5 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -5 }} className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 dark:bg-zinc-800 rounded-full border border-slate-100 dark:border-zinc-700">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-zinc-800 rounded-full border border-slate-100 dark:border-zinc-700">
                     <Loader2 className="w-2.5 h-2.5 text-slate-400 animate-spin" />
-                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Salvando</span>
+                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Sincronizando</span>
                   </motion.div>
                 )}
                 {saveStatus === 'saved' && (
-                  <motion.div initial={{ opacity: 0, x: 5 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -5 }} className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 rounded-full border border-emerald-100 dark:border-emerald-500/20">
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-full border border-emerald-100 dark:border-emerald-500/20">
                     <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                    <span className="text-[7px] font-black text-emerald-600 uppercase tracking-widest">Salvo</span>
+                    <span className="text-[7px] font-black text-emerald-600 uppercase tracking-widest">Ok</span>
                   </motion.div>
                 )}
               </AnimatePresence>
-           </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end px-2">
            {activeMode === 'tasks' && (
              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
                {dailyData.tasks.filter(t => t.completed).length}/{dailyData.tasks.length} Concluídas
