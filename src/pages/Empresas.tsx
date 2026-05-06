@@ -300,7 +300,7 @@ export default function EmpresasPage() {
     }, {});
   }, [combinedCategories, monthlyOrders]);
 
-  const totalGeral = useMemo(() => (monthlyOrders || []).reduce((sum, o) => sum + (Number(o.value) || 0), 0), [monthlyOrders]);
+  const totalGeral = useMemo(() => (monthlyOrders || []).reduce((sum, o) => sum + (Number(o.value) || 0), [monthlyOrders]);
 
   const ordersToday = useMemo(() => {
     const today = new Date().toLocaleDateString("en-CA");
@@ -389,7 +389,7 @@ export default function EmpresasPage() {
           <button onClick={() => setIsUploadModalOpen(true)} className="flex items-center gap-2 md:gap-3 px-4 md:px-8 py-3 md:py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl md:rounded-[24px] font-black uppercase text-[9px] md:text-[11px] tracking-widest transition-all shadow-xl active:scale-95 group h-12 md:h-14 whitespace-nowrap">
             <Upload className="w-4 h-4 md:w-5 md:h-5" />
             <span className="hidden xs:inline">Enviar Pedidos</span>
-            <span className="xs:hidden">Enviar</span>
+            <span className="xs:hidden">Enviar Pedidos</span>
           </button>
         </div>
       </div>
@@ -721,7 +721,7 @@ export default function EmpresasPage() {
         {managingCompany && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setManagingCompany(null)} className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl" />
-             <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white dark:bg-zinc-900 p-8 md:p-10 rounded-[32px] md:rounded-[48px] shadow-2xl relative z-10 w-full max-w-sm border border-white/20">
+             <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white dark:bg-zinc-900 p-8 md:p-10 rounded-[32px] md:rounded-[48px] shadow-2xl relative z-10 w-full max-sm border border-white/20">
                 <div className="flex justify-between items-center mb-6 md:mb-8">
                    <h3 className="text-lg md:text-xl font-black uppercase text-slate-900 dark:text-zinc-100 tracking-tighter">Gerenciar Empresa</h3>
                    <button onClick={() => setManagingCompany(null)} className="text-slate-300 hover:text-slate-900 transition-colors"><X/></button>
@@ -743,5 +743,3 @@ export default function EmpresasPage() {
     </div>
   );
 }
-
-// v2.3 - Sincronização Total de Faturamento

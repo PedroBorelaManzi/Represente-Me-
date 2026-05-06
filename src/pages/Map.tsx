@@ -273,7 +273,7 @@ export default function Map() {
             className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-[0_20px_40px_-10px_rgba(99,102,241,0.4)] active:scale-95 group"
           >
             <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-            Expandir Radar
+            ADICIONAR CLIENTES
           </button>
         </div>
       </div>
@@ -370,7 +370,7 @@ export default function Map() {
             >
                <div className="p-12 border-b dark:border-zinc-850 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-950/20">
                 <div>
-                  <h3 className="font-black text-slate-900 dark:text-zinc-100 text-3xl uppercase tracking-tighter">Expandir Radar</h3>
+                  <h3 className="font-black text-slate-900 dark:text-zinc-100 text-3xl uppercase tracking-tighter">ADICIONAR CLIENTES</h3>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Sincronização com o Ecossistema Territorial</p>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="p-5 bg-white dark:bg-zinc-800 rounded-[24px] shadow-sm text-slate-400 hover:text-red-500 transition-all"><X className="w-8 h-8" /></button>
