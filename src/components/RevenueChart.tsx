@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { Settings, TrendingUp, X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -86,17 +86,24 @@ const RevenueChart = ({ data, loading, currentDate, onPrevMonth, onNextMonth }) 
              <span key={i} className="text-[9px] font-black text-slate-500">{formatShortCurrency(Math.round((MAX_REVENUE/4)*i))}</span>
            ))}
         </div>
-        <div className="flex-1 flex items-stretch gap-4 px-4 relative overflow-x-auto custom-scrollbar pb-2">
+        <div className={cn(
+          "flex-1 flex items-stretch px-4 relative overflow-hidden pb-2",
+          data.length > 10 ? "gap-1" : data.length > 6 ? "gap-2" : "gap-4"
+        )}>
           {data.map((item, idx) => {
             const val = Number(item.value) || 0;
             const h = (val / MAX_REVENUE) * 100;
             const isSelected = selectedIdx === idx;
             return (
-              <div key={idx} className="min-w-[80px] flex-1 relative flex flex-col items-center justify-end group h-full pb-10" onMouseEnter={() => setSelectedIdx(idx)} onMouseLeave={() => setSelectedIdx(null)}>
+              <div key={idx} className="flex-1 relative flex flex-col items-center justify-end group h-full pb-10" onMouseEnter={() => setSelectedIdx(idx)} onMouseLeave={() => setSelectedIdx(null)}>
                 <motion.div 
                   initial={{ height: 0 }} 
                   animate={{ height: h + '%' }} 
-                  className={cn("w-full max-w-[64px] rounded-t-xl transition-all relative flex flex-col items-center justify-start pt-2", isSelected ? "bg-emerald-600 shadow-[0_0_20px_rgba(79,70,229,0.3)]" : "bg-emerald-500/80")}
+                  className={cn(
+                    "w-full rounded-t-xl transition-all relative flex flex-col items-center justify-start pt-2", 
+                    data.length < 5 ? "max-w-[80px]" : "max-w-full",
+                    isSelected ? "bg-emerald-600 shadow-[0_0_20px_rgba(79,70,229,0.3)]" : "bg-emerald-500/80"
+                  )}
                 >
                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-t-xl" />
                    
@@ -132,4 +139,3 @@ const RevenueChart = ({ data, loading, currentDate, onPrevMonth, onNextMonth }) 
 };
 
 export default RevenueChart;
-
