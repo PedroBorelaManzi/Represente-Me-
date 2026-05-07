@@ -36,7 +36,7 @@ export default function Layout() {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Resumo Geral', path: '/dashboard' },
-    { icon: MapIcon, label: 'Mapa do Radar', path: '/dashboard/mapa' },
+    { icon: MapIcon, label: 'Mapa do Radar', path: '/dashboard/map' },
     { icon: Users, label: 'Meus Clientes', path: '/dashboard/clientes' },
     { icon: Building2, label: 'Empresas & Pedidos', path: '/dashboard/empresas' },
     { icon: Calendar, label: 'Minha Agenda', path: '/dashboard/agenda' },
