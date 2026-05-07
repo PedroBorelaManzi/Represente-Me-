@@ -242,21 +242,21 @@ export default function Map() {
   const mapCompanies = getOffsetPositions(filteredCompanies);
 
   return (
-    <div className="h-full flex flex-col gap-8 md:gap-10 pb-4">
+    <div className="h-full flex flex-col gap-6 lg:gap-10 pb-4">
       {/* Premium Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 lg:gap-6">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-4 uppercase tracking-tight">
-            <div className="p-3 bg-emerald-600 rounded-[20px]">
-              <Navigation2 className="w-8 h-8 text-white" />
+          <h1 className="text-2xl xs:text-3xl lg:text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 lg:gap-4 uppercase tracking-tight">
+            <div className="p-2 sm:p-2.5 lg:p-3 bg-emerald-600 rounded-xl lg:rounded-[20px]">
+              <Navigation2 className="w-6 h-6 lg:w-8 h-8 text-white" />
             </div>
             Mapa de <span className="text-emerald-600">Clientes</span>
           </h1>
-          <p className="text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Visualização geo-estratégica da sua carteira de clientes.</p>
+          <p className="text-xs lg:text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Visualização geo-estratégica da sua carteira de clientes.</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-          <form onSubmit={handleMapSearch} className="relative w-full sm:w-96 group">
+        <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full lg:w-auto">
+          <form onSubmit={handleMapSearch} className="relative w-full sm:w-80 lg:w-96 group">
             <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
               {isSearchingMap ? <Loader2 className="h-5 w-5 text-emerald-500 animate-spin" /> : <Search className="h-5 w-5 text-slate-400 group-focus-within:text-emerald-600 transition-colors" />}
             </div>
@@ -264,13 +264,13 @@ export default function Map() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full pl-14 pr-6 py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] shadow-sm focus:ring-8 focus:ring-emerald-500/10 text-xs font-black uppercase tracking-widest transition-all placeholder:text-slate-300"
+              className="block w-full pl-14 pr-6 py-3 lg:py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[24px] shadow-sm focus:ring-8 focus:ring-emerald-500/10 text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all placeholder:text-slate-300"
               placeholder="Buscar Cliente ou Endereço..."
             />
           </form>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[24px] font-black uppercase text-[11px] tracking-widest transition-all shadow-[0_20px_40px_-10px_rgba(99,102,241,0.4)] active:scale-95 group"
+            className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-3 sm:px-8 sm:py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[24px] font-black uppercase text-[9px] sm:text-[11px] tracking-widest transition-all shadow-[0_20px_40px_-10px_rgba(16,185,129,0.4)] active:scale-95 group"
           >
             <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
             ADICIONAR CLIENTES
@@ -278,7 +278,7 @@ export default function Map() {
         </div>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-zinc-950 rounded-[48px] border border-slate-100 dark:border-zinc-850 shadow-sm overflow-hidden relative z-0 min-h-[700px]">
+      <div className="flex-1 bg-white dark:bg-zinc-950 rounded-[48px] border border-slate-100 dark:border-zinc-850 shadow-sm overflow-hidden relative z-0 min-h-[500px] lg:min-h-[700px]">
         {/* Floating Mini Stats Overlay */}
         <div className="absolute top-8 right-8 z-[1000] hidden lg:flex items-center gap-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl p-4 rounded-[32px] border border-white/40 dark:border-zinc-800 shadow-2xl">
            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
@@ -368,55 +368,55 @@ export default function Map() {
                exit={{ opacity: 0, scale: 0.9, y: 40 }} 
                className="bg-white dark:bg-zinc-900 rounded-[56px] border border-slate-200 dark:border-zinc-800 w-full max-w-xl relative z-[10001] overflow-hidden shadow-[0_64px_128px_-32px_rgba(0,0,0,0.5)]"
             >
-               <div className="p-12 border-b dark:border-zinc-850 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-950/20">
+               <div className="p-8 lg:p-12 border-b dark:border-zinc-850 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-950/20">
                 <div>
-                  <h3 className="font-black text-slate-900 dark:text-zinc-100 text-3xl uppercase tracking-tighter">ADICIONAR CLIENTES</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Sincronização com o Ecossistema Territorial</p>
+                  <h3 className="font-black text-slate-900 dark:text-zinc-100 text-2xl lg:text-3xl uppercase tracking-tighter">ADICIONAR CLIENTES</h3>
+                  <p className="text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Sincronização com o Ecossistema Territorial</p>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="p-5 bg-white dark:bg-zinc-800 rounded-[24px] shadow-sm text-slate-400 hover:text-red-500 transition-all"><X className="w-8 h-8" /></button>
+                <button onClick={() => setIsModalOpen(false)} className="p-3 lg:p-5 bg-white dark:bg-zinc-800 rounded-[18px] lg:rounded-[24px] shadow-sm text-slate-400 hover:text-red-500 transition-all"><X className="w-6 h-6 lg:w-8 lg:h-8" /></button>
               </div>
 
-              <form onSubmit={handleCreateLocation} className="p-12 space-y-10">
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Assinatura Digital (CNPJ)</label>
-                  <div className="flex gap-4">
+              <form onSubmit={handleCreateLocation} className="p-8 lg:p-12 space-y-6 lg:space-y-10">
+                <div className="space-y-3 lg:space-y-4">
+                  <label className="block text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Assinatura Digital (CNPJ)</label>
+                  <div className="flex gap-3 lg:gap-4">
                     <input 
                       required 
                       type="text" 
                       value={newLocation.cnpj} 
                       onChange={e => setNewLocation({...newLocation, cnpj: e.target.value})} 
-                      className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all" 
+                      className="w-full px-6 lg:px-8 py-4 lg:py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] lg:rounded-[32px] text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all" 
                       placeholder="00.000.000/0000-00" 
                     />
                     <button 
                       type="button" 
                       onClick={handleCnpjLookup} 
                       disabled={isSearchingCnpj} 
-                      className="p-5 bg-emerald-600 text-white rounded-[24px]  active:scale-95 transition-all flex items-center justify-center min-w-[70px]"
+                      className="p-4 lg:p-5 bg-emerald-600 text-white rounded-[18px] lg:rounded-[24px] active:scale-95 transition-all flex items-center justify-center min-w-[60px] lg:min-w-[70px]"
                     >
-                      {isSearchingCnpj ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}
+                      {isSearchingCnpj ? <Loader2 className="w-5 h-5 lg:w-6 lg:h-6 animate-spin" /> : <Search className="w-5 h-5 lg:w-6 lg:h-6" />}
                     </button>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Identificação do Ponto</label>
-                  <input required type="text" value={newLocation.name} onChange={e => setNewLocation({...newLocation, name: e.target.value})} className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all" placeholder="Razão Social ou Nome Fantasia" />
+                <div className="space-y-3 lg:space-y-4">
+                  <label className="block text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Identificação do Ponto</label>
+                  <input required type="text" value={newLocation.name} onChange={e => setNewLocation({...newLocation, name: e.target.value})} className="w-full px-6 lg:px-8 py-4 lg:py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] lg:rounded-[32px] text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all" placeholder="Razão Social ou Nome Fantasia" />
                 </div>
 
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Localização Territorial</label>
+                <div className="space-y-3 lg:space-y-4">
+                  <label className="block text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Localização Territorial</label>
                   <textarea 
                     value={newLocation.address} 
                     onChange={e => setNewLocation({...newLocation, address: e.target.value})} 
-                    className="w-full px-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[32px] text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all resize-none h-32" 
+                    className="w-full px-6 lg:px-8 py-4 lg:py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] lg:rounded-[32px] text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all resize-none h-24 lg:h-32" 
                     placeholder="Rua, Número, Bairro, Cidade..." 
                   />
                 </div>
 
-                <div className="flex justify-end gap-4">
-                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-10 py-6 bg-slate-50 dark:bg-zinc-800 rounded-[32px] text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-zinc-300 hover:bg-slate-100 transition-all">Cancelar</button>
-                  <button type="submit" className="px-10 py-6 bg-emerald-600 text-white rounded-[32px] text-[11px] font-black uppercase tracking-widest shadow-2xl shadow-emerald-500/20 hover:bg-emerald-700 active:scale-95 transition-all">Ativar no Radar</button>
+                <div className="flex justify-end gap-3 lg:gap-4">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 lg:px-10 py-4 lg:py-6 bg-slate-50 dark:bg-zinc-800 rounded-[24px] lg:rounded-[32px] text-[10px] lg:text-[11px] font-black uppercase tracking-widest text-slate-600 dark:text-zinc-300 hover:bg-slate-100 transition-all">Cancelar</button>
+                  <button type="submit" className="px-6 lg:px-10 py-4 lg:py-6 bg-emerald-600 text-white rounded-[24px] lg:rounded-[32px] text-[10px] lg:text-[11px] font-black uppercase tracking-widest shadow-2xl shadow-emerald-500/20 hover:bg-emerald-700 active:scale-95 transition-all">Ativar no Radar</button>
                 </div>
               </form>
             </motion.div>

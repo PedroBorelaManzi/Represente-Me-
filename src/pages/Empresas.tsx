@@ -362,12 +362,12 @@ export default function EmpresasPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 md:gap-10 pb-20 overflow-x-hidden">
+    <div className="flex flex-col gap-4 lg:gap-10 pb-20 overflow-x-hidden">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 md:gap-4 uppercase tracking-tight">
-            <div className="p-2 md:p-3 bg-emerald-600 rounded-xl md:rounded-[20px]">
-              <Building2 className="w-6 h-6 md:w-8 md:h-8 text-white" />
+          <h1 className="text-xl sm:text-2xl lg:text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 md:gap-4 uppercase tracking-tight">
+            <div className="p-2 sm:p-2.5 lg:p-3 bg-emerald-600 rounded-xl lg:rounded-[20px]">
+              <Building2 className="w-5 h-5 sm:w-6 h-6 lg:w-8 lg:h-8 text-white" />
             </div>
             <span>Empresas <span className="text-slate-200 ml-1 md:ml-2">/</span> <span className="text-emerald-600">Pedidos</span></span>
           </h1>
@@ -394,70 +394,70 @@ export default function EmpresasPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        <div className="bg-white dark:bg-zinc-900 p-6 md:p-8 rounded-[32px] md:rounded-[40px] border border-slate-200 dark:border-zinc-800 shadow-sm group">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+        <div className="bg-white dark:bg-zinc-900 p-5 sm:p-6 lg:p-8 rounded-[32px] md:rounded-[40px] border border-slate-200 dark:border-zinc-800 shadow-sm group">
           <div className="flex items-center gap-4 md:gap-5">
-            <div className="p-3 md:p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl md:rounded-3xl group-hover:scale-110 transition-transform">
-              <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
+            <div className="p-2.5 sm:p-3 lg:p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl md:rounded-3xl group-hover:scale-110 transition-transform flex-shrink-0">
+              <TrendingUp className="w-5 h-5 sm:w-6 h-6 lg:w-8 lg:h-8 text-emerald-600" />
             </div>
-            <div>
-              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Faturamento Mês</p>
-              <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{formatCurrency(totalGeral)}</h2>
+            <div className="min-w-0">
+              <p className="text-[7px] sm:text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Faturamento Mês</p>
+              <h2 className="text-lg sm:text-xl lg:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight truncate">{formatCurrency(totalGeral)}</h2>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 p-6 md:p-8 rounded-[32px] md:rounded-[40px] border border-slate-200 dark:border-zinc-800 shadow-sm group">
+        <div className="bg-white dark:bg-zinc-900 p-5 sm:p-6 lg:p-8 rounded-[32px] md:rounded-[40px] border border-slate-200 dark:border-zinc-800 shadow-sm group">
           <div className="flex items-center gap-4 md:gap-5">
-            <div className="p-3 md:p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl md:rounded-3xl group-hover:rotate-12 transition-transform">
-              <ShoppingBag className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
+            <div className="p-2.5 sm:p-3 lg:p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl md:rounded-3xl group-hover:rotate-12 transition-transform flex-shrink-0">
+              <ShoppingBag className="w-5 h-5 sm:w-6 h-6 lg:w-8 lg:h-8 text-emerald-600" />
             </div>
-            <div>
-              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pedidos Mês</p>
-              <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{monthlyOrders.length}</h2>
+            <div className="min-w-0">
+              <p className="text-[7px] sm:text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pedidos Mês</p>
+              <h2 className="text-lg sm:text-xl lg:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{monthlyOrders.length}</h2>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-zinc-900 p-6 md:p-8 rounded-[32px] md:rounded-[40px] border border-slate-200 dark:border-zinc-800 shadow-sm group">
+        <div className="bg-white dark:bg-zinc-900 p-5 sm:p-6 lg:p-8 rounded-[32px] md:rounded-[40px] border border-slate-200 dark:border-zinc-800 shadow-sm group">
           <div className="flex items-center gap-4 md:gap-5">
-            <div className="p-3 md:p-4 bg-amber-50 dark:bg-amber-950/20 rounded-2xl md:rounded-3xl group-hover:scale-90 transition-transform">
-              <Zap className="w-6 h-6 md:w-8 md:h-8 text-amber-600" />
+            <div className="p-2.5 sm:p-3 lg:p-4 bg-amber-50 dark:bg-amber-950/20 rounded-2xl md:rounded-3xl group-hover:scale-90 transition-transform flex-shrink-0">
+              <Zap className="w-5 h-5 sm:w-6 h-6 lg:w-8 lg:h-8 text-amber-600" />
             </div>
-            <div>
-              <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pedidos Hoje</p>
-              <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{ordersToday}</h2>
+            <div className="min-w-0">
+              <p className="text-[7px] sm:text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pedidos Hoje</p>
+              <h2 className="text-lg sm:text-xl lg:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{ordersToday}</h2>
             </div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-10">
-        <div className="lg:col-span-4 flex lg:flex-col gap-4 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 snap-x scroll-px-4 custom-scrollbar">
+        <div className="lg:col-span-4 flex lg:flex-col gap-3 sm:gap-4 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 snap-x scroll-px-4 custom-scrollbar">
           <div className="flex items-center justify-between px-2 md:px-4">
              <h3 className="text-[9px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Seleção Estratégica</h3>
           </div>
           
           <div className="flex lg:flex-col gap-3 min-w-max lg:min-w-0">
-            <button onClick={() => setIsAddModalOpen(true)} className="w-full text-left p-5 md:p-6 rounded-3xl md:rounded-[32px] bg-emerald-600 text-white shadow-xl flex items-center justify-between group mb-2 md:mb-4 transition-all active:scale-95">
-              <span className="text-xs md:text-[14px] font-black uppercase tracking-tight">Nova Empresa</span>
-              <Plus className="w-5 h-5 md:w-6 md:h-6 group-hover:rotate-90 transition-transform" />
+            <button onClick={() => setIsAddModalOpen(true)} className="w-full text-left p-4 sm:p-5 lg:p-6 rounded-3xl md:rounded-[32px] bg-emerald-600 text-white shadow-xl flex items-center justify-between group mb-2 md:mb-4 transition-all active:scale-95">
+              <span className="text-[10px] sm:text-xs lg:text-[14px] font-black uppercase tracking-tight">Nova Empresa</span>
+              <Plus className="w-4 h-4 sm:w-5 h-5 lg:w-6 lg:h-6 group-hover:rotate-90 transition-transform" />
             </button>
 
             <button 
               onClick={() => setSelectedCategory("all")}
-              className={cn("min-w-[240px] md:min-w-[280px] lg:min-w-0 lg:w-full text-left p-6 md:p-7 rounded-[30px] md:rounded-[35px] border transition-all relative group overflow-hidden active:scale-[0.98]",
+              className={cn("min-w-[220px] sm:min-w-[260px] lg:min-w-0 lg:w-full text-left p-4 sm:p-5 lg:p-7 rounded-[30px] md:rounded-[35px] border transition-all relative group overflow-hidden active:scale-[0.98]",
                 selectedCategory === "all" 
                   ? "bg-slate-900 dark:bg-zinc-800 border-slate-900 text-white shadow-[0_20px_40px_rgba(0,0,0,0.1)]" 
                   : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-emerald-200 shadow-sm"
               )}
             >
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-[10px] md:text-[12px] font-black uppercase tracking-widest text-emerald-500">Visão Consolidada</h4>
+                <h4 className="text-[9px] sm:text-[11px] lg:text-[12px] font-black uppercase tracking-widest text-emerald-500">Visão Consolidada</h4>
                 <LayoutGrid className="w-4 h-4 md:w-5 md:h-5 opacity-40 group-hover:scale-110 transition-transform" />
               </div>
               <div className="flex items-end justify-between">
-                <p className="text-xl md:text-2xl font-black tracking-tighter">Todas as Empresas</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-black tracking-tighter">Todas as Empresas</p>
               </div>
             </button>
 
@@ -466,14 +466,14 @@ export default function EmpresasPage() {
                 <div
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={cn("cursor-pointer min-w-[200px] md:min-w-[240px] lg:min-w-0 lg:w-full text-left p-5 md:p-6 rounded-[28px] md:rounded-[32px] border transition-all relative group overflow-hidden active:scale-[0.98]",
+                  className={cn("cursor-pointer min-w-[180px] sm:min-w-[220px] lg:min-w-0 lg:w-full text-left p-4 sm:p-5 lg:p-6 rounded-[28px] md:rounded-[32px] border transition-all relative group overflow-hidden active:scale-[0.98]",
                     selectedCategory === cat
                       ? "bg-slate-900 dark:bg-zinc-800 border-slate-900 text-white shadow-xl scale-[1.02]" 
                       : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-emerald-200"
                   )}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-[11px] md:text-[13px] font-black uppercase tracking-tight truncate max-w-[120px] md:max-w-none">{cat}</h4>
+                    <h4 className="text-[10px] sm:text-[12px] lg:text-[13px] font-black uppercase tracking-tight truncate max-w-[120px] md:max-w-none">{cat}</h4>
                     <button 
                       onClick={(e) => { 
                         e.stopPropagation(); 
@@ -485,7 +485,7 @@ export default function EmpresasPage() {
                       <Settings className="w-3.5 h-3.5 md:w-4 md:h-4 opacity-30 group-hover:rotate-45 transition-transform" />
                     </button>
                   </div>
-                  <p className="text-lg md:text-xl font-black tracking-tighter">{formatCurrency(catTotals[cat] || 0)}</p>
+                  <p className="text-base sm:text-lg lg:text-xl font-black tracking-tighter">{formatCurrency(catTotals[cat] || 0)}</p>
                 </div>
               ))}
             </div>
