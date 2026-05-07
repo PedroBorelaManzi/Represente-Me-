@@ -21,6 +21,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import SettingsModal from './SettingsModal';
+import { Logo } from './Logo';
 
 export default function Layout() {
   const { user, signOut } = useAuth();
@@ -35,10 +36,10 @@ export default function Layout() {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Resumo Geral', path: '/dashboard' },
+    { icon: MapIcon, label: 'Mapa do Radar', path: '/dashboard/mapa' },
     { icon: Users, label: 'Meus Clientes', path: '/dashboard/clientes' },
     { icon: Building2, label: 'Empresas & Pedidos', path: '/dashboard/empresas' },
     { icon: Calendar, label: 'Minha Agenda', path: '/dashboard/agenda' },
-    { icon: MapIcon, label: 'Mapa do Radar', path: '/dashboard/mapa' },
   ];
 
   const toggleSubMenu = (label: string) => {
@@ -67,14 +68,7 @@ export default function Layout() {
         <div className="flex flex-col h-full">
           {/* Logo Section */}
           <div className="p-8">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-emerald-600 rounded-xl shadow-lg shadow-emerald-600/20">
-                <Shield className="w-6 h-6 text-white" />
-              </div>
-              <span className="font-black text-xl uppercase tracking-tighter text-slate-900 dark:text-zinc-100">
-                Represente-se
-              </span>
-            </div>
+            <Logo size="sm" />
           </div>
 
           {/* User Profile Summary */}
