@@ -17,6 +17,36 @@ import { supabase } from "../lib/supabase";
 import { toast } from "sonner";
 import { Logo } from '../components/Logo';
 import { useAuth } from "../contexts/AuthContext";
+import { cn } from "../lib/utils";
+
+
+const PasswordRequirementsDisplay = ({ requirements }: { requirements: any }) => {
+  const items = [
+    { label: "Mínimo de 8 caracteres", met: requirements.length },
+    { label: "Uma letra maiúscula", met: requirements.uppercase },
+    { label: "Um número", met: requirements.number },
+    { label: "Um caractere especial", met: requirements.special },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-2 mt-4 px-2">
+      {items.map((item, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <div className={cn(
+            "w-4 h-4 rounded-full flex items-center justify-center transition-colors",
+            item.met ? "bg-emerald-500 text-white" : "bg-slate-100 dark:bg-zinc-800 text-slate-300"
+          )}>
+            <Check className="w-3 h-3" />
+          </div>
+          <span className={cn(
+            "text-[9px] font-bold uppercase tracking-tight transition-colors",
+            item.met ? "text-emerald-600" : "text-slate-400"
+          )}>{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const Login = () => {
   const { user } = useAuth();
@@ -25,6 +55,22 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
   const navigate = useNavigate();
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    length: false,
+    uppercase: false,
+    number: false,
+    special: false
+  });
+
+  useEffect(() => {
+    setPasswordRequirements({
+      length: newPassword.length >= 8,
+      uppercase: /[A-Z]/.test(newPassword),
+      number: /[0-9]/.test(newPassword),
+      special: /[^A-Za-z0-9]/.test(newPassword)
+    });
+  }, [newPassword]);
+
 
   useEffect(() => {
     if (user) {
@@ -238,7 +284,7 @@ const Login = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-16 pr-8 py-5 bg-slate-50/50 dark:bg-zinc-950/50 border border-slate-100 dark:border-zinc-800/50 rounded-[24px] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 text-sm font-bold transition-all placeholder:text-slate-300 outline-none"
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                    placeholder="••••••••"
                   />
                 </div>
               </div>
@@ -309,7 +355,7 @@ const Login = () => {
               {resetStep === "email" && (
                 <form onSubmit={startPasswordReset} className="space-y-6">
                   <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                    Digite seu e-mail cadastrado para receber o cÃ³digo de verificaÃ§Ã£o.
+                    Digite seu e-mail cadastrado para receber o código de verificação.
                   </p>
                   <div className="space-y-2">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">E-mail</label>
@@ -335,10 +381,10 @@ const Login = () => {
               {resetStep === "otp" && (
                 <form onSubmit={verifyOtp} className="space-y-6">
                   <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                    Insira o cÃ³digo de 6 dÃ­gitos enviado para <strong>{forgotEmail}</strong>.
+                    Insira o código de 6 dígitos enviado para <strong>{forgotEmail}</strong>.
                   </p>
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">CÃ³digo de VerificaÃ§Ã£o</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Código de Verificação</label>
                     <input
                       required
                       type="text"
@@ -372,8 +418,9 @@ const Login = () => {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="w-full px-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-bold"
-                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                      placeholder="••••••••"
                     />
+                    <PasswordRequirementsDisplay requirements={passwordRequirements} />
                   </div>
                   <button
                     disabled={resetLoading}

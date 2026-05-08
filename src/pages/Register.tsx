@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -34,11 +34,11 @@ const plans = [
     name: 'Exclusivo',
     price: '97',
     period: '/mês',
-    description: 'Para quem está comeando.',
-    justification: 'Ideal para validar sua operação com baixo investimento e organizao bsica.',
+    description: 'Para quem está começando.',
+    justification: 'Ideal para validar sua operação com baixo investimento e organização básica.',
     features: [
       { text: '1 Empresa cadastrada', icon: Building2 },
-      { text: 'Mapa Territorial Bsico', icon: MapIcon },
+      { text: 'Mapa Territorial Básico', icon: MapIcon },
       { text: 'CRM Essencial', icon: Check },
       { text: 'Suporte por E-mail', icon: Mail }
     ],
@@ -52,13 +52,13 @@ const plans = [
     price: '147',
     period: '/mês',
     description: 'Ideal para equipes em crescimento.',
-    justification: 'A automao de busca de CNPJ economiza cerca de 10 horas de trabalho manual por mês.',
+    justification: 'A automação de busca de CNPJ economiza cerca de 10 horas de trabalho manual por mês.',
     features: [
       { text: 'At 5 Empresas', icon: Building2 },
-      { text: 'Busca CNPJ Automtica', icon: Zap },
+      { text: 'Busca CNPJ Automática', icon: Zap },
       { text: 'Dashboard de Faturamento', icon: BarChart3 },
       { text: 'Suporte via WhatsApp', icon: Star },
-      { text: 'Exportação de Relatrios', icon: Check }
+      { text: 'Exportação de Relatórios', icon: Check }
     ],
     featured: true,
     color: 'emerald',
@@ -70,7 +70,7 @@ const plans = [
     price: '197',
     period: '/mês',
     description: 'Para grandes volumes e IA.',
-    justification: 'Potencializado por Inteligncia Artificial para processar pedidos e analisar mercado em tempo real.',
+    justification: 'Potencializado por Inteligência Artificial para processar pedidos e analisar mercado em tempo real.',
     features: [
       { text: 'Empresas Ilimitadas', icon: Infinity },
       { text: 'Lançamento via IA (Gemini)', icon: Sparkles },
@@ -84,6 +84,35 @@ const plans = [
   },
 ];
 
+
+const PasswordRequirementsDisplay = ({ requirements }: { requirements: any }) => {
+  const items = [
+    { label: "Mínimo de 8 caracteres", met: requirements.length },
+    { label: "Uma letra maiúscula", met: requirements.uppercase },
+    { label: "Um número", met: requirements.number },
+    { label: "Um caractere especial", met: requirements.special },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-2 mt-4 px-2">
+      {items.map((item, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <div className={cn(
+            "w-4 h-4 rounded-full flex items-center justify-center transition-colors",
+            item.met ? "bg-emerald-500 text-white" : "bg-slate-100 dark:bg-zinc-800 text-slate-300"
+          )}>
+            <Check className="w-3 h-3" />
+          </div>
+          <span className={cn(
+            "text-[9px] font-bold uppercase tracking-tight transition-colors",
+            item.met ? "text-emerald-600" : "text-slate-400"
+          )}>{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const Register = () => {
   const [step, setStep] = useState(1);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -92,6 +121,22 @@ const Register = () => {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    length: false,
+    uppercase: false,
+    number: false,
+    special: false
+  });
+
+  useEffect(() => {
+    setPasswordRequirements({
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[^A-Za-z0-9]/.test(password)
+    });
+  }, [password]);
+
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -276,6 +321,7 @@ const Register = () => {
                         className="w-full pl-12 pr-6 py-4 bg-slate-50/50 dark:bg-zinc-950/50 border border-slate-100 dark:border-zinc-800/50 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 text-sm font-bold outline-none"
                         placeholder=""
                       />
+                        <PasswordRequirementsDisplay requirements={passwordRequirements} />
                     </div>
                   </div>
 
@@ -320,7 +366,7 @@ const Register = () => {
               <div className="space-y-4">
                 <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Quase pronto!</h2>
                 <p className="text-slate-500 dark:text-zinc-400 font-medium text-sm leading-relaxed">
-                  Enviamos um e-mail de confirmao para <strong>{email}</strong>. Por favor, valide sua conta para comear a usar o sistema.
+                  Enviamos um e-mail de confirmação para <strong>{email}</strong>. Por favor, valide sua conta para começar a usar o sistema.
                 </p>
               </div>
               <button
