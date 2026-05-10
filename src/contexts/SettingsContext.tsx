@@ -42,14 +42,14 @@ export const useSettings = () => {
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<Settings>(() => {
-    // Tenta carregar tema e onboarding do localStorage para evitar flashes e problemas de estado inicial
+    // Tenta carregar tema do localStorage para evitar flashes, 
+    // mas onboarding só deve ser true se tivermos certeza
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    const savedOnboarding = localStorage.getItem('has_completed_onboarding') === 'true';
     
     return {
       ...defaultSettings,
       theme: savedTheme || defaultSettings.theme,
-      has_completed_onboarding: savedOnboarding || defaultSettings.has_completed_onboarding,
+      has_completed_onboarding: true, // Iniciamos como true para não mostrar o modal antes do load
     };
   });
   const [loading, setLoading] = useState(true);
@@ -73,7 +73,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         let hasCompleted = data.has_completed_onboarding ?? defaultSettings.has_completed_onboarding;
         let categories = data.categories || [];
 
-        // Auto-complete onboarding para usuários existentes com dados
+        // Auto-complete onboarding apenas se realmente houver dados de clientes
         if (!hasCompleted) {
           const { count } = await supabase
             .from("clients")
@@ -104,8 +104,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           }
         }
 
-        // Salva no localStorage para persistência local rápida
-        if (hasCompleted) localStorage.setItem('has_completed_onboarding', 'true');
         if (data.theme) localStorage.setItem('theme', data.theme);
 
         setSettings({
@@ -121,7 +119,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       } else if (error) {
         console.error("Error loading settings:", error);
       } else {
-        // No settings found, create them
+        // Sem configurações, criar novas
         try {
           const { count } = await supabase
             .from("clients")
@@ -137,11 +135,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' });
           
-          if (initialOnboarding) localStorage.setItem('has_completed_onboarding', 'true');
           setSettings({ ...defaultSettings, has_completed_onboarding: initialOnboarding });
         } catch (e) {
           console.error("Failed to Initialize settings:", e);
-          setSettings(defaultSettings);
+          setSettings({ ...defaultSettings, has_completed_onboarding: false });
         }
       }
       setLoading(false);
@@ -153,19 +150,15 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const updateSettings = async (newSettings: Partial<Settings>) => {
     if (!user) return;
     
-    // CRÍTICO: Se estiver carregando, não permitir atualização para não sobrescrever dados do banco com padrões locais
     if (loading) {
         console.warn("Tentativa de atualizar configurações enquanto ainda carregando. Ignorado.");
         return;
     }
 
-    // Garante que se o onboarding já estiver completo, ele nunca volte a ser false
     const onboardingStatus = newSettings.has_completed_onboarding || settings.has_completed_onboarding;
     const updated = { ...settings, ...newSettings, has_completed_onboarding: onboardingStatus };
 
-    // Persistência local imediata para feedback instantâneo e robustez
     if (updated.theme) localStorage.setItem('theme', updated.theme);
-    if (updated.has_completed_onboarding) localStorage.setItem('has_completed_onboarding', 'true');
 
     const { error } = await supabase
       .from("user_settings")
