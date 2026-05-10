@@ -29,33 +29,46 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
-    // 1. Buscar e-mail do usuário via Admin Auth
+    // 1. Buscar dados do usuário (Auth e Settings)
     const { data: { user }, error: authError } = await supabase.auth.admin.getUserById(userId)
-    if (authError || !user) throw new Error('Usuário não encontrado no sistema de autenticação')
+    if (authError || !user) throw new Error('Usuário não encontrado')
 
-    // 2. Buscar configurações (plan_id)
     const { data: settings } = await supabase
       .from('user_settings')
-      .select('plan_id')
+      .select('*')
       .eq('user_id', userId)
       .single()
 
+    // 2. Buscar Cliente no Asaas
+    const searchResp = await fetch(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(user.email!)}`, {
+      headers: { 'access_token': ASAAS_API_KEY! }
+    })
+    const searchData = await searchResp.json()
+    let asaasCustomerId = searchData.data?.[0]?.id
+
+    // 3. Se não existir, CRIAR o cliente
+    if (!asaasCustomerId) {
+      console.log(`Criando novo cliente no Asaas para: ${user.email}`)
+      const createResp = await fetch(`${ASAAS_API_URL}/customers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY! },
+        body: JSON.stringify({
+          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário Represente-Me',
+          email: user.email,
+          externalReference: userId
+        })
+      })
+      const createData = await createResp.json()
+      if (createData.errors) throw new Error(`Erro ao criar cliente: ${createData.errors[0].description}`)
+      asaasCustomerId = createData.id
+    }
+
+    // 4. Cálculo do Valor
     const planId = settings?.plan_id || 'profissional'
     const baseValue = PLAN_PRICES[planId] || PLAN_PRICES['default']
     const totalToPay = baseValue + 30
 
-    // 3. Buscar/Criar cliente no Asaas
-    const customerResp = await fetch(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(user.email!)}`, {
-      headers: { 'access_token': ASAAS_API_KEY! }
-    })
-    const customers = await customerResp.json()
-    const asaasCustomerId = customers.data?.[0]?.id
-
-    if (!asaasCustomerId) {
-        throw new Error(`Cliente Asaas não encontrado para o e-mail: ${user.email}`)
-    }
-
-    // 4. Gerar Cobrança
+    // 5. Gerar Cobrança
     const paymentResp = await fetch(`${ASAAS_API_URL}/payments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY! },
@@ -64,7 +77,7 @@ serve(async (req) => {
         billingType: 'UNDEFINED',
         value: totalToPay,
         dueDate: new Date().toISOString().split('T')[0],
-        description: `Regularização Represente-Me (Plano ${planId} + Multa R$ 30,00)`,
+        description: `Regularização Represente-Me (Plano ${planId} + Taxa de Reativação R$ 30,00)`,
         externalReference: `REG_${userId}`
       })
     })

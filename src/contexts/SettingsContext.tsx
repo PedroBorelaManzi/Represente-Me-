@@ -25,7 +25,7 @@ const defaultSettings: Settings = {
   has_completed_onboarding: false,
   categories: [],
   revenue_ceiling: 1000000,
-  subscription_status: 'past_due', // FORÇADO PARA TESTE
+  subscription_status: 'active',
 };
 
 interface SettingsContextType {
@@ -51,8 +51,6 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     return {
       ...defaultSettings,
       theme: savedTheme || defaultSettings.theme,
-      has_completed_onboarding: true,
-      subscription_status: 'past_due', // FORÇADO PARA TESTE
     };
   });
   const [loading, setLoading] = useState(true);
@@ -75,9 +73,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       if (!error && data) {
         let hasCompleted = data.has_completed_onboarding ?? defaultSettings.has_completed_onboarding;
         let categories = data.categories || [];
-        
-        // FORÇANDO STATUS PARA TESTE DE INTERFACE
-        const subStatus = 'past_due'; 
+        const subStatus = (data.subscription_status as SubscriptionStatus) || 'active';
 
         if (!hasCompleted) {
           const { count } = await supabase
@@ -109,7 +105,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           subscription_status: subStatus,
         });
       } else {
-        setSettings({ ...defaultSettings, subscription_status: 'past_due' });
+        setSettings(defaultSettings);
       }
       setLoading(false);
     }
