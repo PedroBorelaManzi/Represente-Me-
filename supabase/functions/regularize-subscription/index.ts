@@ -13,6 +13,14 @@ const ASAAS_API_URL = 'https://www.asaas.com/api/v3'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
+// Tabela de Preços Dinâmica
+const PLAN_PRICES: Record<string, number> = {
+  'exclusivo': 97,
+  'profissional': 147,
+  'corporativo': 197,
+  'default': 147
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -29,35 +37,35 @@ serve(async (req) => {
 
     if (settingsError || !settings) throw new Error('Configurações não encontradas')
 
-    // Determinar o valor base do plano (ex: 147)
-    // Aqui podemos usar um mapeamento ou salvar o valor_plano nas configurações
-    // Por enquanto vamos assumir o valor de R$ 147 se não estiver explícito
-    const baseValue = 147 
-    const penaltyValue = 30
-    const totalToPay = baseValue + penaltyValue
+    // 2. Cálculo Dinâmico
+    const planId = settings.plan_id || 'profissional';
+    const baseValue = PLAN_PRICES[planId] || PLAN_PRICES['default'];
+    const penaltyValue = 30;
+    const totalToPay = baseValue + penaltyValue;
 
-    // 2. Buscar/Criar cliente no Asaas
-    let asaasCustomerId = null
+    console.log(`Calculando regularização para ${settings.profiles.email}: Plano ${planId} (${baseValue}) + Multa (${penaltyValue}) = ${totalToPay}`);
+
+    // 3. Buscar/Criar cliente no Asaas
     const customerResp = await fetch(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(settings.profiles.email)}`, {
       headers: { 'access_token': ASAAS_API_KEY! }
     })
     const customers = await customerResp.json()
-    asaasCustomerId = customers.data?.[0]?.id
+    const asaasCustomerId = customers.data?.[0]?.id
 
     if (!asaasCustomerId) {
         throw new Error('Cliente Asaas não encontrado para este e-mail.')
     }
 
-    // 3. Gerar Cobrança Única com Multa
+    // 4. Gerar Cobrança Única com Multa
     const paymentResp = await fetch(`${ASAAS_API_URL}/payments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY! },
       body: JSON.stringify({
         customer: asaasCustomerId,
-        billingType: 'UNDEFINED', // Deixa o cliente escolher (Pix, Cartão, Boleto)
+        billingType: 'UNDEFINED',
         value: totalToPay,
         dueDate: new Date().toISOString().split('T')[0],
-        description: `Regularização de Assinatura Represente-Me (Mensalidade + Multa de R$ 30,00)`,
+        description: `Regularização de Assinatura Represente-Me (Plano ${planId} + Taxa de Reativação de R$ 30,00)`,
         externalReference: `REG_${userId}_${Date.now()}`
       })
     })
