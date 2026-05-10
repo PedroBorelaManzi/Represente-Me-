@@ -14,7 +14,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   // Se estiver carregando, não bloqueia ainda para evitar flashes
   if (settingsLoading) return <>{children}</>;
 
-  // Se o status for 'past_due' ou 'inactive', mostramos a tela de bloqueio
+  // Se o status for 'past_due' || 'inactive', mostramos a tela de bloqueio
   const isBlocked = settings.subscription_status === 'past_due' || settings.subscription_status === 'inactive';
 
   const handleRegularize = async () => {
@@ -46,7 +46,8 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
 
   if (isBlocked) {
     const whatsappNumber = "5515997472785";
-    const whatsappMessage = encodeURIComponent("Olá! Estou com uma pendência no meu acesso ao Represente-Me e gostaria de regularizar.");
+    const userEmail = user?.email || "não informado";
+    const whatsappMessage = encodeURIComponent(`Olá! Estou com uma pendência no meu acesso ao Represente-Me e gostaria de regularizar. Meu e-mail é: ${userEmail}`);
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
     return (
