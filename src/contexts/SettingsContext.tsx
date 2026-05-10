@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
 
+export type SubscriptionStatus = 'active' | 'past_due' | 'inactive' | 'trialing';
+
 interface Settings {
   alerta_days: number;
   critico_days: number;
@@ -11,6 +13,7 @@ interface Settings {
   has_completed_onboarding: boolean;
   categories: string[];
   revenue_ceiling: number;
+  subscription_status: SubscriptionStatus;
 }
 
 const defaultSettings: Settings = {
@@ -22,6 +25,7 @@ const defaultSettings: Settings = {
   has_completed_onboarding: false,
   categories: [],
   revenue_ceiling: 1000000,
+  subscription_status: 'past_due', // FORÇADO PARA TESTE
 };
 
 interface SettingsContextType {
@@ -42,14 +46,13 @@ export const useSettings = () => {
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [settings, setSettings] = useState<Settings>(() => {
-    // Tenta carregar tema do localStorage para evitar flashes, 
-    // mas onboarding só deve ser true se tivermos certeza
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     
     return {
       ...defaultSettings,
       theme: savedTheme || defaultSettings.theme,
-      has_completed_onboarding: true, // Iniciamos como true para não mostrar o modal antes do load
+      has_completed_onboarding: true,
+      subscription_status: 'past_due', // FORÇADO PARA TESTE
     };
   });
   const [loading, setLoading] = useState(true);
@@ -72,8 +75,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       if (!error && data) {
         let hasCompleted = data.has_completed_onboarding ?? defaultSettings.has_completed_onboarding;
         let categories = data.categories || [];
+        
+        // FORÇANDO STATUS PARA TESTE DE INTERFACE
+        const subStatus = 'past_due'; 
 
-        // Auto-complete onboarding apenas se realmente houver dados de clientes
         if (!hasCompleted) {
           const { count } = await supabase
             .from("clients")
@@ -82,23 +87,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
           if (count && count > 0) {
             hasCompleted = true;
-            
-            if (categories.length === 0) {
-              const { data: orders } = await supabase
-                .from("orders")
-                .select("category")
-                .eq("user_id", user.id);
-              
-              if (orders && orders.length > 0) {
-                const unique = Array.from(new Set(orders.map(o => o.category).filter(Boolean)));
-                categories = unique as string[];
-              }
-            }
-
             await supabase.from("user_settings").upsert({
               user_id: user.id,
               has_completed_onboarding: true,
-              categories,
               updated_at: new Date().toISOString()
             });
           }
@@ -115,31 +106,10 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           has_completed_onboarding: hasCompleted,
           categories: categories,
           revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
+          subscription_status: subStatus,
         });
-      } else if (error) {
-        console.error("Error loading settings:", error);
       } else {
-        // Sem configurações, criar novas
-        try {
-          const { count } = await supabase
-            .from("clients")
-            .select("*", { count: 'exact', head: true })
-            .eq("user_id", user.id);
-          
-          const initialOnboarding = count && count > 0;
-
-          await supabase.from("user_settings").upsert({
-            user_id: user.id,
-            ...defaultSettings,
-            has_completed_onboarding: initialOnboarding,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: 'user_id' });
-          
-          setSettings({ ...defaultSettings, has_completed_onboarding: initialOnboarding });
-        } catch (e) {
-          console.error("Failed to Initialize settings:", e);
-          setSettings({ ...defaultSettings, has_completed_onboarding: false });
-        }
+        setSettings({ ...defaultSettings, subscription_status: 'past_due' });
       }
       setLoading(false);
     }
@@ -149,15 +119,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
   const updateSettings = async (newSettings: Partial<Settings>) => {
     if (!user) return;
-    
-    if (loading) {
-        console.warn("Tentativa de atualizar configurações enquanto ainda carregando. Ignorado.");
-        return;
-    }
+    if (loading) return;
 
-    const onboardingStatus = newSettings.has_completed_onboarding || settings.has_completed_onboarding;
-    const updated = { ...settings, ...newSettings, has_completed_onboarding: onboardingStatus };
-
+    const updated = { ...settings, ...newSettings };
     if (updated.theme) localStorage.setItem('theme', updated.theme);
 
     const { error } = await supabase
@@ -168,29 +132,17 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
 
-    if (!error) {
-      setSettings(updated);
-    } else {
-      console.error("Error updating settings:", error);
-      throw error;
-    }
+    if (!error) setSettings(updated);
   };
 
   useEffect(() => {
     const root = document.documentElement;
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    const metaColorScheme = document.querySelector('meta[name="color-scheme"]');
-
     if (settings.theme === 'dark') {
       root.classList.add('dark');
       root.style.colorScheme = 'dark';
-      if (metaThemeColor) metaThemeColor.setAttribute('content', '#09090b');
-      if (metaColorScheme) metaColorScheme.setAttribute('content', 'dark');
     } else {
       root.classList.remove('dark');
       root.style.colorScheme = 'light';
-      if (metaThemeColor) metaThemeColor.setAttribute('content', '#f8fafc');
-      if (metaColorScheme) metaColorScheme.setAttribute('content', 'light');
     }
   }, [settings.theme]);
 

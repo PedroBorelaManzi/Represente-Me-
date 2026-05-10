@@ -1,0 +1,76 @@
+// supabase/functions/handle-asaas-webhook/index.ts
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  try {
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
+    const body = await req.json()
+    const { event, payment } = body
+
+    console.log(`Evento Asaas recebido: ${event}`, { paymentId: payment?.id, customerId: payment?.customer })
+
+    if (!payment?.customer) {
+      return new Response(JSON.stringify({ message: 'Sem dados de cliente' }), { status: 200 })
+    }
+
+    // 1. Buscar o usuário pelo customerId do Asaas
+    // Nota: Precisamos que o user_id esteja vinculado ao customerId do Asaas.
+    // Vamos buscar nas configurações que tenham esse email ou faremos um vínculo prévio.
+    
+    // Para simplificar agora, vamos buscar pelo e-mail do cliente no Asaas
+    const customerResp = await fetch(`https://www.asaas.com/api/v3/customers/${payment.customer}`, {
+      headers: { 'access_token': Deno.env.get('ASAAS_API_KEY')! }
+    })
+    const customerData = await customerResp.json()
+    const customerEmail = customerData.email
+
+    if (!customerEmail) {
+      return new Response(JSON.stringify({ message: 'E-mail do cliente não encontrado' }), { status: 200 })
+    }
+
+    // 2. Determinar o novo status
+    let newStatus = 'active'
+    if (event === 'PAYMENT_OVERDUE') newStatus = 'past_due'
+    if (event === 'PAYMENT_DELETED') newStatus = 'inactive'
+    if (event === 'PAYMENT_CONFIRMED' || event === 'PAYMENT_RECEIVED') newStatus = 'active'
+
+    // 3. Atualizar user_settings no Supabase
+    // Primeiro buscamos o user_id pelo e-mail (usando auth admin)
+    const { data: userData } = await supabase.auth.admin.listUsers()
+    const user = userData.users.find(u => u.email === customerEmail)
+
+    if (user) {
+      const { error } = await supabase
+        .from('user_settings')
+        .update({ 
+          subscription_status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+
+      if (error) console.error('Erro ao atualizar status:', error)
+      else console.log(`Status do usuário ${customerEmail} atualizado para: ${newStatus}`)
+    }
+
+    return new Response(JSON.stringify({ success: true }), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200 
+    })
+
+  } catch (error) {
+    console.error('Erro no Webhook:', error)
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+  }
+})
