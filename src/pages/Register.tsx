@@ -210,7 +210,7 @@ const Register = () => {
                   <motion.div
                     key={plan.id}
                     whileHover={{ y: -8 }}
-                    onClick={() => { setSelectedPlan(plan.id); setStep(2); }}
+                    onClick={() => navigate(`/checkout?plan=${plan.id}`)}
                     className={cn(
                       "relative flex flex-col p-6 rounded-[40px] border transition-all duration-500 cursor-pointer",
                       plan.featured 
