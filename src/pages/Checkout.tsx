@@ -63,11 +63,10 @@ export default function Checkout() {
 
   const handleApplyCoupon = () => {
     setIsApplyingCoupon(true);
-    // Simulating API validation for coupon
     setTimeout(() => {
       if (couponCode.toUpperCase() === "TESTE99") {
-        setAppliedCoupon({ code: "TESTE99", discount: 99 });
-        toast.success("Cupom de 99% aplicado!");
+        setAppliedCoupon({ code: "TESTE99", discount: 95 });
+        toast.success("Cupom de 95% aplicado!");
       } else if (couponCode.toUpperCase() === "REPRESENTE10") {
         setAppliedCoupon({ code: "REPRESENTE10", discount: 10 });
         toast.success("Cupom de 10% aplicado!");
@@ -441,7 +440,6 @@ export default function Checkout() {
                   )}
 
                   <div className="pt-4 mt-4 border-t border-slate-100 dark:border-zinc-800/50 space-y-4">
-                    {/* Cupom Section Inside Summary */}
                     <div className="bg-slate-50 dark:bg-zinc-950 rounded-2xl p-4 border border-slate-100 dark:border-zinc-800 space-y-3">
                       <div className="flex items-center gap-2">
                         <Ticket className="w-3.5 h-3.5 text-emerald-600" />
