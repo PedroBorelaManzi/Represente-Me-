@@ -17,9 +17,9 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { plan, paymentMethod, customer, creditCard, finalPrice, installments } = body
+    const { planId, billingCycle, paymentMethod, customer, creditCard, finalPrice } = body
 
-    console.log('Recebido:', { plan, paymentMethod, email: customer.email, installments })
+    console.log('Recebido:', { planId, billingCycle, paymentMethod, email: customer.email })
 
     if (!ASAAS_API_KEY) {
       return new Response(JSON.stringify({ success: false, message: 'Chave API Asaas não encontrada.' }), {
@@ -31,7 +31,7 @@ serve(async (req) => {
     const cleanCpf = customer.cpfCnpj.replace(/\D/g, '')
     const cleanPhone = customer.phone.replace(/\D/g, '')
 
-    // 1. Cliente
+    // 1. Garantir Cliente no Asaas
     let asaasCustomerId = null
     try {
         const customerResp = await fetch(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(customer.email)}`, {
@@ -39,9 +39,7 @@ serve(async (req) => {
         })
         const customers = await customerResp.json()
         asaasCustomerId = customers.data?.[0]?.id
-    } catch (e) {
-        console.error('Erro ao buscar cliente:', e)
-    }
+    } catch (e) {}
 
     if (!asaasCustomerId) {
       const newCustomerResp = await fetch(`${ASAAS_API_URL}/customers`, {
@@ -65,20 +63,21 @@ serve(async (req) => {
       asaasCustomerId = newCustomer.id
     }
 
-    // 2. Pagamento
-    const price = Number(finalPrice)
+    // 2. Processar Pagamento ou Assinatura
+    const endpoint = billingCycle === 'SUBSCRIPTION' ? '/subscriptions' : '/payments'
+    
     const paymentBody: any = {
       customer: asaasCustomerId,
       billingType: paymentMethod,
-      value: price,
-      dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString().split('T')[0],
-      description: `Plano ${plan}`,
+      value: Number(finalPrice),
+      description: `Plano ${planId} - ${billingCycle === 'SUBSCRIPTION' ? 'Mensalidade' : 'Anual à Vista'}`,
     }
 
-    // Se for parcelado
-    if (paymentMethod === 'CREDIT_CARD' && installments > 1) {
-      paymentBody.installmentCount = installments
-      // Quando é parcelado no Asaas, o 'value' se torna o valor TOTAL da compra
+    if (billingCycle === 'SUBSCRIPTION') {
+      paymentBody.cycle = 'MONTHLY'
+      paymentBody.nextDueDate = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString().split('T')[0] // Começa amanhã
+    } else {
+      paymentBody.dueDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString().split('T')[0]
     }
 
     if (paymentMethod === 'CREDIT_CARD' && creditCard) {
@@ -94,16 +93,16 @@ serve(async (req) => {
       paymentBody.remoteIp = '127.0.0.1'
     }
 
-    const paymentResp = await fetch(`${ASAAS_API_URL}/payments`, {
+    const resp = await fetch(`${ASAAS_API_URL}${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY },
       body: JSON.stringify(paymentBody)
     })
 
-    const paymentData = await paymentResp.json()
+    const data = await resp.json()
 
-    if (paymentData.errors) {
-      return new Response(JSON.stringify({ success: false, message: paymentData.errors[0].description }), {
+    if (data.errors) {
+      return new Response(JSON.stringify({ success: false, message: data.errors[0].description }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
       })
@@ -111,15 +110,15 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      invoiceUrl: paymentData.invoiceUrl || paymentData.bankSlipUrl || paymentData.pixQrCode
+      invoiceUrl: data.invoiceUrl || data.bankSlipUrl || data.pixQrCode
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
     })
 
   } catch (error) {
-    console.error('Erro Fatal:', error)
-    return new Response(JSON.stringify({ success: false, message: 'Erro interno na função.' }), {
+    console.error('Erro:', error)
+    return new Response(JSON.stringify({ success: false, message: 'Erro interno.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
     })
