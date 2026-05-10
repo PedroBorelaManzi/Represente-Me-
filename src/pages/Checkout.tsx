@@ -2,21 +2,8 @@ import React, { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  ShieldCheck, 
-  CreditCard, 
-  QrCode, 
-  FileText, 
-  Lock, 
-  CheckCircle2, 
-  ArrowLeft,
-  ChevronRight,
-  Info,
-  Zap,
-  Shield,
-  Plus,
-  Loader2,
-  Ticket,
-  Tag
+  ShieldCheck, CreditCard, QrCode, FileText, Lock, CheckCircle2, 
+  ArrowLeft, ChevronRight, Info, Zap, Shield, Plus, Loader2, Ticket, Eye, EyeOff
 } from "lucide-react";
 import { cn } from '../lib/utils';
 import { Logo } from '../components/Logo';
@@ -38,20 +25,15 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState<'CREDIT_CARD' | 'PIX' | 'BOLETO'>('CREDIT_CARD');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+  
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
-  // Form states
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    cpfCnpj: "",
-    phone: "",
-    cardNumber: "",
-    expiry: "",
-    ccv: "",
-    holderName: ""
+    name: "", email: "", cpfCnpj: "", phone: "", password: "",
+    cardNumber: "", expiry: "", ccv: "", holderName: ""
   });
 
   const basePrice = isBumpChecked && selectedPlan.bump 
@@ -67,11 +49,8 @@ export default function Checkout() {
       if (couponCode.toUpperCase() === "TESTE99") {
         setAppliedCoupon({ code: "TESTE99", discount: 95 });
         toast.success("Cupom de 95% aplicado!");
-      } else if (couponCode.toUpperCase() === "REPRESENTE10") {
-        setAppliedCoupon({ code: "REPRESENTE10", discount: 10 });
-        toast.success("Cupom de 10% aplicado!");
       } else {
-        toast.error("Cupom inválido ou expirado");
+        toast.error("Cupom inválido");
       }
       setIsApplyingCoupon(false);
     }, 800);
@@ -82,6 +61,24 @@ export default function Checkout() {
     setLoading(true);
     
     try {
+      // 1. Criar a conta do usuário no Supabase primeiro
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name,
+            phone: formData.phone,
+            cpf_cnpj: formData.cpfCnpj
+          }
+        }
+      });
+
+      if (authError && authError.message !== "User already registered") {
+        throw new Error(`Erro ao criar conta: ${authError.message}`);
+      }
+
+      // 2. Chamar a função de pagamento
       const { data, error } = await supabase.functions.invoke('process-checkout', {
         body: {
           plan: isBumpChecked ? (selectedPlan.bump || selectedPlan.id) : selectedPlan.id,
@@ -107,19 +104,23 @@ export default function Checkout() {
       if (error) throw error;
 
       if (data.success) {
-        toast.success("Pagamento iniciado com sucesso!");
+        toast.success("Conta criada e pagamento gerado!");
         if (data.invoiceUrl) {
-          window.location.href = data.invoiceUrl;
+          // Se for Pix, mostramos um aviso antes de redirecionar
+          if (paymentMethod === 'PIX') {
+             toast.info("Redirecionando para o QR Code do Pix...");
+          }
+          setTimeout(() => {
+            window.location.href = data.invoiceUrl;
+          }, 1500);
         } else {
-          navigate("/dashboard");
+          navigate("/login");
         }
       } else {
-        toast.error(data.message || "Erro ao processar pagamento");
+        toast.error(data.message || "Erro no processamento");
       }
     } catch (err: any) {
-      console.error('Erro no checkout:', err);
-      const errorMessage = err.context?.message || err.message || "Erro na comunicação com o servidor.";
-      toast.error(errorMessage);
+      toast.error(err.message || "Erro na comunicação");
     } finally {
       setLoading(false);
     }
@@ -175,12 +176,12 @@ export default function Checkout() {
                   >
                     <div className="space-y-1">
                       <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Dados Pessoais</h3>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Informe seus dados para emissão da nota fiscal</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Crie sua conta para acessar o sistema</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1.5 md:col-span-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">E-mail</label>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">E-mail de Acesso</label>
                         <input 
                           required
                           type="email" 
@@ -190,6 +191,28 @@ export default function Checkout() {
                           className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all"
                         />
                       </div>
+                      
+                      <div className="space-y-1.5 md:col-span-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Sua Senha</label>
+                        <div className="relative">
+                          <input 
+                            required
+                            type={showPassword ? "text" : "password"}
+                            value={formData.password}
+                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                            placeholder="Mínimo 6 caracteres"
+                            className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all"
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
                       <div className="space-y-1.5 md:col-span-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Nome Completo</label>
                         <input 
