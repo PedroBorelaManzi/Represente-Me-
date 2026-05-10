@@ -25,13 +25,14 @@ serve(async (req) => {
 
   try {
     const { userId } = await req.json()
-    if (!userId) throw new Error('UserId não fornecido')
+    if (!userId) throw new Error('ID do usuário não fornecido.')
 
+    console.log(`Iniciando regularização para o usuário: ${userId}`)
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
-    // 1. Buscar dados do usuário (Auth e Settings)
+    // 1. Buscar dados do usuário
     const { data: { user }, error: authError } = await supabase.auth.admin.getUserById(userId)
-    if (authError || !user) throw new Error('Usuário não encontrado no sistema')
+    if (authError || !user) throw new Error('Usuário não encontrado no sistema de autenticação.')
 
     const { data: settings } = await supabase
       .from('user_settings')
@@ -39,26 +40,42 @@ serve(async (req) => {
       .eq('user_id', userId)
       .single()
 
-    // 2. Buscar APENAS o cliente existente no Asaas pelo e-mail
+    console.log(`Buscando cliente no Asaas pelo e-mail: ${user.email}`)
+
+    // 2. Buscar Cliente no Asaas
     const searchResp = await fetch(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(user.email!)}`, {
-      headers: { 'access_token': ASAAS_API_KEY! }
+      headers: { 
+        'access_token': ASAAS_API_KEY!,
+        'Content-Type': 'application/json'
+      }
     })
+
+    if (!searchResp.ok) {
+      const errorText = await searchResp.text()
+      throw new Error(`Erro na API do Asaas ao buscar cliente: ${searchResp.status} - ${errorText}`)
+    }
+
     const searchData = await searchResp.json()
     const asaasCustomerId = searchData.data?.[0]?.id
 
     if (!asaasCustomerId) {
-      throw new Error(`Cliente não encontrado no sistema de pagamento para o e-mail: ${user.email}`)
+      throw new Error(`Não encontramos nenhum cliente cadastrado no Asaas com o e-mail: ${user.email}. Por favor, verifique se o e-mail no painel do Asaas é exatamente este.`)
     }
 
-    // 3. Cálculo do Valor (Mensalidade + Multa de R$ 30)
+    // 3. Cálculo do Valor
     const planId = settings?.plan_id || 'profissional'
     const baseValue = PLAN_PRICES[planId] || PLAN_PRICES['default']
     const totalToPay = baseValue + 30
 
-    // 4. Gerar Cobrança de Regularização
+    console.log(`Gerando cobrança de R$ ${totalToPay} para o cliente Asaas: ${asaasCustomerId}`)
+
+    // 4. Gerar Cobrança
     const paymentResp = await fetch(`${ASAAS_API_URL}/payments`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY! },
+      headers: { 
+        'Content-Type': 'application/json', 
+        'access_token': ASAAS_API_KEY! 
+      },
       body: JSON.stringify({
         customer: asaasCustomerId,
         billingType: 'UNDEFINED',
@@ -69,8 +86,18 @@ serve(async (req) => {
       })
     })
 
-    const paymentData = await paymentResp.json()
-    if (paymentData.errors) throw new Error(paymentData.errors[0].description)
+    const responseText = await paymentResp.text()
+    let paymentData
+    try {
+      paymentData = JSON.parse(responseText)
+    } catch (e) {
+      throw new Error(`Resposta inválida do Asaas ao gerar pagamento: ${responseText}`)
+    }
+
+    if (!paymentResp.ok || paymentData.errors) {
+      const msg = paymentData.errors?.[0]?.description || 'Erro desconhecido na geração do pagamento.'
+      throw new Error(`Erro no Asaas: ${msg}`)
+    }
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -81,8 +108,11 @@ serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Erro na Regularização:', error.message)
-    return new Response(JSON.stringify({ success: false, message: error.message }), {
+    console.error('ERRO CRÍTICO NA REGULARIZAÇÃO:', error.message)
+    return new Response(JSON.stringify({ 
+      success: false, 
+      message: error.message 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
     })
