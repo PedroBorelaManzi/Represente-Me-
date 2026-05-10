@@ -14,7 +14,9 @@ import {
   Zap,
   Shield,
   Plus,
-  Loader2
+  Loader2,
+  Ticket,
+  Tag
 } from "lucide-react";
 import { cn } from '../lib/utils';
 import { Logo } from '../components/Logo';
@@ -36,6 +38,9 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState<'CREDIT_CARD' | 'PIX' | 'BOLETO'>('CREDIT_CARD');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -43,16 +48,35 @@ export default function Checkout() {
     email: "",
     cpfCnpj: "",
     phone: "",
-    // Card states
     cardNumber: "",
     expiry: "",
     ccv: "",
     holderName: ""
   });
 
-  const totalPrice = isBumpChecked && selectedPlan.bump 
+  const basePrice = isBumpChecked && selectedPlan.bump 
     ? plans[selectedPlan.bump as keyof typeof plans].price 
     : selectedPlan.price;
+
+  const discountAmount = appliedCoupon ? (basePrice * appliedCoupon.discount) / 100 : 0;
+  const totalPrice = basePrice - discountAmount;
+
+  const handleApplyCoupon = () => {
+    setIsApplyingCoupon(true);
+    // Simulating API validation for coupon
+    setTimeout(() => {
+      if (couponCode.toUpperCase() === "TESTE99") {
+        setAppliedCoupon({ code: "TESTE99", discount: 99 });
+        toast.success("Cupom de 99% aplicado!");
+      } else if (couponCode.toUpperCase() === "REPRESENTE10") {
+        setAppliedCoupon({ code: "REPRESENTE10", discount: 10 });
+        toast.success("Cupom de 10% aplicado!");
+      } else {
+        toast.error("Cupom inválido ou expirado");
+      }
+      setIsApplyingCoupon(false);
+    }, 800);
+  };
 
   const handleProcessPayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +87,8 @@ export default function Checkout() {
         body: {
           plan: isBumpChecked ? selectedPlan.bump : selectedPlan.id,
           paymentMethod,
+          coupon: appliedCoupon?.code,
+          finalPrice: totalPrice,
           customer: {
             name: formData.name,
             email: formData.email,
@@ -93,8 +119,7 @@ export default function Checkout() {
       }
     } catch (err: any) {
       console.error(err);
-      // For demo purposes, if function doesn't exist yet, we show a helpful message
-      toast.error("Integração em processamento. Certifique-se de implantar a Edge Function.");
+      toast.error("Erro na comunicação com o servidor.");
     } finally {
       setLoading(false);
     }
@@ -102,7 +127,6 @@ export default function Checkout() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 font-sans text-slate-900 dark:text-zinc-100 selection:bg-emerald-500/30">
-      {/* Background Decor */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-20 dark:opacity-10">
         <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-400 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400 rounded-full blur-[120px]" />
@@ -365,11 +389,45 @@ export default function Checkout() {
 
           <div className="lg:col-span-5">
             <div className="sticky top-28 space-y-6">
+              
+              {/* Cupom Section */}
+              <div className="bg-white dark:bg-zinc-900 rounded-[32px] p-6 border border-slate-100 dark:border-zinc-800 shadow-xl space-y-4">
+                <div className="flex items-center gap-2">
+                  <Ticket className="w-4 h-4 text-emerald-600" />
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Possui um cupom?</h4>
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <input 
+                      type="text" 
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      placeholder="CÓDIGO"
+                      className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-xl pl-9 pr-4 py-3 text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    />
+                  </div>
+                  <button 
+                    onClick={handleApplyCoupon}
+                    disabled={isApplyingCoupon || !couponCode}
+                    className="bg-slate-900 text-white px-4 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-800 disabled:opacity-50 transition-all"
+                  >
+                    {isApplyingCoupon ? <Loader2 className="w-3 h-3 animate-spin" /> : "Aplicar"}
+                  </button>
+                </div>
+                {appliedCoupon && (
+                  <div className="flex items-center justify-between px-3 py-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
+                    <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Cupom: {appliedCoupon.code}</span>
+                    <button onClick={() => setAppliedCoupon(null)} className="text-[8px] font-black text-emerald-600 uppercase hover:underline">Remover</button>
+                  </div>
+                )}
+              </div>
+
               <div className="bg-white dark:bg-zinc-900 rounded-[40px] p-8 border border-slate-100 dark:border-zinc-800 shadow-2xl space-y-8">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Seu Pedido</h3>
-                  <div className="w-10 h-10 bg-slate-50 dark:bg-zinc-800 rounded-xl flex items-center justify-center">
-                    <Info className="w-5 h-5 text-slate-400" />
+                  <div className="w-10 h-10 bg-slate-50 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-slate-400">
+                    <Info className="w-5 h-5" />
                   </div>
                 </div>
 
@@ -379,7 +437,7 @@ export default function Checkout() {
                       <p className="text-xs font-black uppercase tracking-tight text-slate-900 dark:text-zinc-100">Assinatura Mensal</p>
                       <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Plano {selectedPlan.name}</p>
                     </div>
-                    <p className="text-sm font-black text-slate-900 dark:text-zinc-100">R$ {selectedPlan.price.toFixed(2).replace('.', ',')}</p>
+                    <p className="text-sm font-black text-slate-900 dark:text-zinc-100">R$ {basePrice.toFixed(2).replace('.', ',')}</p>
                   </div>
 
                   {selectedPlan.bump && (
@@ -415,9 +473,15 @@ export default function Checkout() {
                   )}
 
                   <div className="pt-4 mt-4 border-t border-slate-100 dark:border-zinc-800/50 space-y-4">
+                     {appliedCoupon && (
+                       <div className="flex items-center justify-between text-emerald-600">
+                          <p className="text-[10px] font-black uppercase tracking-widest">Desconto ({appliedCoupon.discount}%)</p>
+                          <p className="text-xs font-bold">- R$ {discountAmount.toFixed(2).replace('.', ',')}</p>
+                       </div>
+                     )}
                      <div className="flex items-center justify-between">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subtotal</p>
-                        <p className="text-xs font-bold text-slate-900 dark:text-zinc-100">R$ {totalPrice.toFixed(2).replace('.', ',')}</p>
+                        <p className="text-xs font-bold text-slate-900 dark:text-zinc-100">R$ {basePrice.toFixed(2).replace('.', ',')}</p>
                      </div>
                      <div className="flex items-center justify-between text-emerald-600">
                         <p className="text-[10px] font-black uppercase tracking-widest">Taxa de Adesão</p>
@@ -446,16 +510,6 @@ export default function Checkout() {
                   <div>
                     <h4 className="text-sm font-black uppercase tracking-tight">Ativação Instantânea</h4>
                     <p className="text-[9px] font-medium text-white/70 uppercase tracking-widest">Acesso liberado em 30s</p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-                    <span className="text-[10px] font-bold uppercase tracking-tight">Garantia de 7 dias</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-                    <span className="text-[10px] font-bold uppercase tracking-tight">Suporte Prioritário</span>
                   </div>
                 </div>
               </div>
