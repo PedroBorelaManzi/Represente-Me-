@@ -85,7 +85,7 @@ export default function Checkout() {
     try {
       const { data, error } = await supabase.functions.invoke('process-checkout', {
         body: {
-          plan: isBumpChecked ? selectedPlan.bump : selectedPlan.id,
+          plan: isBumpChecked ? (selectedPlan.bump || selectedPlan.id) : selectedPlan.id,
           paymentMethod,
           coupon: appliedCoupon?.code,
           finalPrice: totalPrice,
@@ -118,8 +118,9 @@ export default function Checkout() {
         toast.error(data.message || "Erro ao processar pagamento");
       }
     } catch (err: any) {
-      console.error(err);
-      toast.error("Erro na comunicação com o servidor.");
+      console.error('Erro no checkout:', err);
+      const errorMessage = err.context?.message || err.message || "Erro na comunicação com o servidor.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -390,39 +391,6 @@ export default function Checkout() {
           <div className="lg:col-span-5">
             <div className="sticky top-28 space-y-6">
               
-              {/* Cupom Section */}
-              <div className="bg-white dark:bg-zinc-900 rounded-[32px] p-6 border border-slate-100 dark:border-zinc-800 shadow-xl space-y-4">
-                <div className="flex items-center gap-2">
-                  <Ticket className="w-4 h-4 text-emerald-600" />
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Possui um cupom?</h4>
-                </div>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                    <input 
-                      type="text" 
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
-                      placeholder="CÓDIGO"
-                      className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-xl pl-9 pr-4 py-3 text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-emerald-500/20"
-                    />
-                  </div>
-                  <button 
-                    onClick={handleApplyCoupon}
-                    disabled={isApplyingCoupon || !couponCode}
-                    className="bg-slate-900 text-white px-4 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-800 disabled:opacity-50 transition-all"
-                  >
-                    {isApplyingCoupon ? <Loader2 className="w-3 h-3 animate-spin" /> : "Aplicar"}
-                  </button>
-                </div>
-                {appliedCoupon && (
-                  <div className="flex items-center justify-between px-3 py-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg border border-emerald-100 dark:border-emerald-500/20">
-                    <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Cupom: {appliedCoupon.code}</span>
-                    <button onClick={() => setAppliedCoupon(null)} className="text-[8px] font-black text-emerald-600 uppercase hover:underline">Remover</button>
-                  </div>
-                )}
-              </div>
-
               <div className="bg-white dark:bg-zinc-900 rounded-[40px] p-8 border border-slate-100 dark:border-zinc-800 shadow-2xl space-y-8">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Seu Pedido</h3>
@@ -473,6 +441,37 @@ export default function Checkout() {
                   )}
 
                   <div className="pt-4 mt-4 border-t border-slate-100 dark:border-zinc-800/50 space-y-4">
+                    {/* Cupom Section Inside Summary */}
+                    <div className="bg-slate-50 dark:bg-zinc-950 rounded-2xl p-4 border border-slate-100 dark:border-zinc-800 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Ticket className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Cupom de Desconto</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value)}
+                          placeholder="CÓDIGO"
+                          className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-emerald-500/20"
+                        />
+                        <button 
+                          type="button"
+                          onClick={handleApplyCoupon}
+                          disabled={isApplyingCoupon || !couponCode}
+                          className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-800 disabled:opacity-50 transition-all"
+                        >
+                          {isApplyingCoupon ? <Loader2 className="w-3 h-3 animate-spin" /> : "OK"}
+                        </button>
+                      </div>
+                      {appliedCoupon && (
+                        <div className="flex items-center justify-between px-2 py-1.5 bg-emerald-500/10 rounded-md border border-emerald-500/20">
+                          <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Ativo: {appliedCoupon.code}</span>
+                          <button type="button" onClick={() => setAppliedCoupon(null)} className="text-[8px] font-black text-emerald-600 hover:underline">X</button>
+                        </div>
+                      )}
+                    </div>
+
                      {appliedCoupon && (
                        <div className="flex items-center justify-between text-emerald-600">
                           <p className="text-[10px] font-black uppercase tracking-widest">Desconto ({appliedCoupon.discount}%)</p>
