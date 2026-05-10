@@ -35,7 +35,7 @@ export default function Layout() {
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Resumo Geral', path: '/dashboard' },
+    { icon: LayoutDashboard, label: 'Início', path: '/dashboard' },
     { icon: MapIcon, label: 'Mapa do Radar', path: '/dashboard/map' },
     { icon: Users, label: 'Meus Clientes', path: '/dashboard/clientes' },
     { icon: Building2, label: 'Empresas & Pedidos', path: '/dashboard/empresas' },
