@@ -16,13 +16,10 @@ serve(async (req) => {
     const body = await req.json()
     const { plan, paymentMethod, customer, creditCard, finalPrice } = body
 
-    // Limpeza de dados (apenas números para CPF e Telefone)
-    const cleanCpfCnpj = customer.cpfCnpj.replace(/\D/g, '')
+    if (!ASAAS_API_KEY) throw new Error('API Key do Asaas não configurada.')
+
+    const cleanCpf = customer.cpfCnpj.replace(/\D/g, '')
     const cleanPhone = customer.phone.replace(/\D/g, '')
-
-    console.log('Checkout iniciado:', { plan, paymentMethod, email: customer.email, finalPrice })
-
-    if (!ASAAS_API_KEY) throw new Error('ASAAS_API_KEY ausente')
 
     // 1. Cliente
     let asaasCustomerId = null
@@ -39,29 +36,28 @@ serve(async (req) => {
         body: JSON.stringify({
           name: customer.name,
           email: customer.email,
-          cpfCnpj: cleanCpfCnpj,
+          cpfCnpj: cleanCpf,
           mobilePhone: cleanPhone,
           notificationDisabled: true
         })
       })
       const newCustomer = await newCustomerResp.json()
-      if (newCustomer.errors) throw new Error(newCustomer.errors[0].description)
+      if (newCustomer.errors) {
+        return new Response(JSON.stringify({ success: false, message: `Erro no Cliente: ${newCustomer.errors[0].description}` }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
       asaasCustomerId = newCustomer.id
     }
 
     // 2. Pagamento
     const price = Number(finalPrice)
-    if (paymentMethod === 'CREDIT_CARD' && price < 5) {
-      throw new Error('O valor mínimo para cartão de crédito é R$ 5,00. Por favor, remova o cupom ou use outro método.')
-    }
-
     const paymentBody: any = {
       customer: asaasCustomerId,
       billingType: paymentMethod,
       value: price,
       dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString().split('T')[0],
-      description: `Represente-Me: Plano ${plan}`,
-      externalReference: `ref_${Date.now()}`,
+      description: `Plano ${plan} - Represente-Me`,
     }
 
     if (paymentMethod === 'CREDIT_CARD' && creditCard) {
@@ -69,12 +65,12 @@ serve(async (req) => {
       paymentBody.creditCardHolderInfo = {
         name: customer.name,
         email: customer.email,
-        cpfCnpj: cleanCpfCnpj,
+        cpfCnpj: cleanCpf,
         postalCode: '01310-930',
         addressNumber: '1',
         phone: cleanPhone
       }
-      paymentBody.remoteIp = req.headers.get('x-forwarded-for') || '127.0.0.1'
+      paymentBody.remoteIp = '127.0.0.1'
     }
 
     const paymentResp = await fetch(`${ASAAS_API_URL}/payments`, {
@@ -87,23 +83,20 @@ serve(async (req) => {
 
     if (paymentData.errors) {
       return new Response(JSON.stringify({ success: false, message: paymentData.errors[0].description }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
     return new Response(JSON.stringify({ 
       success: true, 
-      invoiceUrl: paymentData.invoiceUrl || paymentData.bankSlipUrl,
-      paymentId: paymentData.id
+      invoiceUrl: paymentData.invoiceUrl || paymentData.bankSlipUrl || paymentData.pixQrCode
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (error) {
     return new Response(JSON.stringify({ success: false, message: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
 })
