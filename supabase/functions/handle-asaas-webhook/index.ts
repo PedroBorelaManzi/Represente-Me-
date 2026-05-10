@@ -19,16 +19,21 @@ serve(async (req) => {
     const body = await req.json()
     const { event, payment } = body
 
+    // Validação de Segurança do Token
+    const receivedToken = req.headers.get('asaas-access-token')
+    const expectedToken = Deno.env.get('ASAAS_WEBHOOK_TOKEN')
+
+    if (expectedToken && receivedToken !== expectedToken) {
+      console.error('Tentativa de acesso bloqueada: Token Inválido')
+      return new Response(JSON.stringify({ message: 'Acesso não autorizado' }), { status: 401 })
+    }
+
     console.log(`Evento Asaas recebido: ${event}`, { paymentId: payment?.id, customerId: payment?.customer })
 
     if (!payment?.customer) {
       return new Response(JSON.stringify({ message: 'Sem dados de cliente' }), { status: 200 })
     }
 
-    // 1. Buscar o usuário pelo customerId do Asaas
-    // Nota: Precisamos que o user_id esteja vinculado ao customerId do Asaas.
-    // Vamos buscar nas configurações que tenham esse email ou faremos um vínculo prévio.
-    
     // Para simplificar agora, vamos buscar pelo e-mail do cliente no Asaas
     const customerResp = await fetch(`https://www.asaas.com/api/v3/customers/${payment.customer}`, {
       headers: { 'access_token': Deno.env.get('ASAAS_API_KEY')! }
