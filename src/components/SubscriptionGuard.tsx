@@ -1,18 +1,54 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
-import { ShieldAlert, CreditCard, ExternalLink, Mail } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { ShieldAlert, CreditCard, ExternalLink, MessageCircle, Loader2 } from 'lucide-react';
 import { Logo } from './Logo';
+import { toast } from 'sonner';
 
 export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
-  const { settings, loading } = useSettings();
+  const { settings, loading: settingsLoading } = useSettings();
+  const { user } = useAuth();
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
 
   // Se estiver carregando, não bloqueia ainda para evitar flashes
-  if (loading) return <>{children}</>;
+  if (settingsLoading) return <>{children}</>;
 
   // Se o status for 'past_due' ou 'inactive', mostramos a tela de bloqueio
   const isBlocked = settings.subscription_status === 'past_due' || settings.subscription_status === 'inactive';
 
+  const handleRegularize = async () => {
+    if (!user) return;
+    setIsGeneratingLink(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('regularize-subscription', {
+        body: { userId: user.id }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.invoiceUrl) {
+        toast.success("Fatura de regularização gerada com sucesso!");
+        setTimeout(() => {
+          window.open(data.invoiceUrl, '_blank');
+        }, 1000);
+      } else {
+        toast.error(data.message || "Erro ao gerar fatura de regularização.");
+      }
+    } catch (err: any) {
+      toast.error("Erro ao conectar com o servidor de pagamentos.");
+      console.error(err);
+    } finally {
+      setIsGeneratingLink(false);
+    }
+  };
+
   if (isBlocked) {
+    const whatsappNumber = "5515997472785";
+    const whatsappMessage = encodeURIComponent("Olá! Estou com uma pendência no meu acesso ao Represente-Me e gostaria de regularizar.");
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+
     return (
       <div className="fixed inset-0 z-[9999] bg-white dark:bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20 dark:opacity-10">
@@ -33,30 +69,42 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
               <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] leading-relaxed">
                 Identificamos uma pendência no seu pagamento recorrente. Seus dados estão salvos e seguros, mas o acesso ao painel foi temporariamente bloqueado.
               </p>
+              <div className="py-2 px-4 bg-amber-100 dark:bg-amber-500/20 rounded-xl border border-amber-200 dark:border-amber-500/30">
+                <p className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">
+                  ⚠️ Taxa de Reativação: R$ 30,00 aplicada à mensalidade
+                </p>
+              </div>
             </div>
 
             <div className="space-y-3">
               <button 
-                onClick={() => window.open('https://www.asaas.com/minhas-cobrancas', '_blank')}
-                className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black uppercase text-[11px] tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-xl"
+                onClick={handleRegularize}
+                disabled={isGeneratingLink}
+                className="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-5 rounded-2xl font-black uppercase text-[11px] tracking-widest flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all shadow-xl disabled:opacity-50"
               >
-                <CreditCard className="w-4 h-4" />
-                Regularizar Agora
-                <ExternalLink className="w-3.5 h-3.5 opacity-50" />
+                {isGeneratingLink ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <CreditCard className="w-4 h-4" />
+                    Regularizar Agora
+                    <ExternalLink className="w-3.5 h-3.5 opacity-50" />
+                  </>
+                )}
               </button>
               
               <button 
-                className="w-full bg-transparent text-slate-400 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:text-slate-600 transition-colors"
-                onClick={() => window.location.href = 'mailto:suporte@representeme.com'}
+                className="w-full bg-emerald-500/10 text-emerald-600 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-emerald-500/20 transition-all"
+                onClick={() => window.open(whatsappUrl, '_blank')}
               >
-                <Mail className="w-3.5 h-3.5" />
-                Falar com Suporte
+                <MessageCircle className="w-3.5 h-3.5" />
+                Falar com Suporte (WhatsApp)
               </button>
             </div>
           </div>
 
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-            Assim que o pagamento for identificado, seu acesso será liberado automaticamente.
+            Assim que o pagamento da fatura com multa for identificado, seu acesso será liberado automaticamente.
           </p>
         </div>
       </div>
