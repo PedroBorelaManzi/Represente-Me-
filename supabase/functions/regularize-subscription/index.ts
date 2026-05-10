@@ -31,7 +31,7 @@ serve(async (req) => {
 
     // 1. Buscar dados do usuário (Auth e Settings)
     const { data: { user }, error: authError } = await supabase.auth.admin.getUserById(userId)
-    if (authError || !user) throw new Error('Usuário não encontrado')
+    if (authError || !user) throw new Error('Usuário não encontrado no sistema')
 
     const { data: settings } = await supabase
       .from('user_settings')
@@ -39,36 +39,23 @@ serve(async (req) => {
       .eq('user_id', userId)
       .single()
 
-    // 2. Buscar Cliente no Asaas
+    // 2. Buscar APENAS o cliente existente no Asaas pelo e-mail
     const searchResp = await fetch(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(user.email!)}`, {
       headers: { 'access_token': ASAAS_API_KEY! }
     })
     const searchData = await searchResp.json()
-    let asaasCustomerId = searchData.data?.[0]?.id
+    const asaasCustomerId = searchData.data?.[0]?.id
 
-    // 3. Se não existir, CRIAR o cliente
     if (!asaasCustomerId) {
-      console.log(`Criando novo cliente no Asaas para: ${user.email}`)
-      const createResp = await fetch(`${ASAAS_API_URL}/customers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY! },
-        body: JSON.stringify({
-          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário Represente-Me',
-          email: user.email,
-          externalReference: userId
-        })
-      })
-      const createData = await createResp.json()
-      if (createData.errors) throw new Error(`Erro ao criar cliente: ${createData.errors[0].description}`)
-      asaasCustomerId = createData.id
+      throw new Error(`Cliente não encontrado no sistema de pagamento para o e-mail: ${user.email}`)
     }
 
-    // 4. Cálculo do Valor
+    // 3. Cálculo do Valor (Mensalidade + Multa de R$ 30)
     const planId = settings?.plan_id || 'profissional'
     const baseValue = PLAN_PRICES[planId] || PLAN_PRICES['default']
     const totalToPay = baseValue + 30
 
-    // 5. Gerar Cobrança
+    // 4. Gerar Cobrança de Regularização
     const paymentResp = await fetch(`${ASAAS_API_URL}/payments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'access_token': ASAAS_API_KEY! },
