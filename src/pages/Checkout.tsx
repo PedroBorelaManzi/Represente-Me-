@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldCheck, CreditCard, QrCode, FileText, Lock, CheckCircle2, 
   ArrowLeft, ChevronRight, Info, Zap, Shield, Plus, Loader2, Ticket, Eye, EyeOff,
-  AlertCircle, XCircle, CheckCircle
+  AlertCircle, XCircle, CheckCircle, Percent
 } from "lucide-react";
 import { cn } from '../lib/utils';
 import { Logo } from '../components/Logo';
@@ -24,6 +24,7 @@ export default function Checkout() {
   const [selectedPlan, setSelectedPlan] = useState<any>(plans[planId as keyof typeof plans] || plans.profissional);
   const [isBumpChecked, setIsBumpChecked] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'CREDIT_CARD' | 'PIX' | 'BOLETO'>('CREDIT_CARD');
+  const [installments, setInstallments] = useState(1);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
@@ -61,12 +62,24 @@ export default function Checkout() {
 
   const isPasswordValid = Object.values(passwordRequirements).every(req => req);
 
+  // Lógica de Preços
   const basePrice = isBumpChecked && selectedPlan.bump 
     ? plans[selectedPlan.bump as keyof typeof plans].price 
     : selectedPlan.price;
 
-  const discountAmount = appliedCoupon ? (basePrice * appliedCoupon.discount) / 100 : 0;
-  const totalPrice = basePrice - discountAmount;
+  const couponDiscount = appliedCoupon ? (basePrice * appliedCoupon.discount) / 100 : 0;
+  const pixDiscount = paymentMethod === 'PIX' ? (basePrice - couponDiscount) * 0.05 : 0;
+  
+  // Total antes dos juros do cartão
+  const subtotal = basePrice - couponDiscount - pixDiscount;
+  
+  // Cálculo de Juros do Cartão (1% ao mês a partir da 7ª parcela)
+  const installmentInterest = (paymentMethod === 'CREDIT_CARD' && installments > 6)
+    ? subtotal * (0.01 * (installments - 6))
+    : 0;
+
+  const totalPrice = subtotal + installmentInterest;
+  const installmentValue = totalPrice / installments;
 
   const handleApplyCoupon = () => {
     setIsApplyingCoupon(true);
@@ -110,6 +123,7 @@ export default function Checkout() {
         body: {
           plan: isBumpChecked ? (selectedPlan.bump || selectedPlan.id) : selectedPlan.id,
           paymentMethod,
+          installments,
           coupon: appliedCoupon?.code,
           finalPrice: totalPrice,
           customer: {
@@ -327,14 +341,50 @@ export default function Checkout() {
 
                       <div className="space-y-6 pt-4">
                         {paymentMethod === 'CREDIT_CARD' && (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2 space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Número do Cartão</label><input type="text" value={formData.cardNumber} onChange={(e) => setFormData({...formData, cardNumber: e.target.value})} placeholder="0000 0000 0000 0000" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 outline-none" /></div>
-                            <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Validade</label><input type="text" value={formData.expiry} onChange={(e) => setFormData({...formData, expiry: e.target.value})} placeholder="MM/AA" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 outline-none" /></div>
-                            <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">CVC</label><input type="text" value={formData.ccv} onChange={(e) => setFormData({...formData, ccv: e.target.value})} placeholder="123" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 outline-none" /></div>
-                            <div className="md:col-span-2 space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Nome no Cartão</label><input type="text" value={formData.holderName} onChange={(e) => setFormData({...formData, holderName: e.target.value})} placeholder="Como impresso no cartão" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 outline-none" /></div>
+                          <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="md:col-span-2 space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Número do Cartão</label><input type="text" value={formData.cardNumber} onChange={(e) => setFormData({...formData, cardNumber: e.target.value})} placeholder="0000 0000 0000 0000" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 outline-none" /></div>
+                              <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Validade</label><input type="text" value={formData.expiry} onChange={(e) => setFormData({...formData, expiry: e.target.value})} placeholder="MM/AA" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 outline-none" /></div>
+                              <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">CVC</label><input type="text" value={formData.ccv} onChange={(e) => setFormData({...formData, ccv: e.target.value})} placeholder="123" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 outline-none" /></div>
+                              <div className="md:col-span-2 space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Nome no Cartão</label><input type="text" value={formData.holderName} onChange={(e) => setFormData({...formData, holderName: e.target.value})} placeholder="Como impresso no cartão" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 outline-none" /></div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Opções de Parcelamento</label>
+                              <select 
+                                value={installments}
+                                onChange={(e) => setInstallments(Number(e.target.value))}
+                                className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 outline-none appearance-none"
+                              >
+                                {[...Array(12)].map((_, i) => {
+                                  const n = i + 1;
+                                  const hasInterest = n > 6;
+                                  const interestRate = hasInterest ? 0.01 * (n - 6) : 0;
+                                  const val = (subtotal * (1 + interestRate)) / n;
+                                  return (
+                                    <option key={n} value={n}>
+                                      {n}x de R$ {val.toFixed(2).replace('.', ',')} {hasInterest ? '(1% juros a.m)' : '(Sem juros)'}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            </div>
                           </div>
                         )}
-                        {paymentMethod === 'PIX' && (<div className="text-center p-8 bg-emerald-50 dark:bg-emerald-500/5 rounded-3xl border border-emerald-100 dark:border-emerald-500/20"><QrCode className="w-16 h-16 bg-emerald-500 text-white rounded-2xl flex items-center justify-center mx-auto mb-4" /><h4 className="text-sm font-black uppercase tracking-tight text-emerald-900 dark:text-emerald-400 mb-2">Liberação Imediata</h4><p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest leading-relaxed">O QR Code será gerado após clicar em finalizar.</p></div>)}
+                        {paymentMethod === 'PIX' && (
+                          <div className="text-center p-8 bg-emerald-50 dark:bg-emerald-500/5 rounded-3xl border border-emerald-100 dark:border-emerald-500/20">
+                            <div className="flex items-center justify-center gap-2 mb-4">
+                              <div className="w-12 h-12 bg-emerald-500 text-white rounded-xl flex items-center justify-center">
+                                <QrCode className="w-6 h-6" />
+                              </div>
+                              <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center">
+                                <Percent className="w-6 h-6" />
+                              </div>
+                            </div>
+                            <h4 className="text-sm font-black uppercase tracking-tight text-emerald-900 dark:text-emerald-400 mb-2">Desconto de 5% Aplicado</h4>
+                            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest leading-relaxed">Pague à vista via Pix e economize.</p>
+                          </div>
+                        )}
                         {paymentMethod === 'BOLETO' && (<div className="text-center p-8 bg-slate-50 dark:bg-zinc-950 rounded-3xl border border-slate-100 dark:border-zinc-800"><FileText className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-4" /><h4 className="text-sm font-black uppercase tracking-tight text-slate-900 dark:text-zinc-100 mb-2">Vencimento em 3 dias</h4><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Liberação em até 2 dias úteis.</p></div>)}
                       </div>
                     </div>
@@ -370,13 +420,29 @@ export default function Checkout() {
                       <div className="flex gap-2"><input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="CÓDIGO" className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-emerald-500/20" /><button type="button" onClick={handleApplyCoupon} disabled={isApplyingCoupon || !couponCode} className="bg-slate-900 text-white px-3 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-800 disabled:opacity-50 transition-all">{isApplyingCoupon ? <Loader2 className="w-3 h-3 animate-spin" /> : "OK"}</button></div>
                       {appliedCoupon && (<div className="flex items-center justify-between px-2 py-1.5 bg-emerald-500/10 rounded-md border border-emerald-500/20"><span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Ativo: {appliedCoupon.code}</span><button type="button" onClick={() => setAppliedCoupon(null)} className="text-[8px] font-black text-emerald-600 hover:underline">X</button></div>)}
                     </div>
-                    {appliedCoupon && (<div className="flex items-center justify-between text-emerald-600"><p className="text-[10px] font-black uppercase tracking-widest">Desconto ({appliedCoupon.discount}%)</p><p className="text-xs font-bold">- R$ {discountAmount.toFixed(2).replace('.', ',')}</p></div>)}
+                    {appliedCoupon && (<div className="flex items-center justify-between text-emerald-600"><p className="text-[10px] font-black uppercase tracking-widest">Cupom ({appliedCoupon.discount}%)</p><p className="text-xs font-bold">- R$ {couponDiscount.toFixed(2).replace('.', ',')}</p></div>)}
+                    {paymentMethod === 'PIX' && (<div className="flex items-center justify-between text-emerald-600"><p className="text-[10px] font-black uppercase tracking-widest">Desconto Pix (5%)</p><p className="text-xs font-bold">- R$ {pixDiscount.toFixed(2).replace('.', ',')}</p></div>)}
+                    {paymentMethod === 'CREDIT_CARD' && installments > 6 && (<div className="flex items-center justify-between text-amber-600"><p className="text-[10px] font-black uppercase tracking-widest">Juros Parcelamento</p><p className="text-xs font-bold">+ R$ {installmentInterest.toFixed(2).replace('.', ',')}</p></div>)}
+                    
                     <div className="flex items-center justify-between"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Subtotal</p><p className="text-xs font-bold text-slate-900 dark:text-zinc-100">R$ {basePrice.toFixed(2).replace('.', ',')}</p></div>
-                    <div className="flex items-center justify-between text-emerald-600"><p className="text-[10px] font-black uppercase tracking-widest">Taxa de Adesão</p><p className="text-xs font-bold uppercase">Grátis</p></div>
                   </div>
                 </div>
                 <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/50">
-                  <div className="flex items-end justify-between"><div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total a pagar</p><p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">R$ {totalPrice.toFixed(2).replace('.', ',')}</p></div><div className="text-right"><p className="text-[8px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">Recorrência Mensal</p><p className="text-[9px] font-medium text-slate-400 leading-tight">Cancele quando quiser</p></div></div>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total a pagar</p>
+                      <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">R$ {totalPrice.toFixed(2).replace('.', ',')}</p>
+                      {paymentMethod === 'CREDIT_CARD' && (
+                        <p className="text-[10px] font-bold text-emerald-600 mt-1">
+                          {installments}x de R$ {installmentValue.toFixed(2).replace('.', ',')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">Recorrência Mensal</p>
+                      <p className="text-[9px] font-medium text-slate-400 leading-tight">Cancele quando quiser</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

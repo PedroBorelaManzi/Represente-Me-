@@ -11,19 +11,18 @@ const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY')
 const ASAAS_API_URL = 'https://www.asaas.com/api/v3'
 
 serve(async (req) => {
-  // Resposta imediata para pre-flight OPTIONS (CORS)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     const body = await req.json()
-    const { plan, paymentMethod, customer, creditCard, finalPrice } = body
+    const { plan, paymentMethod, customer, creditCard, finalPrice, installments } = body
 
-    console.log('Recebido:', { plan, paymentMethod, email: customer.email })
+    console.log('Recebido:', { plan, paymentMethod, email: customer.email, installments })
 
     if (!ASAAS_API_KEY) {
-      return new Response(JSON.stringify({ success: false, message: 'Chave API Asaas não encontrada no servidor.' }), {
+      return new Response(JSON.stringify({ success: false, message: 'Chave API Asaas não encontrada.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
       })
@@ -74,6 +73,12 @@ serve(async (req) => {
       value: price,
       dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString().split('T')[0],
       description: `Plano ${plan}`,
+    }
+
+    // Se for parcelado
+    if (paymentMethod === 'CREDIT_CARD' && installments > 1) {
+      paymentBody.installmentCount = installments
+      // Quando é parcelado no Asaas, o 'value' se torna o valor TOTAL da compra
     }
 
     if (paymentMethod === 'CREDIT_CARD' && creditCard) {
