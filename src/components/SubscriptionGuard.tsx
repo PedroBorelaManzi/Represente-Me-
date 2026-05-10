@@ -22,23 +22,35 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     setIsGeneratingLink(true);
     
     try {
+      // Chamada para a Edge Function
       const { data, error } = await supabase.functions.invoke('regularize-subscription', {
         body: { userId: user.id }
       });
 
-      if (error) throw error;
+      // Se houver erro na chamada (ex: rede ou função não encontrada)
+      if (error) {
+        console.error('Erro Supabase Function:', error);
+        toast.error(`Erro de conexão: ${error.message || 'Verifique se a função está ativa.'}`);
+        return;
+      }
 
-      if (data.success && data.invoiceUrl) {
-        toast.success("Fatura de regularização gerada com sucesso!");
+      // Se a função retornou erro lógico (ex: cliente não existe no Asaas)
+      if (data && !data.success) {
+        toast.error(`Erro no Asaas: ${data.message || 'Erro desconhecido'}`);
+        return;
+      }
+
+      if (data && data.success && data.invoiceUrl) {
+        toast.success("Fatura de regularização gerada!");
         setTimeout(() => {
           window.open(data.invoiceUrl, '_blank');
         }, 1000);
       } else {
-        toast.error(data.message || "Erro ao gerar fatura de regularização.");
+        toast.error("Resposta inválida do servidor de pagamentos.");
       }
     } catch (err: any) {
-      toast.error("Erro ao conectar com o servidor de pagamentos.");
-      console.error(err);
+      toast.error(`Erro crítico: ${err.message || 'Falha na comunicação'}`);
+      console.error('Erro Catch:', err);
     } finally {
       setIsGeneratingLink(false);
     }
@@ -52,6 +64,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
 
     return (
       <div className="fixed inset-0 z-[9999] bg-white dark:bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
+        {/* ... (resto do layout da tela de bloqueio permanece o mesmo) ... */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20 dark:opacity-10">
           <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-red-400 rounded-full blur-[120px]" />
           <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-amber-400 rounded-full blur-[120px]" />
