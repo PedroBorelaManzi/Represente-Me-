@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   X,
   KeyRound,
-  CheckCircle2
+  CheckCircle2,
+  Check
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { toast } from "sonner";
@@ -62,14 +63,7 @@ const Login = () => {
     special: false
   });
 
-  useEffect(() => {
-    setPasswordRequirements({
-      length: newPassword.length >= 8,
-      uppercase: /[A-Z]/.test(newPassword),
-      number: /[0-9]/.test(newPassword),
-      special: /[^A-Za-z0-9]/.test(newPassword)
-    });
-  }, [newPassword]);
+  
 
 
   useEffect(() => {
