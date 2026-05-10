@@ -3,31 +3,46 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY')
 const ASAAS_API_URL = 'https://www.asaas.com/api/v3'
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  // Resposta imediata para pre-flight OPTIONS (CORS)
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
 
   try {
     const body = await req.json()
     const { plan, paymentMethod, customer, creditCard, finalPrice } = body
 
-    if (!ASAAS_API_KEY) throw new Error('API Key do Asaas não configurada.')
+    console.log('Recebido:', { plan, paymentMethod, email: customer.email })
+
+    if (!ASAAS_API_KEY) {
+      return new Response(JSON.stringify({ success: false, message: 'Chave API Asaas não encontrada no servidor.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      })
+    }
 
     const cleanCpf = customer.cpfCnpj.replace(/\D/g, '')
     const cleanPhone = customer.phone.replace(/\D/g, '')
 
     // 1. Cliente
     let asaasCustomerId = null
-    const customerResp = await fetch(`${ASAAS_API_URL}/customers?email=${customer.email}`, {
-      headers: { 'access_token': ASAAS_API_KEY }
-    })
-    const customers = await customerResp.json()
-    asaasCustomerId = customers.data?.[0]?.id
+    try {
+        const customerResp = await fetch(`${ASAAS_API_URL}/customers?email=${encodeURIComponent(customer.email)}`, {
+          headers: { 'access_token': ASAAS_API_KEY }
+        })
+        const customers = await customerResp.json()
+        asaasCustomerId = customers.data?.[0]?.id
+    } catch (e) {
+        console.error('Erro ao buscar cliente:', e)
+    }
 
     if (!asaasCustomerId) {
       const newCustomerResp = await fetch(`${ASAAS_API_URL}/customers`, {
@@ -43,8 +58,9 @@ serve(async (req) => {
       })
       const newCustomer = await newCustomerResp.json()
       if (newCustomer.errors) {
-        return new Response(JSON.stringify({ success: false, message: `Erro no Cliente: ${newCustomer.errors[0].description}` }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        return new Response(JSON.stringify({ success: false, message: `Asaas Cliente: ${newCustomer.errors[0].description}` }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
         })
       }
       asaasCustomerId = newCustomer.id
@@ -57,7 +73,7 @@ serve(async (req) => {
       billingType: paymentMethod,
       value: price,
       dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString().split('T')[0],
-      description: `Plano ${plan} - Represente-Me`,
+      description: `Plano ${plan}`,
     }
 
     if (paymentMethod === 'CREDIT_CARD' && creditCard) {
@@ -83,7 +99,8 @@ serve(async (req) => {
 
     if (paymentData.errors) {
       return new Response(JSON.stringify({ success: false, message: paymentData.errors[0].description }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
       })
     }
 
@@ -91,12 +108,15 @@ serve(async (req) => {
       success: true, 
       invoiceUrl: paymentData.invoiceUrl || paymentData.bankSlipUrl || paymentData.pixQrCode
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200
     })
 
   } catch (error) {
-    return new Response(JSON.stringify({ success: false, message: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    console.error('Erro Fatal:', error)
+    return new Response(JSON.stringify({ success: false, message: 'Erro interno na função.' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200
     })
   }
 })
