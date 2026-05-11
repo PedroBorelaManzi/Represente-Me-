@@ -67,10 +67,11 @@ const Login = () => {
 
 
   useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
-    }
-  }, [user, navigate]);
+    const forceLogout = async () => {
+      await supabase.auth.signOut();
+    };
+    forceLogout();
+  }, []);
 
   // Forgot Password State
   const [forgotEmail, setForgotEmail] = useState("");
