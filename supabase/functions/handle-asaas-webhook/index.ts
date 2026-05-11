@@ -28,7 +28,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ message: 'Acesso não autorizado' }), { status: 401 })
     }
 
-    console.log(`Evento Asaas recebido: ${event}`, { paymentId: payment?.id, customerId: payment?.customer })
+    console.log(`Webhook Evento Asaas recebido: ${event}`, { paymentId: payment?.id, customerId: payment?.customer })
 
     if (!payment?.customer) {
       return new Response(JSON.stringify({ message: 'Sem dados de cliente' }), { status: 200 })
