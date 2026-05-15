@@ -66,15 +66,21 @@ export default function Map() {
     if (!clientsError && clientsData) {
       const { data: ordersData } = await supabase
         .from("orders")
-        .select("client_id, category, created_at, file_path, file_name")
+        .select("client_id, category, created_at, file_path, file_name, client:clients(cnpj)")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
+
+      const normalize = (s: string) => s?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
 
       const clientsWithOrders = clientsData.map(client => {
         const lastOrdersByCategory = {};
         if (ordersData) {
-          ordersData.filter(o => o.client_id === client.id).forEach(order => {
-            const catKey = (order.category || "GERAL").toUpperCase().trim();
+          const clientOrders = ordersData.filter(o => 
+            o.client_id === client.id || 
+            (o.client?.cnpj && client.cnpj && o.client.cnpj.replace(/\D/g, "") === client.cnpj.replace(/\D/g, ""))
+          );
+          clientOrders.forEach(order => {
+            const catKey = normalize(order.category || "GERAL");
             if (!lastOrdersByCategory[catKey]) {
               lastOrdersByCategory[catKey] = order;
             }
