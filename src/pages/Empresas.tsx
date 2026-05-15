@@ -63,7 +63,6 @@ export default function EmpresasPage() {
         .from("orders")
         .select("*, client:clients(id, name, cnpj, city, state)")
         .eq("user_id", user?.id)
-        .not("file_path", "is", null) // Filtrar pedidos sem arquivo (fantasmas)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

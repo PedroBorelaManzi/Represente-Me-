@@ -68,15 +68,15 @@ export default function Map() {
         .from("orders")
         .select("client_id, category, created_at, file_path, file_name")
         .eq("user_id", user.id)
-        .not("file_path", "is", null)
         .order("created_at", { ascending: false });
 
       const clientsWithOrders = clientsData.map(client => {
         const lastOrdersByCategory = {};
         if (ordersData) {
           ordersData.filter(o => o.client_id === client.id).forEach(order => {
-            if (!lastOrdersByCategory[order.category]) {
-              lastOrdersByCategory[order.category] = order;
+            const catKey = (order.category || "GERAL").toUpperCase().trim();
+            if (!lastOrdersByCategory[catKey]) {
+              lastOrdersByCategory[catKey] = order;
             }
           });
         }

@@ -104,7 +104,6 @@ export default function ClientDetails() {
         .from('orders')
         .select('*')
         .eq('client_id', id)
-        .not('file_path', 'is', null)
         .order('created_at', { ascending: false });
       
       setFiles(ordersData || []);
