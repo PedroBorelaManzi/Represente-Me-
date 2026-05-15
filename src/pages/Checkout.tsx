@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldCheck, CreditCard, QrCode, FileText, Lock, CheckCircle2, 
   ArrowLeft, ChevronRight, Info, Zap, Shield, Plus, Loader2, Ticket, Eye, EyeOff,
@@ -14,6 +16,23 @@ const plans = {
   premium: { id: 'premium', name: 'Premium', base: 147 },
   master: { id: 'master', name: 'Master', base: 297 }
 };
+
+function Requirement({ label, met }: { label: string; met: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className={cn(
+        "w-4 h-4 rounded-full flex items-center justify-center transition-colors",
+        met ? "bg-emerald-500 text-white" : "bg-slate-100 dark:bg-zinc-800 text-slate-300"
+      )}>
+        <CheckCircle2 className="w-3 h-3" />
+      </div>
+      <span className={cn(
+        "text-[9px] font-bold uppercase tracking-tight transition-colors",
+        met ? "text-emerald-600" : "text-slate-400"
+      )}>{label}</span>
+    </div>
+  );
+}
 
 export default function Checkout() {
   const [searchParams] = useSearchParams();
@@ -382,11 +401,17 @@ export default function Checkout() {
                   </div>
                 </div>
 
-                                <div className="p-4 bg-blue-50 dark:bg-blue-500/5 rounded-2xl border border-blue-100 dark:border-blue-500/20 flex gap-4">
+                <div className="p-4 bg-blue-50 dark:bg-blue-500/5 rounded-2xl border border-blue-100 dark:border-blue-500/20 flex gap-4">
                   <Shield className="w-5 h-5 text-blue-600 shrink-0" />
                   <p className="text-[9px] font-medium text-blue-900 dark:text-blue-300 leading-relaxed">
                     Sua satisfação é nossa prioridade. Oferecemos 7 dias de garantia incondicional conforme o Código de Defesa do Consumidor.
                   </p>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
