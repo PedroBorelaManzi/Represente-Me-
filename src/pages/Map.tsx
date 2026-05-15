@@ -330,19 +330,44 @@ export default function Map() {
                       <span className="truncate">{company.address || "Endereço não informado"}</span>
                     </div>
 
-                    {company.lastOrdersByCategory && Object.keys(company.lastOrdersByCategory).length > 0 && (
-                      <div className="space-y-2 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-2xl mt-3">
-                         <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 border-b border-slate-200 dark:border-zinc-700 pb-1">�%timas Compras</h4>
-                         {Object.entries(company.lastOrdersByCategory).map(([cat, dateStr]) => (
-                           <div key={cat} className="flex items-center justify-between text-[10px] font-bold">
-                             <span className="text-slate-600 dark:text-zinc-400 uppercase">{cat}</span>
-                             <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-md">
-                               {typeof dateStr === 'string' ? new Date(dateStr).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')}
-                             </span>
-                           </div>
-                         ))}
-                      </div>
-                    )}
+                    <div className="space-y-2 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-2xl mt-3">
+                         <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 border-b border-slate-200 dark:border-zinc-700 pb-1">Últimas Compras</h4>
+                         <div className="space-y-2 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-2xl mt-3">
+                         <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 border-b border-slate-200 dark:border-zinc-700 pb-1">Últimas Compras</h48
+                         
+                         {settings.categories && settings.categories.length > 0 ? (
+                           settings.categories.map((cat: string) => {
+                             const order = company.lastOrdersByCategory?.[cat];
+                             return (
+                               <div key={cat} className="flex items-center justify-between text-[10px] font-bold py-1">
+                                 <span className="text-slate-600 dark:text-zinc-400 uppercase">{cat}</span>
+                                 {order ? (
+                                   <div className="flex items-center gap-2">
+                                     <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-md">
+                                       {new Date(order.created_at).toLocaleDateString('pt-BR')}
+                                     </span>
+                                     {order.file_path && (
+                                       <a 
+                                         href={order.file_path} 
+                                         target="_blank" 
+                                         rel="noopener noreferrer"
+                                         className="p-1 bg-slate-200 dark:bg-zinc-700 rounded hover:bg-slate-300 dark:hover:bg-zinc-600 transition-colors"
+                                         title="Visualizar Pedido"
+                                       >
+                                         <FileDown className="w-3 h-3 text-slate-600 dark:text-zinc-300" />
+                                       </a>
+                                     )}
+                                   </div>
+                                 ) : (null)}
+                               </div>
+                           );
+                         })
+                       ) : (
+                         <div className="text-[10px] font-bold text-slate-400 text-center py-1">
+                           Nenhuma categoria configurada
+                         </div>
+                       )}
+                      </div>}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 mb-6">
