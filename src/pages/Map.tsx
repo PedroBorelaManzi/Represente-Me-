@@ -332,8 +332,6 @@ export default function Map() {
 
                     <div className="space-y-2 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-2xl mt-3">
                          <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 border-b border-slate-200 dark:border-zinc-700 pb-1">Últimas Compras</h4>
-                         <div className="space-y-2 bg-slate-50 dark:bg-zinc-800/50 p-3 rounded-2xl mt-3">
-                         <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2 border-b border-slate-200 dark:border-zinc-700 pb-1">Últimas Compras</h48
                          
                          {settings.categories && settings.categories.length > 0 ? (
                            settings.categories.map((cat: string) => {
@@ -367,7 +365,7 @@ export default function Map() {
                            Nenhuma categoria configurada
                          </div>
                        )}
-                      </div>}
+                      </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 mb-6">
