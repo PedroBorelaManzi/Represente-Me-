@@ -108,12 +108,7 @@ export default function LandingPitch() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect to dashboard if logged in
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard');
-    }
-  }, [user, navigate]);
+  /* Redirect removido a pedido do usuario */
 
   const calculatePrice = (annualPrice: number) => {
     if (billingCycle === "annual") return annualPrice.toString();
