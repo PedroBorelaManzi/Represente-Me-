@@ -127,7 +127,8 @@ export default function Map() {
         },
         (error) => {
           console.error("Erro ao obter localização:", error);
-        }
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
     }
   }, []);

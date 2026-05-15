@@ -232,7 +232,7 @@ export default function ClientDetails() {
       const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", id).single();
       if (clientData) {
         const fat = clientData.faturamento || {};
-        const updatedFat = { ...fat, [uploadCategory]: (Number(fat[selectedCategory] || 0) + numericValue) };
+        const updatedFat = { ...fat, [uploadCategory]: (Number(fat[uploadCategory] || 0) + numericValue) };
         await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", id);
       }
 
