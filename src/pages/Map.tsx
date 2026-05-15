@@ -124,16 +124,11 @@ export default function Map() {
         (position) => {
           setCenter([position.coords.latitude, position.coords.longitude]);
           setZoom(14);
-          toast.success("Sua localização foi detectada!");
         },
         (error) => {
           console.error("Erro ao obter localização:", error);
-          toast.error("Aviso: Navegador não forneceu sua localização.");
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        }
       );
-    } else {
-      toast.error("Geolocalização não suportada pelo navegador.");
     }
   }, []);
 
