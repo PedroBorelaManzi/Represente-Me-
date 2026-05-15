@@ -388,7 +388,7 @@ export default function Map() {
                          
                          {settings.categories && settings.categories.length > 0 ? (
                            settings.categories.map((cat: string) => {
-                             const order = company.lastOrdersByCategory?.[cat];
+                             const normalize = (s) => s?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim(); const order = company.lastOrdersByCategory?.[normalize(cat)];
                              return (
                                <div key={cat} className="flex items-center justify-between text-[10px] font-bold py-1">
                                  <span className="text-slate-600 dark:text-zinc-400 uppercase">{cat}</span>
