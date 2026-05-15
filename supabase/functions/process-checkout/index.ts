@@ -17,7 +17,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { planId, billingCycle, paymentMethod, customer, creditCard, finalPrice } = body
+    const { userId, planId, billingCycle, paymentMethod, customer, creditCard, finalPrice } = body
 
     console.log('Recebido:', { planId, billingCycle, paymentMethod, email: customer.email })
 
@@ -63,21 +63,32 @@ serve(async (req) => {
       asaasCustomerId = newCustomer.id
     }
 
-    // 2. Processar Pagamento ou Assinatura
-    const endpoint = billingCycle === 'SUBSCRIPTION' ? '/subscriptions' : '/payments'
+    // 2. Processar Pagamento ou Assinatura (Gym-style)
+    // - MONTHLY: Assinatura recorrente mensal (cancelável)
+    // - SEMIANNUAL / ANNUAL: Pagamento único parcelado (compromisso fixo)
     
+    let endpoint = '/subscriptions'
     const paymentBody: any = {
       customer: asaasCustomerId,
       billingType: paymentMethod,
       value: Number(finalPrice),
-      description: `Plano ${planId} - ${billingCycle === 'SUBSCRIPTION' ? 'Mensalidade' : 'Anual à Vista'}`,
+      externalReference: userId,
+      description: `Plano ${planId} - ${billingCycle}`,
     }
 
-    if (billingCycle === 'SUBSCRIPTION') {
+    if (billingCycle === 'MONTHLY') {
       paymentBody.cycle = 'MONTHLY'
-      paymentBody.nextDueDate = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString().split('T')[0] // Começa amanhã
+      paymentBody.nextDueDate = new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString().split('T')[0]
     } else {
+      // Para Anual e Semestral, usamos o endpoint de pagamentos com parcelamento
+      endpoint = '/payments'
       paymentBody.dueDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString().split('T')[0]
+      
+      if (paymentMethod === 'CREDIT_CARD') {
+        paymentBody.installmentCount = billingCycle === 'ANNUAL' ? 12 : 6
+        // O valor enviado no Asaas para 'payments' parcelados é o TOTAL
+        // O Asaas dividirá automaticamente em 12x ou 6x
+      }
     }
 
     if (paymentMethod === 'CREDIT_CARD' && creditCard) {

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { X, Check, Bell, Sun, Moon, Target, Shield, Info, Loader2 } from "lucide-react";
+import { X, Check, Bell, Sun, Moon, Target, Shield, Info, Loader2, CreditCard, ExternalLink, MessageCircle, ArrowDownCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSettings } from "../contexts/SettingsContext";
+import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
 
@@ -13,6 +14,7 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: SettingsModalProps) {
   const { settings, loading, updateSettings } = useSettings();
+  const { user } = useAuth();
   const [step, setStep] = useState(initialStep);
   const [isSaving, setIsSaving] = useState(false);
 

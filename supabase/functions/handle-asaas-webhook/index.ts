@@ -34,39 +34,59 @@ serve(async (req) => {
       return new Response(JSON.stringify({ message: 'Sem dados de cliente' }), { status: 200 })
     }
 
-    // Para simplificar agora, vamos buscar pelo e-mail do cliente no Asaas
-    const customerResp = await fetch(`https://www.asaas.com/api/v3/customers/${payment.customer}`, {
-      headers: { 'access_token': Deno.env.get('ASAAS_API_KEY')! }
-    })
-    const customerData = await customerResp.json()
-    const customerEmail = customerData.email
+    // 1. Identificar Usuário (Prioridade: externalReference, Fallback: e-mail)
+    let userId = payment.externalReference
 
-    if (!customerEmail) {
-      return new Response(JSON.stringify({ message: 'E-mail do cliente não encontrado' }), { status: 200 })
+    if (!userId) {
+      console.log('Sem externalReference, buscando por e-mail no Asaas...')
+      const customerResp = await fetch(`https://www.asaas.com/api/v3/customers/${payment.customer}`, {
+        headers: { 'access_token': Deno.env.get('ASAAS_API_KEY')! }
+      })
+      const customerData = await customerResp.json()
+      const customerEmail = customerData.email
+
+      if (customerEmail) {
+        const { data: userData } = await supabase.auth.admin.listUsers()
+        const user = userData.users.find(u => u.email === customerEmail)
+        userId = user?.id
+      }
+    }
+
+    if (!userId) {
+      console.error('Usuário não identificado para o pagamento:', payment.id)
+      return new Response(JSON.stringify({ message: 'Usuário não encontrado' }), { status: 200 })
     }
 
     // 2. Determinar o novo status
     let newStatus = 'active'
     if (event === 'PAYMENT_OVERDUE') newStatus = 'past_due'
-    if (event === 'PAYMENT_DELETED') newStatus = 'inactive'
+    if (event === 'PAYMENT_DELETED' || event === 'SUBSCRIPTION_DELETED') newStatus = 'inactive'
     if (event === 'PAYMENT_CONFIRMED' || event === 'PAYMENT_RECEIVED') newStatus = 'active'
 
-    // 3. Atualizar user_settings no Supabase
-    // Primeiro buscamos o user_id pelo e-mail (usando auth admin)
-    const { data: userData } = await supabase.auth.admin.listUsers()
-    const user = userData.users.find(u => u.email === customerEmail)
+    // 3. Atualizar user_settings no Supabase (O(1) lookup por user_id)
+        // 3. Atualizar user_settings no Supabase (O(1) lookup por user_id)
+    const updateData: any = { 
+      subscription_status: newStatus,
+      updated_at: new Date().toISOString()
+    }
 
-    if (user) {
-      const { error } = await supabase
-        .from('user_settings')
-        .update({ 
-          subscription_status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
+    // Tentar inferir o plano pela descrição do Asaas se disponível
+    if (payment.description) {
+      const desc = payment.description.toLowerCase();
+      if (desc.includes('master')) updateData.plan_id = 'master';
+      else if (desc.includes('premium')) updateData.plan_id = 'premium';
+      else if (desc.includes('exclusivo')) updateData.plan_id = 'exclusivo';
+    }
 
-      if (error) console.error('Erro ao atualizar status:', error)
-      else console.log(`Status do usuário ${customerEmail} atualizado para: ${newStatus}`)
+    const { error } = await supabase
+      .from('user_settings')
+      .update(updateData)
+      .eq('user_id', userId)
+
+    if (error) {
+      console.error('Erro ao atualizar status:', error)
+    } else {
+      console.log(`Status do usuário ${userId} atualizado para: ${newStatus}`)
     }
 
     return new Response(JSON.stringify({ success: true }), { 

@@ -14,6 +14,7 @@ import AgendaPage from "./pages/Agenda";
 import EmailClient from "./pages/EmailClient";
 import EmailCallback from "./pages/EmailCallback";
 import PedidosPage from "./pages/Pedidos";
+import PlanosPage from "./pages/Planos";
 import GoogleCallback from "./pages/GoogleCallback";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -34,7 +35,8 @@ export default function App() {
               <Route path="/" element={<Landing />} />
               <Route path='/login' element={<Login />} />
               <Route path='/register' element={<Register />} />
-              <Route path='/checkout' element={<Checkout />} />
+                            <Route path='/checkout' element={<Checkout />} />
+              <Route path='/planos' element={<PlanosPage />} />
               
               {/* Protected Dashboard Routes */}
               <Route path="/dashboard" element={<ProtectedRoute />}>

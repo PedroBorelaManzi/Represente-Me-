@@ -14,6 +14,7 @@ interface Settings {
   categories: string[];
   revenue_ceiling: number;
   subscription_status: SubscriptionStatus;
+  plan_id: string;
 }
 
 const defaultSettings: Settings = {
@@ -25,7 +26,8 @@ const defaultSettings: Settings = {
   has_completed_onboarding: false,
   categories: [],
   revenue_ceiling: 1000000,
-  subscription_status: 'active',
+  subscription_status: 'inactive',
+  plan_id: 'exclusivo',
 };
 
 interface SettingsContextType {
@@ -101,8 +103,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           theme: data.theme ?? defaultSettings.theme,
           has_completed_onboarding: hasCompleted,
           categories: categories,
-          revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
+                    revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
           subscription_status: subStatus,
+          plan_id: data.plan_id || 'exclusivo',
         });
       } else {
         setSettings(defaultSettings);

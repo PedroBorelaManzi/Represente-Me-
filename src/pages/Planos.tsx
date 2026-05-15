@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Check, 
   Zap, 
@@ -17,6 +17,7 @@ import {
 import { motion } from 'framer-motion';
 import { useSettings } from '../contexts/SettingsContext';
 import { cn } from '../lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 const plans = [
   {
@@ -95,6 +96,34 @@ export default function Planos() {
         </p>
       </div>
 
+            {/* Period Selector */}
+      <div className="flex justify-center -mt-10">
+        <div className="bg-white dark:bg-zinc-900 p-2 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-xl flex gap-2">
+          {planPeriods.map((period) => (
+            <button
+              key={period.id}
+              onClick={() => setSelectedPeriod(period.id)}
+              className={cn(
+                "px-8 py-4 rounded-[24px] text-[10px] font-black uppercase tracking-widest transition-all",
+                selectedPeriod === period.id
+                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
+                  : "text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"
+              )}
+            >
+              {period.label}
+              {period.discount && (
+                <span className={cn(
+                  "block text-[8px] opacity-60 mt-1",
+                  selectedPeriod === period.id ? "text-white" : "text-emerald-500"
+                )}>
+                  {period.discount}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-7xl mx-auto w-full">
         {plans.map((plan, index) => {
           const PlanIcon = plan.icon;
@@ -131,7 +160,9 @@ export default function Planos() {
 
               <div className="flex items-baseline gap-2 mb-12">
                 <span className={cn("text-xs font-black uppercase tracking-widest", plan.featured ? "text-emerald-200" : "text-slate-400")}>R$</span>
-                <span className={cn("text-7xl font-black tracking-tighter", plan.featured ? "text-white" : "text-slate-900 dark:text-white")}>{plan.price}</span>
+                <span className={cn("text-7xl font-black tracking-tighter", plan.featured ? "text-white" : "text-slate-900 dark:text-white")}>
+                  {plan.basePrice === 0 ? 0 : plan.basePrice + activePeriod.priceMod}
+                </span>
                 <span className={cn("text-xs font-black uppercase tracking-widest", plan.featured ? "text-emerald-200" : "text-slate-400")}>{plan.period}</span>
               </div>
 

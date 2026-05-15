@@ -147,6 +147,9 @@ export default function Layout() {
                         <button onClick={() => { setSettingsInitialStep(2); setIsSettingsModalOpen(true); }} className='flex items-center w-full px-3 py-2 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-emerald-600 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-850 transition-colors'>
                           <Palette className='w-3.5 h-3.5 mr-2' /> Escolher Temas
                         </button>
+                        <button onClick={() => { setSettingsInitialStep(3); setIsSettingsModalOpen(true); }} className='flex items-center w-full px-3 py-2 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-emerald-600 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-850 transition-colors'>
+                          <Shield className='w-3.5 h-3.5 mr-2' /> Minha Assinatura
+                        </button>
                       </motion.div>
                     )}
                   </AnimatePresence>
