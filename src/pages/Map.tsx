@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, ExternalLink, Trash2, Navigation2, Target, Users } from "lucide-react";
+import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, ExternalLink, Trash2, Navigation2, Target, Users, FileDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
@@ -61,9 +61,56 @@ export default function Map() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data, error } = await supabase.from("clients").select("*").eq("user_id", user.id);
-    if (!error && data) {
-      setCompanies(data);
+    const { data: clientsData, error: clientsError } = await supabase.from("clients").select("*").eq("user_id", user.id);
+    
+    if (!clientsError && clientsData) {
+      const { data: ordersData } = await supabase
+        .from("orders")
+        .select("client_id, category, created_at, file_path, file_name")
+        .eq("user_id", user.id)
+        .not("file_path", "is", null)
+        .order("created_at", { ascending: false });
+
+      const clientsWithOrders = clientsData.map(client => {
+        const lastOrdersByCategory = {};
+        if (ordersData) {
+          ordersData.filter(o => o.client_id === client.id).forEach(order => {
+            if (!lastOrdersByCategory[order.category]) {
+              lastOrdersByCategory[order.category] = order;
+            }
+          });
+        }
+        return { ...client, lastOrdersByCategory };
+      });
+
+      setCompanies(clientsWithOrders);
+    }
+  };
+
+  const handleDownload = async (fileName, filePath) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('client_vault')
+        .download(filePath);
+      
+      if (error) {
+          const { data: d2, error: e2 } = await supabase.storage.from('orders').download(filePath);
+          if (e2) throw e2;
+          const url = URL.createObjectURL(d2);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.click();
+          return;
+      }
+      
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+    } catch (err) {
+      toast.error("Erro ao visualizar pedido.");
     }
   };
 
@@ -345,15 +392,16 @@ export default function Map() {
                                        {new Date(order.created_at).toLocaleDateString('pt-BR')}
                                      </span>
                                      {order.file_path && (
-                                       <a 
-                                         href={order.file_path} 
-                                         target="_blank" 
-                                         rel="noopener noreferrer"
+                                       <button 
+                                         onClick={(e) => {
+                                           e.stopPropagation();
+                                           handleDownload(order.file_name || 'pedido.pdf', order.file_path);
+                                         }}
                                          className="p-1 bg-slate-200 dark:bg-zinc-700 rounded hover:bg-slate-300 dark:hover:bg-zinc-600 transition-colors"
                                          title="Visualizar Pedido"
                                        >
                                          <FileDown className="w-3 h-3 text-slate-600 dark:text-zinc-300" />
-                                       </a>
+                                       </button>
                                      )}
                                    </div>
                                  ) : (null)}
