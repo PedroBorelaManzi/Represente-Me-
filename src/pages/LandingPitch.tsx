@@ -23,6 +23,7 @@ import {
 import { Logo } from '../components/Logo';
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { cn } from "../lib/utils";
 
 const industries = [
   { 
