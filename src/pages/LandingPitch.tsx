@@ -24,7 +24,7 @@ import {
   ChevronRight,
   ChevronDown
 } from "lucide-react";
-import { Logo } from '../components/Logo';
+import { Logo } from "../components/Logo";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
@@ -306,15 +306,70 @@ export default function LandingPitch() {
         </div>
       </section>
 
+      {/* FAQ Section Moved Here */}
+      <section id="faq" className="py-32 bg-white relative overflow-hidden">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter mb-4">
+              Dúvidas Frequentes
+            </h2>
+            <p className="text-slate-500 font-medium uppercase text-xs tracking-[0.3em]">
+              Tudo o que você precisa saber sobre a plataforma
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, idx) => (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className="bg-slate-50 rounded-[32px] border border-slate-100 overflow-hidden transition-all shadow-sm"
+              >
+                <button 
+                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                  className="w-full px-8 py-6 flex items-center justify-between text-left group"
+                >
+                  <span className="text-sm md:text-base font-black text-slate-900 uppercase tracking-tight group-hover:text-emerald-600 transition-colors">
+                    {faq.question}
+                  </span>
+                  <div className={cn(
+                    "p-2 rounded-xl bg-white text-slate-400 transition-all",
+                    openFaq === idx && "bg-emerald-50 text-emerald-600 rotate-180"
+                  )}>
+                    <ChevronDown className="w-5 h-5" />
+                  </div>
+                </button>
+                <AnimatePresence>
+                  {openFaq === idx && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <div className="px-8 pb-8 text-sm md:text-base text-slate-500 font-medium leading-relaxed border-t border-slate-50 pt-6">
+                        {faq.answer}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Future Section (From Login Page) */}
-      <section className="py-32 bg-white relative overflow-hidden">
+      <section className="py-32 bg-slate-50 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 shadow-sm border border-slate-100"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-sm border border-slate-100"
               >
                 <Sparkles className="w-4 h-4 text-amber-500" />
                 <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Tecnologia de Ponta</span>
@@ -330,7 +385,7 @@ export default function LandingPitch() {
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.1 }}
-                    className="bg-slate-50 p-8 rounded-[40px] border border-slate-100 shadow-sm group hover:-translate-y-1 transition-all duration-500"
+                    className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm group hover:-translate-y-1 transition-all duration-500"
                   >
                     <div className="w-12 h-12 rounded-[20px] bg-emerald-50 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
                       <feature.icon className="w-6 h-6 text-emerald-600" />
@@ -364,61 +419,6 @@ export default function LandingPitch() {
                 </div>
               </div>
             </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section id="faq" className="py-32 bg-slate-50 relative overflow-hidden">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter mb-4">
-              Dúvidas Frequentes
-            </h2>
-            <p className="text-slate-500 font-medium uppercase text-xs tracking-[0.3em]">
-              Tudo o que você precisa saber sobre a plataforma
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            {faqs.map((faq, idx) => (
-              <motion.div 
-                key={idx}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="bg-white rounded-[32px] border border-slate-100 overflow-hidden transition-all shadow-sm"
-              >
-                <button 
-                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                  className="w-full px-8 py-6 flex items-center justify-between text-left group"
-                >
-                  <span className="text-sm md:text-base font-black text-slate-900 uppercase tracking-tight group-hover:text-emerald-600 transition-colors">
-                    {faq.question}
-                  </span>
-                  <div className={cn(
-                    "p-2 rounded-xl bg-slate-50 text-slate-400 transition-all",
-                    openFaq === idx && "bg-emerald-50 text-emerald-600 rotate-180"
-                  )}>
-                    <ChevronDown className="w-5 h-5" />
-                  </div>
-                </button>
-                <AnimatePresence>
-                  {openFaq === idx && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                    >
-                      <div className="px-8 pb-8 text-sm md:text-base text-slate-500 font-medium leading-relaxed border-t border-slate-50 pt-6">
-                        {faq.answer}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
           </div>
         </div>
       </section>
