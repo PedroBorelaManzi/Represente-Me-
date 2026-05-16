@@ -41,7 +41,7 @@ export default function Checkout() {
   const rawPlanId = searchParams.get("plan")?.toLowerCase() || "profissional";
   const periodParam = searchParams.get("period") || "ANNUAL";
   
-  // Normalize planId (handle legacy 'premium' or other variations)
+  // Normalize planId
   let planId = rawPlanId;
   if (planId === 'premium') planId = 'profissional';
   
@@ -85,6 +85,7 @@ export default function Checkout() {
   }, [formData.password, formData.confirmPassword]);
 
   const isPasswordValid = Object.values(passwordRequirements).every(req => req);
+  const isStep1Valid = formData.name && formData.email && formData.cpfCnpj && formData.phone && isPasswordValid;
 
   const getMonthlyRate = () => {
     const mod = billingCycle === 'MONTHLY' ? 20 : (billingCycle === 'SEMIANNUAL' ? 10 : 0);
@@ -185,14 +186,14 @@ export default function Checkout() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 font-sans text-slate-900 dark:text-zinc-100 selection:bg-emerald-500/30 overflow-x-hidden">
-      {/* Premium Header with Progress */}
+      {/* Premium Header */}
       <header className="sticky top-0 z-50 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl border-b border-slate-100 dark:border-zinc-800 px-8 py-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-6">
             <button onClick={() => navigate(-1)} className="p-3 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-2xl transition-all text-slate-400 active:scale-90">
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <Logo size="sm" showText variant="light" />
+            <Logo size="sm" showText ident={true} />
           </div>
           
           <div className="hidden md:flex items-center gap-8">
@@ -228,7 +229,7 @@ export default function Checkout() {
           
           <div className="lg:col-span-7 space-y-12">
             
-            {/* Ultra Modern Period Selector */}
+            {/* Cycle Selector (No Gradient) */}
             <div className="space-y-6">
               <div className="flex items-center justify-between px-2">
                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em]">Escolha seu Ciclo</h3>
@@ -240,9 +241,9 @@ export default function Checkout() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { id: 'ANNUAL', label: 'Anual', icon: Zap, save: 'Economize R$ 240', color: 'emerald', monthly: selectedPlan.base },
-                  { id: 'SEMIANNUAL', label: '6 Meses', icon: TrendingUp, save: 'Economize R$ 60', color: 'blue', monthly: selectedPlan.base + 10 },
-                  { id: 'MONTHLY', label: 'Mensal', icon: Calendar, save: 'Sem fidelidade', color: 'slate', monthly: selectedPlan.base + 20 }
+                  { id: 'ANNUAL', label: 'Anual', icon: Zap, save: 'Economize R$ 240', color: 'bg-emerald-600', monthly: selectedPlan.base },
+                  { id: 'SEMIANNUAL', label: '6 Meses', icon: TrendingUp, save: 'Economize R$ 60', color: 'bg-emerald-600', monthly: selectedPlan.base + 10 },
+                  { id: 'MONTHLY', label: 'Mensal', icon: Calendar, save: 'Sem fidelidade', color: 'bg-emerald-600', monthly: selectedPlan.base + 20 }
                 ].map((cycle) => (
                   <button 
                     key={cycle.id}
@@ -251,14 +252,10 @@ export default function Checkout() {
                     className={cn(
                       "relative p-6 rounded-[32px] border transition-all duration-500 text-left group overflow-hidden",
                       billingCycle === cycle.id 
-                        ? (cycle.color === 'emerald' ? "bg-emerald-600 border-emerald-700 shadow-2xl shadow-emerald-500/30 scale-[1.02]" : (cycle.color === 'blue' ? "bg-blue-600 border-blue-700 shadow-2xl shadow-blue-500/30 scale-[1.02]" : "bg-slate-900 border-slate-900 shadow-2xl shadow-slate-500/30 scale-[1.02]"))
+                        ? `${cycle.color} border-emerald-700 shadow-2xl shadow-emerald-500/30 scale-[1.02]` 
                         : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 hover:border-emerald-500/50"
                     )}
                   >
-                    {billingCycle === cycle.id && (
-                      <motion.div layoutId="cycle-bg" className={cn("absolute inset-0 opacity-10 bg-gradient-to-br from-white to-transparent")} />
-                    )}
-                    
                     <div className="relative z-10 flex flex-col h-full gap-4">
                       <div className={cn(
                         "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
@@ -298,10 +295,6 @@ export default function Checkout() {
                     exit={{ opacity: 0, x: 40 }}
                     className="space-y-8 bg-white dark:bg-zinc-900 p-10 rounded-[48px] border border-slate-100 dark:border-zinc-800 shadow-2xl relative overflow-hidden"
                   >
-                    <div className="absolute top-0 right-0 p-8 opacity-5">
-                      <User className="w-32 h-32" />
-                    </div>
-
                     <div className="space-y-2 relative z-10">
                       <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Crie sua Conta</h3>
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
@@ -312,12 +305,7 @@ export default function Checkout() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                       <div className="space-y-2 md:col-span-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">E-mail Corporativo</label>
-                        <div className="relative group">
-                          <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="nome@empresa.com" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
-                          <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors">
-                            <Plus className="w-4 h-4" />
-                          </div>
-                        </div>
+                        <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="nome@empresa.com" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
                       </div>
                       
                       <div className="space-y-2">
@@ -365,14 +353,19 @@ export default function Checkout() {
 
                     <button 
                       type="button"
-                      disabled={!isPasswordValid}
-                      onClick={() => setStep(2)}
+                      onClick={() => {
+                        if (!isStep1Valid) {
+                          toast.error("Por favor, preencha todos os campos e siga as regras de senha.");
+                          return;
+                        }
+                        setStep(2);
+                      }}
                       className={cn(
                         "w-full py-6 rounded-[32px] font-black uppercase text-xs tracking-[0.3em] transition-all flex items-center justify-center gap-4 group active:scale-95",
-                        isPasswordValid ? "bg-slate-900 text-white hover:bg-slate-800 shadow-2xl" : "bg-slate-100 text-slate-300 cursor-not-allowed"
+                        isStep1Valid ? "bg-slate-900 text-white hover:bg-slate-800 shadow-2xl" : "bg-slate-100 text-slate-400 cursor-not-allowed"
                       )}
                     >
-                      {isPasswordValid ? "Continuar para Pagamento" : "Complete os Requisitos"}
+                      Continuar para Pagamento
                       <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
                     </button>
                   </motion.div>
@@ -462,9 +455,7 @@ export default function Checkout() {
 
           <div className="lg:col-span-5">
             <div className="sticky top-32 space-y-8">
-              <div className="bg-white dark:bg-zinc-900 rounded-[64px] p-10 border border-slate-100 dark:border-zinc-800 shadow-2xl space-y-10 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-                
+              <div className="bg-white dark:bg-zinc-900 rounded-[64px] p-10 border border-slate-100 dark:border-zinc-800 shadow-2xl space-y-10 relative overflow-hidden text-center">
                 <div className="flex items-center justify-between relative z-10">
                   <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Resumo</h3>
                   <div className="px-4 py-2 bg-emerald-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20">
@@ -473,7 +464,7 @@ export default function Checkout() {
                 </div>
 
                 <div className="space-y-8 relative z-10">
-                  <div className="flex items-center gap-6 p-6 bg-slate-50 dark:bg-zinc-950 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-inner">
+                  <div className="flex items-center gap-6 p-6 bg-slate-50 dark:bg-zinc-950 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-inner text-left">
                     <div className={cn("w-16 h-16 rounded-[24px] bg-white dark:bg-zinc-900 flex items-center justify-center shadow-lg transition-transform hover:rotate-6", selectedPlan.color)}>
                       <selectedPlan.icon className="w-8 h-8" />
                     </div>
@@ -487,49 +478,27 @@ export default function Checkout() {
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 dark:bg-zinc-950 rounded-[32px] p-6 border border-slate-100 dark:border-zinc-800 space-y-4">
-                    <div className="flex items-center justify-between"><div className="flex items-center gap-3"><Ticket className="w-4 h-4 text-emerald-600" /><span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Cupom Aplicado</span></div>{appliedCoupon && <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{appliedCoupon.code}</span>}</div>
-                    <div className="flex gap-3 pt-2">
-                      <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="CÓDIGO DE DESCONTO" className="flex-1 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-[10px] font-black outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all uppercase" />
-                      <button type="button" onClick={handleApplyCoupon} disabled={isApplyingCoupon || !couponCode} className="bg-slate-900 text-white px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50">
-                        {isApplyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : "Aplicar"}
-                      </button>
-                    </div>
-                  </div>
-
                   <div className="pt-8 border-t border-slate-100 dark:border-zinc-800/50 space-y-6">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-slate-400">
-                        <p className="text-[10px] font-black uppercase tracking-widest">Subtotal</p>
-                        <p className="text-sm font-bold">R$ {baseValue.toFixed(2).replace('.', ',')}</p>
-                      </div>
-                      {appliedCoupon && (
-                        <div className="flex items-center justify-between text-emerald-600">
-                          <p className="text-[10px] font-black uppercase tracking-widest">Desconto {appliedCoupon.discount}%</p>
-                          <p className="text-sm font-bold">- R$ {couponDiscount.toFixed(2).replace('.', ',')}</p>
-                        </div>
-                      )}
+                    <div>
+                       <p className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-4">
+                          Parcela do Investimento
+                       </p>
+                       <p className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter">
+                          <span className="text-2xl mr-1">R$</span>{(finalPrice / (billingCycle === 'ANNUAL' ? 12 : (billingCycle === 'SEMIANNUAL' ? 6 : 1))).toFixed(2).replace('.', ',')}
+                       </p>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
+                          {billingCycle === 'ANNUAL' ? '12 parcelas mensais' : (billingCycle === 'SEMIANNUAL' ? '6 parcelas mensais' : 'Pagamento Mensal')}
+                       </p>
                     </div>
                     
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <p className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-2">
-                          {billingCycle === 'ANNUAL' ? '12x de Investimento' : (billingCycle === 'SEMIANNUAL' ? '6x de Investimento' : 'Mensalidade')}
-                        </p>
-                        <p className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter">
-                           <span className="text-2xl mr-1">R$</span>{(finalPrice / (billingCycle === 'ANNUAL' ? 12 : (billingCycle === 'SEMIANNUAL' ? 6 : 1))).toFixed(2).replace('.', ',')}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 bg-slate-900 dark:bg-white/5 rounded-2xl text-center">
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-1">Total a Investir</p>
+                    <div className="p-4 bg-slate-900 dark:bg-white/5 rounded-2xl">
+                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-1">Total a Investir (Valor Cheio)</p>
                        <p className="text-lg font-black text-white">R$ {finalPrice.toFixed(2).replace('.', ',')}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-6 bg-blue-50 dark:bg-blue-500/5 rounded-[32px] border border-blue-100 dark:border-blue-500/10 flex gap-6 shadow-sm">
+                <div className="p-6 bg-blue-50 dark:bg-blue-500/5 rounded-[32px] border border-blue-100 dark:border-blue-500/10 flex gap-6 shadow-sm text-left">
                   <ShieldAlert className="w-6 h-6 text-blue-600 shrink-0" />
                   <p className="text-[10px] font-black uppercase tracking-widest text-blue-900 dark:text-blue-300 leading-relaxed">
                     Satisfação Garantida: Experimente por 7 dias com reembolso integral caso não se adapte.
