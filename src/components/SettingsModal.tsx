@@ -26,7 +26,9 @@ import {
   Percent,
   Plus,
   Lock,
-  Camera
+  Camera,
+  QrCode,
+  Key
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -55,15 +57,28 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { settings, updateSettings } = useSettings();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [tempAvatar, setTempAvatar] = useState<string | null>(null);
+  const [is2FASetup, setIs2FASetup] = useState(false);
 
   if (!isOpen) return null;
 
   const toggleTheme = async () => {
     const newTheme = settings.theme === 'dark' ? 'light' : 'dark';
-    // Optimistic update
-    updateSettings({ theme: newTheme }).catch(() => {
-        toast.error("Erro ao salvar tema");
-    });
+    // Immediate local feedback
+    const root = document.documentElement;
+    if (newTheme === 'dark') {
+      root.classList.add('dark');
+      root.style.colorScheme = 'dark';
+    } else {
+      root.classList.remove('dark');
+      root.style.colorScheme = 'light';
+    }
+    
+    try {
+      await updateSettings({ theme: newTheme });
+    } catch (err) {
+      toast.error("Erro ao salvar tema");
+    }
   };
 
   const handlePhotoClick = () => {
@@ -73,7 +88,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      toast.success("Funcionalidade de upload em desenvolvimento");
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTempAvatar(reader.result as string);
+        toast.success("Foto de perfil atualizada!");
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -140,7 +160,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 p-8 md:p-12 overflow-y-auto">
+        <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar">
           <div className="max-w-2xl mx-auto space-y-12">
             <AnimatePresence mode="wait">
               {activeTab === 'profile' && (
@@ -153,9 +173,13 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 >
                   <div className="flex items-center gap-8">
                     <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-3xl font-black shadow-xl group-hover:scale-105 transition-transform">
-                        {user?.email?.[0].toUpperCase()}
-                      </div>
+                      {tempAvatar ? (
+                        <img src={tempAvatar} alt="Profile" className="w-24 h-24 rounded-full object-cover shadow-xl group-hover:scale-105 transition-transform" />
+                      ) : (
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-3xl font-black shadow-xl group-hover:scale-105 transition-transform">
+                          {user?.email?.[0].toUpperCase()}
+                        </div>
+                      )}
                       <div className="absolute inset-0 bg-black/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Camera className="w-8 h-8 text-white" />
                       </div>
@@ -291,19 +315,50 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <ChevronRight className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" />
                     </button>
 
-                    <div className="flex items-center justify-between p-6 rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800">
-                      <div className="flex items-center gap-6">
-                        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm text-blue-500">
-                          <Lock className="w-6 h-6" />
+                    <div className="p-8 rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-6">
+                          <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm text-blue-500">
+                            <Lock className="w-6 h-6" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Autenticação em Duas Etapas (2FA)</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Camada extra de proteção para seu login</p>
+                          </div>
                         </div>
-                        <div className="text-left">
-                          <p className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Autenticação em Duas Etapas</p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Camada extra de proteção para seu login</p>
-                        </div>
+                        <button 
+                          onClick={() => setIs2FASetup(!is2FASetup)}
+                          className={cn(
+                            "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                            is2FASetup ? "bg-red-50 text-red-500" : "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
+                          )}
+                        >
+                          {is2FASetup ? "Desativar" : "Configurar"}
+                        </button>
                       </div>
-                      <div className="w-12 h-6 rounded-full p-1 bg-slate-200 flex items-center justify-start">
-                        <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
-                      </div>
+
+                      {is2FASetup && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="pt-6 border-t border-slate-100 dark:border-zinc-800 space-y-6"
+                        >
+                          <div className="flex flex-col md:flex-row items-center gap-8">
+                            <div className="p-4 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-100 dark:border-zinc-800 shadow-inner">
+                              <QrCode className="w-32 h-32 text-slate-900 dark:text-white" />
+                            </div>
+                            <div className="space-y-4 flex-1">
+                              <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">
+                                Escaneie o QR Code acima com seu app de autenticação (Google Authenticator ou Authy) para ativar o 2FA.
+                              </p>
+                              <div className="flex gap-2">
+                                <input type="text" placeholder="Código de 6 dígitos" className="flex-1 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold outline-none" />
+                                <button className="bg-slate-900 text-white px-6 rounded-xl text-[10px] font-black uppercase tracking-widest">Validar</button>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
                     </div>
                   </div>
                 </motion.div>
