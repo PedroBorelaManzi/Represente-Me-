@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -12,7 +12,8 @@ import {
   X,
   KeyRound,
   CheckCircle2,
-  Check
+  Check,
+  User
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { toast } from "sonner";
@@ -35,7 +36,7 @@ const PasswordRequirementsDisplay = ({ requirements }: { requirements: any }) =>
         <div key={i} className="flex items-center gap-2">
           <div className={cn(
             "w-4 h-4 rounded-full flex items-center justify-center transition-colors",
-            item.met ? "bg-emerald-500 text-white" : "bg-slate-100 dark:bg-zinc-800 text-slate-300"
+            item.met ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-300"
           )}>
             <Check className="w-3 h-3" />
           </div>
@@ -64,7 +65,6 @@ const Login = () => {
   });
 
   
-
 
   useEffect(() => {
     const forceLogout = async () => {
@@ -158,20 +158,21 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-slate-50 dark:bg-zinc-950 transition-colors duration-500 overflow-hidden relative">
-      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-emerald-100/30 dark:bg-emerald-900/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-emerald-50/30 dark:bg-emerald-950/10 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen w-full flex bg-white font-sans text-slate-900 selection:bg-emerald-500/30 overflow-hidden relative">
+      {/* Background blobs for premium feel */}
+      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-emerald-50 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-emerald-50/50 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="w-full flex">
         {/* Left Side: Premium Branding */}
-        <div className="hidden lg:flex w-[55%] p-20 flex-col justify-between relative">
+        <div className="hidden lg:flex w-[55%] p-20 flex-col justify-between relative border-r border-slate-100">
           <div className="relative z-10">
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-4 text-emerald-600 mb-20"
             >
-              <div className="p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl dark:shadow-none dark:shadow-none border border-emerald-50 dark:border-zinc-800">
+              <div className="p-3 bg-white rounded-2xl shadow-xl border border-emerald-50">
                 <Boxes className="h-8 w-8" />
               </div>
               <Logo showText={true} />
@@ -182,11 +183,11 @@ const Login = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <h1 className="text-[84px] font-black text-slate-900 dark:text-zinc-100 leading-[0.9] mb-8 tracking-tighter">
+              <h1 className="text-[84px] font-black text-slate-900 leading-[0.9] mb-8 tracking-tighter">
                 O FUTURO DA <br />
                 <span className="text-emerald-600">REPRESENTAÇÃO.</span>
               </h1>
-              <p className="text-slate-500 dark:text-zinc-400 text-xl font-medium max-w-xl leading-relaxed">
+              <p className="text-slate-500 text-xl font-medium max-w-xl leading-relaxed">
                 A tecnologia que você precisa para dominar seu território e multiplicar suas vendas com inteligência e elegância.
               </p>
             </motion.div>
@@ -204,12 +205,12 @@ const Login = () => {
             ].map((feature, i) => (
               <div key={i} className="group cursor-default">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-xl bg-emerald-50 dark:bg-zinc-800 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                  <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all">
                     <feature.icon className="h-5 w-5" />
                   </div>
-                  <h3 className="text-slate-900 dark:text-zinc-100 font-black uppercase text-[11px] tracking-widest">{feature.title}</h3>
+                  <h3 className="text-slate-900 font-black uppercase text-[11px] tracking-widest">{feature.title}</h3>
                 </div>
-                <p className="text-slate-400 dark:text-zinc-500 text-sm font-bold leading-relaxed">{feature.desc}</p>
+                <p className="text-slate-400 text-sm font-bold leading-relaxed">{feature.desc}</p>
               </div>
             ))}
           </motion.div>
@@ -220,15 +221,14 @@ const Login = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-lg bg-white/70 dark:bg-zinc-900/70 backdrop-blur-3xl p-12 lg:p-16 rounded-[64px] border border-white dark:border-zinc-800 shadow-[0_32px_128px_-16px_rgba(99,102,241,0.12)] relative"
+            className="w-full max-w-lg bg-white p-12 lg:p-16 rounded-[64px] border border-slate-100 shadow-[0_32px_128px_-16px_rgba(16,185,129,0.1)] relative"
           >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-16 -mt-16" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl -mr-16 -mt-16" />
             
-            {/* New Header Layout */}
             <div className="mb-12 flex flex-col items-center">
               <button 
                 onClick={() => navigate("/")} 
-                className="mb-8 flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-zinc-800 rounded-xl text-slate-500 hover:text-emerald-600 transition-all active:scale-95 group self-start"
+                className="mb-8 flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl text-slate-500 hover:text-emerald-600 transition-all active:scale-95 group self-start"
               >
                 <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                 <span className="text-[10px] font-black uppercase tracking-widest">Voltar</span>
@@ -236,13 +236,13 @@ const Login = () => {
 
               <Logo className='h-16 mb-8' />
               
-              <h2 className="text-4xl font-black text-slate-900 dark:text-zinc-100 mb-2 tracking-tighter uppercase text-center">Entrar</h2>
-              <p className="text-slate-500 dark:text-zinc-400 font-medium text-center">Bem-vindo de volta ao seu comando central.</p>
+              <h2 className="text-4xl font-black text-slate-900 mb-2 tracking-tighter uppercase text-center">Entrar</h2>
+              <p className="text-slate-500 font-medium text-center">Bem-vindo de volta ao seu comando central.</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-6">
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest px-2">E-mail Corporativo</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">E-mail Corporativo</label>
                 <div className="relative group">
                   <Mail className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-emerald-600 transition-colors" />
                   <input
@@ -250,7 +250,7 @@ const Login = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-16 pr-8 py-5 bg-slate-50/50 dark:bg-zinc-950/50 border border-slate-100 dark:border-zinc-800/50 rounded-[24px] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 text-sm font-bold transition-all placeholder:text-slate-300 outline-none"
+                    className="w-full pl-16 pr-8 py-5 bg-slate-50/50 border border-slate-100 rounded-[24px] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 text-sm font-bold transition-all placeholder:text-slate-300 outline-none"
                     placeholder="email@empresa.com"
                   />
                 </div>
@@ -258,7 +258,7 @@ const Login = () => {
 
               <div className="space-y-2">
                 <div className="flex justify-between items-center px-2">
-                  <label className="block text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Senha de Acesso</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Senha de Acesso</label>
                   <button 
                     type="button" 
                     onClick={() => {
@@ -278,7 +278,7 @@ const Login = () => {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-16 pr-8 py-5 bg-slate-50/50 dark:bg-zinc-950/50 border border-slate-100 dark:border-zinc-800/50 rounded-[24px] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 text-sm font-bold transition-all placeholder:text-slate-300 outline-none"
+                    className="w-full pl-16 pr-8 py-5 bg-slate-50/50 border border-slate-100 rounded-[24px] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 text-sm font-bold transition-all placeholder:text-slate-300 outline-none"
                     placeholder="••••••••"
                   />
                 </div>
@@ -288,7 +288,7 @@ const Login = () => {
                 <button
                   disabled={loading}
                   type="submit"
-                  className="w-full group relative flex items-center justify-center gap-3 py-6 bg-emerald-600 text-white rounded-[24px] font-black uppercase text-xs tracking-[0.2em] hover:bg-emerald-700 transition-all  dark:shadow-none disabled:opacity-50 overflow-hidden active:scale-[0.98]"
+                  className="w-full group relative flex items-center justify-center gap-3 py-6 bg-emerald-600 text-white rounded-[24px] font-black uppercase text-xs tracking-[0.2em] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 disabled:opacity-50 overflow-hidden active:scale-[0.98]"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                   {loading ? (
@@ -303,12 +303,12 @@ const Login = () => {
               </div>
             </form>
 
-            <div className="mt-12 pt-8 border-t border-slate-100 dark:border-zinc-800 flex flex-col items-center gap-6">
+            <div className="mt-12 pt-8 border-t border-slate-100 flex flex-col items-center gap-6">
               <div className="flex items-center gap-3">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sem conta?</span>
                 <button
                   onClick={() => navigate("/register")}
-                  className="px-6 py-2 bg-slate-50 dark:bg-zinc-800 text-[10px] font-black text-slate-900 dark:text-zinc-100 uppercase tracking-widest rounded-xl border border-slate-100 dark:border-zinc-700 hover:bg-white transition-all shadow-sm"
+                  className="px-6 py-2 bg-slate-50 text-[10px] font-black text-slate-900 uppercase tracking-widest rounded-xl border border-slate-100 hover:bg-white transition-all shadow-sm"
                 >
                   Criar Conta
                 </button>
@@ -331,20 +331,20 @@ const Login = () => {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-[48px] p-10 shadow-2xl relative overflow-hidden"
+              className="w-full max-w-md bg-white rounded-[48px] p-10 shadow-2xl relative overflow-hidden"
             >
               <button 
                 onClick={() => setShowForgotModal(false)}
-                className="absolute top-8 right-8 p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                className="absolute top-8 right-8 p-2 text-slate-400 hover:text-slate-900 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
 
               <div className="mb-8">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-zinc-800 text-emerald-600 flex items-center justify-center mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-6">
                   <KeyRound className="w-6 h-6" />
                 </div>
-                <h3 className="text-2xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Recuperar Senha</h3>
+                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Recuperar Senha</h3>
               </div>
 
               {resetStep === "email" && (
@@ -359,14 +359,14 @@ const Login = () => {
                       type="email"
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-bold"
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-bold"
                       placeholder="email@empresa.com"
                     />
                   </div>
                   <button
                     disabled={resetLoading}
                     type="submit"
-                    className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all  dark:shadow-none flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
                   >
                     {resetLoading ? <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Enviar Código"}
                   </button>
@@ -386,14 +386,14 @@ const Login = () => {
                       maxLength={8}
                       value={otpToken}
                       onChange={(e) => setOtpToken(e.target.value)}
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-center text-2xl font-black tracking-[0.3em]"
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-center text-2xl font-black tracking-[0.3em]"
                       placeholder="00000000"
                     />
                   </div>
                   <button
                     disabled={resetLoading}
                     type="submit"
-                    className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all  dark:shadow-none flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
                   >
                     {resetLoading ? <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Validar Código"}
                   </button>
@@ -412,7 +412,7 @@ const Login = () => {
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-bold"
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 outline-none text-sm font-bold"
                       placeholder="••••••••"
                     />
                     <PasswordRequirementsDisplay requirements={passwordRequirements} />
@@ -420,7 +420,7 @@ const Login = () => {
                   <button
                     disabled={resetLoading}
                     type="submit"
-                    className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all  dark:shadow-none flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
                   >
                     {resetLoading ? <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : "Alterar Senha"}
                   </button>
@@ -429,16 +429,16 @@ const Login = () => {
 
               {resetStep === "success" && (
                 <div className="text-center py-6 space-y-6">
-                  <div className="w-16 h-16 rounded-full bg-green-50 dark:bg-green-900/20 text-green-500 flex items-center justify-center mx-auto">
+                  <div className="w-16 h-16 rounded-full bg-green-50 text-green-500 flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-8 h-8" />
                   </div>
                   <div className="space-y-2">
-                    <h4 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Senha Atualizada!</h4>
+                    <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight">Senha Atualizada!</h4>
                     <p className="text-xs text-slate-500 font-medium">Você já pode entrar no sistema com sua nova senha.</p>
                   </div>
                   <button
                     onClick={() => setShowForgotModal(false)}
-                    className="w-full py-4 bg-slate-900 dark:bg-zinc-800 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest"
+                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest"
                   >
                     Voltar ao Login
                   </button>
