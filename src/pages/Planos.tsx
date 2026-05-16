@@ -102,7 +102,7 @@ export default function Planos() {
           </motion.div>
           
           <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mb-6 leading-none">
-            Escolha o nível do seu <br /> <span className="text-emerald-600">Comando Central</span>
+            Escolha o nível do seu <br /> <span className="text-emerald-600">Sucesso Profissional</span>
           </h1>
           <p className="text-slate-500 dark:text-zinc-400 font-medium max-w-2xl mx-auto text-lg leading-relaxed mb-12">
             Invista na tecnologia que organiza sua rotina e potencializa suas vendas. 
