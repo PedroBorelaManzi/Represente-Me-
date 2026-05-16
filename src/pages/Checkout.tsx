@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldCheck, CreditCard, QrCode, FileText, Lock, CheckCircle2, 
   ArrowLeft, ChevronRight, Info, Zap, Shield, Plus, Loader2, Ticket, Eye, EyeOff,
-  AlertCircle, XCircle, CheckCircle, Percent, Calendar, ShieldAlert, Star
+  AlertCircle, XCircle, CheckCircle, Percent, Calendar, ShieldAlert, Star,
+  Crown, Gem, Trophy, Sparkles, TrendingUp
 } from "lucide-react";
 import { cn } from '../lib/utils';
 import { Logo } from '../components/Logo';
@@ -12,22 +13,22 @@ import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
 
 const plans = {
-  exclusivo: { id: 'exclusivo', name: 'Exclusivo', base: 97 },
-  premium: { id: 'premium', name: 'Premium', base: 147 },
-  master: { id: 'master', name: 'Master', base: 197 }
+  exclusivo: { id: 'exclusivo', name: 'Exclusivo', base: 97, icon: Trophy, color: 'text-slate-400' },
+  premium: { id: 'premium', name: 'Premium', base: 147, icon: Gem, color: 'text-emerald-500' },
+  master: { id: 'master', name: 'Master', base: 197, icon: Crown, color: 'text-amber-500' }
 };
 
 function Requirement({ label, met }: { label: string; met: boolean }) {
   return (
     <div className="flex items-center gap-2">
       <div className={cn(
-        "w-4 h-4 rounded-full flex items-center justify-center transition-colors",
-        met ? "bg-emerald-500 text-white" : "bg-slate-100 dark:bg-zinc-800 text-slate-300"
+        "w-4 h-4 rounded-full flex items-center justify-center transition-all duration-500",
+        met ? "bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-500/20" : "bg-slate-100 dark:bg-zinc-800 text-slate-300"
       )}>
         <CheckCircle2 className="w-3 h-3" />
       </div>
       <span className={cn(
-        "text-[9px] font-bold uppercase tracking-tight transition-colors",
+        "text-[9px] font-black uppercase tracking-tight transition-colors",
         met ? "text-emerald-600" : "text-slate-400"
       )}>{label}</span>
     </div>
@@ -42,7 +43,6 @@ export default function Checkout() {
   const [selectedPlan] = useState<any>(plans[planId as keyof typeof plans] || plans.premium);
   
   const [billingCycle, setBillingCycle] = useState<any>(periodParam);
-  
   const [paymentMethod, setPaymentMethod] = useState<'CREDIT_CARD' | 'PIX' | 'BOLETO'>('CREDIT_CARD');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
@@ -81,7 +81,6 @@ export default function Checkout() {
 
   const isPasswordValid = Object.values(passwordRequirements).every(req => req);
 
-  // Lógica de Preços (Gym-style: Annual=Base, Semiannual=+10, Monthly=+20)
   const getMonthlyRate = () => {
     const mod = billingCycle === 'MONTHLY' ? 20 : (billingCycle === 'SEMIANNUAL' ? 10 : 0);
     return selectedPlan.base + mod;
@@ -101,8 +100,8 @@ export default function Checkout() {
   const handleApplyCoupon = () => {
     setIsApplyingCoupon(true);
     setTimeout(() => {
-      if (couponCode.toUpperCase() === "TESTE99") {
-        setAppliedCoupon({ code: "TESTE99", discount: 95 });
+      if (couponCode.toUpperCase() === "REPRESENTE95") {
+        setAppliedCoupon({ code: "REPRESENTE95", discount: 95 });
         toast.success("Cupom de 95% aplicado!");
       } else {
         toast.error("Cupom inválido");
@@ -180,62 +179,108 @@ export default function Checkout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 font-sans text-slate-900 dark:text-zinc-100 selection:bg-emerald-500/30">
-      <header className="sticky top-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-zinc-800 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-slate-400">
+    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 font-sans text-slate-900 dark:text-zinc-100 selection:bg-emerald-500/30 overflow-x-hidden">
+      {/* Premium Header with Progress */}
+      <header className="sticky top-0 z-50 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-2xl border-b border-slate-100 dark:border-zinc-800 px-8 py-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <button onClick={() => navigate(-1)} className="p-3 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-2xl transition-all text-slate-400 active:scale-90">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <Logo size="sm" showText />
           </div>
-          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2 rounded-full border border-emerald-100 dark:border-emerald-500/20">
-            <Lock className="w-3 h-3" />
-            Ambiente Seguro
+          
+          <div className="hidden md:flex items-center gap-8">
+            {[
+              { step: 1, label: 'Conta' },
+              { step: 2, label: 'Pagamento' }
+            ].map((s) => (
+              <div key={s.step} className="flex items-center gap-3">
+                <div className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black transition-all",
+                  step >= s.step ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" : "bg-slate-100 dark:bg-zinc-800 text-slate-400"
+                )}>
+                  {step > s.step ? <CheckCircle2 className="w-4 h-4" /> : s.step}
+                </div>
+                <span className={cn(
+                  "text-[10px] font-black uppercase tracking-widest",
+                  step >= s.step ? "text-slate-900 dark:text-white" : "text-slate-400"
+                )}>{s.label}</span>
+                {s.step === 1 && <div className="w-12 h-[2px] bg-slate-100 dark:bg-zinc-800 rounded-full mx-2" />}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 dark:bg-emerald-500/5 px-6 py-3 rounded-2xl border border-emerald-100 dark:border-emerald-500/10 shadow-sm">
+            <ShieldCheck className="w-4 h-4" />
+            Checkout Seguro
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8 lg:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <main className="max-w-7xl mx-auto px-8 py-12 lg:py-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
           
-          <div className="lg:col-span-7 space-y-8">
-            {/* Seletor de Modelo de Compra */}
-            <div className="flex flex-col gap-4">
-              <div className="bg-white dark:bg-zinc-900 p-2 rounded-[24px] border border-slate-100 dark:border-zinc-800 flex shadow-sm">
-                {['ANNUAL', 'SEMIANNUAL', 'MONTHLY'].map((cycle) => (
+          <div className="lg:col-span-7 space-y-12">
+            
+            {/* Ultra Modern Period Selector */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em]">Escolha seu Ciclo</h3>
+                <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 dark:bg-amber-500/10 rounded-full">
+                  <Sparkles className="w-3 h-3 text-amber-600" />
+                  <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest">Recomendado</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { id: 'ANNUAL', label: 'Anual', icon: Zap, save: 'Economize R$ 240', color: 'emerald', monthly: selectedPlan.base },
+                  { id: 'SEMIANNUAL', label: '6 Meses', icon: TrendingUp, save: 'Economize R$ 60', color: 'blue', monthly: selectedPlan.base + 10 },
+                  { id: 'MONTHLY', label: 'Mensal', icon: Calendar, save: 'Sem fidelidade', color: 'slate', monthly: selectedPlan.base + 20 }
+                ].map((cycle) => (
                   <button 
-                    key={cycle}
+                    key={cycle.id}
                     type="button"
-                    onClick={() => setBillingCycle(cycle as any)}
+                    onClick={() => setBillingCycle(cycle.id)}
                     className={cn(
-                      "flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center gap-1 relative overflow-hidden",
-                      billingCycle === cycle ? (cycle === 'MONTHLY' ? "bg-slate-900 text-white shadow-lg" : "bg-emerald-600 text-white shadow-lg") : "text-slate-400 hover:text-slate-600"
+                      "relative p-6 rounded-[32px] border transition-all duration-500 text-left group overflow-hidden",
+                      billingCycle === cycle.id 
+                        ? `bg-${cycle.color}-600 border-${cycle.color}-700 shadow-2xl shadow-${cycle.color}-500/30 scale-[1.02]` 
+                        : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 hover:border-emerald-500/50"
                     )}
                   >
-                    {cycle === 'ANNUAL' ? <Zap className="w-4 h-4" /> : (cycle === 'SEMIANNUAL' ? <Zap className="w-4 h-4 opacity-50" /> : <Calendar className="w-4 h-4" />)}
-                    {cycle === 'ANNUAL' ? 'Anual' : (cycle === 'SEMIANNUAL' ? '6 Meses' : 'Mensal')}
-                    <span className="text-[8px] opacity-60">
-                      R$ {selectedPlan.base + (cycle === 'MONTHLY' ? 20 : (cycle === 'SEMIANNUAL' ? 10 : 0))}/mês
-                    </span>
-                    {cycle === 'ANNUAL' && (
-                      <div className="absolute top-0 right-0 p-1">
-                        <Star className={cn("w-2 h-2 fill-current", billingCycle === 'ANNUAL' ? "text-white" : "text-emerald-500")} />
+                    {billingCycle === cycle.id && (
+                      <motion.div layoutId="cycle-bg" className={cn("absolute inset-0 opacity-10 bg-gradient-to-br from-white to-transparent")} />
+                    )}
+                    
+                    <div className="relative z-10 flex flex-col h-full gap-4">
+                      <div className={cn(
+                        "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
+                        billingCycle === cycle.id ? "bg-white/20 text-white" : "bg-slate-50 dark:bg-zinc-800 text-slate-400 group-hover:scale-110"
+                      )}>
+                        <cycle.icon className="w-5 h-5" />
+                      </div>
+                      
+                      <div>
+                        <p className={cn("text-xs font-black uppercase tracking-widest mb-1", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>{cycle.label}</p>
+                        <p className={cn("text-[9px] font-bold uppercase tracking-tight opacity-70", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>{cycle.save}</p>
+                      </div>
+
+                      <div className="mt-auto pt-4 border-t border-current/10">
+                        <span className={cn("text-lg font-black", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>R$ {cycle.monthly}</span>
+                        <span className={cn("text-[10px] font-bold opacity-60 ml-1", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>/mês</span>
+                      </div>
+                    </div>
+
+                    {cycle.id === 'ANNUAL' && (
+                      <div className="absolute top-4 right-4">
+                        <Star className={cn("w-4 h-4", billingCycle === cycle.id ? "text-amber-300 fill-amber-300" : "text-amber-400 opacity-20")} />
                       </div>
                     )}
                   </button>
                 ))}
               </div>
-              
-              {billingCycle === 'ANNUAL' && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="px-4 py-2 bg-amber-50 dark:bg-amber-500/5 text-amber-600 dark:text-amber-400 rounded-xl text-[9px] font-black uppercase tracking-widest border border-amber-100 dark:border-amber-500/10 text-center"
-                >
-                  Economia de R$ 240,00 por ano ativada!
-                </motion.div>
-              )}
             </div>
 
             <form onSubmit={handleProcessPayment} className="space-y-8">
@@ -243,45 +288,54 @@ export default function Checkout() {
                 {step === 1 ? (
                   <motion.div
                     key="step1"
-                    initial={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: -40 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="space-y-6 bg-white dark:bg-zinc-900 p-8 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-xl"
+                    exit={{ opacity: 0, x: 40 }}
+                    className="space-y-8 bg-white dark:bg-zinc-900 p-10 rounded-[48px] border border-slate-100 dark:border-zinc-800 shadow-2xl relative overflow-hidden"
                   >
-                    <div className="space-y-1">
-                      <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Dados Pessoais</h3>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        Crie sua conta para acessar o painel
+                    <div className="absolute top-0 right-0 p-8 opacity-5">
+                      <User className="w-32 h-32" />
+                    </div>
+
+                    <div className="space-y-2 relative z-10">
+                      <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Crie sua Conta</h3>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                        Acesse seu painel agentic instantaneamente
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1.5 md:col-span-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">E-mail de Acesso</label>
-                        <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="seuemail@empresa.com" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold outline-none" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">E-mail Corporativo</label>
+                        <div className="relative group">
+                          <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="nome@empresa.com" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                          <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                        </div>
                       </div>
                       
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Sua Senha</label>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Senha de Acesso</label>
                         <div className="relative">
-                          <input required type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder="••••••••" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold outline-none" />
-                          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                          <input required type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder="••••••••" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400">
                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         </div>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Confirme sua Senha</label>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Confirmação</label>
                         <div className="relative">
-                          <input required type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} placeholder="••••••••" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold outline-none" />
-                          <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+                          <input required type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} placeholder="••••••••" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                          <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400">
                             {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         </div>
                       </div>
 
-                      <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-2 p-4 bg-slate-50 dark:bg-zinc-950 rounded-2xl border border-slate-100 dark:border-zinc-800">
+                      <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-4 p-6 bg-slate-50 dark:bg-zinc-950 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-inner">
                         <Requirement label="8+ caracteres" met={passwordRequirements.length} />
                         <Requirement label="Maiúscula" met={passwordRequirements.upper} />
                         <Requirement label="Minúscula" met={passwordRequirements.lower} />
@@ -290,17 +344,17 @@ export default function Checkout() {
                         <Requirement label="Iguais" met={passwordRequirements.match} />
                       </div>
 
-                      <div className="space-y-1.5 md:col-span-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Nome Completo</label>
-                        <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Digite seu nome" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold outline-none" />
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Nome Completo</label>
+                        <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Seu nome ou Razão Social" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">CPF / CNPJ</label>
-                        <input required type="text" value={formData.cpfCnpj} onChange={(e) => setFormData({...formData, cpfCnpj: e.target.value})} placeholder="000.000.000-00" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold outline-none" />
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">CPF / CNPJ</label>
+                        <input required type="text" value={formData.cpfCnpj} onChange={(e) => setFormData({...formData, cpfCnpj: e.target.value})} placeholder="000.000.000-00" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Celular</label>
-                        <input required type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="(00) 00000-0000" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold outline-none" />
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">WhatsApp</label>
+                        <input required type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="(00) 00000-0000" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
                       </div>
                     </div>
 
@@ -309,55 +363,97 @@ export default function Checkout() {
                       disabled={!isPasswordValid}
                       onClick={() => setStep(2)}
                       className={cn(
-                        "w-full py-5 rounded-2xl font-black uppercase text-[11px] tracking-widest transition-all flex items-center justify-center gap-3",
-                        isPasswordValid ? "bg-slate-900 text-white hover:bg-slate-800 shadow-xl" : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                        "w-full py-6 rounded-[32px] font-black uppercase text-xs tracking-[0.3em] transition-all flex items-center justify-center gap-4 group active:scale-95",
+                        isPasswordValid ? "bg-slate-900 text-white hover:bg-slate-800 shadow-2xl" : "bg-slate-100 text-slate-300 cursor-not-allowed"
                       )}
                     >
-                      {isPasswordValid ? "Próximo Passo" : "Complete os dados"}
-                      <ChevronRight className="w-4 h-4" />
+                      {isPasswordValid ? "Continuar para Pagamento" : "Complete os Requisitos"}
+                      <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
                     </button>
                   </motion.div>
                 ) : (
                   <motion.div
                     key="step2"
-                    initial={{ opacity: 0, x: 20 }}
+                    initial={{ opacity: 0, x: 40 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="space-y-6"
+                    exit={{ opacity: 0, x: -40 }}
+                    className="space-y-8"
                   >
-                    <div className="bg-white dark:bg-zinc-900 p-8 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-xl space-y-6">
-                      <div className="space-y-1">
-                        <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Pagamento</h3>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          Escolha a melhor forma de investir no seu negócio
-                        </p>
+                    <div className="bg-white dark:bg-zinc-900 p-10 rounded-[48px] border border-slate-100 dark:border-zinc-800 shadow-2xl space-y-10">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                          <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Pagamento</h3>
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                            Segurança máxima com criptografia bancária
+                          </p>
+                        </div>
+                        <div className="p-4 bg-slate-50 dark:bg-zinc-950 rounded-[24px] border border-slate-100 dark:border-zinc-800 shadow-inner">
+                          <Lock className="w-6 h-6 text-emerald-600" />
+                        </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3 p-1.5 bg-slate-50 dark:bg-zinc-950 rounded-3xl border border-slate-100 dark:border-zinc-800">
-                        <button type="button" onClick={() => setPaymentMethod('CREDIT_CARD')} className={cn("flex flex-col items-center gap-2 py-4 rounded-2xl transition-all", paymentMethod === 'CREDIT_CARD' ? "bg-white dark:bg-zinc-900 shadow-sm text-emerald-600" : "text-slate-400 hover:text-slate-600")}><CreditCard className="w-5 h-5" /><span className="text-[9px] font-black uppercase tracking-widest">Cartão</span></button>
-                        <button type="button" onClick={() => setPaymentMethod('PIX')} className={cn("flex flex-col items-center gap-2 py-4 rounded-2xl transition-all", paymentMethod === 'PIX' ? "bg-white dark:bg-zinc-900 shadow-sm text-emerald-600" : "text-slate-400 hover:text-slate-600")}><QrCode className="w-5 h-5" /><span className="text-[9px] font-black uppercase tracking-widest">Pix</span></button>
-                        <button type="button" onClick={() => setPaymentMethod('BOLETO')} className={cn("flex flex-col items-center gap-2 py-4 rounded-2xl transition-all", paymentMethod === 'BOLETO' ? "bg-white dark:bg-zinc-900 shadow-sm text-emerald-600" : "text-slate-400 hover:text-slate-600")}><FileText className="w-5 h-5" /><span className="text-[9px] font-black uppercase tracking-widest">Boleto</span></button>
+                      <div className="grid grid-cols-3 gap-4 p-2 bg-slate-50 dark:bg-zinc-950 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-inner">
+                        {[
+                          { id: 'CREDIT_CARD', icon: CreditCard, label: 'Cartão' },
+                          { id: 'PIX', icon: QrCode, label: 'Pix' },
+                          { id: 'BOLETO', icon: FileText, label: 'Boleto' }
+                        ].map((method) => (
+                          <button 
+                            key={method.id}
+                            type="button" 
+                            onClick={() => setPaymentMethod(method.id as any)} 
+                            className={cn(
+                              "flex flex-col items-center gap-3 py-6 rounded-[24px] transition-all relative overflow-hidden",
+                              paymentMethod === method.id 
+                                ? "bg-white dark:bg-zinc-900 shadow-xl text-emerald-600 scale-[1.05]" 
+                                : "text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"
+                            )}
+                          >
+                            <method.icon className="w-6 h-6" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">{method.label}</span>
+                            {paymentMethod === method.id && (
+                              <motion.div layoutId="method-pill" className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-500 mb-2" />
+                            )}
+                          </button>
+                        ))}
                       </div>
 
                       {paymentMethod === 'CREDIT_CARD' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                          <div className="md:col-span-2 space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Número do Cartão</label><input type="text" value={formData.cardNumber} onChange={(e) => setFormData({...formData, cardNumber: e.target.value})} placeholder="0000 0000 0000 0000" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold outline-none" /></div>
-                          <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Validade</label><input type="text" value={formData.expiry} onChange={(e) => setFormData({...formData, expiry: e.target.value})} placeholder="MM/AA" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold outline-none" /></div>
-                          <div className="space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">CVC</label><input type="text" value={formData.ccv} onChange={(e) => setFormData({...formData, ccv: e.target.value})} placeholder="123" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold outline-none" /></div>
-                          <div className="md:col-span-2 space-y-1.5"><label className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-2">Nome no Cartão</label><input type="text" value={formData.holderName} onChange={(e) => setFormData({...formData, holderName: e.target.value})} placeholder="COMO IMPRESSO NO CARTÃO" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold outline-none uppercase" /></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                          <div className="md:col-span-2 space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Número do Cartão</label>
+                            <input type="text" value={formData.cardNumber} onChange={(e) => setFormData({...formData, cardNumber: e.target.value})} placeholder="0000 0000 0000 0000" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Validade</label>
+                            <input type="text" value={formData.expiry} onChange={(e) => setFormData({...formData, expiry: e.target.value})} placeholder="MM/AA" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">CVC</label>
+                            <input type="text" value={formData.ccv} onChange={(e) => setFormData({...formData, ccv: e.target.value})} placeholder="123" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                          </div>
+                          <div className="md:col-span-2 space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Titular do Cartão</label>
+                            <input type="text" value={formData.holderName} onChange={(e) => setFormData({...formData, holderName: e.target.value})} placeholder="NOME COMO NO CARTÃO" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all uppercase" />
+                          </div>
                         </div>
                       )}
                     </div>
 
-                    <button type="submit" disabled={loading} className="w-full bg-emerald-600 text-white py-5 rounded-[24px] font-black uppercase text-xs tracking-[0.2em] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-4 disabled:opacity-50">
-                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShieldCheck className="w-5 h-5" />Finalizar Compra</>}
+                    <button type="submit" disabled={loading} className="w-full bg-emerald-600 text-white py-8 rounded-[40px] font-black uppercase text-xs tracking-[0.4em] hover:bg-emerald-700 hover:scale-[1.02] active:scale-95 transition-all shadow-[0_32px_64px_-16px_rgba(16,185,129,0.4)] flex items-center justify-center gap-6 disabled:opacity-50">
+                      {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <><ShieldCheck className="w-6 h-6" />Ativar Minha Assinatura</>}
                     </button>
-                    <div className="text-center"><button type="button" onClick={() => setStep(1)} className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-slate-600">Voltar</button></div>
                     
-                    <div className="pt-8 border-t border-slate-100 dark:border-zinc-800 flex flex-wrap justify-center gap-6 opacity-40 grayscale group-hover:grayscale-0 transition-all">
+                    <div className="text-center">
+                      <button type="button" onClick={() => setStep(1)} className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] hover:text-slate-600 transition-colors py-4">
+                        ← Revisar Dados Cadastrais
+                      </button>
+                    </div>
+                    
+                    <div className="pt-12 border-t border-slate-100 dark:border-zinc-800 flex flex-wrap justify-center gap-10 opacity-30 grayscale group-hover:grayscale-0 transition-all">
                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-4" />
-                       <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-6" />
-                       <img src="https://www.asaas.com/assets/img/logo-asaas.svg" alt="Asaas" className="h-4" />
+                       <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-8" />
+                       <img src="https://www.asaas.com/assets/img/logo-asaas.svg" alt="Asaas" className="h-5" />
                     </div>
                   </motion.div>
                 )}
@@ -366,69 +462,87 @@ export default function Checkout() {
           </div>
 
           <div className="lg:col-span-5">
-            <div className="sticky top-28 space-y-6">
-              <div className="bg-white dark:bg-zinc-900 rounded-[40px] p-8 border border-slate-100 dark:border-zinc-800 shadow-2xl space-y-8">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Resumo</h3>
-                  <div className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-emerald-500/20">
+            <div className="sticky top-32 space-y-8">
+              <div className="bg-white dark:bg-zinc-900 rounded-[64px] p-10 border border-slate-100 dark:border-zinc-800 shadow-2xl space-y-10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+                
+                <div className="flex items-center justify-between relative z-10">
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Resumo</h3>
+                  <div className="px-4 py-2 bg-emerald-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20">
                     {billingCycle === 'ANNUAL' ? 'Plano Anual' : (billingCycle === 'SEMIANNUAL' ? 'Plano Semestral' : 'Plano Mensal')}
                   </div>
                 </div>
 
-                <div className="space-y-6">
-                  <div className="flex items-start justify-between">
+                <div className="space-y-8 relative z-10">
+                  <div className="flex items-center gap-6 p-6 bg-slate-50 dark:bg-zinc-950 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-inner">
+                    <div className={cn("w-16 h-16 rounded-[24px] bg-white dark:bg-zinc-900 flex items-center justify-center shadow-lg transition-transform hover:rotate-6", selectedPlan.color)}>
+                      <selectedPlan.icon className="w-8 h-8" />
+                    </div>
                     <div>
-                      <p className="text-xs font-black uppercase tracking-tight text-slate-900 dark:text-zinc-100">
+                      <p className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none mb-1">
                         Acesso {selectedPlan.name}
                       </p>
-                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
-                         {billingCycle === 'ANNUAL' ? '12 meses de acesso' : (billingCycle === 'SEMIANNUAL' ? '6 meses de acesso' : 'Recorrência Mensal')}
+                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.2em]">
+                         {billingCycle === 'ANNUAL' ? '12 meses renováveis' : (billingCycle === 'SEMIANNUAL' ? '6 meses renováveis' : 'Recorrência Mensal')}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-black text-slate-900 dark:text-zinc-100">R$ {baseValue.toFixed(2).replace('.', ',')}</p>
+                  </div>
+
+                  <div className="bg-slate-50 dark:bg-zinc-950 rounded-[32px] p-6 border border-slate-100 dark:border-zinc-800 space-y-4">
+                    <div className="flex items-center justify-between"><div className="flex items-center gap-3"><Ticket className="w-4 h-4 text-emerald-600" /><span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Cupom Aplicado</span></div>{appliedCoupon && <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{appliedCoupon.code}</span>}</div>
+                    <div className="flex gap-3 pt-2">
+                      <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="CÓDIGO DE DESCONTO" className="flex-1 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-[10px] font-black outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all uppercase" />
+                      <button type="button" onClick={handleApplyCoupon} disabled={isApplyingCoupon || !couponCode} className="bg-slate-900 text-white px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50">
+                        {isApplyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : "Aplicar"}
+                      </button>
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 dark:bg-zinc-950 rounded-2xl p-4 border border-slate-100 dark:border-zinc-800 space-y-3">
-                    <div className="flex items-center gap-2"><Ticket className="w-3.5 h-3.5 text-emerald-600" /><span className="text-[9px] font-black uppercase tracking-widest text-slate-900 dark:text-white">Cupom</span></div>
-                    <div className="flex gap-2"><input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="CÓDIGO" className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-black outline-none" /><button type="button" onClick={handleApplyCoupon} disabled={isApplyingCoupon || !couponCode} className="bg-slate-900 text-white px-4 rounded-lg text-[9px] font-black uppercase tracking-widest">{isApplyingCoupon ? <Loader2 className="w-3 h-3 animate-spin" /> : "OK"}</button></div>
-                  </div>
-
-                  <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/50 space-y-3">
-                    {appliedCoupon && (
-                      <div className="flex items-center justify-between text-emerald-600">
-                        <p className="text-[10px] font-black uppercase tracking-widest">Desconto Cupom</p>
-                        <p className="text-xs font-bold">- R$ {couponDiscount.toFixed(2).replace('.', ',')}</p>
+                  <div className="pt-8 border-t border-slate-100 dark:border-zinc-800/50 space-y-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-slate-400">
+                        <p className="text-[10px] font-black uppercase tracking-widest">Subtotal</p>
+                        <p className="text-sm font-bold">R$ {baseValue.toFixed(2).replace('.', ',')}</p>
                       </div>
-                    )}
+                      {appliedCoupon && (
+                        <div className="flex items-center justify-between text-emerald-600">
+                          <p className="text-[10px] font-black uppercase tracking-widest">Desconto {appliedCoupon.discount}%</p>
+                          <p className="text-sm font-bold">- R$ {couponDiscount.toFixed(2).replace('.', ',')}</p>
+                        </div>
+                      )}
+                    </div>
+                    
                     <div className="flex items-end justify-between">
                       <div>
-                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">
-                          {billingCycle === 'ANNUAL' ? '12x de' : (billingCycle === 'SEMIANNUAL' ? '6x de' : 'Valor Único')}
+                        <p className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-2">
+                          {billingCycle === 'ANNUAL' ? '12x de Investimento' : (billingCycle === 'SEMIANNUAL' ? '6x de Investimento' : 'Mensalidade')}
                         </p>
-                        <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">
-                           R$ {(finalPrice / (billingCycle === 'ANNUAL' ? 12 : (billingCycle === 'SEMIANNUAL' ? 6 : 1))).toFixed(2).replace('.', ',')}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">
-                           Total: R$ {finalPrice.toFixed(2).replace('.', ',')}
-                        </p>
-                        <p className="text-[9px] font-medium text-slate-400 leading-tight">
-                           Pagamento Processado via Asaas
+                        <p className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter">
+                           <span className="text-2xl mr-1">R$</span>{(finalPrice / (billingCycle === 'ANNUAL' ? 12 : (billingCycle === 'SEMIANNUAL' ? 6 : 1))).toFixed(2).replace('.', ',')}
                         </p>
                       </div>
+                    </div>
+                    
+                    <div className="p-4 bg-slate-900 dark:bg-white/5 rounded-2xl text-center">
+                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-1">Total a Investir</p>
+                       <p className="text-lg font-black text-white">R$ {finalPrice.toFixed(2).replace('.', ',')}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-4 bg-blue-50 dark:bg-blue-500/5 rounded-2xl border border-blue-100 dark:border-blue-500/20 flex gap-4">
-                  <Shield className="w-5 h-5 text-blue-600 shrink-0" />
-                  <p className="text-[9px] font-medium text-blue-900 dark:text-blue-300 leading-relaxed">
-                    Sua satisfação é nossa prioridade. Oferecemos 7 dias de garantia incondicional conforme o Código de Defesa do Consumidor.
+                <div className="p-6 bg-blue-50 dark:bg-blue-500/5 rounded-[32px] border border-blue-100 dark:border-blue-500/10 flex gap-6 shadow-sm">
+                  <ShieldAlert className="w-6 h-6 text-blue-600 shrink-0" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-900 dark:text-blue-300 leading-relaxed">
+                    Satisfação Garantida: Experimente por 7 dias com reembolso integral caso não se adapte.
                   </p>
                 </div>
+              </div>
+              
+              <div className="flex flex-col items-center gap-4 py-8">
+                 <div className="flex items-center gap-4 opacity-40">
+                   <Lock className="w-3 h-3" />
+                   <p className="text-[8px] font-black uppercase tracking-[0.5em]">Dados protegidos por AES-256</p>
+                 </div>
               </div>
             </div>
           </div>
