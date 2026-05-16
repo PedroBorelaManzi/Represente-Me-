@@ -72,8 +72,8 @@ const industries = [
 
 const faqs = [
   {
-    question: "Como funciona o teste grátis de 7 dias?",
-    answer: "Você tem acesso total a todas as funcionalidades da plataforma por 7 dias. Não pedimos cartão de crédito para começar o teste. Se gostar, pode escolher um plano ao final do período."
+    question: "Como funciona a garantia de 7 dias?",
+    answer: "Oferecemos uma experiência totalmente livre de riscos. Você pode começar seu teste de 7 dias sem cadastrar cartão de crédito. Além disso, após a assinatura, você tem mais 7 dias de garantia incondicional: se não se adaptar à ferramenta por qualquer motivo, nós reembolsamos 100% do seu investimento."
   },
   {
     question: "Posso mudar de plano a qualquer momento?",
@@ -178,9 +178,12 @@ export default function LandingPitch() {
               Domine sua carteira de clientes e recupere horas preciosas do seu dia. Nossa inteligência avançada gerencia a memória da sua operação, antecipando necessidades e garantindo controle total para que nenhum pedido ou cliente fique para trás — além de diversas outras ferramentas que te ajudarão a vender mais e vender melhor!
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-              <Link to="/register" className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all  hover:-translate-y-1 flex items-center justify-center shadow-xl shadow-emerald-500/20">
-                Teste grátis por 7 dias
-              </Link>
+              <div className="flex flex-col items-center gap-3 w-full sm:w-auto">
+                <Link to="/register" className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all  hover:-translate-y-1 flex items-center justify-center shadow-xl shadow-emerald-500/20">
+                  Teste grátis por 7 dias
+                </Link>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sem cartão de crédito • Cancele quando quiser</p>
+              </div>
               <button className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest hover:border-slate-300 transition-all">
                 Ver Vídeo Explicativo
               </button>
@@ -434,9 +437,12 @@ export default function LandingPitch() {
             <p className="text-slate-400 font-medium text-lg max-w-xl mx-auto mb-12">
               Junte-se a mais de 2.000 que já alavancaram mais de 150% de suas vendas com a Represente-se
             </p>
-            <Link to="/register" className="px-12 py-6 rounded-2xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/20 inline-block">
-              Começar agora mesmo
-            </Link>
+            <div className="flex flex-col items-center gap-4">
+              <Link to="/register" className="px-12 py-6 rounded-2xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/20 inline-block">
+                Começar agora mesmo
+              </Link>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-60">Satisfação Garantida ou seu dinheiro de volta em até 7 dias</p>
+            </div>
           </motion.div>
         </div>
       </section>
