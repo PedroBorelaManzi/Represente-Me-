@@ -28,7 +28,7 @@ const features = [
   {
     icon: ShieldCheck,
     title: "Segurança Total",
-    desc: "Criptografia de ponta a ponta"
+    desc: "Criptografia avançada"
   },
   {
     icon: Zap,
@@ -38,7 +38,7 @@ const features = [
   {
     icon: LayoutIcon,
     title: "Organização",
-    desc: "Gestão completa da carteira"
+    desc: "Gestão completa"
   }
 ];
 
@@ -71,10 +71,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 flex flex-col lg:flex-row transition-colors duration-500 overflow-hidden">
+    <div className="h-screen bg-white dark:bg-zinc-950 flex flex-col lg:flex-row transition-colors duration-500 overflow-hidden">
       {/* Left Side: Auth Form */}
-      <div className="w-full lg:w-[45%] p-6 md:p-12 lg:p-20 flex flex-col justify-center relative bg-white dark:bg-zinc-950 z-10">
-        <div className="max-w-md mx-auto w-full space-y-12">
+      <div className="w-full lg:w-[45%] p-6 md:p-12 lg:p-16 flex flex-col justify-center relative bg-white dark:bg-zinc-950 z-10 overflow-y-auto">
+        <div className="max-w-md mx-auto w-full space-y-10">
           {/* Logo Section */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -92,14 +92,13 @@ export default function Login() {
               transition={{ delay: 0.1 }}
               className="text-4xl md:text-5xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter leading-none"
             >
-              Bem-vindo ao <br />
-              <span className="text-emerald-600">Comando Central</span>
+              Bem-vindo
             </motion.h1>
             <motion.p 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="text-slate-500 dark:text-zinc-400 font-medium text-lg"
+              className="text-slate-500 dark:text-zinc-400 font-medium text-base"
             >
               Acesse sua plataforma de representação comercial e domine o mercado.
             </motion.p>
@@ -123,7 +122,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-zinc-900 border-2 border-slate-50 dark:border-zinc-800 rounded-[28px] py-6 pl-16 pr-8 text-sm font-bold text-slate-900 dark:text-zinc-100 outline-none focus:border-emerald-500/20 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                  className="w-full bg-slate-50 dark:bg-zinc-900 border-2 border-slate-50 dark:border-zinc-800 rounded-[28px] py-5 pl-16 pr-8 text-sm font-bold text-slate-900 dark:text-zinc-100 outline-none focus:border-emerald-500/20 focus:ring-4 focus:ring-emerald-500/5 transition-all"
                   placeholder="seu@email.com"
                   required
                 />
@@ -143,7 +142,7 @@ export default function Login() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-zinc-900 border-2 border-slate-50 dark:border-zinc-800 rounded-[28px] py-6 pl-16 pr-20 text-sm font-bold text-slate-900 dark:text-zinc-100 outline-none focus:border-emerald-500/20 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+                  className="w-full bg-slate-50 dark:bg-zinc-900 border-2 border-slate-50 dark:border-zinc-800 rounded-[28px] py-5 pl-16 pr-20 text-sm font-bold text-slate-900 dark:text-zinc-100 outline-none focus:border-emerald-500/20 focus:ring-4 focus:ring-emerald-500/5 transition-all"
                   placeholder="••••••••"
                   required
                 />
@@ -160,7 +159,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-6 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-slate-800 dark:hover:bg-zinc-100 transition-all shadow-xl shadow-slate-900/10 active:scale-[0.98] disabled:opacity-50"
+              className="w-full py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[28px] font-black uppercase text-[11px] tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-slate-800 dark:hover:bg-zinc-100 transition-all shadow-xl shadow-slate-900/10 active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -193,32 +192,31 @@ export default function Login() {
       </div>
 
       {/* Right Side: Visual/Features */}
-      <div className="hidden lg:flex w-[55%] bg-slate-50 dark:bg-zinc-900 relative items-center justify-center p-20 overflow-hidden">
+      <div className="hidden lg:flex w-[55%] bg-slate-50 dark:bg-zinc-900 relative items-center justify-center p-12 lg:p-16 overflow-hidden">
         {/* Animated Background Elements */}
         <div className="absolute inset-0">
           <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-[120px] animate-pulse" />
           <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-[120px]" />
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] dark:opacity-[0.01]" />
         </div>
 
-        <div className="relative z-10 w-full max-w-2xl">
+        <div className="relative z-10 w-full max-w-xl">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
-            className="grid grid-cols-2 gap-8"
+            className="grid grid-cols-2 gap-6"
           >
-            {/* Benefícios Subiram: Agora estão em destaque no topo da área visual */}
-            <div className="col-span-2 space-y-4 mb-12">
+            {/* Benefícios Subiram e Diminuíram */}
+            <div className="col-span-2 space-y-4 mb-8">
                <motion.div
                  initial={{ opacity: 0, y: 20 }}
                  animate={{ opacity: 1, y: 0 }}
-                 className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white dark:bg-zinc-800 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-zinc-700"
+                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-zinc-800 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-zinc-700"
                >
-                 <Sparkles className="w-5 h-5 text-amber-500" />
-                 <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest">Tecnologia de Ponta</span>
+                 <Sparkles className="w-4 h-4 text-amber-500" />
+                 <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest">Tecnologia de Ponta</span>
                </motion.div>
-               <h2 className="text-6xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none">
+               <h2 className="text-4xl lg:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none">
                  O futuro da <br />
                  <span className="text-emerald-600">Representação</span>
                </h2>
@@ -230,34 +228,34 @@ export default function Login() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 + (idx * 0.1) }}
-                className="bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl p-10 rounded-[48px] border border-white dark:border-zinc-700 shadow-2xl shadow-slate-200/50 dark:shadow-none group hover:-translate-y-2 transition-all duration-500"
+                className="bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl p-8 rounded-[40px] border border-white dark:border-zinc-700 shadow-2xl shadow-slate-200/50 dark:shadow-none group hover:-translate-y-1 transition-all duration-500"
               >
-                <div className="w-16 h-16 rounded-[24px] bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
-                  <feature.icon className="w-8 h-8 text-emerald-600" />
+                <div className="w-12 h-12 rounded-[20px] bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                  <feature.icon className="w-6 h-6 text-emerald-600" />
                 </div>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2">{feature.title}</h3>
-                <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 leading-tight">{feature.desc}</p>
+                <h3 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-1">{feature.title}</h3>
+                <p className="text-xs font-medium text-slate-500 dark:text-zinc-400 leading-tight">{feature.desc}</p>
               </motion.div>
             ))}
 
-            {/* Testimonial / Social Proof */}
+            {/* Testimonial / Social Proof Reduzido */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8 }}
-              className="col-span-2 mt-12 bg-slate-900 dark:bg-zinc-800 p-10 rounded-[48px] text-white space-y-6"
+              className="col-span-2 mt-8 bg-slate-900 dark:bg-zinc-800 p-8 rounded-[40px] text-white space-y-4"
             >
               <div className="flex gap-1">
-                {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
+                {[1,2,3,4,5].map(i => <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
               </div>
-              <p className="text-lg font-medium italic opacity-90 leading-relaxed">
-                "A plataforma mudou completamente minha forma de trabalhar. O controle que tenho hoje sobre minha carteira é algo que eu nunca imaginei ser possível."
+              <p className="text-base font-medium italic opacity-90 leading-relaxed">
+                "O controle que tenho hoje sobre minha carteira é algo que eu nunca imaginei ser possível."
               </p>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center font-black text-xs">RM</div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center font-black text-[10px]">RM</div>
                 <div>
-                  <p className="text-xs font-black uppercase tracking-widest">Ricardo Moreira</p>
-                  <p className="text-[10px] font-bold opacity-50 uppercase tracking-tight">Representante Comercial Sênior</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest">Ricardo Moreira</p>
+                  <p className="text-[8px] font-bold opacity-50 uppercase tracking-tight">Representante Comercial</p>
                 </div>
               </div>
             </motion.div>
