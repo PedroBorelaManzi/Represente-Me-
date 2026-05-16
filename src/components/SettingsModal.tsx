@@ -46,7 +46,7 @@ const menuItems = [
   { id: 'security', label: 'Segurança', icon: Shield, color: 'text-red-500' }
 ];
 
-export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState('profile');
   const { user, signOut } = useAuth();
   const { settings, updateSettings } = useSettings();
