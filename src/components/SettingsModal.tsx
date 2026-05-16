@@ -29,7 +29,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { useTheme } from '../contexts/ThemeContext';
 import { Logo } from './Logo';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -51,10 +50,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [activeTab, setActiveTab] = useState('profile');
   const { user, signOut } = useAuth();
   const { settings, updateSettings } = useSettings();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   if (!isOpen) return null;
+
+  const toggleTheme = () => {
+    updateSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' });
+  };
 
   const planInfo = {
     exclusivo: { name: 'Exclusivo', icon: Trophy, color: 'text-slate-400', bg: 'bg-slate-50', border: 'border-slate-100' },
@@ -185,7 +187,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     >
                       <div className="flex items-center gap-6">
                         <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm">
-                          {theme === 'dark' ? <Moon className="w-6 h-6 text-indigo-500" /> : <Sun className="w-6 h-6 text-amber-500" />}
+                          {settings.theme === 'dark' ? <Moon className="w-6 h-6 text-indigo-500" /> : <Sun className="w-6 h-6 text-amber-500" />}
                         </div>
                         <div className="text-left">
                           <p className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Modo de Exibição</p>
@@ -194,7 +196,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </div>
                       <div className={cn(
                         "w-12 h-6 rounded-full p-1 transition-all flex items-center",
-                        theme === 'dark' ? "bg-emerald-500 justify-end" : "bg-slate-200 justify-start"
+                        settings.theme === 'dark' ? "bg-emerald-500 justify-end" : "bg-slate-200 justify-start"
                       )}>
                         <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
                       </div>
