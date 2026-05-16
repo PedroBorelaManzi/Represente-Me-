@@ -54,7 +54,7 @@ const plans = [
     description: 'Ideal para equipes em crescimento.',
     justification: 'A automação de busca de CNPJ economiza cerca de 10 horas de trabalho manual por mês.',
     features: [
-      { text: 'At 5 Empresas', icon: Building2 },
+      { text: 'Até 5 Empresas', icon: Building2 },
       { text: 'Busca CNPJ Automática', icon: Zap },
       { text: 'Dashboard de Faturamento', icon: BarChart3 },
       { text: 'Suporte via WhatsApp', icon: Star },
@@ -65,8 +65,8 @@ const plans = [
     icon: Gem
   },
   {
-    id: 'corporativo',
-    name: 'Corporativo',
+    id: 'master',
+    name: 'Master',
     price: '197',
     period: '/mês',
     description: 'Para grandes volumes e IA.',
@@ -200,7 +200,7 @@ const Register = () => {
                 <h1 className="text-5xl md:text-6xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">
                   Selecione o plano ideal para o <span className="text-emerald-600">seu negócio</span>
                 </h1>
-                <p className="text-slate-50 dark:text-zinc-400 font-bold uppercase text-xs tracking-widest">
+                <p className="text-slate-500 dark:text-zinc-400 font-bold uppercase text-xs tracking-widest">
                   Selecione o plano que melhor se adapta à sua realidade atual.
                 </p>
               </div>
@@ -385,5 +385,3 @@ const Register = () => {
 };
 
 export default Register;
-
-
