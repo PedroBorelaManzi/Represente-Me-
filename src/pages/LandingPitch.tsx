@@ -114,19 +114,24 @@ export default function LandingPitch() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 selection:bg-emerald-100 selection:text-emerald-900 font-sans cursor-default overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 selection:bg-emerald-100 selection:text-emerald-900 font-sans cursor-default overflow-x-hidden text-slate-900">
       {/* Navbar Smart */}
       <motion.nav
         initial={{ y: 0 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.35, ease: "easeInOut" }}
-        className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-          scrolled ? "bg-white/80 backdrop-blur-xl border-b border-slate-200/50 py-3" : "bg-transparent py-6"
-        }`}
+        className={cn(
+          "fixed top-0 w-full z-50 transition-all duration-300",
+          scrolled ? "bg-white/90 backdrop-blur-xl border-b border-slate-200/50 py-3 shadow-sm" : "bg-transparent py-6"
+        )}
       >
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between gap-2 md:gap-4">
           <Link to={user ? "/dashboard" : "/"} className="flex-shrink-0 flex items-center gap-3">
-            <Logo size={typeof window !== "undefined" && window.innerWidth < 768 ? "md" : "lg"} showText={true} />
+            <Logo 
+              size={typeof window !== "undefined" && window.innerWidth < 768 ? "md" : "lg"} 
+              showText={true} 
+              variant="light"
+            />
           </Link>
           
           <div className="hidden lg:flex items-center gap-10">
@@ -137,7 +142,7 @@ export default function LandingPitch() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link to="/login" className="px-4 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl bg-slate-900 text-white hover-emerald-glow text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-slate-200">
+            <Link to="/login" className="px-4 md:px-6 py-2.5 md:py-3 rounded-xl md:rounded-2xl bg-slate-900 text-white hover:bg-emerald-600 transition-all shadow-xl shadow-slate-200 text-[9px] md:text-[10px] font-black uppercase tracking-widest">
               Entrar
             </Link>
           </div>
@@ -162,7 +167,7 @@ export default function LandingPitch() {
               Domine sua carteira de clientes e recupere horas preciosas do seu dia. Nossa inteligência avançada gerencia a memória da sua operação, antecipando necessidades e garantindo controle total para que nenhum pedido ou cliente fique para trás — além de diversas outras ferramentas que te ajudarão a vender mais e vender melhor!
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-              <Link to="/register" className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all  hover:-translate-y-1 flex items-center justify-center">
+              <Link to="/register" className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all  hover:-translate-y-1 flex items-center justify-center shadow-xl shadow-emerald-500/20">
                 Teste grátis por 7 dias
               </Link>
               <button className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest hover:border-slate-300 transition-all">
@@ -310,7 +315,7 @@ export default function LandingPitch() {
       {/* Footer */}
       <footer className="py-12 border-t border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
-          <Logo className="opacity-50 h-8 md:h-10" showText={true} />
+          <Logo className="opacity-50 h-8 md:h-10" showText={true} variant="light" />
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
             © 2026 Represente-se — Tecnologia para Representações Comerciais
           </p>
