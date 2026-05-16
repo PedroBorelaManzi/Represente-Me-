@@ -305,13 +305,13 @@ export default function Checkout() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                       <div className="space-y-2 md:col-span-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">E-mail Corporativo</label>
-                        <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="nome@empresa.com" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                        <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="nome@empresa.com" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-8 pr-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
                       </div>
                       
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Senha de Acesso</label>
                         <div className="relative">
-                          <input required type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder="••••••••" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                          <input required type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder="••••••••" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-8 pr-16 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
                           <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400">
                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
@@ -321,14 +321,14 @@ export default function Checkout() {
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Confirmação</label>
                         <div className="relative">
-                          <input required type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} placeholder="••••••••" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                          <input required type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})} placeholder="••••••••" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-8 pr-16 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
                           <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400">
                             {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         </div>
                       </div>
 
-                      <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-4 p-6 bg-slate-50 dark:bg-zinc-950 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-inner">
+                      <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-3 gap-4 p-6 bg-slate-50 rounded-[32px] border border-slate-100 shadow-inner">
                         <Requirement label="8+ caracteres" met={passwordRequirements.length} />
                         <Requirement label="Maiúscula" met={passwordRequirements.upper} />
                         <Requirement label="Minúscula" met={passwordRequirements.lower} />
@@ -339,15 +339,15 @@ export default function Checkout() {
 
                       <div className="space-y-2 md:col-span-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Nome Completo</label>
-                        <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Seu nome ou Razão Social" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                        <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Seu nome ou Razão Social" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-8 pr-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">CPF / CNPJ</label>
-                        <input required type="text" value={formData.cpfCnpj} onChange={(e) => setFormData({...formData, cpfCnpj: e.target.value})} placeholder="000.000.000-00" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                        <input required type="text" value={formData.cpfCnpj} onChange={(e) => setFormData({...formData, cpfCnpj: e.target.value})} placeholder="000.000.000-00" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-8 pr-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">WhatsApp</label>
-                        <input required type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="(00) 00000-0000" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                        <input required type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="(00) 00000-0000" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-8 pr-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
                       </div>
                     </div>
 
@@ -377,20 +377,20 @@ export default function Checkout() {
                     exit={{ opacity: 0, x: -40 }}
                     className="space-y-8"
                   >
-                    <div className="bg-white dark:bg-zinc-900 p-10 rounded-[48px] border border-slate-100 dark:border-zinc-800 shadow-2xl space-y-10">
+                    <div className="bg-white p-10 rounded-[48px] border border-slate-100 shadow-2xl space-y-10">
                       <div className="flex items-center justify-between">
                         <div className="space-y-2">
-                          <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Pagamento</h3>
+                          <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Pagamento</h3>
                           <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                             Segurança máxima com criptografia bancária
                           </p>
                         </div>
-                        <div className="p-4 bg-slate-50 dark:bg-zinc-950 rounded-[24px] border border-slate-100 dark:border-zinc-800 shadow-inner">
+                        <div className="p-4 bg-slate-50 rounded-[24px] border border-slate-100 shadow-inner">
                           <Lock className="w-6 h-6 text-emerald-600" />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-4 p-2 bg-slate-50 dark:bg-zinc-950 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-inner">
+                      <div className="grid grid-cols-3 gap-4 p-2 bg-slate-50 rounded-[32px] border border-slate-100 shadow-inner">
                         {[
                           { id: 'CREDIT_CARD', icon: CreditCard, label: 'Cartão' },
                           { id: 'PIX', icon: QrCode, label: 'Pix' },
@@ -403,8 +403,8 @@ export default function Checkout() {
                             className={cn(
                               "flex flex-col items-center gap-3 py-6 rounded-[24px] transition-all relative overflow-hidden",
                               paymentMethod === method.id 
-                                ? "bg-white dark:bg-zinc-900 shadow-xl text-emerald-600 scale-[1.05]" 
-                                : "text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"
+                                ? "bg-white shadow-xl text-emerald-600 scale-[1.05]" 
+                                : "text-slate-400 hover:text-slate-600"
                             )}
                           >
                             <method.icon className="w-6 h-6" />
@@ -420,19 +420,19 @@ export default function Checkout() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                           <div className="md:col-span-2 space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Número do Cartão</label>
-                            <input type="text" value={formData.cardNumber} onChange={(e) => setFormData({...formData, cardNumber: e.target.value})} placeholder="0000 0000 0000 0000" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                            <input type="text" value={formData.cardNumber} onChange={(e) => setFormData({...formData, cardNumber: e.target.value})} placeholder="0000 0000 0000 0000" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Validade</label>
-                            <input type="text" value={formData.expiry} onChange={(e) => setFormData({...formData, expiry: e.target.value})} placeholder="MM/AA" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                            <input type="text" value={formData.expiry} onChange={(e) => setFormData({...formData, expiry: e.target.value})} placeholder="MM/AA" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">CVC</label>
-                            <input type="text" value={formData.ccv} onChange={(e) => setFormData({...formData, ccv: e.target.value})} placeholder="123" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all" />
+                            <input type="text" value={formData.ccv} onChange={(e) => setFormData({...formData, ccv: e.target.value})} placeholder="123" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
                           </div>
                           <div className="md:col-span-2 space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Titular do Cartão</label>
-                            <input type="text" value={formData.holderName} onChange={(e) => setFormData({...formData, holderName: e.target.value})} placeholder="NOME COMO NO CARTÃO" className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all uppercase" />
+                            <input type="text" value={formData.holderName} onChange={(e) => setFormData({...formData, holderName: e.target.value})} placeholder="NOME COMO NO CARTÃO" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all uppercase" />
                           </div>
                         </div>
                       )}
@@ -455,21 +455,21 @@ export default function Checkout() {
 
           <div className="lg:col-span-5">
             <div className="sticky top-32 space-y-8">
-              <div className="bg-white dark:bg-zinc-900 rounded-[64px] p-10 border border-slate-100 dark:border-zinc-800 shadow-2xl space-y-10 relative overflow-hidden text-center">
+              <div className="bg-white rounded-[64px] p-10 border border-slate-100 shadow-2xl space-y-10 relative overflow-hidden text-center">
                 <div className="flex items-center justify-between relative z-10">
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Resumo</h3>
+                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Resumo</h3>
                   <div className="px-4 py-2 bg-emerald-600 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20">
                     {billingCycle === 'ANNUAL' ? 'Plano Anual' : (billingCycle === 'SEMIANNUAL' ? 'Plano Semestral' : 'Plano Mensal')}
                   </div>
                 </div>
 
                 <div className="space-y-8 relative z-10">
-                  <div className="flex items-center gap-6 p-6 bg-slate-50 dark:bg-zinc-950 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-inner text-left">
-                    <div className={cn("w-16 h-16 rounded-[24px] bg-white dark:bg-zinc-900 flex items-center justify-center shadow-lg transition-transform hover:rotate-6", selectedPlan.color)}>
+                  <div className="flex items-center gap-6 p-6 bg-slate-50 rounded-[32px] border border-slate-100 shadow-inner text-left">
+                    <div className={cn("w-16 h-16 rounded-[24px] bg-white flex items-center justify-center shadow-lg transition-transform hover:rotate-6", selectedPlan.color)}>
                       <selectedPlan.icon className="w-8 h-8" />
                     </div>
                     <div>
-                      <p className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none mb-1">
+                      <p className="text-lg font-black text-slate-900 uppercase tracking-tight leading-none mb-1">
                         Acesso {selectedPlan.name}
                       </p>
                       <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-[0.2em]">
@@ -478,12 +478,12 @@ export default function Checkout() {
                     </div>
                   </div>
 
-                  <div className="pt-8 border-t border-slate-100 dark:border-zinc-800/50 space-y-6">
+                  <div className="pt-8 border-t border-slate-100 space-y-6">
                     <div>
                        <p className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-4">
                           Parcela do Investimento
                        </p>
-                       <p className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter">
+                       <p className="text-6xl font-black text-slate-900 tracking-tighter">
                           <span className="text-2xl mr-1">R$</span>{(finalPrice / (billingCycle === 'ANNUAL' ? 12 : (billingCycle === 'SEMIANNUAL' ? 6 : 1))).toFixed(2).replace('.', ',')}
                        </p>
                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
@@ -491,16 +491,16 @@ export default function Checkout() {
                        </p>
                     </div>
                     
-                    <div className="p-4 bg-slate-50 dark:bg-zinc-950/50 rounded-2xl border border-slate-100 dark:border-zinc-800">
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-1">Total a Investir (Valor Cheio)</p>
                        <p className="text-xs font-black text-slate-400">R$ {finalPrice.toFixed(2).replace('.', ',')}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-6 bg-blue-50 dark:bg-blue-500/5 rounded-[32px] border border-blue-100 dark:border-blue-500/10 flex gap-6 shadow-sm text-left">
+                <div className="p-6 bg-blue-50 rounded-[32px] border border-blue-100 flex gap-6 shadow-sm text-left">
                   <ShieldAlert className="w-6 h-6 text-blue-600 shrink-0" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-900 dark:text-blue-300 leading-relaxed">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-blue-900 leading-relaxed">
                     Satisfação Garantida: Experimente por 7 dias com reembolso integral caso não se adapte.
                   </p>
                 </div>

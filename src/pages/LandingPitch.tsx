@@ -31,7 +31,7 @@ import { cn } from "../lib/utils";
 
 const industries = [
   { 
-    name: "Materiais de Construção", 
+    name: "Materiais de ConstruÃ§Ã£o", 
     icon: Building2, 
     color: "bg-orange-50 text-orange-600",
     image: "/assets/setor_materiais.png"
@@ -43,7 +43,7 @@ const industries = [
     image: "/assets/setor_supermercado.png"
   },
   { 
-    name: "Farmácias", 
+    name: "FarmÃ¡cias", 
     icon: PlusIcon, 
     color: "bg-red-50 text-red-600",
     image: "/assets/setor_farmacia.png",
@@ -56,7 +56,7 @@ const industries = [
     image: "/assets/setor_distribuidora.png"
   },
   { 
-    name: "Serviços", 
+    name: "ServiÃ§os", 
     icon: Briefcase, 
     color: "bg-emerald-50 text-emerald-600",
     image: "/assets/setor_servicos.png",
@@ -73,41 +73,41 @@ const industries = [
 const faqs = [
   {
     question: "Como funciona a garantia de 7 dias?",
-    answer: "Você pode começar seu teste de 7 dias sem cadastrar cartão de crédito. Além disso, após a assinatura, você tem mais 7 dias de garantia incondicional: se não se adaptar à ferramenta por qualquer motivo, nós reembolsamos 100% do seu investimento."
+    answer: "VocÃª pode comeÃ§ar seu teste de 7 dias sem cadastrar cartÃ£o de crÃ©dito. AlÃ©m disso, apÃ³s a assinatura, vocÃª tem mais 7 dias de garantia incondicional: se nÃ£o se adaptar Ã  ferramenta por qualquer motivo, nÃ³s reembolsamos 100% do seu investimento."
   },
   {
     question: "Posso mudar de plano a qualquer momento?",
-    answer: "Sim! Você pode fazer o upgrade ou downgrade do seu plano diretamente nas configurações da sua conta, sem burocracia."
+    answer: "Sim! VocÃª pode fazer o upgrade ou downgrade do seu plano diretamente nas configuraÃ§Ãµes da sua conta, sem burocracia."
   },
   {
-    question: "O sistema funciona em dispositivos móveis?",
-    answer: "Sim, nossa plataforma é totalmente responsiva e foi otimizada para tablets e smartphones, permitindo que você gerencie suas vendas de onde estiver."
+    question: "O sistema funciona em dispositivos mÃ³veis?",
+    answer: "Sim, nossa plataforma Ã© totalmente responsiva e foi otimizada para tablets e smartphones, permitindo que vocÃª gerencie suas vendas de onde estiver."
   },
   {
-    question: "Como é feito o suporte aos usuários?",
-    answer: "Oferecemos suporte via e-mail e WhatsApp, dependendo do plano escolhido. Nossa equipe está pronta para ajudar com qualquer dúvida técnica ou operacional."
+    question: "Como Ã© feito o suporte aos usuÃ¡rios?",
+    answer: "Oferecemos suporte via e-mail e WhatsApp, dependendo do plano escolhido. Nossa equipe estÃ¡ pronta para ajudar com qualquer dÃºvida tÃ©cnica ou operacional."
   },
   {
-    question: "Meus dados estão seguros?",
-    answer: "Utilizamos criptografia de ponta e infraestrutura de alta segurança para garantir que todas as informações da sua carteira e de seus clientes estejam protegidas."
+    question: "Meus dados estÃ£o seguros?",
+    answer: "Utilizamos criptografia de ponta e infraestrutura de alta seguranÃ§a para garantir que todas as informaÃ§Ãµes da sua carteira e de seus clientes estejam protegidas."
   }
 ];
 
 const features = [
   {
     icon: ShieldCheck,
-    title: "Segurança Total",
-    desc: "Criptografia avançada"
+    title: "SeguranÃ§a Total",
+    desc: "Criptografia avanÃ§ada"
   },
   {
     icon: Zap,
     title: "Agilidade",
-    desc: "Interface ultra-rápida"
+    desc: "Interface ultra-rÃ¡pida"
   },
   {
     icon: LayoutIcon,
-    title: "Organização",
-    desc: "Gestão completa"
+    title: "OrganizaÃ§Ã£o",
+    desc: "GestÃ£o completa"
   }
 ];
 
@@ -149,7 +149,7 @@ export default function LandingPitch() {
             <a href="#industrias" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Setores</a>
             <a href="#tecnologia" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Tecnologia</a>
             <Link to="/register" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Planos</Link>
-            <a href="#faq" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Dúvidas</a>
+            <a href="#faq" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">DÃºvidas</a>
           </div>
 
           <div className="flex items-center gap-4">
@@ -169,23 +169,23 @@ export default function LandingPitch() {
             transition={{ duration: 0.8 }}
           >
             <span className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-black uppercase tracking-widest border border-emerald-100 mb-8 inline-block shadow-sm">
-              ? A revolução tecnológica do representante
+              âœ¨ A revoluÃ§Ã£o tecnolÃ³gica do representante
             </span>
             <h1 className="text-4xl md:text-8xl font-black tracking-tight text-slate-900 mb-6 md:mb-8 leading-[1.1] md:leading-[0.9] text-balance">
-              Venda mais com <span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400">Menos Esforço.</span>
+              Venda mais com <span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400">Menos EsforÃ§o.</span>
             </h1>
             <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-12">
-              Domine sua carteira de clientes e recupere horas preciosas do seu dia. Nossa inteligência avançada gerencia a memória da sua operação, antecipando necessidades e garantindo controle total para que nenhum pedido ou cliente fique para trás — além de diversas outras ferramentas que te ajudarão a vender mais e vender melhor!
+              Domine sua carteira de clientes e recupere horas preciosas do seu dia. Nossa inteligÃªncia avanÃ§ada gerencia a memÃ³ria da sua operaÃ§Ã£o, antecipando necessidades e garantindo controle total para que nenhum pedido ou cliente fique para trÃ¡s â€” alÃ©m de diversas outras ferramentas que te ajudarÃ£o a vender mais e vender melhor!
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
               <div className="flex flex-col items-center gap-3 w-full sm:w-auto">
                 <Link to="/register" className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all  hover:-translate-y-1 flex items-center justify-center shadow-xl shadow-emerald-500/20">
-                  Teste grátis por 7 dias
+                  Teste grÃ¡tis por 7 dias
                 </Link>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sem cartão de crédito • Cancele quando quiser</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sem cartÃ£o de crÃ©dito â€¢ Cancele quando quiser</p>
               </div>
               <button className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest hover:border-slate-300 transition-all">
-                Ver Vídeo Explicativo
+                Ver VÃ­deo Explicativo
               </button>
             </div>
           </motion.div>
@@ -224,10 +224,10 @@ export default function LandingPitch() {
         <div className="max-w-7xl mx-auto px-6 relative z-20 w-full">
           <div className="text-center mb-16">
             <h2 className={`text-4xl md:text-7xl font-black uppercase tracking-tighter mb-4 transition-all duration-500 ${hoveredIndustry !== null ? "text-white drop-shadow-lg" : "text-slate-900"}`}>
-              Adaptável à sua realidade
+              AdaptÃ¡vel Ã  sua realidade
             </h2>
             <p className={`font-bold uppercase text-[10px] md:text-sm tracking-[0.3em] transition-all duration-500 ${hoveredIndustry !== null ? "text-white/80" : "text-slate-400"}`}>
-              Interface customizada por setor de atuação
+              Interface customizada por setor de atuaÃ§Ã£o
             </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-8 max-w-7xl mx-auto">
@@ -272,10 +272,10 @@ export default function LandingPitch() {
                 <TrendingUp className="w-3 h-3" /> Faturamento Inteligente
               </div>
               <h2 className="text-5xl font-black text-slate-900 uppercase tracking-tighter mb-8 leading-[1.1]">
-                Controle total da sua <span className="text-emerald-600">Comunicação</span>
+                Controle total da sua <span className="text-emerald-600">ComunicaÃ§Ã£o</span>
               </h2>
               <p className="text-lg text-slate-500 font-medium leading-relaxed mb-10">
-                O único CRM que centraliza sua caixa de entrada e vincula automaticamente cada e-mail ao histórico do cliente. Chega de perder pedidos enterrados em threads infinitas.
+                O Ãºnico CRM que centraliza sua caixa de entrada e vincula automaticamente cada e-mail ao histÃ³rico do cliente. Chega de perder pedidos enterrados em threads infinitas.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-left max-w-lg mx-auto lg:mx-0">
                  <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
@@ -283,13 +283,13 @@ export default function LandingPitch() {
                        <Check className="w-4 h-4" />
                     </div>
                     <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 mb-1">IA Integration</p>
-                    <p className="text-xs text-slate-400 font-bold leading-tight">Gemini lê e categoriza seus e-mails.</p>
+                    <p className="text-xs text-slate-400 font-bold leading-tight">Gemini lÃª e categoriza seus e-mails.</p>
                  </div>
                  <div className="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
                     <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
                        <Check className="w-4 h-4" />
                     </div>
-                    <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 mb-1">Histórico Real</p>
+                    <p className="text-[10px] font-black uppercase tracking-tight text-slate-900 mb-1">HistÃ³rico Real</p>
                     <p className="text-xs text-slate-400 font-bold leading-tight">Cada resposta vira um evento no CRM.</p>
                  </div>
               </div>
@@ -314,10 +314,10 @@ export default function LandingPitch() {
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter mb-4">
-              Dúvidas Frequentes
+              DÃºvidas Frequentes
             </h2>
             <p className="text-slate-500 font-medium uppercase text-xs tracking-[0.3em]">
-              Tudo o que você precisa saber sobre a plataforma
+              Tudo o que vocÃª precisa saber sobre a plataforma
             </p>
           </div>
 
@@ -371,7 +371,7 @@ export default function LandingPitch() {
             <div className="space-y-8">
               <h2 className="text-5xl lg:text-7xl font-black text-slate-900 uppercase tracking-tighter leading-none">
                 O futuro da <br />
-                <span className="text-emerald-600">Representação</span>
+                <span className="text-emerald-600">RepresentaÃ§Ã£o</span>
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {features.map((feature, idx) => (
@@ -403,7 +403,7 @@ export default function LandingPitch() {
                   {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
                 </div>
                 <p className="text-xl md:text-2xl font-medium italic opacity-90 leading-relaxed">
-                  "O controle que tenho hoje sobre minha carteira de clientes é algo que eu nunca imaginei ser possível."
+                  "O controle que tenho hoje sobre minha carteira de clientes Ã© algo que eu nunca imaginei ser possÃ­vel."
                 </p>
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center font-black text-sm text-white">RM</div>
@@ -427,13 +427,13 @@ export default function LandingPitch() {
               Pronto para ser um <br /> <span className="text-emerald-400 text-5xl md:text-8xl">SUPER REPRESENTANTE?</span>
             </h2>
             <p className="text-slate-400 font-medium text-lg max-w-xl mx-auto mb-12">
-              Junte-se a mais de 2.000 que já alavancaram mais de 150% de suas vendas com a Represente-se
+              Junte-se a mais de 2.000 que jÃ¡ alavancaram mais de 150% de suas vendas com a Represente-se
             </p>
             <div className="flex flex-col items-center gap-4">
               <Link to="/register" className="px-12 py-6 rounded-2xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/20 inline-block">
-                Começar agora mesmo
+                ComeÃ§ar agora mesmo
               </Link>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-60">Satisfação Garantida ou seu dinheiro de volta em até 7 dias</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-60">SatisfaÃ§Ã£o Garantida ou seu dinheiro de volta em atÃ© 7 dias</p>
             </div>
           </motion.div>
         </div>
@@ -444,7 +444,7 @@ export default function LandingPitch() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
           <Logo className="opacity-50 h-8 md:h-10" showText={true} variant="light" />
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
-            © 2026 Represente-se — Tecnologia para Representações Comerciais
+            Â© 2026 Represente-se â€” Tecnologia para RepresentaÃ§Ãµes Comerciais
           </p>
           <div className="flex gap-8">
             <Link to="/privacy" className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">Privacidade</Link>
