@@ -28,7 +28,7 @@ import {
   EyeOff,
   Loader2
 } from "lucide-react";
-import { Logo } from '../components/Logo';
+import { Logo } from "../components/Logo";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
@@ -37,18 +37,18 @@ import { toast } from "sonner";
 const features = [
   {
     icon: ShieldCheck,
-    title: "Seguran√ßa Total",
-    desc: "Criptografia avan√ßada"
+    title: "SeguranÁa Total",
+    desc: "Criptografia avanÁada"
   },
   {
     icon: Zap,
     title: "Agilidade",
-    desc: "Interface ultra-r√°pida"
+    desc: "Interface ultra-r·pida"
   },
   {
     icon: LayoutIcon,
-    title: "Organiza√ß√£o",
-    desc: "Gest√£o completa"
+    title: "OrganizaÁ„o",
+    desc: "Gest„o completa"
   }
 ];
 
@@ -62,7 +62,7 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      navigate("/dashboard");
     }
   }, [user, navigate]);
 
@@ -81,18 +81,16 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-stretch overflow-hidden font-sans">
-      {/* Coluna Esquerda - Formul√°rio */}
+      {/* Coluna Esquerda - Formul·rio */}
       <div className="w-full lg:w-[45%] bg-white p-8 md:p-16 lg:p-24 flex flex-col justify-center relative z-10 shadow-2xl">
         <div className="max-w-md mx-auto w-full space-y-12">
-          <Link to="/">
-            <Logo size="lg" showText={true} variant="light" />
-          </Link>
+          <div className="flex justify-center">
+            <Link to="/">
+              <Logo size="lg" showText={true} variant="light" />
+            </Link>
+          </div>
 
-          <div className="space-y-4">
-            <h1 className="text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none">
-              Bem-vindo ao <br />
-              <span className="text-emerald-600">Comando Central</span>
-            </h1>
+          <div className="space-y-4 text-center">
             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
               Acesse sua conta para gerenciar sua carteira
             </p>
@@ -130,7 +128,7 @@ export default function Login() {
                   type={showPassword ? "text" : "password"} 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢"
+                  placeholder="ïïïïïïïï"
                   className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-16 pr-16 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" 
                 />
                 <button 
@@ -161,15 +159,15 @@ export default function Login() {
 
           <div className="pt-12 text-center">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Ainda n√£o tem conta? <br />
-              <Link to="/register" className="text-emerald-600 font-black mt-2 inline-block hover:text-emerald-700">Comece seu teste gr√°tis agora</Link>
+              Ainda n„o tem conta? <br />
+              <Link to="/register" className="text-emerald-600 font-black mt-2 inline-block hover:text-emerald-700">Comece seu teste gr·tis agora</Link>
             </p>
           </div>
         </div>
 
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
            <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.5em] whitespace-nowrap">
-              Represente-se ‚Äî Tecnologia de Ponta
+              Represente-se ó Tecnologia de Ponta
            </p>
         </div>
       </div>
@@ -182,22 +180,13 @@ export default function Login() {
         
         <div className="max-w-xl w-full relative z-10 space-y-16">
           <div className="space-y-10">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md"
-            >
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span className="text-[10px] font-black text-white uppercase tracking-widest">A Escolha dos Profissionais</span>
-            </motion.div>
-
             <div className="space-y-6">
               <h2 className="text-5xl lg:text-7xl font-black text-white uppercase tracking-tighter leading-none">
                 O futuro da <br />
-                <span className="text-emerald-500">Representa√ß√£o</span>
+                <span className="text-emerald-500">RepresentaÁ„o</span>
               </h2>
               <p className="text-lg text-slate-400 font-medium leading-relaxed">
-                Centralize sua opera√ß√£o, automatize sua burocracia e foque no que realmente importa: <span className="text-white">Fechar Neg√≥cios.</span>
+                Centralize sua operaÁ„o, automatize sua burocracia e foque no que realmente importa: <span className="text-white">Fechar NegÛcios.</span>
               </p>
             </div>
 
@@ -232,7 +221,7 @@ export default function Login() {
                 {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
               </div>
               <p className="text-xl font-medium italic text-slate-900 leading-relaxed">
-                "O controle que tenho hoje sobre minha carteira de clientes √© algo que eu nunca imaginei ser poss√≠vel."
+                "O controle que tenho hoje sobre minha carteira de clientes È algo que eu nunca imaginei ser possÌvel."
               </p>
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-full bg-slate-900 flex items-center justify-center font-black text-sm text-white">RM</div>
