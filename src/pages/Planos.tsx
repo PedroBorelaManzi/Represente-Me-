@@ -16,7 +16,8 @@ import {
   X,
   MessageCircle,
   ShieldAlert,
-  Percent
+  Percent,
+  Plus
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useSettings } from '../contexts/SettingsContext';

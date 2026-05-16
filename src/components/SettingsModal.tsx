@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   X, 
   User, 
@@ -25,7 +25,8 @@ import {
   TrendingUp,
   Percent,
   Plus,
-  Lock
+  Lock,
+  Camera
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,6 +34,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { Logo } from './Logo';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -52,11 +54,27 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user, signOut } = useAuth();
   const { settings, updateSettings } = useSettings();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
-  const toggleTheme = () => {
-    updateSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' });
+  const toggleTheme = async () => {
+    const newTheme = settings.theme === 'dark' ? 'light' : 'dark';
+    // Optimistic update
+    updateSettings({ theme: newTheme }).catch(() => {
+        toast.error("Erro ao salvar tema");
+    });
+  };
+
+  const handlePhotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      toast.success("Funcionalidade de upload em desenvolvimento");
+    }
   };
 
   const planInfo = {
@@ -134,13 +152,23 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   className="space-y-10"
                 >
                   <div className="flex items-center gap-8">
-                    <div className="relative group">
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-3xl font-black shadow-xl">
+                    <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-3xl font-black shadow-xl group-hover:scale-105 transition-transform">
                         {user?.email?.[0].toUpperCase()}
+                      </div>
+                      <div className="absolute inset-0 bg-black/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Camera className="w-8 h-8 text-white" />
                       </div>
                       <button className="absolute bottom-0 right-0 p-2 bg-white dark:bg-zinc-800 rounded-full shadow-lg border border-slate-100 dark:border-zinc-700 hover:scale-110 transition-transform">
                         <Plus className="w-4 h-4 text-emerald-600" />
                       </button>
+                      <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handlePhotoUpload} 
+                        className="hidden" 
+                        accept="image/*"
+                      />
                     </div>
                     <div>
                       <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Configurações de Perfil</h2>
