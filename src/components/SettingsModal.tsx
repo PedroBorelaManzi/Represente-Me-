@@ -12,6 +12,42 @@ interface SettingsModalProps {
   initialStep?: number;
 }
 
+const planDetails: Record<string, { name: string, features: string[], color: string }> = {
+  'exclusivo': {
+    name: 'Acesso Exclusivo',
+    color: 'slate',
+    features: [
+      'Até 1 empresa cadastrada',
+      'Acesso ao Mapa e CRM Básico',
+      'Lançamento manual de pedidos',
+      'Indicadores básicos de faturamento'
+    ]
+  },
+  'premium': {
+    name: 'Acesso Premium',
+    color: 'emerald',
+    features: [
+      'Até 3 empresas cadastradas',
+      'Pesquisa Automática de CNPJ',
+      'Lançamento via IA (Gemini)',
+      'Suporte Prioritário (WhatsApp)',
+      'Exportação completa de relatórios',
+      'Filtros avançados de inatividade'
+    ]
+  },
+  'master': {
+    name: 'Acesso Master',
+    color: 'zinc',
+    features: [
+      'Empresas Ilimitadas',
+      'Tudo do plano Premium',
+      'Painel Master de BI',
+      'Gestão Completa de CRM Portfólio',
+      'Personalização de cores e logos'
+    ]
+  }
+};
+
 export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: SettingsModalProps) {
   const { settings, loading, updateSettings } = useSettings();
   const { user } = useAuth();
@@ -102,7 +138,7 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
                 step === 1 ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              Configurar Acompanhamentos
+              Prazos
             </button>
             <button 
               onClick={() => setStep(2)}
@@ -111,7 +147,16 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
                 step === 2 ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
               )}
             >
-              Escolher Temas
+              Visual
+            </button>
+            <button 
+              onClick={() => setStep(3)}
+              className={cn(
+                "flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
+                step === 3 ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              Minha Assinatura
             </button>
           </div>
 
@@ -187,6 +232,53 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
                 </div>
               </div>
             )}
+
+            {step === 3 && (
+              <div className="space-y-6">
+                <div className={cn(
+                  "p-6 rounded-[32px] border flex flex-col gap-4 relative overflow-hidden",
+                  settings.plan_id === 'master' ? "bg-zinc-900 border-zinc-800" : (settings.plan_id === 'premium' ? "bg-emerald-600 border-emerald-500" : "bg-slate-100 border-slate-200 dark:bg-zinc-800 dark:border-zinc-700")
+                )}>
+                  <div className="flex justify-between items-start relative z-10">
+                    <div>
+                      <p className={cn("text-[10px] font-black uppercase tracking-[0.2em] mb-1", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "text-white/60" : "text-slate-400")}>Seu Plano Atual</p>
+                      <h4 className={cn("text-2xl font-black uppercase tracking-tighter", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "text-white" : "text-slate-900 dark:text-white")}>
+                        {planDetails[settings.plan_id || 'exclusivo']?.name || 'Acesso Exclusivo'}
+                      </h4>
+                    </div>
+                    <div className={cn("px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "bg-white/10 border-white/20 text-white" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600")}>
+                      {settings.subscription_status === 'active' ? 'Ativa' : 'Pendente'}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 relative z-10">
+                    {(planDetails[settings.plan_id || 'exclusivo']?.features || []).map((feature, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <Check className={cn("w-3.5 h-3.5", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "text-white/40" : "text-emerald-600")} />
+                        <span className={cn("text-[10px] font-bold uppercase tracking-tight", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "text-white/80" : "text-slate-600 dark:text-zinc-400")}>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Decorative icon */}
+                  <Shield className={cn("absolute -right-4 -bottom-4 w-32 h-32 opacity-10 rotate-12", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "text-white" : "text-slate-900")} />
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <button 
+                    onClick={() => {
+                      const whatsappNumber = "5515997472785";
+                      const msg = encodeURIComponent(`Olá! Gostaria de solicitar o cancelamento da minha assinatura no Represente-Me. Meu e-mail é: ${user?.email}`);
+                      window.open(`https://wa.me/${whatsappNumber}?text=${msg}`, '_blank');
+                    }}
+                    className="w-full py-4 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                  >
+                    <X className="w-4 h-4" /> Cancelar Assinatura
+                  </button>
+                  <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest text-center">O cancelamento é processado via suporte humano para garantir a segurança dos seus dados.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -195,14 +287,16 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
             onClick={onClose}
             className="flex-1 py-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs font-black uppercase tracking-widest text-slate-600 dark:text-zinc-400 hover:bg-slate-50 transition-all"
           >
-            Cancelar
+            Fechar
           </button>
-          <button 
-            onClick={handleSave}
-            className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg flex items-center justify-center gap-2"
-          >
-            Salvar Alterações
-          </button>
+          {step !== 3 && (
+            <button 
+              onClick={handleSave}
+              className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg flex items-center justify-center gap-2"
+            >
+              Salvar Alterações
+            </button>
+          )}
         </div>
       </motion.div>
     </div>
