@@ -26,6 +26,7 @@ import { cn } from "../lib/utils";
 const plans = [
   {
     name: "Exclusivo",
+    id: "exclusivo",
     monthlyPrice: 117,
     semiannualPrice: 107,
     annualPrice: 97,
@@ -37,6 +38,7 @@ const plans = [
   },
   {
     name: "Profissional",
+    id: "profissional",
     monthlyPrice: 167,
     semiannualPrice: 157,
     annualPrice: 147,
@@ -48,6 +50,7 @@ const plans = [
   },
   {
     name: "Master",
+    id: "master",
     monthlyPrice: 217,
     semiannualPrice: 207,
     annualPrice: 197,
@@ -80,17 +83,9 @@ export default function Planos() {
   }, [user]);
 
   const handleSubscribe = (plan: any) => {
-    let price = plan.annualPrice;
-    if (billingCycle === "monthly") price = plan.monthlyPrice;
-    if (billingCycle === "semiannual") price = plan.semiannualPrice;
-
-    navigate("/dashboard/checkout", { 
-      state: { 
-        plan: plan.name, 
-        cycle: billingCycle,
-        price: price
-      } 
-    });
+    const period = billingCycle.toUpperCase();
+    // Navigate to public checkout with query params
+    navigate(`/checkout?plan=${plan.id}&period=${period}`);
   };
 
   return (
@@ -115,12 +110,12 @@ export default function Planos() {
           </p>
 
           <div className="flex flex-col items-center gap-4">
-            <div className="flex p-1.5 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[28px] shadow-sm relative z-10">
+            <div className="flex p-2 bg-white dark:bg-zinc-900 border-2 border-slate-100 dark:border-zinc-800 rounded-[32px] shadow-sm relative z-10">
               <button
                 onClick={() => setBillingCycle("monthly")}
                 className={cn(
-                  "px-8 py-4 rounded-[22px] text-[10px] font-black uppercase tracking-widest transition-all",
-                  billingCycle === "monthly" ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
+                  "px-10 py-5 rounded-[26px] text-[11px] font-black uppercase tracking-widest transition-all",
+                  billingCycle === "monthly" ? "bg-slate-900 text-white shadow-xl scale-105" : "text-slate-400 hover:text-slate-600"
                 )}
               >
                 Mensal
@@ -128,24 +123,24 @@ export default function Planos() {
               <button
                 onClick={() => setBillingCycle("semiannual")}
                 className={cn(
-                  "px-8 py-4 rounded-[22px] text-[10px] font-black uppercase tracking-widest transition-all relative",
-                  billingCycle === "semiannual" ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
+                  "px-10 py-5 rounded-[26px] text-[11px] font-black uppercase tracking-widest transition-all relative",
+                  billingCycle === "semiannual" ? "bg-slate-900 text-white shadow-xl scale-105" : "text-slate-400 hover:text-slate-600"
                 )}
               >
                 Semestral
-                <div className="absolute -top-3 -right-2 px-2 py-0.5 bg-emerald-500 text-white text-[7px] rounded-full font-black uppercase">
+                <div className="absolute -top-3 -right-2 px-3 py-1 bg-emerald-500 text-white text-[8px] rounded-full font-black uppercase shadow-lg shadow-emerald-500/20">
                   -R$10/mês
                 </div>
               </button>
               <button
                 onClick={() => setBillingCycle("annual")}
                 className={cn(
-                  "px-8 py-4 rounded-[22px] text-[10px] font-black uppercase tracking-widest transition-all relative",
-                  billingCycle === "annual" ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600"
+                  "px-10 py-5 rounded-[26px] text-[11px] font-black uppercase tracking-widest transition-all relative",
+                  billingCycle === "annual" ? "bg-slate-900 text-white shadow-xl scale-105" : "text-slate-400 hover:text-slate-600"
                 )}
               >
                 Anual
-                <div className="absolute -top-3 -right-2 px-2 py-0.5 bg-emerald-500 text-white text-[7px] rounded-full font-black uppercase shadow-lg shadow-emerald-500/20">
+                <div className="absolute -top-3 -right-2 px-3 py-1 bg-emerald-500 text-white text-[8px] rounded-full font-black uppercase shadow-lg shadow-emerald-500/20">
                   -R$20/mês
                 </div>
               </button>
@@ -172,7 +167,7 @@ export default function Planos() {
             if (billingCycle === "monthly") price = plan.monthlyPrice;
             if (billingCycle === "semiannual") price = plan.semiannualPrice;
 
-            const isCurrent = currentSubscription?.subscription_tier?.toLowerCase() === plan.name.toLowerCase();
+            const isCurrent = currentSubscription?.subscription_tier?.toLowerCase() === plan.id.toLowerCase();
 
             return (
               <motion.div
@@ -194,20 +189,20 @@ export default function Planos() {
                 )}
 
                 <div className={cn(
-                  "w-16 h-16 rounded-[24px] bg-gradient-to-br flex items-center justify-center mb-8 shadow-lg transition-transform group-hover:scale-110 duration-500",
+                  "w-14 h-14 md:w-16 md:h-16 rounded-[24px] bg-gradient-to-br flex items-center justify-center mb-8 shadow-lg transition-transform group-hover:scale-110 duration-500",
                   plan.color
                 )}>
-                  <plan.icon className="w-8 h-8 text-white" />
+                  <plan.icon className="w-6 h-6 md:w-8 md:h-8 text-white" />
                 </div>
 
                 <div className="mb-8">
                   <h3 className="text-2xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mb-2">{plan.name}</h3>
-                  <p className="text-sm text-slate-500 dark:text-zinc-400 font-medium">{plan.description}</p>
+                  <p className="text-sm text-slate-500 dark:text-zinc-400 font-medium leading-tight">{plan.description}</p>
                 </div>
 
                 <div className="mb-10 flex items-baseline gap-1">
                   <span className="text-sm font-black text-slate-400">R$</span>
-                  <span className="text-6xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter">{price}</span>
+                  <span className="text-5xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter">{price}</span>
                   <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">/mês</span>
                 </div>
 
@@ -217,7 +212,7 @@ export default function Planos() {
                       <div className="w-5 h-5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
                         <Check className="w-3 h-3 text-emerald-600" />
                       </div>
-                      <span className="text-sm font-bold text-slate-600 dark:text-zinc-300">{feature}</span>
+                      <span className="text-xs md:text-sm font-bold text-slate-600 dark:text-zinc-300">{feature}</span>
                     </div>
                   ))}
                 </div>
