@@ -12,17 +12,28 @@ import {
   Infinity,
   Trophy,
   Crown,
-  Gem
+  Gem,
+  X,
+  MessageCircle,
+  ShieldAlert
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useSettings } from '../contexts/SettingsContext';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+const planPeriods = [
+  { id: 'MONTHLY', label: 'Mensal', priceMod: 20 },
+  { id: 'SEMIANNUAL', label: 'Semestral', priceMod: 10, discount: 'Economia de 40%' },
+  { id: 'ANNUAL', label: 'Anual', priceMod: 0, discount: 'Melhor Preço!' }
+];
 
 const plans = [
   {
+    id: 'exclusivo',
     name: 'Acesso Exclusivo',
-    price: '0',
+    basePrice: 0,
     period: '/mês',
     description: 'Ideal para prospectadores e representações locais que estão começando a criar a carteira de vendas.',
     features: [
@@ -37,8 +48,9 @@ const plans = [
     icon: Trophy
   },
   {
+    id: 'premium',
     name: 'Acesso Premium',
-    price: '147',
+    basePrice: 147,
     period: '/mês',
     description: 'Desenvolvido para agências, vendedores e distribuidores de médio e grande volume.',
     features: [
@@ -55,8 +67,9 @@ const plans = [
     icon: Gem
   },
   {
+    id: 'master',
     name: 'Acesso Master',
-    price: '297',
+    basePrice: 297,
     period: '/mês',
     description: 'A solução definitiva para grandes operações e gestão de múltiplas frentes de vendas.',
     features: [
@@ -75,9 +88,18 @@ const plans = [
 
 export default function Planos() {
   const { settings } = useSettings();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [selectedPeriod, setSelectedPeriod] = useState('ANNUAL');
+
+  const activePeriod = planPeriods.find(p => p.id === selectedPeriod)!;
+
+  const handlePlanSelection = (planId: string) => {
+    navigate(`/checkout?plan=${planId}&period=${selectedPeriod}`);
+  };
 
   return (
-    <div className="py-20 px-8 flex flex-col gap-20">
+    <div className="py-20 px-8 flex flex-col gap-20 bg-slate-50 dark:bg-zinc-950 min-h-screen">
       {/* Premium Header */}
       <div className="text-center">
         <motion.div 
@@ -96,7 +118,7 @@ export default function Planos() {
         </p>
       </div>
 
-            {/* Period Selector */}
+      {/* Period Selector */}
       <div className="flex justify-center -mt-10">
         <div className="bg-white dark:bg-zinc-900 p-2 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-xl flex gap-2">
           {planPeriods.map((period) => (
@@ -127,6 +149,8 @@ export default function Planos() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-7xl mx-auto w-full">
         {plans.map((plan, index) => {
           const PlanIcon = plan.icon;
+          const isCurrentPlan = settings.plan_id === plan.id;
+          
           return (
             <motion.div
               key={plan.name}
@@ -143,6 +167,12 @@ export default function Planos() {
               {plan.featured && (
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-8 py-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black uppercase tracking-[0.3em] rounded-full shadow-2xl z-10">
                   Mais escolhido!
+                </div>
+              )}
+
+              {isCurrentPlan && (
+                <div className="absolute top-4 right-8 text-[8px] font-black uppercase tracking-widest text-emerald-500/50">
+                  Plano Atual
                 </div>
               )}
 
@@ -182,41 +212,67 @@ export default function Planos() {
                 ))}
               </div>
 
-              <button className={cn(
-                "w-full py-7 rounded-[32px] font-black uppercase tracking-[0.2em] text-[11px] transition-all flex items-center justify-center gap-4 group active:scale-[0.98]",
-                plan.featured 
-                  ? "bg-white text-emerald-600 hover:bg-slate-50 shadow-2xl" 
-                  : "bg-slate-900 text-white dark:bg-emerald-600 shadow-xl"
-              )}>
-                {plan.buttonText}
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+              <button 
+                onClick={() => handlePlanSelection(plan.id)}
+                disabled={isCurrentPlan}
+                className={cn(
+                  "w-full py-7 rounded-[32px] font-black uppercase tracking-[0.2em] text-[11px] transition-all flex items-center justify-center gap-4 group active:scale-[0.98] disabled:opacity-50",
+                  plan.featured 
+                    ? "bg-white text-emerald-600 hover:bg-slate-50 shadow-2xl" 
+                    : "bg-slate-900 text-white dark:bg-emerald-600 shadow-xl"
+                )}
+              >
+                {isCurrentPlan ? 'Plano Ativo' : plan.buttonText}
+                {!isCurrentPlan && <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />}
               </button>
             </motion.div>
           );
         })}
       </div>
 
-      {/* Special Offer Card */}
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.5 }}
-        className="max-w-7xl mx-auto w-full p-16 bg-slate-50 dark:bg-zinc-950/40 border-4 border-dashed border-slate-100 dark:border-zinc-800 rounded-[64px] flex flex-col md:flex-row items-center justify-between gap-12"
-      >
-         <div className="flex items-center gap-10 flex-1">
-            <div className="w-24 h-24 bg-white dark:bg-zinc-900 rounded-[40px] flex items-center justify-center shadow-2xl border border-slate-100 dark:border-zinc-800">
-                <Users2 className="w-12 h-12 text-emerald-600" />
-            </div>
-            <div>
-               <h4 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2">Precisa de um plano personalizado?</h4>
-               <p className="text-sm font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest leading-none">Soluções Corporate & Enterprise para grandes operações.</p>
-            </div>
-         </div>
-         <button className="px-16 py-8 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] font-black uppercase tracking-[0.2em] text-xs hover:bg-slate-50 hover:scale-105 transition-all flex items-center gap-4 shadow-2xl active:scale-95">
-            Falar com Especialista <ArrowRight className="w-5 h-5 text-emerald-600" />
-         </button>
-      </motion.div>
+      {/* Special Offer & Support Section */}
+      <div className="max-w-7xl mx-auto w-full space-y-8">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.5 }}
+          className="p-16 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-[64px] flex flex-col md:flex-row items-center justify-between gap-12 shadow-2xl"
+        >
+           <div className="flex items-center gap-10 flex-1">
+              <div className="w-24 h-24 bg-slate-50 dark:bg-zinc-800 rounded-[40px] flex items-center justify-center shadow-inner border border-slate-100 dark:border-zinc-700">
+                  <Users2 className="w-12 h-12 text-emerald-600" />
+              </div>
+              <div>
+                 <h4 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter mb-2">Precisa de um plano personalizado?</h4>
+                 <p className="text-sm font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest leading-none">Soluções Corporate & Enterprise para grandes operações.</p>
+              </div>
+           </div>
+           <button className="px-16 py-8 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-[32px] font-black uppercase tracking-[0.2em] text-xs hover:scale-105 transition-all flex items-center gap-4 shadow-2xl active:scale-95">
+              Falar com Especialista <ArrowRight className="w-5 h-5 text-emerald-600" />
+           </button>
+        </motion.div>
+
+        {/* Cancellation Section */}
+        <div className="flex flex-col items-center gap-4 pt-12">
+          <div className="flex items-center gap-2 text-slate-400">
+            <ShieldAlert className="w-4 h-4" />
+            <p className="text-[10px] font-black uppercase tracking-widest">Gestão de Conta Transparente</p>
+          </div>
+          <button 
+            onClick={() => {
+              const whatsappNumber = "5515997472785";
+              const msg = encodeURIComponent(`Olá! Gostaria de solicitar o cancelamento da minha assinatura no Represente-Me. Meu e-mail é: ${user?.email}`);
+              window.open(`https://wa.me/${whatsappNumber}?text=${msg}`, '_blank');
+            }}
+            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors flex items-center gap-2"
+          >
+            <X className="w-3 h-3" /> Desejo cancelar minha assinatura
+          </button>
+          <p className="text-[8px] text-slate-400 font-medium uppercase tracking-[0.2em] text-center max-w-xs leading-relaxed">
+            Seus dados permanecerão salvos por 90 dias após o cancelamento. Você pode reativar seu acesso a qualquer momento.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
-
