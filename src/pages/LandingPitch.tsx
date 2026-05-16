@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   motion, 
   AnimatePresence,
@@ -83,21 +83,13 @@ const plans = [
     popular: true,
   },
   {
-    name: "Corporativo",
+    name: "Master",
     price: 197,
-    description: "Para grandes volumes e IA.",
-    features: ["Empresas Ilimitadas", "Lançamento via Gemini (IA)", "Radar Territorial Avançado", "Automação de Pedidos"],
-    buttonText: "Falar com Time",
-    popular: false,
-  },
-  {
-    name: "Ultimate",
-    price: 247,
     description: "A solução completa definitiva.",
-    features: ["Tudo do Corporativo", "BI & Analytics Avançado", "Personalização White-label", "Inbox Integrada"],
+    features: ["Empresas Ilimitadas", "BI & Analytics Avançado", "Personalização White-label", "Inbox Integrada"],
     buttonText: "Assinar VIP",
     popular: false,
-  },
+  }
 ];
 
 export default function LandingPitch() {
@@ -180,15 +172,6 @@ export default function LandingPitch() {
           </motion.div>
         </div>
       </section>
-
-      {/* Social Proof / Brands (Simplificado) */}
-      <div className="max-w-7xl mx-auto px-6 mb-32 opacity-30 grayscale saturate-0 flex flex-wrap justify-center gap-12 md:gap-24">
-         <Building2 className="w-8 h-8" />
-         <ShoppingCart className="w-8 h-8" />
-         <Zap className="w-8 h-8" />
-         <LayoutIcon className="w-8 h-8" />
-         <ShieldCheck className="w-8 h-8" />
-      </div>
 
       {/* Industry Selection */}
       <section id="industrias" className="min-h-[80vh] py-32 bg-white border-y border-slate-100 relative overflow-hidden transition-all duration-700 flex items-center">
@@ -306,33 +289,6 @@ export default function LandingPitch() {
         </div>
       </section>
 
-      {/* Plans Section */}
-      
-
-      {/* FAQ Section */}
-      <section id="faq" className="py-32 bg-slate-50/30">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">Perguntas Frequentes</h2>
-          </div>
-          <div className="space-y-4">
-            {[
-               { q: "O Gemini (IA) requer configuração?", a: "Não, já vem integrado com o modelo Pro 1.5 para análise de pedidos." },
-               { q: "Posso importar minha lista atual?", a: "Sim, aceitamos planilhas Excel e CSV com busca automática de CNPJ." },
-               { q: "Como funciona o Radar Territorial?", a: "Ele mapeia seus clientes e identifica áreas de baixa atividade automaticamente." }
-            ].map((faq, fidx) => (
-              <div key={fidx} className="p-8 rounded-3xl bg-white border border-slate-100 shadow-sm hover:border-emerald-100 transition-all">
-                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight mb-3 flex items-center gap-3">
-                   <HelpCircle className="w-4 h-4 text-emerald-500" />
-                   {faq.q}
-                </h4>
-                <p className="text-xs text-slate-500 font-medium leading-relaxed">{faq.a}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Final CTA */}
       <section className="py-32 px-6">
         <div className="max-w-5xl mx-auto rounded-[64px] bg-slate-900 p-12 md:p-24 text-center relative overflow-hidden group">
@@ -367,4 +323,3 @@ export default function LandingPitch() {
     </div>
   );
 }
-
