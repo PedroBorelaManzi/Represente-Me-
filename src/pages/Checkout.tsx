@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldCheck, CreditCard, QrCode, FileText, Lock, CheckCircle2, 
   ArrowLeft, ChevronRight, Info, Zap, Shield, Plus, Loader2, Ticket, Eye, EyeOff,
-  AlertCircle, XCircle, CheckCircle, Percent, Calendar, ShieldAlert
+  AlertCircle, XCircle, CheckCircle, Percent, Calendar, ShieldAlert, Star
 } from "lucide-react";
 import { cn } from '../lib/utils';
 import { Logo } from '../components/Logo';
@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
 
 const plans = {
-  free: { id: 'free', name: 'Exclusivo', base: 0 },
+  exclusivo: { id: 'exclusivo', name: 'Exclusivo', base: 0 },
   premium: { id: 'premium', name: 'Premium', base: 147 },
   master: { id: 'master', name: 'Master', base: 297 }
 };
@@ -82,17 +82,20 @@ export default function Checkout() {
   const isPasswordValid = Object.values(passwordRequirements).every(req => req);
 
   // Lógica de Preços (Gym-style: Annual=Base, Semiannual=+10, Monthly=+20)
-  const getPrice = () => {
+  const getMonthlyRate = () => {
     if (selectedPlan.base === 0) return 0;
     const mod = billingCycle === 'MONTHLY' ? 20 : (billingCycle === 'SEMIANNUAL' ? 10 : 0);
-    const monthlyRate = selectedPlan.base + mod;
-    
+    return selectedPlan.base + mod;
+  };
+
+  const monthlyRate = getMonthlyRate();
+  const getTotalPrice = () => {
     if (billingCycle === 'ANNUAL') return monthlyRate * 12;
     if (billingCycle === 'SEMIANNUAL') return monthlyRate * 6;
     return monthlyRate;
   };
 
-  const baseValue = getPrice();
+  const baseValue = getTotalPrice();
   const couponDiscount = appliedCoupon ? (baseValue * appliedCoupon.discount) / 100 : 0;
   const finalPrice = baseValue - couponDiscount;
 
@@ -118,7 +121,6 @@ export default function Checkout() {
     setLoading(true);
     
     try {
-      // 1. Criar conta no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -135,7 +137,6 @@ export default function Checkout() {
         throw new Error(`Erro ao criar conta: ${authError.message}`);
       }
 
-      // 2. Processar Pagamento/Assinatura via Edge Function
       const { data, error } = await supabase.functions.invoke('process-checkout', {
         body: {
           userId: authData.user?.id,
@@ -163,7 +164,7 @@ export default function Checkout() {
       if (error) throw error;
 
       if (data.success) {
-        toast.success(billingCycle === 'SUBSCRIPTION' ? "Assinatura criada com sucesso!" : "Pagamento processado!");
+        toast.success(billingCycle === 'MONTHLY' ? "Assinatura criada com sucesso!" : "Pagamento processado!");
         if (data.invoiceUrl) {
           setTimeout(() => { window.location.href = data.invoiceUrl; }, 1500);
         } else {
@@ -201,24 +202,41 @@ export default function Checkout() {
           
           <div className="lg:col-span-7 space-y-8">
             {/* Seletor de Modelo de Compra */}
-            <div className="bg-white dark:bg-zinc-900 p-2 rounded-[24px] border border-slate-100 dark:border-zinc-800 flex shadow-sm">
-              {['ANNUAL', 'SEMIANNUAL', 'MONTHLY'].map((cycle) => (
-                <button 
-                  key={cycle}
-                  type="button"
-                  onClick={() => setBillingCycle(cycle as any)}
-                  className={cn(
-                    "flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center gap-1",
-                    billingCycle === cycle ? (cycle === 'MONTHLY' ? "bg-slate-900 text-white shadow-lg" : "bg-emerald-600 text-white shadow-lg") : "text-slate-400 hover:text-slate-600"
-                  )}
+            <div className="flex flex-col gap-4">
+              <div className="bg-white dark:bg-zinc-900 p-2 rounded-[24px] border border-slate-100 dark:border-zinc-800 flex shadow-sm">
+                {['ANNUAL', 'SEMIANNUAL', 'MONTHLY'].map((cycle) => (
+                  <button 
+                    key={cycle}
+                    type="button"
+                    onClick={() => setBillingCycle(cycle as any)}
+                    className={cn(
+                      "flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-center gap-1 relative overflow-hidden",
+                      billingCycle === cycle ? (cycle === 'MONTHLY' ? "bg-slate-900 text-white shadow-lg" : "bg-emerald-600 text-white shadow-lg") : "text-slate-400 hover:text-slate-600"
+                    )}
+                  >
+                    {cycle === 'ANNUAL' ? <Zap className="w-4 h-4" /> : (cycle === 'SEMIANNUAL' ? <Zap className="w-4 h-4 opacity-50" /> : <Calendar className="w-4 h-4" />)}
+                    {cycle === 'ANNUAL' ? 'Anual' : (cycle === 'SEMIANNUAL' ? '6 Meses' : 'Mensal')}
+                    <span className="text-[8px] opacity-60">
+                      R$ {selectedPlan.base + (cycle === 'MONTHLY' ? 20 : (cycle === 'SEMIANNUAL' ? 10 : 0))}/mês
+                    </span>
+                    {cycle === 'ANNUAL' && (
+                      <div className="absolute top-0 right-0 p-1">
+                        <Star className={cn("w-2 h-2 fill-current", billingCycle === 'ANNUAL' ? "text-white" : "text-emerald-500")} />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+              
+              {billingCycle === 'ANNUAL' && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="px-4 py-2 bg-amber-50 dark:bg-amber-500/5 text-amber-600 dark:text-amber-400 rounded-xl text-[9px] font-black uppercase tracking-widest border border-amber-100 dark:border-amber-500/10 text-center"
                 >
-                  {cycle === 'ANNUAL' ? <Zap className="w-4 h-4" /> : (cycle === 'SEMIANNUAL' ? <Zap className="w-4 h-4 opacity-50" /> : <Calendar className="w-4 h-4" />)}
-                  {cycle === 'ANNUAL' ? 'Anual' : (cycle === 'SEMIANNUAL' ? '6 Meses' : 'Mensal')}
-                  <span className="text-[8px] opacity-60">
-                    R$ {selectedPlan.base + (cycle === 'MONTHLY' ? 20 : (cycle === 'SEMIANNUAL' ? 10 : 0))}/mês
-                  </span>
-                </button>
-              ))}
+                  Economia de R$ 240,00 por ano ativada!
+                </motion.div>
+              )}
             </div>
 
             <form onSubmit={handleProcessPayment} className="space-y-8">
@@ -234,7 +252,7 @@ export default function Checkout() {
                     <div className="space-y-1">
                       <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Dados Pessoais</h3>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        {billingCycle === 'SUBSCRIPTION' ? 'Inicie sua assinatura anual agora' : 'Complete seu pagamento anual'}
+                        Crie sua conta para acessar o painel
                       </p>
                     </div>
 
@@ -312,14 +330,14 @@ export default function Checkout() {
                       <div className="space-y-1">
                         <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Pagamento</h3>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          {billingCycle === 'SUBSCRIPTION' ? 'A cobrança será mensal no cartão' : 'Escolha como pagar o plano anual'}
+                          Escolha a melhor forma de investir no seu negócio
                         </p>
                       </div>
 
                       <div className="grid grid-cols-3 gap-3 p-1.5 bg-slate-50 dark:bg-zinc-950 rounded-3xl border border-slate-100 dark:border-zinc-800">
                         <button type="button" onClick={() => setPaymentMethod('CREDIT_CARD')} className={cn("flex flex-col items-center gap-2 py-4 rounded-2xl transition-all", paymentMethod === 'CREDIT_CARD' ? "bg-white dark:bg-zinc-900 shadow-sm text-emerald-600" : "text-slate-400 hover:text-slate-600")}><CreditCard className="w-5 h-5" /><span className="text-[9px] font-black uppercase tracking-widest">Cartão</span></button>
-                        <button type="button" disabled={billingCycle === 'SUBSCRIPTION'} onClick={() => setPaymentMethod('PIX')} className={cn("flex flex-col items-center gap-2 py-4 rounded-2xl transition-all", paymentMethod === 'PIX' ? "bg-white dark:bg-zinc-900 shadow-sm text-emerald-600" : "text-slate-400 hover:text-slate-600", billingCycle === 'SUBSCRIPTION' && "opacity-30 cursor-not-allowed")}><QrCode className="w-5 h-5" /><span className="text-[9px] font-black uppercase tracking-widest">Pix</span></button>
-                        <button type="button" disabled={billingCycle === 'SUBSCRIPTION'} onClick={() => setPaymentMethod('BOLETO')} className={cn("flex flex-col items-center gap-2 py-4 rounded-2xl transition-all", paymentMethod === 'BOLETO' ? "bg-white dark:bg-zinc-900 shadow-sm text-emerald-600" : "text-slate-400 hover:text-slate-600", billingCycle === 'SUBSCRIPTION' && "opacity-30 cursor-not-allowed")}><FileText className="w-5 h-5" /><span className="text-[9px] font-black uppercase tracking-widest">Boleto</span></button>
+                        <button type="button" onClick={() => setPaymentMethod('PIX')} className={cn("flex flex-col items-center gap-2 py-4 rounded-2xl transition-all", paymentMethod === 'PIX' ? "bg-white dark:bg-zinc-900 shadow-sm text-emerald-600" : "text-slate-400 hover:text-slate-600")}><QrCode className="w-5 h-5" /><span className="text-[9px] font-black uppercase tracking-widest">Pix</span></button>
+                        <button type="button" onClick={() => setPaymentMethod('BOLETO')} className={cn("flex flex-col items-center gap-2 py-4 rounded-2xl transition-all", paymentMethod === 'BOLETO' ? "bg-white dark:bg-zinc-900 shadow-sm text-emerald-600" : "text-slate-400 hover:text-slate-600")}><FileText className="w-5 h-5" /><span className="text-[9px] font-black uppercase tracking-widest">Boleto</span></button>
                       </div>
 
                       {paymentMethod === 'CREDIT_CARD' && (
@@ -333,7 +351,7 @@ export default function Checkout() {
                     </div>
 
                     <button type="submit" disabled={loading} className="w-full bg-emerald-600 text-white py-5 rounded-[24px] font-black uppercase text-xs tracking-[0.2em] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-4 disabled:opacity-50">
-                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShieldCheck className="w-5 h-5" />{billingCycle === 'SUBSCRIPTION' ? 'Ativar Assinatura' : 'Finalizar Compra'}</>}
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ShieldCheck className="w-5 h-5" />Finalizar Compra</>}
                     </button>
                     <div className="text-center"><button type="button" onClick={() => setStep(1)} className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-slate-600">Voltar</button></div>
                     
@@ -353,20 +371,23 @@ export default function Checkout() {
               <div className="bg-white dark:bg-zinc-900 rounded-[40px] p-8 border border-slate-100 dark:border-zinc-800 shadow-2xl space-y-8">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Resumo</h3>
-                  <div className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-emerald-500/20">Plano Anual</div>
+                  <div className="px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-[8px] font-black uppercase tracking-widest border border-emerald-500/20">
+                    {billingCycle === 'ANNUAL' ? 'Plano Anual' : (billingCycle === 'SEMIANNUAL' ? 'Plano Semestral' : 'Plano Mensal')}
+                  </div>
                 </div>
 
                 <div className="space-y-6">
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs font-black uppercase tracking-tight text-slate-900 dark:text-zinc-100">
-                        {billingCycle === 'SUBSCRIPTION' ? 'Mensalidade do Plano' : 'Plano Anual Completo'}
+                        Acesso {selectedPlan.name}
                       </p>
-                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Plano {selectedPlan.name}</p>
+                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
+                         {billingCycle === 'ANNUAL' ? '12 meses de acesso' : (billingCycle === 'SEMIANNUAL' ? '6 meses de acesso' : 'Recorrência Mensal')}
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-black text-slate-900 dark:text-zinc-100">R$ {baseValue.toFixed(2).replace('.', ',')}</p>
-                      {billingCycle === 'SUBSCRIPTION' && <p className="text-[9px] text-slate-400 font-bold">12 parcelas</p>}
                     </div>
                   </div>
 
@@ -384,17 +405,19 @@ export default function Checkout() {
                     )}
                     <div className="flex items-end justify-between">
                       <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                          {billingCycle === 'SUBSCRIPTION' ? 'Valor da Mensalidade' : 'Valor Total'}
+                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">
+                          {billingCycle === 'ANNUAL' ? '12x de' : (billingCycle === 'SEMIANNUAL' ? '6x de' : 'Valor Único')}
                         </p>
-                        <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">R$ {finalPrice.toFixed(2).replace('.', ',')}</p>
+                        <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">
+                           R$ {(finalPrice / (billingCycle === 'ANNUAL' ? 12 : (billingCycle === 'SEMIANNUAL' ? 6 : 1))).toFixed(2).replace('.', ',')}
+                        </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[8px] font-black text-emerald-600 uppercase tracking-[0.2em] mb-1">
-                          {billingCycle === 'MONTHLY' ? 'Recorrência Mensal' : `Parcelado em ${billingCycle === 'ANNUAL' ? 12 : 6}x`}
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">
+                           Total: R$ {finalPrice.toFixed(2).replace('.', ',')}
                         </p>
                         <p className="text-[9px] font-medium text-slate-400 leading-tight">
-                          {billingCycle === 'ANNUAL' ? 'Acesso por 12 meses' : (billingCycle === 'SEMIANNUAL' ? 'Acesso por 6 meses' : 'Mensalidade')}
+                           Pagamento Processado via Asaas
                         </p>
                       </div>
                     </div>
