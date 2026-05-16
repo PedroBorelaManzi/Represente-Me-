@@ -193,7 +193,7 @@ export default function Checkout() {
             <button onClick={() => navigate(-1)} className="p-3 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-2xl transition-all text-slate-400 active:scale-90">
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <Logo size="sm" showText ident={true} />
+            <Logo size="sm" showText={true} variant="light" />
           </div>
           
           <div className="hidden md:flex items-center gap-8">
