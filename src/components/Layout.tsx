@@ -13,7 +13,8 @@ import {
   Shield, 
   Palette,
   Building2,
-  ChevronDown
+  ChevronDown,
+  User
 } from 'lucide-react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -26,13 +27,11 @@ import { SubscriptionGuard } from './SubscriptionGuard';
 
 export default function Layout() {
   const { user, signOut } = useAuth();
-  const { settings, updateSettings } = useSettings();
+  const { settings } = useSettings();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [settingsInitialStep, setSettingsInitialStep] = useState(0);
-  const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
 
   const menuItems = [
@@ -42,10 +41,6 @@ export default function Layout() {
     { icon: Building2, label: 'Empresas & Pedidos', path: '/dashboard/empresas' },
     { icon: Calendar, label: 'Minha Agenda', path: '/dashboard/agenda' },
   ];
-
-  const toggleSubMenu = (label: string) => {
-    setActiveSubMenu(activeSubMenu === label ? null : label);
-  };
 
   return (
     <SubscriptionGuard>
@@ -74,8 +69,12 @@ export default function Layout() {
             <div className="px-6 mb-8">
               <div className="p-4 bg-slate-50 dark:bg-zinc-850 rounded-[24px] border border-slate-100 dark:border-zinc-800/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-black text-white">
-                    {user?.email?.charAt(0).toUpperCase()}
+                  <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-black text-white overflow-hidden shadow-sm">
+                    {settings.avatar_url ? (
+                      <img src={settings.avatar_url} alt="Perfil" className="w-full h-full object-cover" />
+                    ) : (
+                      user?.email?.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-black text-slate-900 dark:text-zinc-100 truncate uppercase">Representante</p>
@@ -138,10 +137,10 @@ export default function Layout() {
               </div>
             </nav>
 
-            <div className="p-8">
+            <div className="p-8 mt-auto">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Versão 2.4.1</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Versão 2.4.2</p>
                   <p className="text-[8px] font-medium text-emerald-500 uppercase tracking-widest">Neural Engine 2026</p>
                 </div>
                 <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-zinc-800 flex items-center justify-center">
@@ -163,8 +162,12 @@ export default function Layout() {
               <Link to="/dashboard" className="font-black text-base uppercase tracking-tighter text-slate-900 dark:text-zinc-100">Represente-se</Link>
             </div>
             <div className="flex items-center gap-3">
-               <div className="w-10 h-10 rounded-full border-2 border-white dark:border-zinc-900 bg-emerald-500 flex items-center justify-center text-[10px] font-black text-white shadow-sm">
-                  {user?.email?.charAt(0).toUpperCase()}
+               <div className="w-10 h-10 rounded-full border-2 border-white dark:border-zinc-900 bg-emerald-500 flex items-center justify-center text-[10px] font-black text-white shadow-sm overflow-hidden">
+                  {settings.avatar_url ? (
+                    <img src={settings.avatar_url} alt="Perfil" className="w-full h-full object-cover" />
+                  ) : (
+                    user?.email?.charAt(0).toUpperCase()
+                  )}
                </div>
             </div>
           </header>
