@@ -67,7 +67,7 @@ export default function Layout() {
             </div>
 
             <div className="px-6 mb-8">
-              <div className="p-4 bg-slate-50 dark:bg-zinc-850 rounded-[24px] border border-slate-100 dark:border-zinc-800/50">
+              <div className="p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-[24px] border border-slate-100 dark:border-zinc-700/30">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-black text-white overflow-hidden shadow-sm">
                     {settings.avatar_url ? (
@@ -78,7 +78,7 @@ export default function Layout() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-black text-slate-900 dark:text-zinc-100 truncate uppercase">Representante</p>
-                    <p className="text-[10px] font-medium text-slate-400 truncate">{user?.email}</p>
+                    <p className="text-[10px] font-medium text-slate-400 dark:text-zinc-400 truncate">{user?.email}</p>
                   </div>
                 </div>
               </div>
@@ -96,7 +96,7 @@ export default function Layout() {
                       "flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
                       isActive 
                         ? "bg-slate-900 dark:bg-zinc-800 text-white shadow-lg shadow-slate-900/10" 
-                        : "text-slate-500 dark:text-zinc-400 hover:text-emerald-600 hover:bg-slate-50 dark:hover:bg-zinc-850"
+                        : "text-slate-500 dark:text-zinc-400 hover:text-emerald-600 hover:bg-slate-50 dark:hover:bg-zinc-800/30"
                     )}
                   >
                     <item.icon className={cn(
@@ -121,8 +121,8 @@ export default function Layout() {
                   <button
                     onClick={() => setIsSettingsModalOpen(true)}
                     className={cn(
-                      "flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl transition-all duration-300 text-slate-500 dark:text-zinc-400 hover:text-emerald-600 hover:bg-slate-50 dark:hover:bg-zinc-850",
-                      isSettingsModalOpen && "text-emerald-600 bg-slate-50 dark:bg-zinc-850"
+                      "flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl transition-all duration-300 text-slate-500 dark:text-zinc-400 hover:text-emerald-600 hover:bg-slate-50 dark:hover:bg-zinc-800/30",
+                      isSettingsModalOpen && "text-emerald-600 bg-slate-50 dark:bg-zinc-800/30"
                     )}
                   >
                     <Settings className='w-5 h-5' />
