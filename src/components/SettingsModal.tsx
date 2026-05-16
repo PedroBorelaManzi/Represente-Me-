@@ -24,7 +24,8 @@ import {
   MessageCircle,
   TrendingUp,
   Percent,
-  Plus
+  Plus,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -205,6 +206,81 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </motion.div>
               )}
 
+              {activeTab === 'notifications' && (
+                <motion.div
+                  key="notifications"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-8"
+                >
+                  <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Notificações</h2>
+                  <div className="space-y-4">
+                    {[
+                      { title: 'Notificações por E-mail', desc: 'Receba alertas de inatividade e relatórios por e-mail', icon: Globe },
+                      { title: 'Notificações Push', desc: 'Alertas em tempo real no seu navegador', icon: Smartphone },
+                      { title: 'Lembretes de Agenda', desc: 'Avisos sobre seus compromissos e reuniões', icon: Bell }
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center justify-between p-6 rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800">
+                        <div className="flex items-center gap-6">
+                          <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm text-amber-500">
+                            <item.icon className="w-6 h-6" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">{item.title}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{item.desc}</p>
+                          </div>
+                        </div>
+                        <div className="w-12 h-6 rounded-full p-1 bg-emerald-500 flex items-center justify-end">
+                          <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'security' && (
+                <motion.div
+                  key="security"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-8"
+                >
+                  <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Segurança</h2>
+                  <div className="space-y-4">
+                    <button className="w-full flex items-center justify-between p-6 rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 hover:scale-[1.02] transition-all group">
+                      <div className="flex items-center gap-6">
+                        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm text-red-500">
+                          <Shield className="w-6 h-6" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Alterar Senha</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Mantenha sua conta protegida</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                    </button>
+
+                    <div className="flex items-center justify-between p-6 rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800">
+                      <div className="flex items-center gap-6">
+                        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm text-blue-500">
+                          <Lock className="w-6 h-6" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Autenticação em Duas Etapas</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Camada extra de proteção para seu login</p>
+                        </div>
+                      </div>
+                      <div className="w-12 h-6 rounded-full p-1 bg-slate-200 flex items-center justify-start">
+                        <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {activeTab === 'subscription' && (
                 <motion.div
                   key="subscription"
@@ -303,7 +379,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                   <div className="flex flex-col gap-4">
                     <button 
-                      onClick={() => { onClose(); navigate('/planos'); }}
+                      onClick={() => {
+                        onClose();
+                        setTimeout(() => navigate('/planos'), 100);
+                      }}
                       className="w-full py-6 rounded-[32px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase text-[11px] tracking-[0.2em] flex items-center justify-center gap-4 group"
                     >
                       Ver todos os planos <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
