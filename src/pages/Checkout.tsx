@@ -12,9 +12,9 @@ import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
 
 const plans = {
-  exclusivo: { id: 'exclusivo', name: 'Exclusivo', base: 0 },
+  exclusivo: { id: 'exclusivo', name: 'Exclusivo', base: 97 },
   premium: { id: 'premium', name: 'Premium', base: 147 },
-  master: { id: 'master', name: 'Master', base: 297 }
+  master: { id: 'master', name: 'Master', base: 197 }
 };
 
 function Requirement({ label, met }: { label: string; met: boolean }) {
@@ -83,7 +83,6 @@ export default function Checkout() {
 
   // Lógica de Preços (Gym-style: Annual=Base, Semiannual=+10, Monthly=+20)
   const getMonthlyRate = () => {
-    if (selectedPlan.base === 0) return 0;
     const mod = billingCycle === 'MONTHLY' ? 20 : (billingCycle === 'SEMIANNUAL' ? 10 : 0);
     return selectedPlan.base + mod;
   };
