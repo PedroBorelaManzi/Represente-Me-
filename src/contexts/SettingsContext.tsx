@@ -15,6 +15,7 @@ interface Settings {
   revenue_ceiling: number;
   subscription_status: SubscriptionStatus;
   plan_id: string;
+  avatar_url?: string;
 }
 
 const defaultSettings: Settings = {
@@ -28,6 +29,7 @@ const defaultSettings: Settings = {
   revenue_ceiling: 1000000,
   subscription_status: 'inactive',
   plan_id: 'exclusivo',
+  avatar_url: undefined,
 };
 
 interface SettingsContextType {
@@ -100,12 +102,13 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           critico_days: data.critico_days ?? defaultSettings.critico_days,
           perda_days: data.perda_days ?? defaultSettings.perda_days,
           inativo_days: data.inativo_days ?? defaultSettings.inativo_days,
-          theme: data.theme ?? defaultSettings.theme,
+          theme: (data.theme as 'light' | 'dark') ?? defaultSettings.theme,
           has_completed_onboarding: hasCompleted,
           categories: categories,
-                    revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
+          revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
           subscription_status: subStatus,
           plan_id: data.plan_id || 'exclusivo',
+          avatar_url: data.avatar_url,
         });
       } else {
         setSettings(defaultSettings);
@@ -118,10 +121,14 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
   const updateSettings = async (newSettings: Partial<Settings>) => {
     if (!user) return;
-    if (loading) return;
-
+    
+    // Update local state immediately for responsiveness
     const updated = { ...settings, ...newSettings };
-    if (updated.theme) localStorage.setItem('theme', updated.theme);
+    setSettings(updated);
+    
+    if (newSettings.theme) {
+      localStorage.setItem('theme', newSettings.theme);
+    }
 
     const { error } = await supabase
       .from("user_settings")
@@ -131,7 +138,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
 
-    if (!error) setSettings(updated);
+    if (error) {
+      console.error("Error updating settings:", error);
+    }
   };
 
   useEffect(() => {
