@@ -18,7 +18,11 @@ import {
   TrendingUp,
   Layout as LayoutIcon,
   ShieldCheck,
-  Store
+  Store,
+  Star,
+  Sparkles,
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
 import { Logo } from '../components/Logo';
 import { Link, useNavigate } from "react-router-dom";
@@ -66,30 +70,44 @@ const industries = [
   },
 ];
 
-const plans = [
+const faqs = [
   {
-    name: "Exclusivo",
-    price: 97,
-    description: "Para quem está começando.",
-    features: ["1 Empresa", "Mapa Básico", "CRM Básico", "Suporte Email"],
-    buttonText: "Assinar Agora",
-    popular: false,
+    question: "Como funciona o teste grátis de 7 dias?",
+    answer: "Você tem acesso total a todas as funcionalidades da plataforma por 7 dias. Não pedimos cartão de crédito para começar o teste. Se gostar, pode escolher um plano ao final do período."
   },
   {
-    name: "Profissional",
-    price: 147,
-    description: "Ideal para equipes em crescimento.",
-    features: ["5 Empresas", "Busca CNPJ Automática", "Dashboard de Faturamento", "Suporte WhatsApp"],
-    buttonText: "Teste Grátis",
-    popular: true,
+    question: "Posso mudar de plano a qualquer momento?",
+    answer: "Sim! Você pode fazer o upgrade ou downgrade do seu plano diretamente nas configurações da sua conta, sem burocracia."
   },
   {
-    name: "Master",
-    price: 197,
-    description: "A solução completa definitiva.",
-    features: ["Empresas Ilimitadas", "BI & Analytics Avançado", "Personalização White-label", "Inbox Integrada"],
-    buttonText: "Assinar VIP",
-    popular: false,
+    question: "O sistema funciona em dispositivos móveis?",
+    answer: "Sim, nossa plataforma é totalmente responsiva e foi otimizada para tablets e smartphones, permitindo que você gerencie suas vendas de onde estiver."
+  },
+  {
+    question: "Como é feito o suporte aos usuários?",
+    answer: "Oferecemos suporte via e-mail e WhatsApp, dependendo do plano escolhido. Nossa equipe está pronta para ajudar com qualquer dúvida técnica ou operacional."
+  },
+  {
+    question: "Meus dados estão seguros?",
+    answer: "Utilizamos criptografia de ponta e infraestrutura de alta segurança para garantir que todas as informações da sua carteira e de seus clientes estejam protegidas."
+  }
+];
+
+const features = [
+  {
+    icon: ShieldCheck,
+    title: "Segurança Total",
+    desc: "Criptografia avançada"
+  },
+  {
+    icon: Zap,
+    title: "Agilidade",
+    desc: "Interface ultra-rápida"
+  },
+  {
+    icon: LayoutIcon,
+    title: "Organização",
+    desc: "Gestão completa"
   }
 ];
 
@@ -98,17 +116,9 @@ export default function LandingPitch() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("annual");
   const [scrolled, setScrolled] = useState(false);
   const [hoveredIndustry, setHoveredIndustry] = useState<number | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
-
-  /* Redirect removido a pedido do usuario */
-
-  const calculatePrice = (annualPrice: number) => {
-    if (billingCycle === "annual") return annualPrice.toString();
-    const withSurcharge = annualPrice * 1.1;
-    const roundedUpToTen = Math.ceil(withSurcharge / 10) * 10;
-    return (roundedUpToTen - 0.10).toFixed(2).replace(".", ",");
-  };
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setScrolled(latest > 50);
@@ -137,7 +147,7 @@ export default function LandingPitch() {
           
           <div className="hidden lg:flex items-center gap-10">
             <a href="#industrias" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Setores</a>
-            <a href="#inbox" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Tecnologia</a>
+            <a href="#tecnologia" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Tecnologia</a>
             <Link to="/register" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Planos</Link>
             <a href="#faq" className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 transition-colors">Dúvidas</a>
           </div>
@@ -246,8 +256,8 @@ export default function LandingPitch() {
         </div>
       </section>
 
-      {/* Inbox Section Refined */}
-      <section id="inbox" className="py-32 bg-slate-50 relative overflow-hidden">
+      {/* Technology Section Refined */}
+      <section id="tecnologia" className="py-32 bg-slate-50 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col lg:flex-row items-center gap-20">
             <motion.div 
@@ -289,8 +299,126 @@ export default function LandingPitch() {
             >
               <div className="absolute inset-0 bg-emerald-600/5 blur-[120px] rounded-full group-hover:bg-emerald-600/10 transition-all pointer-events-none" />
               <div className="relative transform lg:rotate-2 hover:rotate-0 transition-transform duration-700">
+                <img src="/assets/dashboard_mockup.png" alt="Dashboard" className="rounded-[32px] shadow-2xl border border-white/20" />
               </div>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Future Section (From Login Page) */}
+      <section className="py-32 bg-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 shadow-sm border border-slate-100"
+              >
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Tecnologia de Ponta</span>
+              </motion.div>
+              <h2 className="text-5xl lg:text-7xl font-black text-slate-900 uppercase tracking-tighter leading-none">
+                O futuro da <br />
+                <span className="text-emerald-600">Representação</span>
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {features.map((feature, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="bg-slate-50 p-8 rounded-[40px] border border-slate-100 shadow-sm group hover:-translate-y-1 transition-all duration-500"
+                  >
+                    <div className="w-12 h-12 rounded-[20px] bg-emerald-50 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                      <feature.icon className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <h3 className="text-base font-black text-slate-900 uppercase tracking-tighter mb-1">{feature.title}</h3>
+                    <p className="text-xs font-medium text-slate-500 leading-tight">{feature.desc}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              className="bg-slate-900 p-12 lg:p-16 rounded-[64px] text-white space-y-8 shadow-2xl relative overflow-hidden group"
+            >
+              <div className="absolute inset-0 bg-emerald-600/10 blur-[80px] group-hover:bg-emerald-600/20 transition-all" />
+              <div className="relative space-y-6">
+                <div className="flex gap-1">
+                  {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}
+                </div>
+                <p className="text-xl md:text-2xl font-medium italic opacity-90 leading-relaxed">
+                  "O controle que tenho hoje sobre minha carteira de clientes é algo que eu nunca imaginei ser possível."
+                </p>
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center font-black text-sm text-white">RM</div>
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-widest">Ricardo Moreira</p>
+                    <p className="text-[10px] font-bold opacity-50 uppercase tracking-tight">Representante Comercial</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-32 bg-slate-50 relative overflow-hidden">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter mb-4">
+              Dúvidas Frequentes
+            </h2>
+            <p className="text-slate-500 font-medium uppercase text-xs tracking-[0.3em]">
+              Tudo o que você precisa saber sobre a plataforma
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, idx) => (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.05 }}
+                className="bg-white rounded-[32px] border border-slate-100 overflow-hidden transition-all shadow-sm"
+              >
+                <button 
+                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                  className="w-full px-8 py-6 flex items-center justify-between text-left group"
+                >
+                  <span className="text-sm md:text-base font-black text-slate-900 uppercase tracking-tight group-hover:text-emerald-600 transition-colors">
+                    {faq.question}
+                  </span>
+                  <div className={cn(
+                    "p-2 rounded-xl bg-slate-50 text-slate-400 transition-all",
+                    openFaq === idx && "bg-emerald-50 text-emerald-600 rotate-180"
+                  )}>
+                    <ChevronDown className="w-5 h-5" />
+                  </div>
+                </button>
+                <AnimatePresence>
+                  {openFaq === idx && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                      <div className="px-8 pb-8 text-sm md:text-base text-slate-500 font-medium leading-relaxed border-t border-slate-50 pt-6">
+                        {faq.answer}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
