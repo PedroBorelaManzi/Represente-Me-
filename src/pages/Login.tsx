@@ -249,7 +249,7 @@ export default function Login() {
                 {[1,2,3,4,5].map(i => <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
               </div>
               <p className="text-base font-medium italic opacity-90 leading-relaxed">
-                "O controle que tenho hoje sobre minha carteira é algo que eu nunca imaginei ser possível."
+                "O controle que tenho hoje sobre minha carteira de clientes é algo que eu nunca imaginei ser possível."
               </p>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center font-black text-[10px]">RM</div>
