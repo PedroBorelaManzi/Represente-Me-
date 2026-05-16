@@ -491,9 +491,9 @@ export default function Checkout() {
                        </p>
                     </div>
                     
-                    <div className="p-4 bg-slate-900 dark:bg-white/5 rounded-2xl">
+                    <div className="p-4 bg-slate-50 dark:bg-zinc-950/50 rounded-2xl border border-slate-100 dark:border-zinc-800">
                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-1">Total a Investir (Valor Cheio)</p>
-                       <p className="text-lg font-black text-white">R$ {finalPrice.toFixed(2).replace('.', ',')}</p>
+                       <p className="text-xs font-black text-slate-400">R$ {finalPrice.toFixed(2).replace('.', ',')}</p>
                     </div>
                   </div>
                 </div>
