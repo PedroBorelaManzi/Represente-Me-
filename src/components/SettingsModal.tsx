@@ -1,316 +1,325 @@
-import React, { useState, useEffect } from "react";
-import { X, Check, Bell, Sun, Moon, Target, Shield, Info, Loader2, CreditCard, ExternalLink, MessageCircle, ArrowDownCircle } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useSettings } from "../contexts/SettingsContext";
-import { useAuth } from "../contexts/AuthContext";
-import { toast } from "sonner";
-import { cn } from "../lib/utils";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { 
+  X, 
+  User, 
+  Settings as SettingsIcon, 
+  Bell, 
+  Shield, 
+  CreditCard,
+  LogOut,
+  Moon,
+  Sun,
+  Globe,
+  Smartphone,
+  ChevronRight,
+  Sparkles,
+  Trophy,
+  Crown,
+  Gem,
+  CheckCircle2,
+  AlertCircle,
+  Building2,
+  Zap,
+  Map as MapIcon,
+  MessageCircle,
+  TrendingUp,
+  Percent,
+  Plus
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { Logo } from './Logo';
+import { cn } from '../lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialStep?: number;
 }
 
-const planDetails: Record<string, { name: string, features: string[], color: string }> = {
-  'exclusivo': {
-    name: 'Acesso Exclusivo',
-    color: 'slate',
-    features: [
-      'Até 1 empresa cadastrada',
-      'Acesso ao Mapa e CRM Básico',
-      'Lançamento manual de pedidos',
-      'Indicadores básicos de faturamento'
-    ]
-  },
-  'premium': {
-    name: 'Acesso Premium',
-    color: 'emerald',
-    features: [
-      'Até 3 empresas cadastradas',
-      'Pesquisa Automática de CNPJ',
-      'Lançamento via IA (Gemini)',
-      'Suporte Prioritário (WhatsApp)',
-      'Exportação completa de relatórios',
-      'Filtros avançados de inatividade'
-    ]
-  },
-  'master': {
-    name: 'Acesso Master',
-    color: 'zinc',
-    features: [
-      'Empresas Ilimitadas',
-      'Tudo do plano Premium',
-      'Painel Master de BI',
-      'Gestão Completa de CRM Portfólio',
-      'Personalização de cores e logos'
-    ]
-  }
-};
+const menuItems = [
+  { id: 'profile', label: 'Meu Perfil', icon: User, color: 'text-blue-500' },
+  { id: 'appearance', label: 'Aparência', icon: Moon, color: 'text-indigo-500' },
+  { id: 'subscription', label: 'Minha Assinatura', icon: CreditCard, color: 'text-emerald-500' },
+  { id: 'notifications', label: 'Notificações', icon: Bell, color: 'text-amber-500' },
+  { id: 'security', label: 'Segurança', icon: Shield, color: 'text-red-500' }
+];
 
-export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: SettingsModalProps) {
-  const { settings, loading, updateSettings } = useSettings();
-  const { user } = useAuth();
+export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+  const [activeTab, setActiveTab] = useState('profile');
+  const { user, signOut } = useAuth();
+  const { settings, updateSettings } = useSettings();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [step, setStep] = useState(initialStep);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Local state for settings
-  const [alerta, setAlerta] = useState(settings.alerta_days || 15);
-  const [critico, setCritico] = useState(settings.critico_days || 30);
-  const [perda, setPerda] = useState(settings.perda_days || 45);
-  const [inativo, setInativo] = useState(settings.inativo_days || 90);
-  const [theme, setTheme] = useState<'light' | 'dark'>(settings.theme || 'light');
-  
-  const [categories, setCategories] = useState<string[]>(settings.categories || []);
-
-  useEffect(() => {
-    if (isOpen) {
-      setAlerta(settings.alerta_days || 15);
-      setCritico(settings.critico_days || 30);
-      setPerda(settings.perda_days || 45);
-      setInativo(settings.inativo_days || 90);
-      setTheme(settings.theme || 'light');
-      
-      setCategories(settings.categories || []);
-      setStep(initialStep);
-    }
-  }, [isOpen, settings, initialStep]);
-
-  const handleSave = async () => {
-    try {
-      setIsSaving(true);
-      await updateSettings({
-        alerta_days: alerta,
-        critico_days: critico,
-        perda_days: perda,
-        inativo_days: inativo,
-        theme,
-        categories
-      });
-      toast.success("Configurações atualizadas com sucesso!");
-      onClose();
-    } catch (error) {
-      toast.error("Erro ao salvar configurações.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   if (!isOpen) return null;
 
+  const planInfo = {
+    exclusivo: { name: 'Exclusivo', icon: Trophy, color: 'text-slate-400', bg: 'bg-slate-50', border: 'border-slate-100' },
+    premium: { name: 'Premium', icon: Gem, color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+    master: { name: 'Master', icon: Crown, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100' }
+  };
+
+  const currentPlan = planInfo[settings.plan_id as keyof typeof planInfo] || planInfo.exclusivo;
+
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
       <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        exit={{ opacity: 0 }} 
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl" 
-        onClick={onClose} 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
       />
+      
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="bg-white dark:bg-zinc-900 rounded-[40px] border border-slate-200 dark:border-zinc-800 shadow-2xl w-full max-w-lg relative z-10 overflow-hidden"
+        className="relative w-full max-w-5xl h-[85vh] bg-white dark:bg-zinc-900 rounded-[40px] shadow-2xl overflow-hidden border border-slate-200/50 dark:border-zinc-800/50 flex flex-col md:flex-row"
       >
-        <div className="p-8 border-b border-slate-100 dark:border-zinc-850 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-xl">
-              <Shield className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 uppercase tracking-tight">Painel de Configurações</h2>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ajuste seu Ecossistema de Trabalho</p>
-            </div>
+        {/* Sidebar */}
+        <div className="w-full md:w-80 bg-slate-50/50 dark:bg-zinc-950/50 border-r border-slate-100 dark:border-zinc-800 p-8 flex flex-col gap-8">
+          <div className="flex items-center gap-4 px-2">
+            <Logo size="sm" showText />
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-all">
-            <X className="w-5 h-5 text-slate-400" />
-          </button>
+
+          <nav className="flex-1 space-y-2">
+            {menuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={cn(
+                  "w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all group",
+                  activeTab === item.id 
+                    ? "bg-white dark:bg-zinc-900 shadow-xl shadow-slate-200/50 dark:shadow-none text-slate-900 dark:text-white" 
+                    : "text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 hover:bg-white/50 dark:hover:bg-zinc-900/50"
+                )}
+              >
+                <item.icon className={cn("w-5 h-5", activeTab === item.id ? item.color : "text-current")} />
+                <span className="text-[11px] font-black uppercase tracking-widest">{item.label}</span>
+                {activeTab === item.id && (
+                  <motion.div layoutId="active-pill" className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                )}
+              </button>
+            ))}
+          </nav>
+
+          <div className="pt-8 border-t border-slate-100 dark:border-zinc-800">
+            <button 
+              onClick={() => signOut()}
+              className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all group"
+            >
+              <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="text-[11px] font-black uppercase tracking-widest">Sair da Conta</span>
+            </button>
+          </div>
         </div>
 
-        <div className="p-8 space-y-8">
-          {/* Tabs */}
-          <div className="flex bg-slate-100 dark:bg-zinc-850 p-1 rounded-2xl">
-            <button 
-              onClick={() => setStep(1)}
-              className={cn(
-                "flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
-                step === 1 ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              Prazos
-            </button>
-            <button 
-              onClick={() => setStep(2)}
-              className={cn(
-                "flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
-                step === 2 ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              Visual
-            </button>
-            <button 
-              onClick={() => setStep(3)}
-              className={cn(
-                "flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all",
-                step === 3 ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              Minha Assinatura
-            </button>
-          </div>
-
-          <div className="min-h-[200px]">
-            {step === 1 && (
-              <div className="space-y-6">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[11px]">
-                    <span className="font-bold text-amber-600 uppercase tracking-wider">Dias para Alerta (Frio)</span>
-                    <span className="font-black text-slate-900 dark:text-zinc-100">{alerta} DIAS</span>
-                  </div>
-                  <input type="range" min="5" max="60" step="5" value={alerta} onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setAlerta(val);
-                    if (critico <= val) setCritico(val + 5);
-                    if (perda <= val + 5) setPerda(val + 10);
-                  }} className="w-full accent-amber-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full cursor-pointer" />
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[11px]">
-                    <span className="font-bold text-orange-600 uppercase tracking-wider">Dias para Crítico (Quente)</span>
-                    <span className="font-black text-slate-900 dark:text-zinc-100">{critico} DIAS</span>
-                  </div>
-                  <input type="range" min={alerta + 5} max="90" step="5" value={critico} onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setCritico(val);
-                    if (perda <= val) setPerda(val + 5);
-                  }} className="w-full accent-orange-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full cursor-pointer" />
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[11px]">
-                    <span className="font-bold text-red-600 uppercase tracking-wider">Dias para Perda</span>
-                    <span className="font-black text-slate-900 dark:text-zinc-100">{perda} DIAS</span>
-                  </div>
-                  <input type="range" min={critico + 5} max="180" step="5" value={perda} onChange={(e) => setPerda(Number(e.target.value))} className="w-full accent-red-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full cursor-pointer" />
-                </div>
-
-                <div className="p-4 bg-blue-50 dark:bg-blue-500/10 rounded-2xl border border-blue-100 dark:border-blue-500/20 flex gap-3">
-                  <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-blue-700 dark:text-blue-300 font-medium">
-                    Estes prazos definem as cores dos ícones de status dos seus clientes com base na última compra ou contato.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <button 
-                    onClick={() => setTheme('light')}
-                    className={theme === 'light' ? "p-6 rounded-3xl border border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 flex flex-col items-center gap-4 transition-all" : "p-6 rounded-3xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col items-center gap-4 transition-all"}
-                  >
-                    <Sun className={theme === 'light' ? "w-8 h-8 text-emerald-600" : "w-8 h-8 text-slate-400"} />
-                    <span className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-zinc-200">Tema Claro</span>
-                  </button>
-
-                  <button 
-                    onClick={() => setTheme('dark')}
-                    className={theme === 'dark' ? "p-6 rounded-3xl border border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 flex flex-col items-center gap-4 transition-all" : "p-6 rounded-3xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col items-center gap-4 transition-all"}
-                  >
-                    <Moon className={theme === 'dark' ? "w-8 h-8 text-emerald-600" : "w-8 h-8 text-slate-400"} />
-                    <span className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-zinc-200">Tema Escuro</span>
-                  </button>
-                </div>
-                
-                <div className="p-4 bg-slate-50 dark:bg-zinc-850 rounded-2xl border border-slate-100 dark:border-zinc-800">
-                  <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-medium text-center italic">
-                    O tema será aplicado globalmente em todos os módulos.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-6">
-                <div className={cn(
-                  "p-6 rounded-[32px] border flex flex-col gap-4 relative overflow-hidden",
-                  settings.plan_id === 'master' ? "bg-zinc-900 border-zinc-800" : (settings.plan_id === 'premium' ? "bg-emerald-600 border-emerald-500" : "bg-slate-100 border-slate-200 dark:bg-zinc-800 dark:border-zinc-700")
-                )}>
-                  <div className="flex justify-between items-start relative z-10">
-                    <div>
-                      <p className={cn("text-[10px] font-black uppercase tracking-[0.2em] mb-1", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "text-white/60" : "text-slate-400")}>Seu Plano Atual</p>
-                      <h4 className={cn("text-2xl font-black uppercase tracking-tighter", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "text-white" : "text-slate-900 dark:text-white")}>
-                        {planDetails[settings.plan_id || 'exclusivo']?.name || 'Acesso Exclusivo'}
-                      </h4>
-                    </div>
-                    <div className={cn("px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "bg-white/10 border-white/20 text-white" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600")}>
-                      {settings.subscription_status === 'active' ? 'Ativa' : 'Pendente'}
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 relative z-10">
-                    {(planDetails[settings.plan_id || 'exclusivo']?.features || []).map((feature, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <Check className={cn("w-3.5 h-3.5", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "text-white/40" : "text-emerald-600")} />
-                        <span className={cn("text-[10px] font-bold uppercase tracking-tight", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "text-white/80" : "text-slate-600 dark:text-zinc-400")}>{feature}</span>
+        {/* Content Area */}
+        <div className="flex-1 p-8 md:p-12 overflow-y-auto">
+          <div className="max-w-2xl mx-auto space-y-12">
+            <AnimatePresence mode="wait">
+              {activeTab === 'profile' && (
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-10"
+                >
+                  <div className="flex items-center gap-8">
+                    <div className="relative group">
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-3xl font-black shadow-xl">
+                        {user?.email?.[0].toUpperCase()}
                       </div>
-                    ))}
+                      <button className="absolute bottom-0 right-0 p-2 bg-white dark:bg-zinc-800 rounded-full shadow-lg border border-slate-100 dark:border-zinc-700 hover:scale-110 transition-transform">
+                        <Plus className="w-4 h-4 text-emerald-600" />
+                      </button>
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Configurações de Perfil</h2>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{user?.email}</p>
+                    </div>
                   </div>
 
-                  {/* Decorative icon */}
-                  <Shield className={cn("absolute -right-4 -bottom-4 w-32 h-32 opacity-10 rotate-12", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "text-white" : "text-slate-900")} />
-                </div>
-
-                {/* Upgrade call to action */}
-                {settings.plan_id !== 'master' && (
-                  <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl flex items-center justify-between shadow-sm animate-pulse">
-                    <div>
-                      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Fazer Upgrade</p>
-                      <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Desbloqueie o plano {settings.plan_id === 'exclusivo' ? 'Premium' : 'Master'}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Nome de Exibição</label>
+                      <input 
+                        type="text" 
+                        value={user?.user_metadata?.full_name || ''} 
+                        className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                        placeholder="Seu Nome"
+                      />
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">E-mail</label>
+                      <input 
+                        type="email" 
+                        disabled
+                        value={user?.email || ''} 
+                        className="w-full bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl px-6 py-4 text-sm font-bold text-slate-400 cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'appearance' && (
+                <motion.div
+                  key="appearance"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-8"
+                >
+                  <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Personalização</h2>
+                  
+                  <div className="space-y-4">
                     <button 
-                      onClick={() => { navigate('/planos'); onClose(); }}
-                      className="px-4 py-2 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                      onClick={toggleTheme}
+                      className="w-full flex items-center justify-between p-6 rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 hover:scale-[1.02] transition-all group"
                     >
-                      Ver Benefícios
+                      <div className="flex items-center gap-6">
+                        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm">
+                          {theme === 'dark' ? <Moon className="w-6 h-6 text-indigo-500" /> : <Sun className="w-6 h-6 text-amber-500" />}
+                        </div>
+                        <div className="text-left">
+                          <p className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Modo de Exibição</p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Alterar entre modo claro e escuro</p>
+                        </div>
+                      </div>
+                      <div className={cn(
+                        "w-12 h-6 rounded-full p-1 transition-all flex items-center",
+                        theme === 'dark' ? "bg-emerald-500 justify-end" : "bg-slate-200 justify-start"
+                      )}>
+                        <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                      </div>
                     </button>
                   </div>
-                )}
+                </motion.div>
+              )}
 
-                <div className="flex flex-col gap-3">
-                  <button 
-                    onClick={() => { navigate('/planos'); onClose(); }}
-                    className="w-full py-4 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
-                  >
-                    Ver Planos
-                  </button>
-                </div>
-              </div>
-            )}
+              {activeTab === 'subscription' && (
+                <motion.div
+                  key="subscription"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-10"
+                >
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Sua Assinatura</h2>
+                    <div className={cn("px-6 py-2 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] shadow-sm", currentPlan.bg, currentPlan.border, currentPlan.color)}>
+                      {currentPlan.name}
+                    </div>
+                  </div>
+
+                  <div className={cn("p-10 rounded-[48px] border relative overflow-hidden", currentPlan.bg, currentPlan.border)}>
+                    <div className="relative z-10 space-y-8">
+                       <div className="flex items-center gap-6">
+                          <div className="p-5 bg-white dark:bg-zinc-900 rounded-[28px] shadow-sm">
+                            <currentPlan.icon className={cn("w-10 h-10", currentPlan.color)} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Plano Atual</p>
+                            <h3 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase">Acesso {currentPlan.name}</h3>
+                          </div>
+                       </div>
+
+                       <div className="grid grid-cols-2 gap-4">
+                          {[
+                            { label: 'Status', value: 'Ativo', icon: CheckCircle2, color: 'text-emerald-500' },
+                            { label: 'Renovação', value: 'Mensal', icon: TrendingUp, color: 'text-blue-500' }
+                          ].map((stat, i) => (
+                            <div key={i} className="p-4 bg-white/50 dark:bg-zinc-900/50 rounded-2xl border border-white/20">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                              <div className="flex items-center gap-2">
+                                <stat.icon className={cn("w-3 h-3", stat.color)} />
+                                <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{stat.value}</span>
+                              </div>
+                            </div>
+                          ))}
+                       </div>
+
+                       <div className="space-y-3">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Seus Benefícios</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {settings.plan_id === 'exclusivo' && [
+                              { text: '1 Empresa Cadastrada', icon: Building2 },
+                              { text: 'Mapa e CRM Básico', icon: MapIcon },
+                              { text: 'Lançamento Manual', icon: Plus }
+                            ].map((b, i) => (
+                              <div key={i} className="flex items-center gap-3 text-slate-600 dark:text-zinc-400">
+                                <b.icon className="w-3.5 h-3.5" />
+                                <span className="text-[9px] font-black uppercase tracking-tight">{b.text}</span>
+                              </div>
+                            ))}
+                            {settings.plan_id === 'premium' && [
+                              { text: 'Até 3 Empresas', icon: Building2 },
+                              { text: 'Busca CNPJ Auto', icon: Zap },
+                              { text: 'IA Gemini Pro 1.5', icon: Sparkles },
+                              { text: 'Suporte Prioritário', icon: MessageCircle }
+                            ].map((b, i) => (
+                              <div key={i} className="flex items-center gap-3 text-slate-600 dark:text-zinc-400">
+                                <b.icon className="w-3.5 h-3.5" />
+                                <span className="text-[9px] font-black uppercase tracking-tight">{b.text}</span>
+                              </div>
+                            ))}
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* Upsell for Master if Premium */}
+                  {settings.plan_id === 'premium' && (
+                    <motion.div 
+                      initial={{ scale: 0.95, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="p-8 rounded-[32px] bg-amber-50 border border-amber-100 flex flex-col md:flex-row items-center justify-between gap-6"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-amber-400 rounded-2xl text-white">
+                          <Crown className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Oportunidade de Upgrade</p>
+                          <h4 className="text-lg font-black text-amber-900 uppercase tracking-tight">Vá para o plano Master por apenas +R$ 50/mês</h4>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => { onClose(); navigate('/planos'); }}
+                        className="px-8 py-4 bg-amber-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 hover:bg-amber-600 transition-all"
+                      >
+                        Fazer Upgrade
+                      </button>
+                    </motion.div>
+                  )}
+
+                  <div className="flex flex-col gap-4">
+                    <button 
+                      onClick={() => { onClose(); navigate('/planos'); }}
+                      className="w-full py-6 rounded-[32px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase text-[11px] tracking-[0.2em] flex items-center justify-center gap-4 group"
+                    >
+                      Ver todos os planos <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
-        <div className="p-8 bg-slate-50 dark:bg-zinc-950 border-t border-slate-100 dark:border-zinc-850 flex gap-4">
-          <button 
-            onClick={onClose}
-            className="flex-1 py-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl text-xs font-black uppercase tracking-widest text-slate-600 dark:text-zinc-400 hover:bg-slate-50 transition-all"
-          >
-            Fechar
-          </button>
-          {step !== 3 && (
-            <button 
-              onClick={handleSave}
-              className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg flex items-center justify-center gap-2"
-            >
-              Salvar Alterações
-            </button>
-          )}
-        </div>
+        {/* Close Button */}
+        <button 
+          onClick={onClose}
+          className="absolute top-8 right-8 p-3 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-all text-slate-400"
+        >
+          <X className="w-6 h-6" />
+        </button>
       </motion.div>
     </div>
   );
