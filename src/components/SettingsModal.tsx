@@ -5,6 +5,7 @@ import { useSettings } from "../contexts/SettingsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
+import { useNavigate } from "react-router-dom";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ const planDetails: Record<string, { name: string, features: string[], color: str
 export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: SettingsModalProps) {
   const { settings, loading, updateSettings } = useSettings();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState(initialStep);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -264,18 +266,29 @@ export default function SettingsModal({ isOpen, onClose, initialStep = 1 }: Sett
                   <Shield className={cn("absolute -right-4 -bottom-4 w-32 h-32 opacity-10 rotate-12", (settings.plan_id === 'master' || settings.plan_id === 'premium') ? "text-white" : "text-slate-900")} />
                 </div>
 
+                {/* Upgrade call to action */}
+                {settings.plan_id !== 'master' && (
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-2xl flex items-center justify-between shadow-sm animate-pulse">
+                    <div>
+                      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Fazer Upgrade</p>
+                      <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Desbloqueie o plano {settings.plan_id === 'exclusivo' ? 'Premium' : 'Master'}</p>
+                    </div>
+                    <button 
+                      onClick={() => { navigate('/planos'); onClose(); }}
+                      className="px-4 py-2 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                    >
+                      Ver Benefícios
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex flex-col gap-3">
                   <button 
-                    onClick={() => {
-                      const whatsappNumber = "5515997472785";
-                      const msg = encodeURIComponent(`Olá! Gostaria de solicitar o cancelamento da minha assinatura no Represente-Me. Meu e-mail é: ${user?.email}`);
-                      window.open(`https://wa.me/${whatsappNumber}?text=${msg}`, '_blank');
-                    }}
-                    className="w-full py-4 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-100 transition-all flex items-center justify-center gap-2"
+                    onClick={() => { navigate('/planos'); onClose(); }}
+                    className="w-full py-4 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
                   >
-                    <X className="w-4 h-4" /> Cancelar Assinatura
+                    Ver Planos
                   </button>
-                  <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest text-center">O cancelamento é processado via suporte humano para garantir a segurança dos seus dados.</p>
                 </div>
               </div>
             )}
