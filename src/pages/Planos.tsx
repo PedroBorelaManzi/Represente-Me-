@@ -34,7 +34,7 @@ const plans = [
   {
     id: 'exclusivo',
     name: 'Acesso Exclusivo',
-    basePrice: 0,
+    basePrice: 97,
     period: '/mês',
     description: 'Ideal para prospectadores e representações locais que estão começando a criar a carteira de vendas.',
     features: [
@@ -43,7 +43,7 @@ const plans = [
       { text: 'Lançamento manual de pedidos', icon: Check },
       { text: 'Indicadores básicos de faturamento', icon: Check }
     ],
-    buttonText: 'Começar Grátis',
+    buttonText: 'Assinar Exclusivo',
     featured: false,
     color: 'slate',
     icon: Trophy
@@ -70,7 +70,7 @@ const plans = [
   {
     id: 'master',
     name: 'Acesso Master',
-    basePrice: 297,
+    basePrice: 197,
     period: '/mês',
     description: 'A solução definitiva para grandes operações e gestão de múltiplas frentes de vendas.',
     features: [
@@ -167,7 +167,7 @@ export default function Planos() {
         {plans.map((plan, index) => {
           const PlanIcon = plan.icon;
           const isCurrentPlan = settings.plan_id === plan.id;
-          const currentMonthlyPrice = plan.basePrice === 0 ? 0 : plan.basePrice + activePeriod.priceMod;
+          const currentMonthlyPrice = plan.basePrice + activePeriod.priceMod;
           
           return (
             <motion.div
@@ -213,6 +213,17 @@ export default function Planos() {
                 </span>
                 <span className={cn("text-xs font-black uppercase tracking-widest", plan.featured ? "text-emerald-200" : "text-slate-400")}>{plan.period}</span>
               </div>
+
+              {/* Upsell for Master if current plan is Premium */}
+              {plan.id === 'master' && (
+                <div className={cn(
+                  "mb-8 p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-3",
+                  plan.featured ? "bg-white/10 border-white/20 text-white" : "bg-emerald-50 border-emerald-100 text-emerald-600"
+                )}>
+                  <Plus className="w-4 h-4" />
+                  Por apenas R$ 50 a mais/mês você obtém o Master
+                </div>
+              )}
 
               <div className="flex-1 space-y-6 mb-12">
                 {plan.features.map((feature, fIndex) => (
