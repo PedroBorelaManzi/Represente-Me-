@@ -92,7 +92,7 @@ export default function Login() {
 
           <div className="space-y-4 text-center">
             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
-              Acesse sua conta para gerenciar sua carteira
+              Acesse sua conta para gerenciar sua carteira de clientes
             </p>
           </div>
 
