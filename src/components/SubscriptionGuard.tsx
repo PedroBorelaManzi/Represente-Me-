@@ -64,7 +64,6 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
 
     return (
       <div className="fixed inset-0 z-[9999] bg-white dark:bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
-        {/* ... (resto do layout da tela de bloqueio permanece o mesmo) ... */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20 dark:opacity-10">
           <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-red-400 rounded-full blur-[120px]" />
           <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-amber-400 rounded-full blur-[120px]" />
@@ -83,11 +82,6 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
               <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] leading-relaxed">
                 Identificamos uma pendência no seu pagamento recorrente. Seus dados estão salvos e seguros, mas o acesso ao painel foi temporariamente bloqueado.
               </p>
-              <div className="py-2 px-4 bg-amber-100 dark:bg-amber-500/20 rounded-xl border border-amber-200 dark:border-amber-500/30">
-                <p className="text-[9px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">
-                  ⚠️ Taxa de Reativação: R$ 30,00 aplicada à mensalidade
-                </p>
-              </div>
             </div>
 
             <div className="space-y-3">
@@ -118,7 +112,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
           </div>
 
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-            Assim que o pagamento da fatura com multa for identificado, seu acesso será liberado automaticamente.
+            Assim que o pagamento da fatura for identificado, seu acesso será liberado automaticamente.
           </p>
         </div>
       </div>
