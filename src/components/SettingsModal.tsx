@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   X, 
   User, 
@@ -60,22 +60,20 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [tempAvatar, setTempAvatar] = useState<string | null>(null);
   const [is2FASetup, setIs2FASetup] = useState(false);
 
+  // Sync temp avatar with settings
+  useEffect(() => {
+    if (settings.avatar_url) {
+      setTempAvatar(settings.avatar_url);
+    }
+  }, [settings.avatar_url]);
+
   if (!isOpen) return null;
 
   const toggleTheme = async () => {
     const newTheme = settings.theme === 'dark' ? 'light' : 'dark';
-    // Immediate local feedback
-    const root = document.documentElement;
-    if (newTheme === 'dark') {
-      root.classList.add('dark');
-      root.style.colorScheme = 'dark';
-    } else {
-      root.classList.remove('dark');
-      root.style.colorScheme = 'light';
-    }
-    
     try {
       await updateSettings({ theme: newTheme });
+      toast.success(`Modo ${newTheme === 'dark' ? 'escuro' : 'claro'} ativado!`);
     } catch (err) {
       toast.error("Erro ao salvar tema");
     }
@@ -85,22 +83,52 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     fileInputRef.current?.click();
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (limit to 2MB for base64 storage)
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("A imagem deve ter menos de 2MB");
+        return;
+      }
+
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setTempAvatar(reader.result as string);
-        toast.success("Foto de perfil atualizada!");
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+        setTempAvatar(base64);
+        try {
+          await updateSettings({ avatar_url: base64 });
+          toast.success("Foto de perfil atualizada!");
+        } catch (err) {
+          toast.error("Erro ao salvar foto de perfil");
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
   const planInfo = {
-    exclusivo: { name: 'Exclusivo', icon: Trophy, color: 'text-slate-400', bg: 'bg-slate-50', border: 'border-slate-100' },
-    premium: { name: 'Premium', icon: Gem, color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-    master: { name: 'Master', icon: Crown, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100' }
+    exclusivo: { 
+      name: 'Exclusivo', 
+      icon: Trophy, 
+      color: 'text-slate-400 dark:text-slate-300', 
+      bg: 'bg-slate-50 dark:bg-zinc-800/50', 
+      border: 'border-slate-100 dark:border-zinc-800' 
+    },
+    premium: { 
+      name: 'Premium', 
+      icon: Gem, 
+      color: 'text-emerald-500 dark:text-emerald-400', 
+      bg: 'bg-emerald-50 dark:bg-emerald-950/20', 
+      border: 'border-emerald-100 dark:border-emerald-900/30' 
+    },
+    master: { 
+      name: 'Master', 
+      icon: Crown, 
+      color: 'text-amber-500 dark:text-amber-400', 
+      bg: 'bg-amber-50 dark:bg-amber-950/20', 
+      border: 'border-amber-100 dark:border-amber-900/30' 
+    }
   };
 
   const currentPlan = planInfo[settings.plan_id as keyof typeof planInfo] || planInfo.exclusivo;
@@ -174,9 +202,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <div className="flex items-center gap-8">
                     <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
                       {tempAvatar ? (
-                        <img src={tempAvatar} alt="Profile" className="w-24 h-24 rounded-full object-cover shadow-xl group-hover:scale-105 transition-transform" />
+                        <img src={tempAvatar} alt="Profile" className="w-24 h-24 rounded-full object-cover shadow-xl group-hover:scale-105 transition-transform border-4 border-emerald-500/20" />
                       ) : (
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-3xl font-black shadow-xl group-hover:scale-105 transition-transform">
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-3xl font-black shadow-xl group-hover:scale-105 transition-transform border-4 border-emerald-500/20">
                           {user?.email?.[0].toUpperCase()}
                         </div>
                       )}
@@ -247,11 +275,17 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Alterar entre modo claro e escuro</p>
                         </div>
                       </div>
+                      
+                      {/* Fixed Toggle Switch */}
                       <div className={cn(
-                        "w-12 h-6 rounded-full p-1 transition-all flex items-center",
-                        settings.theme === 'dark' ? "bg-emerald-500 justify-end" : "bg-slate-200 justify-start"
+                        "w-14 h-7 rounded-full p-1 transition-colors duration-300 relative",
+                        settings.theme === 'dark' ? "bg-emerald-500" : "bg-slate-300"
                       )}>
-                        <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
+                        <motion.div 
+                          animate={{ x: settings.theme === 'dark' ? 28 : 0 }}
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          className="w-5 h-5 rounded-full bg-white shadow-lg" 
+                        />
                       </div>
                     </button>
                   </div>
@@ -330,7 +364,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           onClick={() => setIs2FASetup(!is2FASetup)}
                           className={cn(
                             "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                            is2FASetup ? "bg-red-50 text-red-500" : "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
+                            is2FASetup ? "bg-red-50 dark:bg-red-900/20 text-red-500" : "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20"
                           )}
                         >
                           {is2FASetup ? "Desativar" : "Configurar"}
@@ -348,12 +382,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                               <QrCode className="w-32 h-32 text-slate-900 dark:text-white" />
                             </div>
                             <div className="space-y-4 flex-1">
-                              <p className="text-[10px] font-bold text-slate-500 uppercase leading-relaxed">
+                              <p className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 uppercase leading-relaxed">
                                 Escaneie o QR Code acima com seu app de autenticação (Google Authenticator ou Authy) para ativar o 2FA.
                               </p>
                               <div className="flex gap-2">
                                 <input type="text" placeholder="Código de 6 dígitos" className="flex-1 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold outline-none" />
-                                <button className="bg-slate-900 text-white px-6 rounded-xl text-[10px] font-black uppercase tracking-widest">Validar</button>
+                                <button className="bg-slate-900 dark:bg-emerald-600 text-white px-6 rounded-xl text-[10px] font-black uppercase tracking-widest">Validar</button>
                               </div>
                             </div>
                           </div>
@@ -386,7 +420,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             <currentPlan.icon className={cn("w-10 h-10", currentPlan.color)} />
                           </div>
                           <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Plano Atual</p>
+                            <p className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.3em]">Plano Atual</p>
                             <h3 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase">Acesso {currentPlan.name}</h3>
                           </div>
                        </div>
@@ -396,8 +430,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             { label: 'Status', value: 'Ativo', icon: CheckCircle2, color: 'text-emerald-500' },
                             { label: 'Renovação', value: 'Mensal', icon: TrendingUp, color: 'text-blue-500' }
                           ].map((stat, i) => (
-                            <div key={i} className="p-4 bg-white/50 dark:bg-zinc-900/50 rounded-2xl border border-white/20">
-                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                            <div key={i} className="p-4 bg-white/50 dark:bg-zinc-900/50 rounded-2xl border border-white/20 dark:border-zinc-800">
+                              <p className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1">{stat.label}</p>
                               <div className="flex items-center gap-2">
                                 <stat.icon className={cn("w-3 h-3", stat.color)} />
                                 <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{stat.value}</span>
@@ -407,14 +441,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                        </div>
 
                        <div className="space-y-3">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Seus Benefícios</p>
+                          <p className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4">Seus Benefícios</p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {settings.plan_id === 'exclusivo' && [
                               { text: '1 Empresa Cadastrada', icon: Building2 },
                               { text: 'Mapa e CRM Básico', icon: MapIcon },
                               { text: 'Lançamento Manual', icon: Plus }
                             ].map((b, i) => (
-                              <div key={i} className="flex items-center gap-3 text-slate-600 dark:text-zinc-400">
+                              <div key={i} className="flex items-center gap-3 text-slate-600 dark:text-zinc-300">
                                 <b.icon className="w-3.5 h-3.5" />
                                 <span className="text-[9px] font-black uppercase tracking-tight">{b.text}</span>
                               </div>
@@ -425,7 +459,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                               { text: 'IA Gemini Pro 1.5', icon: Sparkles },
                               { text: 'Suporte Prioritário', icon: MessageCircle }
                             ].map((b, i) => (
-                              <div key={i} className="flex items-center gap-3 text-slate-600 dark:text-zinc-400">
+                              <div key={i} className="flex items-center gap-3 text-slate-600 dark:text-zinc-300">
                                 <b.icon className="w-3.5 h-3.5" />
                                 <span className="text-[9px] font-black uppercase tracking-tight">{b.text}</span>
                               </div>
@@ -440,15 +474,15 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <motion.div 
                       initial={{ scale: 0.95, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="p-8 rounded-[32px] bg-amber-50 border border-amber-100 flex flex-col md:flex-row items-center justify-between gap-6"
+                      className="p-8 rounded-[32px] bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 flex flex-col md:flex-row items-center justify-between gap-6"
                     >
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-amber-400 rounded-2xl text-white">
                           <Crown className="w-6 h-6" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Oportunidade de Upgrade</p>
-                          <h4 className="text-lg font-black text-amber-900 uppercase tracking-tight">Vá para o plano Master por apenas +R$ 50/mês</h4>
+                          <p className="text-[10px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-widest">Oportunidade de Upgrade</p>
+                          <h4 className="text-lg font-black text-amber-900 dark:text-amber-100 uppercase tracking-tight">Vá para o plano Master por apenas +R$ 50/mês</h4>
                         </div>
                       </div>
                       <button 
@@ -466,7 +500,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         onClose();
                         setTimeout(() => navigate('/planos'), 100);
                       }}
-                      className="w-full py-6 rounded-[32px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase text-[11px] tracking-[0.2em] flex items-center justify-center gap-4 group"
+                      className="w-full py-6 rounded-[32px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase text-[11px] tracking-[0.2em] flex items-center justify-center gap-4 group shadow-xl shadow-slate-900/10 dark:shadow-none"
                     >
                       Ver todos os planos <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
                     </button>
