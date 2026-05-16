@@ -15,7 +15,8 @@ import {
   Gem,
   X,
   MessageCircle,
-  ShieldAlert
+  ShieldAlert,
+  Percent
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useSettings } from '../contexts/SettingsContext';
@@ -24,9 +25,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const planPeriods = [
-  { id: 'MONTHLY', label: 'Mensal', priceMod: 20 },
-  { id: 'SEMIANNUAL', label: 'Semestral', priceMod: 10, discount: 'Economia de 40%' },
-  { id: 'ANNUAL', label: 'Anual', priceMod: 0, discount: 'Melhor Preço!' }
+  { id: 'MONTHLY', label: 'Mensal', priceMod: 20, description: 'Sem compromisso' },
+  { id: 'SEMIANNUAL', label: 'Semestral', priceMod: 10, discount: 'Economia de R$ 60' },
+  { id: 'ANNUAL', label: 'Anual', priceMod: 0, discount: 'Economia de R$ 240', featured: true }
 ];
 
 const plans = [
@@ -105,7 +106,7 @@ export default function Planos() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-3 px-6 py-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-black uppercase tracking-[0.2em] mb-8 border border-emerald-100 dark:border-emerald-900/40"
+          className="inline-flex items-center gap-3 px-6 py-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-black uppercase tracking-[0.2em] mb-8 border border-emerald-100 dark:border-emerald-900/40 shadow-sm"
         >
           <Sparkles className="w-5 h-5 fill-current" /> Ecossistema & Investimento
         </motion.div>
@@ -118,15 +119,15 @@ export default function Planos() {
         </p>
       </div>
 
-      {/* Period Selector */}
-      <div className="flex justify-center -mt-10">
+      {/* Period Selector with emphasis on Annual */}
+      <div className="flex flex-col items-center gap-4 -mt-10">
         <div className="bg-white dark:bg-zinc-900 p-2 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-xl flex gap-2">
           {planPeriods.map((period) => (
             <button
               key={period.id}
               onClick={() => setSelectedPeriod(period.id)}
               className={cn(
-                "px-8 py-4 rounded-[24px] text-[10px] font-black uppercase tracking-widest transition-all",
+                "px-8 py-4 rounded-[24px] text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden",
                 selectedPeriod === period.id
                   ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
                   : "text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"
@@ -135,21 +136,38 @@ export default function Planos() {
               {period.label}
               {period.discount && (
                 <span className={cn(
-                  "block text-[8px] opacity-60 mt-1",
+                  "block text-[8px] opacity-80 mt-1 font-black",
                   selectedPeriod === period.id ? "text-white" : "text-emerald-500"
                 )}>
                   {period.discount}
                 </span>
               )}
+              {period.featured && (
+                <div className="absolute top-0 right-0 p-1">
+                  <Star className={cn("w-2 h-2 fill-current", selectedPeriod === period.id ? "text-white" : "text-emerald-500")} />
+                </div>
+              )}
             </button>
           ))}
         </div>
+        
+        {selectedPeriod === 'ANNUAL' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-xl text-[9px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-500/20 shadow-sm"
+          >
+            <Percent className="w-3 h-3" />
+            Economia Real: R$ 240,00 por ano no plano anual
+          </motion.div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-7xl mx-auto w-full">
         {plans.map((plan, index) => {
           const PlanIcon = plan.icon;
           const isCurrentPlan = settings.plan_id === plan.id;
+          const currentMonthlyPrice = plan.basePrice === 0 ? 0 : plan.basePrice + activePeriod.priceMod;
           
           return (
             <motion.div
@@ -160,7 +178,7 @@ export default function Planos() {
               className={cn(
                 "relative flex flex-col p-12 rounded-[56px] border transition-all duration-700 hover:scale-[1.02]",
                 plan.featured 
-                  ? "bg-emerald-600 border-emerald-700 shadow-[0_48px_96px_-24px_rgba(99,102,241,0.4)] dark:shadow-none translate-y-[-20px]" 
+                  ? "bg-emerald-600 border-emerald-700 shadow-[0_48px_96px_-24px_rgba(16,185,129,0.4)] dark:shadow-none translate-y-[-20px]" 
                   : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 shadow-2xl"
               )}
             >
@@ -191,7 +209,7 @@ export default function Planos() {
               <div className="flex items-baseline gap-2 mb-12">
                 <span className={cn("text-xs font-black uppercase tracking-widest", plan.featured ? "text-emerald-200" : "text-slate-400")}>R$</span>
                 <span className={cn("text-7xl font-black tracking-tighter", plan.featured ? "text-white" : "text-slate-900 dark:text-white")}>
-                  {plan.basePrice === 0 ? 0 : plan.basePrice + activePeriod.priceMod}
+                  {currentMonthlyPrice}
                 </span>
                 <span className={cn("text-xs font-black uppercase tracking-widest", plan.featured ? "text-emerald-200" : "text-slate-400")}>{plan.period}</span>
               </div>
