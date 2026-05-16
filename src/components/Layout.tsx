@@ -120,39 +120,15 @@ export default function Layout() {
                 
                 <div className='space-y-1'>
                   <button
-                    onClick={() => toggleSubMenu('settings')}
+                    onClick={() => setIsSettingsModalOpen(true)}
                     className={cn(
-                      "flex items-center justify-between w-full px-4 py-3.5 rounded-2xl transition-all duration-300 text-slate-500 dark:text-zinc-400 hover:text-emerald-600 hover:bg-slate-50 dark:hover:bg-zinc-850",
-                      activeSubMenu === 'settings' && "text-emerald-600 bg-slate-50 dark:bg-zinc-850"
+                      "flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl transition-all duration-300 text-slate-500 dark:text-zinc-400 hover:text-emerald-600 hover:bg-slate-50 dark:hover:bg-zinc-850",
+                      isSettingsModalOpen && "text-emerald-600 bg-slate-50 dark:bg-zinc-850"
                     )}
                   >
-                    <div className='flex items-center gap-4'>
-                      <Settings className='w-5 h-5' />
-                      <span className="text-[13px] font-bold uppercase tracking-tight">Configurações</span>
-                    </div>
-                    <ChevronDown className={cn("w-4 h-4 transition-transform", activeSubMenu === 'settings' && "rotate-180")} />
+                    <Settings className='w-5 h-5' />
+                    <span className="text-[13px] font-bold uppercase tracking-tight">Configurações</span>
                   </button>
-                  
-                  <AnimatePresence>
-                    {activeSubMenu === 'settings' && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className='overflow-hidden pl-8 space-y-1'
-                      >
-                        <button onClick={() => { setSettingsInitialStep(1); setIsSettingsModalOpen(true); }} className='flex items-center w-full px-3 py-2 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-emerald-600 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-850 transition-colors'>
-                          <Bell className='w-3.5 h-3.5 mr-2' /> Configurar Acompanhamentos
-                        </button>
-                        <button onClick={() => { setSettingsInitialStep(2); setIsSettingsModalOpen(true); }} className='flex items-center w-full px-3 py-2 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-emerald-600 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-850 transition-colors'>
-                          <Palette className='w-3.5 h-3.5 mr-2' /> Escolher Temas
-                        </button>
-                        <button onClick={() => { setSettingsInitialStep(3); setIsSettingsModalOpen(true); }} className='flex items-center w-full px-3 py-2 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:text-emerald-600 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-850 transition-colors'>
-                          <Shield className='w-3.5 h-3.5 mr-2' /> Minha Assinatura
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
 
                 <button onClick={() => signOut()} className="flex items-center gap-4 w-full px-4 py-3.5 mt-2 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-300">
@@ -176,7 +152,7 @@ export default function Layout() {
           </div>
         </aside>
 
-        <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} initialStep={settingsInitialStep} />
+        <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
 
         <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
           <header className="lg:hidden h-20 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between px-6 flex-shrink-0">
