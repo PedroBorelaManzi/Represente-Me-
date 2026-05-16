@@ -5,7 +5,7 @@ import {
   ShieldCheck, CreditCard, QrCode, FileText, Lock, CheckCircle2, 
   ArrowLeft, ChevronRight, Info, Zap, Shield, Plus, Loader2, Ticket, Eye, EyeOff,
   AlertCircle, XCircle, CheckCircle, Percent, Calendar, ShieldAlert, Star,
-  Crown, Gem, Trophy, Sparkles, TrendingUp
+  Crown, Gem, Trophy, Sparkles, TrendingUp, User
 } from "lucide-react";
 import { cn } from '../lib/utils';
 import { Logo } from '../components/Logo';
@@ -14,7 +14,7 @@ import { supabase } from "../lib/supabase";
 
 const plans = {
   exclusivo: { id: 'exclusivo', name: 'Exclusivo', base: 97, icon: Trophy, color: 'text-slate-400' },
-  premium: { id: 'premium', name: 'Premium', base: 147, icon: Gem, color: 'text-emerald-500' },
+  profissional: { id: 'profissional', name: 'Profissional', base: 147, icon: Gem, color: 'text-emerald-500' },
   master: { id: 'master', name: 'Master', base: 197, icon: Crown, color: 'text-amber-500' }
 };
 
@@ -38,9 +38,14 @@ function Requirement({ label, met }: { label: string; met: boolean }) {
 export default function Checkout() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const planId = searchParams.get("plan") || "premium";
+  const rawPlanId = searchParams.get("plan")?.toLowerCase() || "profissional";
   const periodParam = searchParams.get("period") || "ANNUAL";
-  const [selectedPlan] = useState<any>(plans[planId as keyof typeof plans] || plans.premium);
+  
+  // Normalize planId (handle legacy 'premium' or other variations)
+  let planId = rawPlanId;
+  if (planId === 'premium') planId = 'profissional';
+  
+  const [selectedPlan] = useState<any>(plans[planId as keyof typeof plans] || plans.profissional);
   
   const [billingCycle, setBillingCycle] = useState<any>(periodParam);
   const [paymentMethod, setPaymentMethod] = useState<'CREDIT_CARD' | 'PIX' | 'BOLETO'>('CREDIT_CARD');
@@ -137,7 +142,7 @@ export default function Checkout() {
 
       const { data, error } = await supabase.functions.invoke('process-checkout', {
         body: {
-          userId: authData.user?.id,
+          userId: authData?.user?.id,
           planId: selectedPlan.id,
           billingCycle,
           paymentMethod,
@@ -187,7 +192,7 @@ export default function Checkout() {
             <button onClick={() => navigate(-1)} className="p-3 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-2xl transition-all text-slate-400 active:scale-90">
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <Logo size="sm" showText />
+            <Logo size="sm" showText variant="light" />
           </div>
           
           <div className="hidden md:flex items-center gap-8">
@@ -246,7 +251,7 @@ export default function Checkout() {
                     className={cn(
                       "relative p-6 rounded-[32px] border transition-all duration-500 text-left group overflow-hidden",
                       billingCycle === cycle.id 
-                        ? `bg-${cycle.color}-600 border-${cycle.color}-700 shadow-2xl shadow-${cycle.color}-500/30 scale-[1.02]` 
+                        ? (cycle.color === 'emerald' ? "bg-emerald-600 border-emerald-700 shadow-2xl shadow-emerald-500/30 scale-[1.02]" : (cycle.color === 'blue' ? "bg-blue-600 border-blue-700 shadow-2xl shadow-blue-500/30 scale-[1.02]" : "bg-slate-900 border-slate-900 shadow-2xl shadow-slate-500/30 scale-[1.02]"))
                         : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 hover:border-emerald-500/50"
                     )}
                   >
@@ -300,7 +305,7 @@ export default function Checkout() {
                     <div className="space-y-2 relative z-10">
                       <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Crie sua Conta</h3>
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                        Acesse seu painel agentic instantaneamente
+                        Acesse seu painel corporativo instantaneamente
                       </p>
                     </div>
 
@@ -449,12 +454,6 @@ export default function Checkout() {
                         ← Revisar Dados Cadastrais
                       </button>
                     </div>
-                    
-                    <div className="pt-12 border-t border-slate-100 dark:border-zinc-800 flex flex-wrap justify-center gap-10 opacity-30 grayscale group-hover:grayscale-0 transition-all">
-                       <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-4" />
-                       <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-8" />
-                       <img src="https://www.asaas.com/assets/img/logo-asaas.svg" alt="Asaas" className="h-5" />
-                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -536,13 +535,6 @@ export default function Checkout() {
                     Satisfação Garantida: Experimente por 7 dias com reembolso integral caso não se adapte.
                   </p>
                 </div>
-              </div>
-              
-              <div className="flex flex-col items-center gap-4 py-8">
-                 <div className="flex items-center gap-4 opacity-40">
-                   <Lock className="w-3 h-3" />
-                   <p className="text-[8px] font-black uppercase tracking-[0.5em]">Dados protegidos por AES-256</p>
-                 </div>
               </div>
             </div>
           </div>
