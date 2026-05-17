@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem('has_completed_onboarding');
-    localStorage.removeItem('theme');
+    // Removed: localStorage.removeItem('theme'); so device remembers theme
   };
 
   return (
