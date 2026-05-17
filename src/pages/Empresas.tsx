@@ -503,7 +503,7 @@ export default function EmpresasPage() {
               ) : (
                 filteredOrders.map(order => (
                   <div key={order.id} className="bg-white dark:bg-zinc-900 p-6 md:p-9 rounded-[32px] md:rounded-[45px] border border-slate-100 dark:border-zinc-800 hover:border-slate-200 dark:hover:border-zinc-700 hover:shadow-xl transition-all group relative overflow-hidden active:scale-[0.98]">
-                    <div className="absolute top-0 right-0 w-32 md:w-40 h-32 md:h-40 bg-emerald-600/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
+                    
                     
                     <div className="flex justify-between items-start mb-4 md:mb-6 relative z-10">
                       <div>
