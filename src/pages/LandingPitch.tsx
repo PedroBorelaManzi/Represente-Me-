@@ -73,7 +73,7 @@ const industries = [
 const faqs = [
   {
     question: "Como funciona a garantia de 7 dias?",
-    answer: "Você pode começar seu teste de 7 dias sem cadastrar cartão de crédito. Além disso, após a assinatura, você tem mais 7 dias de garantia incondicional: se não se adaptar à ferramenta por qualquer motivo, nós reembolsamos 100% do seu investimento."
+    answer: "Você pode começar seu teste de 7 dias de forma simples. Além disso, após a assinatura, você tem mais 7 dias de garantia incondicional: se não se adaptar à ferramenta por qualquer motivo, nós reembolsamos 100% do seu investimento."
   },
   {
     question: "Posso mudar de plano a qualquer momento?",
@@ -177,14 +177,11 @@ export default function LandingPitch() {
             <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-12">
               Domine sua carteira de clientes e recupere horas preciosas do seu dia. Nossa inteligência avançada gerencia a memória da sua operação, antecipando necessidades e garantindo controle total para que nenhum pedido ou cliente fique para trás — além de diversas outras ferramentas que te ajudarão a vender mais e vender melhor!
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-              <div className="flex flex-col items-center gap-3 w-full sm:w-auto">
-                <Link to="/register" className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all  hover:-translate-y-1 flex items-center justify-center shadow-xl shadow-emerald-500/20">
-                  Teste grátis por 7 dias
-                </Link>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sem cartão de crédito • Cancele quando quiser</p>
-              </div>
-              <button className="w-full sm:w-auto px-10 py-5 rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest hover:border-slate-300 transition-all">
+            <div className='flex flex-col sm:flex-row items-center justify-center gap-5'>
+              <Link to='/register' className='w-full sm:w-auto px-10 h-[58px] rounded-2xl bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all hover:-translate-y-1 flex items-center justify-center shadow-xl shadow-emerald-500/20'>
+                Teste grátis por 7 dias
+              </Link>
+              <button className='w-full sm:w-auto px-10 h-[58px] rounded-2xl bg-white border border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest hover:border-slate-300 hover:bg-slate-50 transition-all hover:-translate-y-1 flex items-center justify-center'>
                 Ver Vídeo Explicativo
               </button>
             </div>
