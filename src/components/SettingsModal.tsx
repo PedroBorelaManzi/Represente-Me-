@@ -147,10 +147,36 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-5xl h-[85vh] bg-white dark:bg-zinc-900 rounded-[40px] shadow-2xl overflow-hidden border border-slate-200/50 dark:border-zinc-800/50 flex flex-col md:flex-row"
+        className="relative w-full max-w-5xl h-[90vh] md:h-[85vh] bg-white dark:bg-zinc-900 rounded-[32px] md:rounded-[40px] shadow-2xl overflow-hidden border border-slate-200/50 dark:border-zinc-800/50 flex flex-col md:flex-row"
       >
+        {/* Mobile Horizontal Menu */}
+        <div className="md:hidden flex flex-row overflow-x-auto gap-2 px-6 py-4 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50 sticky top-0 z-20 scrollbar-none shrink-0">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-full transition-all shrink-0 text-[10px] font-black uppercase tracking-widest",
+                activeTab === item.id 
+                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20" 
+                  : "bg-white dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-slate-100 dark:border-zinc-700/50"
+              )}
+            >
+              <item.icon className="w-3.5 h-3.5" />
+              <span>{item.label}</span>
+            </button>
+          ))}
+          
+          <button 
+            onClick={() => signOut()}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-red-50 dark:bg-red-500/10 text-red-500 border border-red-100 dark:border-red-950/20 transition-all shrink-0 text-[10px] font-black uppercase tracking-widest"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sair</span>
+          </button>
+        </div>
         {/* Sidebar */}
-        <div className="w-full md:w-80 bg-slate-50/50 dark:bg-zinc-950/50 border-r border-slate-100 dark:border-zinc-800 p-8 flex flex-col gap-8">
+        <div className="hidden md:flex w-full md:w-80 bg-slate-50/50 dark:bg-zinc-950/50 border-r border-slate-100 dark:border-zinc-800 p-8 flex-col gap-8">
           <div className="flex items-center gap-4 px-2">
             <Logo size="sm" showText />
           </div>
@@ -188,7 +214,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 p-5 md:p-12 overflow-y-auto custom-scrollbar">
           <div className="max-w-2xl mx-auto space-y-12">
             <AnimatePresence mode="wait">
               {activeTab === 'profile' && (
@@ -199,7 +225,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-10"
                 >
-                  <div className="flex items-center gap-8">
+                  <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8 text-center md:text-left">
                     <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
                       {tempAvatar ? (
                         <img src={tempAvatar} alt="Profile" className="w-24 h-24 rounded-full object-cover shadow-xl group-hover:scale-105 transition-transform border-4 border-emerald-500/20" />
@@ -223,7 +249,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       />
                     </div>
                     <div>
-                      <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Configurações de Perfil</h2>
+                      <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Configurações de Perfil</h2>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{user?.email}</p>
                     </div>
                   </div>
@@ -234,7 +260,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <input 
                         type="text" 
                         value={user?.user_metadata?.full_name || ''} 
-                        className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                        className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-4 md:px-6 py-3.5 md:py-4 text-xs md:text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
                         placeholder="Seu Nome"
                       />
                     </div>
@@ -259,12 +285,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-8"
                 >
-                  <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Personalização</h2>
+                  <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Personalização</h2>
                   
                   <div className="space-y-4">
                     <button 
                       onClick={toggleTheme}
-                      className="w-full flex items-center justify-between p-6 rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 hover:scale-[1.02] transition-all group"
+                      className="w-full flex items-center justify-between p-4 md:p-6 rounded-2xl md:rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 hover:scale-[1.02] transition-all group"
                     >
                       <div className="flex items-center gap-6">
                         <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm">
@@ -300,14 +326,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-8"
                 >
-                  <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Notificações</h2>
+                  <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Notificações</h2>
                   <div className="space-y-4">
                     {[
                       { title: 'Notificações por E-mail', desc: 'Receba alertas de inatividade e relatórios por e-mail', icon: Globe },
                       { title: 'Notificações Push', desc: 'Alertas em tempo real no seu navegador', icon: Smartphone },
                       { title: 'Lembretes de Agenda', desc: 'Avisos sobre seus compromissos e reuniões', icon: Bell }
                     ].map((item, i) => (
-                      <div key={i} className="flex items-center justify-between p-6 rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800">
+                      <div key={i} className="flex items-center justify-between p-4 md:p-6 rounded-2xl md:rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800">
                         <div className="flex items-center gap-6">
                           <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm text-amber-500">
                             <item.icon className="w-6 h-6" />
@@ -334,9 +360,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-8"
                 >
-                  <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Segurança</h2>
+                  <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Segurança</h2>
                   <div className="space-y-4">
-                    <button className="w-full flex items-center justify-between p-6 rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 hover:scale-[1.02] transition-all group">
+                    <button className="w-full flex items-center justify-between p-4 md:p-6 rounded-2xl md:rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 hover:scale-[1.02] transition-all group">
                       <div className="flex items-center gap-6">
                         <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm text-red-500">
                           <Shield className="w-6 h-6" />
@@ -349,7 +375,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <ChevronRight className="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform" />
                     </button>
 
-                    <div className="p-8 rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 space-y-6">
+                    <div className="p-5 md:p-8 rounded-2xl md:rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 space-y-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-6">
                           <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm text-blue-500">
@@ -407,13 +433,13 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   className="space-y-10"
                 >
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Sua Assinatura</h2>
+                    <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Sua Assinatura</h2>
                     <div className={cn("px-6 py-2 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] shadow-sm", currentPlan.bg, currentPlan.border, currentPlan.color)}>
                       {currentPlan.name}
                     </div>
                   </div>
 
-                  <div className={cn("p-10 rounded-[48px] border relative overflow-hidden", currentPlan.bg, currentPlan.border)}>
+                  <div className={cn("p-6 md:p-10 rounded-3xl md:rounded-[48px] border relative overflow-hidden", currentPlan.bg, currentPlan.border)}>
                     <div className="relative z-10 space-y-8">
                        <div className="flex items-center gap-6">
                           <div className="p-5 bg-white dark:bg-zinc-900 rounded-[28px] shadow-sm">
@@ -474,7 +500,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     <motion.div 
                       initial={{ scale: 0.95, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="p-8 rounded-[32px] bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 flex flex-col md:flex-row items-center justify-between gap-6"
+                      className="p-5 md:p-8 rounded-2xl md:rounded-[32px] bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 flex flex-col md:flex-row items-center justify-between gap-6"
                     >
                       <div className="flex items-center gap-4">
                         <div className="p-3 bg-amber-400 rounded-2xl text-white">
@@ -500,7 +526,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         onClose();
                         setTimeout(() => navigate('/planos'), 100);
                       }}
-                      className="w-full py-6 rounded-[32px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase text-[11px] tracking-[0.2em] flex items-center justify-center gap-4 group shadow-xl shadow-slate-900/10 dark:shadow-none"
+                      className="w-full py-4 md:py-6 rounded-2xl md:rounded-[32px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black uppercase text-[11px] tracking-[0.2em] flex items-center justify-center gap-4 group shadow-xl shadow-slate-900/10 dark:shadow-none"
                     >
                       Ver todos os planos <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
                     </button>
@@ -511,12 +537,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
         </div>
 
-        {/* Close Button */}
+        {/* Floating Glassmorphism Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-8 right-8 p-3 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-all text-slate-400"
+          className="absolute top-4 right-4 md:top-8 md:right-8 z-30 p-2 md:p-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-all text-slate-400 border border-slate-100 dark:border-zinc-800/50 shadow-md"
         >
-          <X className="w-6 h-6" />
+          <X className="w-5 h-5 md:w-6 md:h-6" />
         </button>
       </motion.div>
     </div>
