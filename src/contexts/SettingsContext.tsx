@@ -159,16 +159,16 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  useEffect(() => {
+    useEffect(() => {
     const root = document.documentElement;
-    if (settings.theme === 'dark') {
+    if (settings.theme === 'dark' && isDashboard) {
       root.classList.add('dark');
       root.style.colorScheme = 'dark';
     } else {
       root.classList.remove('dark');
       root.style.colorScheme = 'light';
     }
-  }, [settings.theme]);
+  }, [settings.theme, isDashboard]);
 
   return (
     <SettingsContext.Provider value={{ settings, loading, updateSettings }}>
