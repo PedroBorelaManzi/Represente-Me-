@@ -107,13 +107,13 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           critico_days: data.critico_days ?? defaultSettings.critico_days,
           perda_days: data.perda_days ?? defaultSettings.perda_days,
           inativo_days: data.inativo_days ?? defaultSettings.inativo_days,
-          theme: (data.theme as 'light' | 'dark') ?? defaultSettings.theme,
+          theme: (data.theme as 'light' | 'dark') || (localStorage.getItem('theme') as 'light' | 'dark') || defaultSettings.theme,
           has_completed_onboarding: hasCompleted,
           categories: categories,
           revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
           subscription_status: subStatus,
           plan_id: data.plan_id || 'exclusivo',
-          avatar_url: data.avatar_url,
+          avatar_url: user?.user_metadata?.avatar_url || data.avatar_url,
         });
       } else {
         setSettings(defaultSettings);
