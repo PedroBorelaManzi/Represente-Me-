@@ -1,42 +1,39 @@
 const fs = require('fs');
-const file = 'src/contexts/SettingsContext.tsx';
-let content = fs.readFileSync(file, 'utf8');
+let content = fs.readFileSync('src/contexts/SettingsContext.tsx', 'utf8');
 
 content = content.replace(
-  'avatar_url: data.avatar_url,',
-  'avatar_url: user?.user_metadata?.avatar_url || data.avatar_url,'
+  'import { supabase } from "../lib/supabase";',
+  'import { supabase } from "../lib/supabase";\nimport { useLocation } from "react-router-dom";'
 );
 
-let old_upsert = '    const { error } = await supabase\n' +
-'      .from("user_settings")\n' +
-'      .upsert({\n' +
-'        user_id: user.id,\n' +
-'        ...updated,\n' +
-'        updated_at: new Date().toISOString(),\n' +
-'      }, { onConflict: \'user_id\' });';
+content = content.replace(
+  'const { user } = useAuth();',
+  'const { user } = useAuth();\n  const location = useLocation();\n  const isDashboard = location.pathname.startsWith("/dashboard");'
+);
 
-let new_upsert = '    if (newSettings.avatar_url !== undefined) {\n' +
-'      await supabase.auth.updateUser({\n' +
-'        data: { avatar_url: newSettings.avatar_url }\n' +
-'      });\n' +
+let effectString = '  useEffect(() => {\n' +
+'    const root = document.documentElement;\n' +
+'    if (settings.theme === \'dark\') {\n' +
+'      root.classList.add(\'dark\');\n' +
+'      root.style.colorScheme = \'dark\';\n' +
+'    } else {\n' +
+'      root.classList.remove(\'dark\');\n' +
+'      root.style.colorScheme = \'light\';\n' +
 '    }\n' +
-'\n' +
-'    const { avatar_url, ...dbSettings } = updated;\n' +
-'\n' +
-'    const { error } = await supabase\n' +
-'      .from("user_settings")\n' +
-'      .upsert({\n' +
-'        user_id: user.id,\n' +
-'        ...dbSettings,\n' +
-'        updated_at: new Date().toISOString(),\n' +
-'      }, { onConflict: \'user_id\' });';
+'  }, [settings.theme]);';
 
-content = content.replace(old_upsert, new_upsert);
+let newEffectString = '  useEffect(() => {\n' +
+'    const root = document.documentElement;\n' +
+'    if (settings.theme === \'dark\' && isDashboard) {\n' +
+'      root.classList.add(\'dark\');\n' +
+'      root.style.colorScheme = \'dark\';\n' +
+'    } else {\n' +
+'      root.classList.remove(\'dark\');\n' +
+'      root.style.colorScheme = \'light\';\n' +
+'    }\n' +
+'  }, [settings.theme, isDashboard]);';
 
-content = content.replace(
-  "theme: (data.theme as 'light' | 'dark') ?? defaultSettings.theme,",
-  "theme: (data.theme as 'light' | 'dark') || (localStorage.getItem('theme') as 'light' | 'dark') || defaultSettings.theme,"
-);
+content = content.replace(effectString, newEffectString);
 
-fs.writeFileSync(file, content);
-console.log('Updated SettingsContext.tsx');
+fs.writeFileSync('src/contexts/SettingsContext.tsx', content);
+console.log('SettingsContext.tsx updated');

@@ -28,9 +28,9 @@ export default function App() {
   return (
     <AuthProvider>
       <Toaster position="top-right" expand={false} richColors />
-      <SettingsProvider>
-        <UploadProvider>
-          <BrowserRouter>
+      <BrowserRouter>
+        <SettingsProvider>
+          <UploadProvider>
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path='/login' element={<Login />} />
@@ -63,9 +63,9 @@ export default function App() {
               
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </BrowserRouter>
-        </UploadProvider>
-      </SettingsProvider>
+          </UploadProvider>
+        </SettingsProvider>
+      </BrowserRouter>
     </AuthProvider>
   );
 }

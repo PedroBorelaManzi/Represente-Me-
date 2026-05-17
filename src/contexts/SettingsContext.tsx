@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { supabase } from "../lib/supabase";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
 export type SubscriptionStatus = 'active' | 'past_due' | 'inactive' | 'trialing';
@@ -59,6 +60,8 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   });
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const location = useLocation();
+  const isDashboard = location.pathname.startsWith("/dashboard");
 
   useEffect(() => {
     async function loadSettings() {
