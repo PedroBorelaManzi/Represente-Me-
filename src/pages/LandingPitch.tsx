@@ -73,7 +73,7 @@ const industries = [
 const faqs = [
   {
     question: "Como funciona a garantia de 7 dias?",
-    answer: "Você pode começar seu teste de 7 dias de forma simples. Além disso, após a assinatura, você tem mais 7 dias de garantia incondicional: se não se adaptar à ferramenta por qualquer motivo, nós reembolsamos 100% do seu investimento."
+    answer: "Você pode começar seu teste de 7 dias de forma simples. Se não se adaptar à ferramenta por qualquer motivo dentro desse período, nós reembolsamos 100% do seu investimento."
   },
   {
     question: "Posso mudar de plano a qualquer momento?",
