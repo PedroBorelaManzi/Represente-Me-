@@ -130,19 +130,54 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const updateSettings = async (newSettings: Partial<Settings>) => {
     if (!user) return;
     
-    // Update local state immediately for responsiveness
-    const updated = { ...settings, ...newSettings };
+    let avatarUrl = newSettings.avatar_url;
+
+    if (avatarUrl && avatarUrl.startsWith('data:')) {
+      try {
+        const arr = avatarUrl.split(',');
+        const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
+
+        const filePath = "avatars/" + user.id + ".png";
+        const { error: uploadError } = await supabase.storage
+          .from("client_vault")
+          .upload(filePath, blob, { 
+            contentType: mime,
+            upsert: true 
+          });
+
+        if (uploadError) {
+          console.error("Error uploading avatar:", uploadError);
+        } else {
+          const { data } = supabase.storage.from("client_vault").getPublicUrl(filePath);
+          avatarUrl = data.publicUrl;
+          
+          localStorage.setItem("avatar_" + user.id, avatarUrl);
+          
+          await supabase.auth.updateUser({
+            data: { avatar_url: avatarUrl }
+          });
+        }
+      } catch (e) {
+        console.error("Error processing avatar upload:", e);
+      }
+    }
+
+    const updated = { 
+      ...settings, 
+      ...newSettings,
+      ...(avatarUrl ? { avatar_url: avatarUrl } : {})
+    };
     setSettings(updated);
     
     if (newSettings.theme) {
       localStorage.setItem('theme', newSettings.theme);
-    }
-
-    if (newSettings.avatar_url !== undefined) {
-      localStorage.setItem(vatar_\, newSettings.avatar_url);
-      await supabase.auth.updateUser({
-        data: { avatar_url: newSettings.avatar_url }
-      });
     }
 
     const { avatar_url, ...dbSettings } = updated;
