@@ -144,7 +144,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         }
         const blob = new Blob([u8arr], { type: mime });
 
-        const filePath = "avatars/" + user.id + ".png";
+        const filePath = user.id + "/avatar.png";
         const { error: uploadError } = await supabase.storage
           .from("client_vault")
           .upload(filePath, blob, { 
