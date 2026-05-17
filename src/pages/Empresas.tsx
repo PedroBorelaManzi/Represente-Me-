@@ -447,7 +447,7 @@ export default function EmpresasPage() {
               onClick={() => setSelectedCategory("all")}
               className={cn("min-w-[220px] sm:min-w-[260px] lg:min-w-0 lg:w-full text-left p-4 sm:p-5 lg:p-7 rounded-[30px] md:rounded-[35px] border transition-all relative group overflow-hidden active:scale-[0.98]",
                 selectedCategory === "all" 
-                  ? "bg-slate-900 dark:bg-zinc-800 border-slate-900 text-white shadow-[0_20px_40px_rgba(0,0,0,0.1)]" 
+                  ? "bg-slate-900 dark:bg-zinc-900 border-slate-900 text-white shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:border-emerald-500/50 dark:shadow-[0_0_20px_rgba(16,185,129,0.3)]" 
                   : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-emerald-200 shadow-sm"
               )}
             >
@@ -467,7 +467,7 @@ export default function EmpresasPage() {
                   onClick={() => setSelectedCategory(cat)}
                   className={cn("cursor-pointer min-w-[180px] sm:min-w-[220px] lg:min-w-0 lg:w-full text-left p-4 sm:p-5 lg:p-6 rounded-[28px] md:rounded-[32px] border transition-all relative group overflow-hidden active:scale-[0.98]",
                     selectedCategory === cat
-                      ? "bg-slate-900 dark:bg-zinc-800 border-slate-900 text-white shadow-xl scale-[1.02]" 
+                      ? "bg-slate-900 dark:bg-zinc-900 border-slate-900 text-white shadow-xl scale-[1.02] dark:border-emerald-500/50 dark:shadow-[0_0_15px_rgba(16,185,129,0.3)]" 
                       : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-emerald-200"
                   )}
                 >
