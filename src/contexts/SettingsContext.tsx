@@ -116,7 +116,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
           subscription_status: subStatus,
           plan_id: data.plan_id || 'exclusivo',
-          avatar_url: user?.user_metadata?.avatar_url || data.avatar_url,
+          avatar_url: localStorage.getItem(vatar_\) || user?.user_metadata?.avatar_url || data.avatar_url,
         });
       } else {
         setSettings(defaultSettings);
@@ -139,6 +139,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (newSettings.avatar_url !== undefined) {
+      localStorage.setItem(vatar_\, newSettings.avatar_url);
       await supabase.auth.updateUser({
         data: { avatar_url: newSettings.avatar_url }
       });
