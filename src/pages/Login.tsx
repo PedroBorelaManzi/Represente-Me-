@@ -6,7 +6,8 @@ import {
   useMotionValueEvent 
 } from "framer-motion";
 import { 
-  Check, 
+  Check,
+  ArrowLeft, 
   Mail, 
   HelpCircle, 
   Building2, 
@@ -83,6 +84,7 @@ export default function Login() {
     <div className="min-h-screen bg-slate-50 flex items-stretch overflow-hidden font-sans">
       {/* Coluna Esquerda - Formulário */}
       <div className="w-full lg:w-[45%] bg-white p-8 md:p-16 lg:p-24 flex flex-col justify-center relative z-10 shadow-2xl">
+        <Link to="/" className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center justify-center p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-900 border border-slate-100/50 transition-all group z-50 hover:scale-105 active:scale-95 shadow-sm" title="Voltar para a página inicial"><ArrowLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" /></Link>
         <div className="max-w-md mx-auto w-full space-y-12">
           <div className="flex justify-center">
             <Link to="/">
