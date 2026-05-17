@@ -100,14 +100,14 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           }
         }
 
-        if (data.theme) localStorage.setItem('theme', data.theme);
+        // Not overwriting localStorage theme with DB theme to respect device preference
 
         setSettings({
           alerta_days: data.alerta_days ?? defaultSettings.alerta_days,
           critico_days: data.critico_days ?? defaultSettings.critico_days,
           perda_days: data.perda_days ?? defaultSettings.perda_days,
           inativo_days: data.inativo_days ?? defaultSettings.inativo_days,
-          theme: (data.theme as 'light' | 'dark') || (localStorage.getItem('theme') as 'light' | 'dark') || defaultSettings.theme,
+          theme: (localStorage.getItem('theme') as 'light' | 'dark') || (data.theme as 'light' | 'dark') || defaultSettings.theme,
           has_completed_onboarding: hasCompleted,
           categories: categories,
           revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
@@ -135,11 +135,19 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('theme', newSettings.theme);
     }
 
+    if (newSettings.avatar_url !== undefined) {
+      await supabase.auth.updateUser({
+        data: { avatar_url: newSettings.avatar_url }
+      });
+    }
+
+    const { avatar_url, ...dbSettings } = updated;
+
     const { error } = await supabase
       .from("user_settings")
       .upsert({
         user_id: user.id,
-        ...updated,
+        ...dbSettings,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
 
