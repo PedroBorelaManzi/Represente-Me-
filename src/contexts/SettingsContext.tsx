@@ -63,6 +63,11 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     async function loadSettings() {
       if (!user) {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setSettings({
+          ...defaultSettings,
+          theme: (savedTheme === 'dark' ? 'dark' : 'light'),
+        });
         setLoading(false);
         return;
       }

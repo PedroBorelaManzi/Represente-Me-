@@ -77,7 +77,7 @@ export default function Map() {
         if (ordersData) {
           const clientOrders = ordersData.filter(o => 
             o.client_id === client.id || 
-            (o.client?.cnpj && client.cnpj && o.client.cnpj.replace(/\D/g, "") === client.cnpj.replace(/\D/g, ""))
+            (((Array.isArray(o.client) ? o.client[0] : o.client) as any)?.cnpj && client.cnpj && ((Array.isArray(o.client) ? o.client[0] : o.client) as any).cnpj.replace(/\D/g, "") === client.cnpj.replace(/\D/g, ""))
           );
           clientOrders.forEach(order => {
             const catKey = normalize(order.category || "GERAL");
