@@ -119,7 +119,10 @@ export default function Layout() {
                 
                 <div className='space-y-1'>
                   <button
-                    onClick={() => setIsSettingsModalOpen(true)}
+                    onClick={() => {
+                      setIsSettingsModalOpen(true);
+                      setSidebarOpen(false);
+                    }}
                     className={cn(
                       "flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl transition-all duration-300 text-slate-500 dark:text-zinc-400 hover:text-emerald-600 hover:bg-slate-50 dark:hover:bg-zinc-800/30",
                       isSettingsModalOpen && "text-emerald-600 bg-slate-50 dark:bg-zinc-800/30"
