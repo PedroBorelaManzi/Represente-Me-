@@ -85,11 +85,11 @@ export default function Layout() {
                     {settings.avatar_url ? (
                       <img src={settings.avatar_url} alt="Perfil" className="w-full h-full object-cover" />
                     ) : (
-                      user?.email?.charAt(0).toUpperCase()
+                      (user?.user_metadata?.full_name || user?.email || 'R').charAt(0).toUpperCase()
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-black text-slate-900 dark:text-zinc-100 truncate uppercase">Representante</p>
+                    <p className="text-xs font-black text-slate-900 dark:text-zinc-100 truncate uppercase">{user?.user_metadata?.full_name || 'Representante'}</p>
                     <p className="text-[10px] font-medium text-slate-400 dark:text-zinc-400 truncate">{user?.email}</p>
                   </div>
                 </div>
@@ -181,7 +181,7 @@ export default function Layout() {
                   {settings.avatar_url ? (
                     <img src={settings.avatar_url} alt="Perfil" className="w-full h-full object-cover" />
                   ) : (
-                    user?.email?.charAt(0).toUpperCase()
+                    (user?.user_metadata?.full_name || user?.email || 'R').charAt(0).toUpperCase()
                   )}
                </div>
             </div>

@@ -60,6 +60,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tempAvatar, setTempAvatar] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState(user?.user_metadata?.full_name || '');
+
+  // Sync display name state when user or modal opens
+  useEffect(() => {
+    if (user?.user_metadata?.full_name) {
+      setDisplayName(user.user_metadata.full_name);
+    }
+  }, [user, isOpen]);
   const [is2FASetup, setIs2FASetup] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordStep, setPasswordStep] = useState(1);
@@ -254,7 +262,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         <img src={tempAvatar} alt="Profile" className="w-24 h-24 rounded-full object-cover shadow-xl group-hover:scale-105 transition-transform border-4 border-emerald-500/20" />
                       ) : (
                         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-3xl font-black shadow-xl group-hover:scale-105 transition-transform border-4 border-emerald-500/20">
-                          {user?.email?.[0].toUpperCase()}
+                          {(user?.user_metadata?.full_name || user?.email || 'R').charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div className="absolute inset-0 bg-black/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -280,12 +288,34 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Nome de Exibição</label>
-                      <input 
-                        type="text" 
-                        value={user?.user_metadata?.full_name || ''} 
-                        className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-4 md:px-6 py-3.5 md:py-4 text-xs md:text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
-                        placeholder="Seu Nome"
-                      />
+                      <div className="flex gap-3">
+                        <input 
+                          type="text" 
+                          value={displayName} 
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          className="flex-1 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-2xl px-4 md:px-6 py-3.5 md:py-4 text-xs md:text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                          placeholder="Seu Nome"
+                        />
+                        <button 
+                          onClick={async () => {
+                            if (!displayName.trim()) {
+                              toast.error("O nome não pode ser vazio!");
+                              return;
+                            }
+                            const { error } = await supabase.auth.updateUser({
+                              data: { full_name: displayName }
+                            });
+                            if (error) {
+                              toast.error("Erro ao atualizar nome: " + error.message);
+                            } else {
+                              toast.success("Nome de exibição atualizado com sucesso!");
+                            }
+                          }}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20 active:scale-95 flex items-center justify-center shrink-0"
+                        >
+                          Salvar
+                        </button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">E-mail</label>
