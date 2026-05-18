@@ -53,7 +53,7 @@ export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
 
     if (!cleanedNumber) {
       if (isMobile) {
-        return 'https://wa.me/'; // Safe universal link that opens the app on mobile or falls back to official store installer
+        return 'whatsapp://app'; // Official custom scheme to launch WhatsApp app without triggering empty chat errors!
       } else {
         return 'https://web.whatsapp.com/'; // Opens the main WhatsApp Web page directly on desktop!
       }
