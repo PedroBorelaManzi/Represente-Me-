@@ -28,7 +28,8 @@ import {
   Lock,
   Camera,
   QrCode,
-  Key
+  Key,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -439,12 +440,21 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 const code = Math.floor(100000 + Math.random() * 900000).toString();
                                 setVerificationCode(code);
                                 
-                                // Simulate email send time
-                                await new Promise(resolve => setTimeout(resolve, 1500));
-                                setIsSendingCode(false);
-                                setPasswordStep(2);
-                                toast.success("Código de segurança enviado com sucesso!");
-                                toast.info(`[DEMO] O código enviado para o seu e-mail é: ${code}`, { duration: 10000 });
+                                try {
+                                  const { data, error } = await supabase.functions.invoke('reset-user-password', {
+                                    body: { email: user?.email, code }
+                                  });
+                                  
+                                  if (error) throw error;
+                                  
+                                  setPasswordStep(2);
+                                  toast.success("Código de segurança enviado com sucesso!");
+                                } catch (error) {
+                                  console.error("Erro ao enviar código:", error);
+                                  toast.error("Erro ao enviar e-mail com o código de segurança. Tente novamente.");
+                                } finally {
+                                  setIsSendingCode(false);
+                                }
                               }}
                               disabled={isSendingCode}
                               className="w-full py-4 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"

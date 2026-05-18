@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./pages/LandingPitch";
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Recovery from './pages/Recovery';
 import Checkout from './pages/Checkout';
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -35,6 +36,7 @@ export default function App() {
               <Route path="/" element={<Landing />} />
               <Route path='/login' element={<Login />} />
               <Route path='/register' element={<Register />} />
+              <Route path='/recovery' element={<Recovery />} />
                             <Route path='/checkout' element={<Checkout />} />
               <Route path='/planos' element={<PlanosPage />} />
               
