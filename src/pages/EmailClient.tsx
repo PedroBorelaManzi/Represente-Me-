@@ -34,6 +34,10 @@ export default function EmailClient() {
   // Messages State
   const [emails, setEmails] = useState<EmailMessage[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null);
+  
+  // UX Sizing States
+  const [isFoldersCollapsed, setIsFoldersCollapsed] = useState(false);
+  const [isReadingFocusMode, setIsReadingFocusMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
 
@@ -457,8 +461,22 @@ export default function EmailClient() {
       </div>
 
       <div className="flex-1 min-h-0 flex gap-2 sm:gap-6 px-2 sm:px-0 bg-slate-50 dark:bg-zinc-950 overflow-hidden relative">
-        <div className="hidden lg:flex w-72 flex-col gap-2">
+        <div className={cn(
+          "hidden lg:flex flex-col gap-2 transition-all duration-300",
+          selectedEmail && isReadingFocusMode ? "lg:hidden" : "",
+          isFoldersCollapsed ? "w-24" : "w-72"
+        )}>
            <div className="h-fit bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] p-4 flex flex-col shadow-sm">
+              <div className="flex items-center justify-between px-2 mb-2">
+                {!isFoldersCollapsed && <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pastas</span>}
+                <button 
+                  onClick={() => setIsFoldersCollapsed(!isFoldersCollapsed)}
+                  className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg text-slate-400 hover:text-slate-700 transition-colors mx-auto"
+                  title={isFoldersCollapsed ? "Expandir menu" : "Recolher menu"}
+                >
+                  {isFoldersCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                </button>
+              </div>
               <nav className="space-y-1">
                  {(Object.keys(folderLabels) as EmailFolder[]).map(folder => (
                     <button 
@@ -470,11 +488,13 @@ export default function EmailClient() {
                         else setCurrentCategory(""); 
                       }} 
                       className={cn(
-                        "w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all", 
+                        "w-full flex items-center rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all py-3", 
+                        isFoldersCollapsed ? "justify-center px-0 gap-0" : "gap-3 px-4",
                         currentFolder === folder ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:hover:bg-zinc-800/50"
                       )}
+                      title={isFoldersCollapsed ? folderLabels[folder] : undefined}
                     >
-                      {getFolderIcon(folder)} {folderLabels[folder]}
+                      {getFolderIcon(folder)} {!isFoldersCollapsed && <span>{folderLabels[folder]}</span>}
                     </button>
                  ))}
               </nav>
@@ -482,8 +502,9 @@ export default function EmailClient() {
         </div>
 
         <div className={cn(
-          "w-72 flex-shrink-0 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] overflow-hidden shadow-sm",
-          selectedEmail && "hidden md:flex" 
+          "w-72 flex-shrink-0 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] overflow-hidden shadow-sm transition-all duration-300",
+          selectedEmail && "hidden md:flex",
+          selectedEmail && isReadingFocusMode && "lg:hidden"
         )}>
           {currentFolder === 'inbox' && (
             <div className="px-4 pt-4 flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-slate-50 dark:border-zinc-800 pb-2">
@@ -596,7 +617,7 @@ export default function EmailClient() {
           )}>
              <div className="px-6 py-4 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-950">
                 <div className="flex items-center gap-4">
-                   <button onClick={() => setSelectedEmail(null)} className="md:hidden p-2.5 bg-slate-100 rounded-full"><ChevronLeft className="w-5 h-5"/></button>
+                   <button onClick={() => { setSelectedEmail(null); setIsReadingFocusMode(false); }} className="p-2.5 bg-slate-100 dark:bg-zinc-800 rounded-full"><ChevronLeft className="w-5 h-5"/></button>
                    <div className="flex gap-2">
                      <button 
                        onClick={() => {
@@ -609,13 +630,26 @@ export default function EmailClient() {
                        <Reply className="w-4 h-4" /> Responder
                      </button>
                      <button className="p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-500 transition-colors border border-slate-100 dark:border-zinc-800"><Forward className="w-4 h-4" /></button>
+                     <button 
+                       onClick={() => setIsReadingFocusMode(!isReadingFocusMode)}
+                       className={cn(
+                         "p-3 rounded-2xl transition-all border flex items-center gap-2 font-black uppercase text-[10px] tracking-widest",
+                         isReadingFocusMode 
+                           ? "bg-emerald-600 text-white border-emerald-600 shadow-sm" 
+                           : "hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-500 border-slate-100 dark:border-zinc-800"
+                       )}
+                       title={isReadingFocusMode ? "Sair do Modo Foco" : "Modo Foco (Tela Inteira)"}
+                     >
+                       {isReadingFocusMode ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                       <span className="hidden sm:inline">{isReadingFocusMode ? "Restaurar" : "Modo Foco"}</span>
+                     </button>
                    </div>
                 </div>
                 <button className="p-3 rounded-2xl hover:bg-red-50 text-red-500 transition-colors border border-red-100 dark:border-red-900/10"><Trash2 className="w-4 h-4" /></button>
              </div>
 
              <div className="flex-1 overflow-y-auto p-4 sm:p-14 custom-scrollbar bg-white dark:bg-zinc-900">
-                <div className="max-w-none mx-auto">
+                <div className={cn("mx-auto transition-all duration-500", isReadingFocusMode ? "max-w-4xl" : "max-w-none")}>
                    <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-zinc-100 mb-6 sm:mb-10 leading-tight">{selectedEmail.subject}</h2>
                   
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
