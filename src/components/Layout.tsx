@@ -24,6 +24,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import SettingsModal from './SettingsModal';
+import { WhatsAppButton } from './WhatsAppButton';
 import { Logo } from './Logo';
 import { SubscriptionGuard } from './SubscriptionGuard';
 
@@ -137,6 +138,13 @@ export default function Layout() {
                   </Link>
                 );
               })}
+
+              <WhatsAppButton 
+                phoneNumber="5511999998888"
+                message="Olá! Estou vindo do CRM Represente-Me!"
+                label="WhatsApp"
+                variant="sidebar"
+              />
 
               <div className="pt-4 mt-4 border-t border-slate-100 dark:border-zinc-800/50">
                 <p className="px-4 mb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Personalização</p>
