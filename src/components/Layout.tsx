@@ -14,7 +14,8 @@ import {
   Palette,
   Building2,
   ChevronDown,
-  User
+  User,
+  Mail
 } from 'lucide-react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -40,6 +41,7 @@ export default function Layout() {
     { icon: Users, label: 'Meus Clientes', path: '/dashboard/clientes' },
     { icon: Building2, label: 'Empresas & Pedidos', path: '/dashboard/empresas' },
     { icon: Calendar, label: 'Minha Agenda', path: '/dashboard/agenda' },
+    { icon: Mail, label: 'E-mails', path: '/dashboard/email' },
   ];
 
   return (
