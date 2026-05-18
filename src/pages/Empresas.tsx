@@ -432,20 +432,20 @@ export default function EmpresasPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-10">
-        <div className="lg:col-span-4 flex lg:flex-col gap-3 sm:gap-4 overflow-x-auto lg:overflow-x-visible pb-4 lg:pb-0 snap-x scroll-px-4 custom-scrollbar">
+        <div className="lg:col-span-4 flex flex-col gap-3 sm:gap-4 w-full">
           <div className="flex items-center justify-between px-2 md:px-4">
              <h3 className="text-[9px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Seleção Estratégica</h3>
           </div>
           
-          <div className="flex lg:flex-col gap-3 min-w-max lg:min-w-0">
-            <button onClick={() => setIsAddModalOpen(true)} className="w-full text-left p-4 sm:p-5 lg:p-6 rounded-3xl md:rounded-[32px] bg-emerald-600 text-white shadow-xl flex items-center justify-between group mb-2 md:mb-4 transition-all active:scale-95">
+          <div className="grid grid-cols-2 lg:flex lg:flex-col gap-3 w-full">
+            <button onClick={() => setIsAddModalOpen(true)} className="w-full text-left p-4 sm:p-5 lg:p-6 rounded-3xl md:rounded-[32px] bg-emerald-600 text-white shadow-xl flex items-center justify-between group mb-2 md:mb-4 transition-all active:scale-95 col-span-2 lg:col-span-1">
               <span className="text-[10px] sm:text-xs lg:text-[14px] font-black uppercase tracking-tight">Nova Empresa</span>
               <Plus className="w-4 h-4 sm:w-5 h-5 lg:w-6 lg:h-6 group-hover:rotate-90 transition-transform" />
             </button>
 
             <button 
               onClick={() => setSelectedCategory("all")}
-              className={cn("min-w-[220px] sm:min-w-[260px] lg:min-w-0 lg:w-full text-left p-4 sm:p-5 lg:p-7 rounded-[30px] md:rounded-[35px] border transition-all relative group overflow-hidden active:scale-[0.98]",
+              className={cn("w-full text-left p-4 sm:p-5 lg:p-7 rounded-[30px] md:rounded-[35px] border transition-all relative group overflow-hidden active:scale-[0.98] col-span-2 lg:col-span-1",
                 selectedCategory === "all" 
                   ? "bg-slate-900 dark:bg-zinc-900 border-slate-900 text-white shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:border-emerald-500/50 dark:shadow-[0_0_20px_rgba(16,185,129,0.3)]" 
                   : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-emerald-200 shadow-sm"
@@ -460,12 +460,12 @@ export default function EmpresasPage() {
               </div>
             </button>
 
-            <div className="flex lg:flex-col gap-3 min-w-max lg:min-w-0 lg:pt-6 lg:border-t border-slate-50 dark:border-zinc-800/50">
+            <div className="grid grid-cols-2 lg:flex lg:flex-col gap-3 col-span-2 lg:col-span-1 lg:pt-6 lg:border-t border-slate-50 dark:border-zinc-800/50 w-full">
               {combinedCategories.map(cat => (
                 <div
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={cn("cursor-pointer min-w-[180px] sm:min-w-[220px] lg:min-w-0 lg:w-full text-left p-4 sm:p-5 lg:p-6 rounded-[28px] md:rounded-[32px] border transition-all relative group overflow-hidden active:scale-[0.98]",
+                  className={cn("cursor-pointer w-full text-left p-4 sm:p-5 lg:p-6 rounded-[28px] md:rounded-[32px] border transition-all relative group overflow-hidden active:scale-[0.98]",
                     selectedCategory === cat
                       ? "bg-slate-900 dark:bg-zinc-900 border-slate-900 text-white shadow-xl scale-[1.02] dark:border-emerald-500/50 dark:shadow-[0_0_15px_rgba(16,185,129,0.3)]" 
                       : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 hover:border-emerald-200"

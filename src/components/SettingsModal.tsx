@@ -158,30 +158,51 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="relative w-full max-w-5xl h-[90vh] md:h-[85vh] bg-white dark:bg-zinc-900 rounded-[32px] md:rounded-[40px] shadow-2xl overflow-hidden border border-slate-200/50 dark:border-zinc-800/50 flex flex-col md:flex-row"
       >
-        {/* Mobile Horizontal Menu */}
-        <div className="md:hidden flex flex-row overflow-x-auto gap-2 px-6 py-4 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50 sticky top-0 z-20 scrollbar-none shrink-0">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2.5 rounded-full transition-all shrink-0 text-[10px] font-black uppercase tracking-widest",
-                activeTab === item.id 
-                  ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/20" 
-                  : "bg-white dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-slate-100 dark:border-zinc-700/50"
-              )}
-            >
-              <item.icon className="w-3.5 h-3.5" />
-              <span>{item.label}</span>
-            </button>
-          ))}
+        {/* Mobile Horizontal Menu (Icons Only & Centered Layout) */}
+        <div className="md:hidden flex flex-row items-center justify-between gap-4 px-6 py-4 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50 sticky top-0 z-20 shrink-0">
+          <div className="flex items-center gap-3 flex-1 justify-center">
+            {menuItems.map((item) => {
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  title={item.label}
+                  className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 relative",
+                    isActive 
+                      ? "bg-emerald-600 text-white shadow-lg shadow-emerald-500/25 scale-110 z-10" 
+                      : "bg-white dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border border-slate-100 dark:border-zinc-700/50 active:scale-95"
+                  )}
+                >
+                  {item.id === 'profile' && tempAvatar ? (
+                    <img 
+                      src={tempAvatar} 
+                      alt="Avatar" 
+                      className={cn(
+                        "w-5 h-5 rounded-full object-cover transition-transform",
+                        isActive ? "border border-white/50 scale-110" : ""
+                      )} 
+                    />
+                  ) : (
+                    <item.icon className={cn("w-4 h-4 transition-transform", isActive ? "scale-110" : "")} />
+                  )}
+                  
+                  {/* Subtle active indicator dot */}
+                  {isActive && (
+                    <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-400" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
           
           <button 
             onClick={() => signOut()}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-red-50 dark:bg-red-500/10 text-red-500 border border-red-100 dark:border-red-950/20 transition-all shrink-0 text-[10px] font-black uppercase tracking-widest"
+            title="Sair da Conta"
+            className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/20 text-red-500 border border-red-100/50 dark:border-red-900/30 flex items-center justify-center transition-all active:scale-95 shrink-0"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sair</span>
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
         {/* Sidebar */}
