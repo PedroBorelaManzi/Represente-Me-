@@ -3,7 +3,7 @@ import { cn } from '../lib/utils';
 
 interface WhatsAppButtonProps {
   /** Número de telefone (ex: "+55 (11) 99999-9999" ou apenas "11999999999") */
-  phoneNumber: string;
+  phoneNumber?: string;
   /** Mensagem pré-definida opcional (URI-encoded automaticamente pelo componente) */
   message?: string;
   /** Label do botão (padrão: "WhatsApp") */
@@ -39,18 +39,28 @@ export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
 
   // Detecção Inteligente de Dispositivo (User Agent + Capabilities)
   const getDeviceRedirectUrl = (): string => {
-    const cleanedNumber = formatPhoneNumber(phoneNumber);
+    const cleanedNumber = phoneNumber ? formatPhoneNumber(phoneNumber) : '';
     const encodedText = encodeURIComponent(message);
-    const textQuery = encodedText ? `?text=${encodedText}` : '';
-    const textQueryWeb = encodedText ? `&text=${encodedText}` : '';
 
-    if (typeof window === 'undefined') {
-      return `https://wa.me/${cleanedNumber}${textQuery}`;
+    const userAgent = typeof window !== 'undefined' 
+      ? (navigator.userAgent || navigator.vendor || (window as any).opera)
+      : '';
+      
+    const isMobile = typeof window !== 'undefined' 
+      ? (/android|iphone|ipad|ipod|iemobile|opera mini/i.test(userAgent.toLowerCase()) ||
+         (navigator.maxTouchPoints && navigator.maxTouchPoints > 2))
+      : false;
+
+    if (!cleanedNumber) {
+      if (isMobile) {
+        return 'whatsapp://'; // Opens the official app directly on mobile without selecting a number!
+      } else {
+        return 'https://web.whatsapp.com/'; // Opens the main WhatsApp Web page directly on desktop!
+      }
     }
 
-    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    const isMobile = /android|iphone|ipad|ipod|iemobile|opera mini/i.test(userAgent.toLowerCase()) ||
-                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+    const textQuery = encodedText ? `?text=${encodedText}` : '';
+    const textQueryWeb = encodedText ? `&text=${encodedText}` : '';
 
     if (isMobile) {
       return `https://wa.me/${cleanedNumber}${textQuery}`;

@@ -140,8 +140,6 @@ export default function Layout() {
               })}
 
               <WhatsAppButton 
-                phoneNumber="5511999998888"
-                message="Olá! Estou vindo do CRM Represente-Me!"
                 label="WhatsApp"
                 variant="sidebar"
               />
