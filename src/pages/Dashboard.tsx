@@ -418,7 +418,7 @@ export default function Dashboard() {
             <div className="hidden lg:flex flex-1 min-h-[960px] overflow-auto custom-scrollbar">
               <div className="flex flex-col flex-1 min-w-[1000px] lg:min-w-0">
                 <div className="flex bg-slate-100/30 dark:bg-zinc-950/40 border-b border-slate-300 dark:border-zinc-700/50 sticky top-0 z-30 backdrop-blur-md">
-                  <div className="w-12 flex-shrink-0 sticky left-0 bg-slate-100 dark:bg-zinc-950/40 z-40 border-r border-slate-200 dark:border-zinc-800" />
+                  <div className="w-14 flex-shrink-0 sticky left-0 bg-slate-100 dark:bg-zinc-950/40 z-40 border-r border-slate-200 dark:border-zinc-800" />
                   <div className="flex-1 grid grid-cols-7 divide-x divide-slate-300 dark:divide-zinc-700/50">
                     {weekDays.map((date, i) => {
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
@@ -449,9 +449,9 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex flex-1">
-                  <div className="w-12 flex flex-col bg-slate-100/20 dark:bg-zinc-950/20 border-r border-slate-300 dark:border-zinc-700/50 text-slate-400 flex-shrink-0 sticky left-0 z-30 shadow-sm">
+                  <div className="w-14 flex flex-col bg-slate-100/20 dark:bg-zinc-950/20 border-r border-slate-300 dark:border-zinc-700/50 text-slate-400 flex-shrink-0 sticky left-0 z-30 shadow-sm">
                     {HOURS.map(hour => (
-                      <div key={hour} className="h-[60px] text-[8px] font-black text-center py-2 -mt-2 tracking-tight flex items-center justify-center">{String(hour).padStart(2, '0')}:00</div>
+                      <div key={hour} className="h-[60px] text-[9px] font-black text-slate-400/80 dark:text-zinc-500 pr-2 pt-0.5 flex items-start justify-end tracking-tight border-b border-slate-200/40 dark:border-zinc-800/30">{String(hour).padStart(2, '0')}:00</div>
                     ))}
                   </div>
                   <div className="flex-1 grid grid-cols-7 divide-x divide-slate-300 dark:divide-zinc-700/50 relative">
