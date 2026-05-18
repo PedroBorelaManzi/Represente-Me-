@@ -48,7 +48,7 @@ export default function Layout() {
 
   return (
     <SubscriptionGuard>
-      <div className="flex h-screen bg-slate-50 dark:bg-zinc-950 transition-colors duration-300">
+      <div className="flex h-screen bg-slate-100/60 dark:bg-zinc-950 transition-colors duration-300">
         <AnimatePresence mode='wait'>
           {sidebarOpen && (
             <motion.div
