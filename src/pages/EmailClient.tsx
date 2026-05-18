@@ -502,8 +502,8 @@ export default function EmailClient() {
         </div>
 
         <div className={cn(
-          "w-72 flex-shrink-0 flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] overflow-hidden shadow-sm transition-all duration-300",
-          selectedEmail && "hidden md:flex",
+          "flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] overflow-hidden shadow-sm transition-all duration-500 ease-in-out",
+          selectedEmail ? "w-80 flex-shrink-0 hidden md:flex" : "flex-1 w-full",
           selectedEmail && isReadingFocusMode && "lg:hidden"
         )}>
           {currentFolder === 'inbox' && (
@@ -610,7 +610,7 @@ export default function EmailClient() {
           </div>
         </div>
 
-        {selectedEmail ? (
+        {selectedEmail && (
           <div className={cn(
             "flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] overflow-hidden flex flex-col z-10",
             "absolute inset-0 md:relative shadow-xl" 
@@ -759,15 +759,6 @@ export default function EmailClient() {
                       )}
                   </div>
                 </div>
-             </div>
-          </div>
-        ) : (
-          <div className="hidden md:flex flex-1 items-center justify-center bg-transparent border-2 border-dashed border-slate-200 dark:border-zinc-800/50 rounded-[32px]">
-             <div className="text-center p-12 max-w-sm">
-               <div className="w-24 h-24 bg-white dark:bg-zinc-900 rounded-[40px] flex items-center justify-center mx-auto mb-8 border border-slate-100 dark:border-zinc-800 shadow-card">
-                 <Mail className="w-10 h-10 text-emerald-300" />
-               </div>
-               <p className="text-sm font-black uppercase tracking-widest text-slate-400">Selecione uma mensagem</p>
              </div>
           </div>
         )}
