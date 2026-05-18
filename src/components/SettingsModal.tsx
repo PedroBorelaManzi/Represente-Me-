@@ -159,8 +159,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         className="relative w-full max-w-5xl h-[90vh] md:h-[85vh] bg-white dark:bg-zinc-900 rounded-[32px] md:rounded-[40px] shadow-2xl overflow-hidden border border-slate-200/50 dark:border-zinc-800/50 flex flex-col md:flex-row"
       >
         {/* Mobile Horizontal Menu (Icons Only & Centered Layout) */}
-        <div className="md:hidden flex flex-row items-center justify-between gap-4 px-6 py-4 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50 sticky top-0 z-20 shrink-0">
-          <div className="flex items-center gap-3 flex-1 justify-center">
+        <div className="md:hidden flex flex-row items-center justify-center gap-4 px-6 py-4 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50 sticky top-0 z-20 shrink-0">
+          <div className="flex items-center gap-3 justify-center">
             {menuItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -196,14 +196,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               );
             })}
           </div>
-          
-          <button 
-            onClick={() => signOut()}
-            title="Sair da Conta"
-            className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-950/20 text-red-500 border border-red-100/50 dark:border-red-900/30 flex items-center justify-center transition-all active:scale-95 shrink-0"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
         {/* Sidebar */}
         <div className="hidden md:flex w-full md:w-80 bg-slate-50/50 dark:bg-zinc-950/50 border-r border-slate-100 dark:border-zinc-800 p-8 flex-col gap-8">
