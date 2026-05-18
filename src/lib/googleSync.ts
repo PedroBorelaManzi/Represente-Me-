@@ -65,13 +65,33 @@ export async function syncGoogleEvents(userId: string) {
     const syncResults = await Promise.all(googleEvents.map(async (gevent: any) => {
       if (!gevent.start?.dateTime && !gevent.start?.date) return null;
       
-      const start = new Date(gevent.start.dateTime || gevent.start.date);
-      const end = new Date(gevent.end.dateTime || gevent.end.date);
-      
-      const dateStr = start.toISOString().split('T')[0];
-      const timeStr = gevent.start.dateTime 
-        ? `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`
-        : "08:00 - 18:00 (Dia Inteiro)";
+      let dateStr = '';
+      let timeStr = '';
+
+      if (gevent.start.dateTime) {
+        const startISO = gevent.start.dateTime; // e.g. "2026-05-18T16:00:00-03:00"
+        const endISO = gevent.end.dateTime;
+
+        dateStr = startISO.substring(0, 10);
+
+        const getLocalTime = (iso: string) => {
+          if (!iso) return '09:00';
+          const tIdx = iso.indexOf('T');
+          if (tIdx !== -1) {
+            const timePart = iso.substring(tIdx + 1);
+            const parts = timePart.split(':');
+            if (parts.length >= 2) {
+              return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+            }
+          }
+          return '09:00';
+        };
+
+        timeStr = `${getLocalTime(startISO)} - ${getLocalTime(endISO)}`;
+      } else {
+        dateStr = gevent.start.date || new Date().toISOString().substring(0, 10);
+        timeStr = "08:00 - 18:00 (Dia Inteiro)";
+      }
 
       const { error } = await supabase
         .from('appointments')

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, ExternalLink, Trash2, Navigation2, Target, Users, FileDown } from "lucide-react";
+import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, ExternalLink, Trash2, Navigation2, Target, Users, FileDown, Maximize2, Minimize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
@@ -42,6 +42,16 @@ function ChangeView({ center, zoom }: { center: [number, number], zoom: number }
   return null;
 }
 
+function MapResizeTrigger({ isFullscreen }: { isFullscreen: boolean }) {
+  const map = useMap();
+  useEffect(() => {
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 300); // Wait for transition to complete
+  }, [isFullscreen, map]);
+  return null;
+}
+
 export default function Map() {
   const { settings } = useSettings();
   const [companies, setCompanies] = useState<any[]>([]);
@@ -52,6 +62,33 @@ export default function Map() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSearchingCnpj, setIsSearchingCnpj] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!mapContainerRef.current) return;
+
+    if (!document.fullscreenElement) {
+      mapContainerRef.current.requestFullscreen().catch((err) => {
+        console.error("Erro ao ativar tela cheia:", err.message);
+      });
+    } else {
+      document.exitFullscreen().catch((err) => {
+        console.error("Erro ao sair de tela cheia:", err.message);
+      });
+    }
+  };
 
   const [newLocation, setNewLocation] = useState({
     cnpj: "", name: "",  contact: "", address: "", lat: -23.5500, lng: -46.6340
@@ -332,7 +369,12 @@ export default function Map() {
         </div>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-zinc-950 rounded-[48px] border border-slate-100 dark:border-zinc-850 shadow-sm overflow-hidden relative z-0 min-h-[500px] lg:min-h-[700px]">
+      <div 
+        ref={mapContainerRef}
+        className={`flex-1 bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-850 shadow-sm overflow-hidden relative z-0 min-h-[500px] lg:min-h-[700px] ${
+          isFullscreen ? "w-full h-full border-none rounded-none p-0 m-0" : "rounded-[48px]"
+        }`}
+      >
         {/* Floating Mini Stats Overlay */}
         <div className="absolute top-8 right-8 z-[1000] hidden lg:flex items-center gap-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl p-4 rounded-[32px] border border-white/40 dark:border-zinc-800 shadow-2xl">
            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
@@ -345,8 +387,28 @@ export default function Map() {
            </div>
         </div>
 
-        <MapContainer center={center} zoom={zoom} style={{ height: 'calc(100vh - 280px)', width: '100%' }} scrollWheelZoom={true}>
+        {/* Floating Fullscreen Toggle Button */}
+        <button 
+          type="button"
+          onClick={toggleFullscreen}
+          className="absolute bottom-8 left-8 z-[1000] flex items-center justify-center p-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-slate-700 dark:text-zinc-300 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-2xl border border-slate-100 dark:border-zinc-850 shadow-2xl transition-all hover:scale-105 active:scale-95 cursor-pointer pointer-events-auto"
+          title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+        >
+          {isFullscreen ? (
+            <Minimize2 className="w-5 h-5" />
+          ) : (
+            <Maximize2 className="w-5 h-5" />
+          )}
+        </button>
+
+        <MapContainer 
+          center={center} 
+          zoom={zoom} 
+          style={{ height: isFullscreen ? '100%' : 'calc(100vh - 280px)', width: '100%' }} 
+          scrollWheelZoom={true}
+        >
           <ChangeView center={center} zoom={zoom} />
+          <MapResizeTrigger isFullscreen={isFullscreen} />
           <TileLayer 
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' 
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
