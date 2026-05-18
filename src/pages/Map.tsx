@@ -371,7 +371,8 @@ export default function Map() {
 
       <div 
         ref={mapContainerRef}
-        className={`flex-1 bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-850 shadow-sm overflow-hidden relative z-0 min-h-[500px] lg:min-h-[700px] ${
+        style={{ height: isFullscreen ? '100vh' : 'calc(100vh - 280px)' }}
+        className={`flex-1 bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-850 shadow-sm overflow-hidden relative z-0 ${
           isFullscreen ? "w-screen h-screen border-none rounded-none p-0 m-0" : "rounded-[48px]"
         }`}
       >
@@ -404,7 +405,7 @@ export default function Map() {
         <MapContainer 
           center={center} 
           zoom={zoom} 
-          style={{ height: isFullscreen ? '100vh' : 'calc(100vh - 280px)', width: '100%' }} 
+          style={{ height: '100%', width: '100%' }} 
           scrollWheelZoom={true}
         >
           <ChangeView center={center} zoom={zoom} />
