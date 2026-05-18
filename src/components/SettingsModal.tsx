@@ -61,6 +61,13 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tempAvatar, setTempAvatar] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState(user?.user_metadata?.full_name || '');
+  const [modalAvatarError, setModalAvatarError] = useState(false);
+  const [miniAvatarError, setMiniAvatarError] = useState(false);
+
+  useEffect(() => {
+    setModalAvatarError(false);
+    setMiniAvatarError(false);
+  }, [tempAvatar]);
 
   // Sync display name state when user or modal opens
   useEffect(() => {
@@ -101,23 +108,46 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     fileInputRef.current?.click();
   };
 
+  const compressImage = (base64Str: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const size = 150; // Perfect profile avatar dimension
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          // Center crop and draw to 150x150
+          const minDim = Math.min(img.width, img.height);
+          const sx = (img.width - minDim) / 2;
+          const sy = (img.height - minDim) / 2;
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+          resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% JPEG quality is extremely small (~12KB)
+        } else {
+          resolve(base64Str);
+        }
+      };
+      img.onerror = () => resolve(base64Str);
+    });
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Check file size (limit to 2MB for base64 storage)
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("A imagem deve ter menos de 2MB");
-        return;
-      }
-
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        setTempAvatar(base64);
+        const rawBase64 = reader.result as string;
         try {
-          await updateSettings({ avatar_url: base64 });
+          const compressedBase64 = await compressImage(rawBase64);
+          setTempAvatar(compressedBase64);
+          setModalAvatarError(false);
+          setMiniAvatarError(false);
+          await updateSettings({ avatar_url: compressedBase64 });
           toast.success("Foto de perfil atualizada!");
         } catch (err) {
+          console.error(err);
           toast.error("Erro ao salvar foto de perfil");
         }
       };
@@ -184,7 +214,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       : "bg-white dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border border-slate-100 dark:border-zinc-700/50 active:scale-95"
                   )}
                 >
-                  {item.id === 'profile' && tempAvatar ? (
+                  {item.id === 'profile' && tempAvatar && !miniAvatarError ? (
                     <img 
                       src={tempAvatar} 
                       alt="Avatar" 
@@ -192,6 +222,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         "w-5 h-5 rounded-full object-cover transition-transform",
                         isActive ? "border border-white/50 scale-110" : ""
                       )} 
+                      onError={() => setMiniAvatarError(true)}
                     />
                   ) : (
                     <item.icon className={cn("w-4 h-4 transition-transform", isActive ? "scale-110" : "")} />
@@ -258,8 +289,13 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 >
                   <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8 text-center md:text-left">
                     <div className="relative group cursor-pointer" onClick={handlePhotoClick}>
-                      {tempAvatar ? (
-                        <img src={tempAvatar} alt="Profile" className="w-24 h-24 rounded-full object-cover shadow-xl group-hover:scale-105 transition-transform border-4 border-emerald-500/20" />
+                      {tempAvatar && !modalAvatarError ? (
+                        <img 
+                          src={tempAvatar} 
+                          alt="Profile" 
+                          className="w-24 h-24 rounded-full object-cover shadow-xl group-hover:scale-105 transition-transform border-4 border-emerald-500/20" 
+                          onError={() => setModalAvatarError(true)}
+                        />
                       ) : (
                         <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-3xl font-black shadow-xl group-hover:scale-105 transition-transform border-4 border-emerald-500/20">
                           {(user?.user_metadata?.full_name || user?.email || 'R').charAt(0).toUpperCase()}

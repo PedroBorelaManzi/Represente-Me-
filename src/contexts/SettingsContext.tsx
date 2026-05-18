@@ -105,6 +105,11 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
         // Not overwriting localStorage theme with DB theme to respect device preference
 
+        const finalAvatar = localStorage.getItem('avatar_' + user.id) || user?.user_metadata?.avatar_url || data.avatar_url;
+        if (finalAvatar && finalAvatar.startsWith('data:') && !localStorage.getItem('avatar_' + user.id)) {
+          localStorage.setItem('avatar_' + user.id, finalAvatar);
+        }
+
         setSettings({
           alerta_days: data.alerta_days ?? defaultSettings.alerta_days,
           critico_days: data.critico_days ?? defaultSettings.critico_days,
@@ -116,7 +121,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
           subscription_status: subStatus,
           plan_id: data.plan_id || 'exclusivo',
-          avatar_url: localStorage.getItem('avatar_' + user.id) || user?.user_metadata?.avatar_url || data.avatar_url,
+          avatar_url: finalAvatar,
         });
       } else {
         setSettings(defaultSettings);
@@ -134,38 +139,12 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
 
     if (avatarUrl && avatarUrl.startsWith('data:')) {
       try {
-        const arr = avatarUrl.split(',');
-        const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
-        const bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while (n--) {
-          u8arr[n] = bstr.charCodeAt(n);
-        }
-        const blob = new Blob([u8arr], { type: mime });
-
-        const filePath = user.id + "/avatar.png";
-        const { error: uploadError } = await supabase.storage
-          .from("client_vault")
-          .upload(filePath, blob, { 
-            contentType: mime,
-            upsert: true 
-          });
-
-        if (uploadError) {
-          console.error("Error uploading avatar:", uploadError);
-        } else {
-          const { data } = supabase.storage.from("client_vault").getPublicUrl(filePath);
-          avatarUrl = data.publicUrl;
-          
-          localStorage.setItem("avatar_" + user.id, avatarUrl);
-          
-          await supabase.auth.updateUser({
-            data: { avatar_url: avatarUrl }
-          });
-        }
+        localStorage.setItem("avatar_" + user.id, avatarUrl);
+        await supabase.auth.updateUser({
+          data: { avatar_url: avatarUrl }
+        });
       } catch (e) {
-        console.error("Error processing avatar upload:", e);
+        console.error("Error saving avatar:", e);
       }
     }
 

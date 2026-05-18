@@ -36,6 +36,13 @@ export default function Layout() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState(false);
+  const [mobileAvatarError, setMobileAvatarError] = useState(false);
+
+  useEffect(() => {
+    setAvatarError(false);
+    setMobileAvatarError(false);
+  }, [settings.avatar_url]);
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Início', path: '/dashboard' },
@@ -82,8 +89,13 @@ export default function Layout() {
               <div className="p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-[24px] border border-slate-100 dark:border-zinc-700/30">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-xs font-black text-white overflow-hidden shadow-sm">
-                    {settings.avatar_url ? (
-                      <img src={settings.avatar_url} alt="Perfil" className="w-full h-full object-cover" />
+                    {settings.avatar_url && !avatarError ? (
+                      <img 
+                        src={settings.avatar_url} 
+                        alt="Perfil" 
+                        className="w-full h-full object-cover" 
+                        onError={() => setAvatarError(true)}
+                      />
                     ) : (
                       (user?.user_metadata?.full_name || user?.email || 'R').charAt(0).toUpperCase()
                     )}
@@ -178,8 +190,13 @@ export default function Layout() {
             </div>
             <div className="flex items-center gap-3">
                <div className="w-10 h-10 rounded-full border-2 border-white dark:border-zinc-900 bg-emerald-500 flex items-center justify-center text-[10px] font-black text-white shadow-sm overflow-hidden">
-                  {settings.avatar_url ? (
-                    <img src={settings.avatar_url} alt="Perfil" className="w-full h-full object-cover" />
+                  {settings.avatar_url && !mobileAvatarError ? (
+                    <img 
+                      src={settings.avatar_url} 
+                      alt="Perfil" 
+                      className="w-full h-full object-cover" 
+                      onError={() => setMobileAvatarError(true)}
+                    />
                   ) : (
                     (user?.user_metadata?.full_name || user?.email || 'R').charAt(0).toUpperCase()
                   )}
