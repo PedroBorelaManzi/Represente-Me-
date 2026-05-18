@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { 
   Check, 
   ArrowRight, 
@@ -251,14 +251,14 @@ export default function Planos() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
-                onClick={() => window.open('https://wa.me/5547992770281', '_blank')}
+                onClick={() => window.open('https://wa.me/5515997472785', '_blank')}
                 className="px-10 py-5 bg-slate-900 dark:bg-zinc-800 text-white rounded-[24px] font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all flex items-center gap-3 shadow-lg"
               >
                 Suporte Financeiro
                 <ArrowUpRight className="w-4 h-4" />
               </button>
               <button
-                onClick={() => window.open('https://wa.me/5547992770281', '_blank')}
+                onClick={() => window.open('https://wa.me/5515997472785', '_blank')}
                 className="px-10 py-5 bg-white dark:bg-zinc-900 border border-red-100 dark:border-red-900/30 text-red-600 rounded-[24px] font-black uppercase text-[10px] tracking-widest hover:bg-red-50 dark:hover:bg-red-950/20 transition-all"
               >
                 Solicitar Cancelamento
