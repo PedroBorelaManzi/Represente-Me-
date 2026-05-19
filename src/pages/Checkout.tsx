@@ -57,6 +57,11 @@ export default function Checkout() {
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [installments, setInstallments] = useState(12);
+
+  useEffect(() => {
+    setInstallments(billingCycle === 'ANNUAL' ? 12 : (billingCycle === 'SEMIANNUAL' ? 6 : 1));
+  }, [billingCycle]);
 
   const [formData, setFormData] = useState({
     name: "", email: "", cpfCnpj: "", phone: "", password: "", confirmPassword: "",
@@ -162,7 +167,8 @@ export default function Checkout() {
             number: formData.cardNumber.replace(/\s/g, ''),
             expiryMonth: formData.expiry.split('/')[0],
             expiryYear: '20' + formData.expiry.split('/')[1],
-            ccv: formData.ccv
+            ccv: formData.ccv,
+            installments
           } : null
         }
       });
@@ -440,6 +446,28 @@ export default function Checkout() {
                           <div className="md:col-span-2 space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Titular do Cartão</label>
                             <input type="text" value={formData.holderName} onChange={(e) => setFormData({...formData, holderName: e.target.value})} placeholder="NOME COMO NO CARTÃO" className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all uppercase" />
+                          </div>
+                          <div className="md:col-span-2 space-y-2 relative">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Opções de Parcelamento</label>
+                            <div className="relative">
+                              <select 
+                                value={installments} 
+                                onChange={(e) => setInstallments(Number(e.target.value))} 
+                                className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all appearance-none cursor-pointer pr-12 font-black uppercase text-[10px] tracking-wider"
+                              >
+                                {Array.from({ length: billingCycle === 'ANNUAL' ? 12 : (billingCycle === 'SEMIANNUAL' ? 6 : 1) }, (_, i) => i + 1).map((num) => {
+                                  const installmentValue = finalPrice / num;
+                                  return (
+                                    <option key={num} value={num} className="font-bold text-slate-700 dark:text-zinc-300">
+                                      {num}x de R$ {installmentValue.toFixed(2).replace('.', ',')} Sem Juros
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                              <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-zinc-500">
+                                <ChevronRight className="w-4 h-4 rotate-90" />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}

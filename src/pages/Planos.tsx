@@ -89,8 +89,36 @@ export default function Planos() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 p-4 lg:p-12 transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 p-4 lg:p-12 transition-colors duration-300 font-sans">
       <div className="max-w-7xl mx-auto">
+        {/* Planos Upgrade Upsell Header Banner */}
+        {user && (currentSubscription?.subscription_tier?.toLowerCase() === 'profissional' || currentSubscription?.subscription_tier?.toLowerCase() === 'premium') && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12 p-6 md:p-8 rounded-[32px] bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/20 dark:border-amber-500/30 text-left flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg shadow-amber-500/5 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-amber-500/20">
+                <Crown className="w-6 h-6 animate-bounce" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">Upgrade de Assinatura Exclusivo</h4>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 leading-normal uppercase">
+                  Você já possui o plano Profissional! Por apenas <span className="text-amber-600 dark:text-amber-400 font-black">R$ 50 a mais por mês</span>, mude para o plano <span className="text-amber-600 dark:text-amber-400 font-black">Master</span> e tenha Empresas Ilimitadas, IA avançada, BI Analytics e suporte ultra priorizado!
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={() => handleSubscribe(plans[2])} // Master is plans[2]
+              className="px-8 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 active:scale-95 transition-all shrink-0 flex items-center gap-2 relative z-10"
+            >
+              Ir para o Master <ArrowUpRight className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+
         <div className="text-center mb-16">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
