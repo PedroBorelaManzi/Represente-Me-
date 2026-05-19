@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
@@ -18,9 +18,22 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let body;
   try {
-    const body = await req.json()
-    const { userId, planId, billingCycle, paymentMethod, customer, creditCard, finalPrice } = body
+    body = await req.json();
+  } catch {
+    body = {};
+  }
+
+  try {
+    const { action, userId, planId, billingCycle, paymentMethod, customer = {}, creditCard, finalPrice } = body
+
+    if (!customer.email || !customer.cpfCnpj || !customer.phone || !customer.name) {
+      return new Response(JSON.stringify({ success: false, message: 'Dados do formulário incompletos ou em branco.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      });
+    }
 
     console.log('Recebido:', { planId, billingCycle, paymentMethod, email: customer.email })
 
@@ -33,6 +46,81 @@ serve(async (req) => {
 
     const cleanCpf = customer.cpfCnpj.replace(/\D/g, '')
     const cleanPhone = customer.phone.replace(/\D/g, '')
+
+    // Ação rápida de verificação de duplicidade antes do pagamento
+    if (action === 'check-uniqueness') {
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        try {
+          const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+          const { data: userData, error: listError } = await supabase.auth.admin.listUsers()
+          
+          if (!listError && userData?.users) {
+            for (const u of userData.users) {
+              if (u.id === userId) continue;
+              
+              if (u.email?.toLowerCase() === customer.email.toLowerCase()) {
+                return new Response(JSON.stringify({ success: false, message: 'Este e-mail já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                  status: 200
+                })
+              }
+              
+              const uCpf = (u.user_metadata?.cpf_cnpj || '').replace(/\D/g, '')
+              if (uCpf && uCpf === cleanCpf) {
+                return new Response(JSON.stringify({ success: false, message: 'Este CPF/CNPJ já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                  status: 200
+                })
+              }
+              
+              const uPhone = (u.user_metadata?.phone || '').replace(/\D/g, '')
+              if (uPhone && uPhone === cleanPhone) {
+                return new Response(JSON.stringify({ success: false, message: 'Este número de WhatsApp já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                  status: 200
+                })
+              }
+
+              const uName = (u.user_metadata?.name || '').trim().toLowerCase()
+              const searchName = (customer.name || '').trim().toLowerCase()
+              if (uName && searchName && uName === searchName) {
+                return new Response(JSON.stringify({ success: false, message: 'Este nome completo já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                  status: 200
+                })
+              }
+            }
+          }
+        } catch (authCheckErr) {
+          console.error('Erro na verificação de duplicidade de Auth:', authCheckErr)
+        }
+      }
+
+      if (ASAAS_API_KEY) {
+        try {
+          const cpfResp = await fetch(`${ASAAS_API_URL}/customers?cpfCnpj=${encodeURIComponent(cleanCpf)}`, {
+            headers: { 'access_token': ASAAS_API_KEY }
+          })
+          const cpfCustomers = await cpfResp.json()
+          if (cpfCustomers.data && cpfCustomers.data.length > 0) {
+            const existingCpfCust = cpfCustomers.data[0];
+            if (existingCpfCust.email?.toLowerCase() !== customer.email.toLowerCase()) {
+              return new Response(JSON.stringify({ success: false, message: 'Este CPF/CNPJ já possui uma conta de faturamento cadastrada. Por favor, utilize o e-mail original ou fale com o suporte.' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200
+              })
+            }
+          }
+        } catch (asaasCheckErr) {
+          console.error('Erro na verificação de duplicidade do Asaas:', asaasCheckErr)
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      })
+    }
 
     // Verificação de Duplicidade no Supabase Auth (via service role key)
     if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
@@ -59,9 +147,18 @@ serve(async (req) => {
               })
             }
             
-            const uPhone = (u.user_metadata?.phone || '').replace(/\D/g, '')
+const uPhone = (u.user_metadata?.phone || '').replace(/\D/g, '')
             if (uPhone && uPhone === cleanPhone) {
               return new Response(JSON.stringify({ success: false, message: 'Este número de WhatsApp já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200
+              })
+            }
+
+            const uName = (u.user_metadata?.name || '').trim().toLowerCase()
+            const searchName = (customer.name || '').trim().toLowerCase()
+            if (uName && searchName && uName === searchName) {
+              return new Response(JSON.stringify({ success: false, message: 'Este nome completo já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 200
               })

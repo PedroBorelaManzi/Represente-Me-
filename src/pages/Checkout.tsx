@@ -166,6 +166,7 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState<'CREDIT_CARD' | 'PIX' | 'BOLETO'>('CREDIT_CARD');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [isCheckingUniqueness, setIsCheckingUniqueness] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
@@ -539,19 +540,61 @@ export default function Checkout() {
 
                     <button 
                       type="button"
-                      onClick={() => {
+                      disabled={isCheckingUniqueness || !isStep1Valid}
+                      onClick={async () => {
                         if (!isStep1Valid) {
                           toast.error("Por favor, preencha todos os campos e siga as regras de senha.");
                           return;
                         }
-                        setStep(2);
+                        
+                        setIsCheckingUniqueness(true);
+                        const loadingToast = toast.loading("Verificando se o cadastro já existe...");
+                        try {
+                          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-checkout`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+                            },
+                            body: JSON.stringify({
+                              action: 'check-uniqueness',
+                              customer: {
+                                name: formData.name,
+                                email: formData.email,
+                                cpfCnpj: formData.cpfCnpj,
+                                phone: formData.phone
+                              }
+                            })
+                          });
+                          const data = await response.json();
+                          const error = response.ok ? null : { message: data.message || 'Erro ao validar cadastro' };
+                          
+                          toast.dismiss(loadingToast);
+                          setIsCheckingUniqueness(false);
+
+                          if (error) {
+                            toast.error(`Erro ao validar cadastro: ${error.message}`);
+                            return;
+                          }
+
+                          if (data && !data.success) {
+                            toast.error(data.message);
+                            return;
+                          }
+
+                          setStep(2);
+                        } catch (err: any) {
+                          toast.dismiss(loadingToast);
+                          setIsCheckingUniqueness(false);
+                          toast.error(`Erro de conexão: ${err.message}`);
+                        }
                       }}
                       className={cn(
                         "w-full py-6 rounded-[32px] font-black uppercase text-xs tracking-[0.3em] transition-all flex items-center justify-center gap-4 group active:scale-95",
-                        isStep1Valid ? "bg-slate-900 text-white hover:bg-slate-800 shadow-2xl" : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                        isStep1Valid && !isCheckingUniqueness ? "bg-slate-900 text-white hover:bg-slate-800 shadow-2xl" : "bg-slate-100 text-slate-400 cursor-not-allowed"
                       )}
                     >
-                      Continuar para Pagamento
+                      {isCheckingUniqueness ? "Verificando..." : "Continuar para Pagamento"}
                       <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
                     </button>
                   </motion.div>
