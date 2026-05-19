@@ -252,9 +252,13 @@ export default function Checkout() {
   const handleApplyCoupon = () => {
     setIsApplyingCoupon(true);
     setTimeout(() => {
-      if (couponCode.toUpperCase() === "REPRESENTE95") {
+      const codeUpper = couponCode.trim().toUpperCase();
+      if (codeUpper === "REPRESENTE95") {
         setAppliedCoupon({ code: "REPRESENTE95", discount: 95 });
         toast.success("Cupom de 95% aplicado!");
+      } else if (codeUpper === "TESTE") {
+        setAppliedCoupon({ code: "TESTE", discount: 50 });
+        toast.success("Cupom de 50% aplicado!");
       } else {
         toast.error("Cupom inválido");
       }
@@ -283,7 +287,10 @@ export default function Checkout() {
         }
       });
 
-      if (authError && authError.message !== "User already registered") {
+      if (authError) {
+        if (authError.message.toLowerCase().includes("already registered") || authError.message.toLowerCase().includes("already exists") || authError.status === 422) {
+          throw new Error("Este e-mail já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.");
+        }
         throw new Error(`Erro ao criar conta: ${authError.message}`);
       }
 
@@ -401,38 +408,7 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {/* Premium pointing arrow line (Mensal -> Anual) */}
-              <div className="hidden md:block absolute -bottom-4 left-4 right-4 h-12 pointer-events-none z-20">
-                <svg className="w-full h-full" viewBox="0 0 600 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path 
-                    d="M 500,8 C 400,32 200,32 100,24" 
-                    stroke="url(#gradient-arrow)" 
-                    strokeWidth="2.5" 
-                    strokeDasharray="6,4" 
-                    strokeLinecap="round"
-                    className="animate-[dash_30s_linear_infinite]"
-                  />
-                  <defs>
-                    <linearGradient id="gradient-arrow" x1="100%" y1="0%" x2="0%" y2="0%">
-                      <stop offset="0%" stopColor="#94a3b8" />
-                      <stop offset="50%" stopColor="#10b981" />
-                      <stop offset="100%" stopColor="#f59e0b" />
-                    </linearGradient>
-                  </defs>
-                  <path 
-                    d="M 108,16 L 98,24 L 110,29" 
-                    stroke="#f59e0b" 
-                    strokeWidth="3" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    fill="none" 
-                  />
-                </svg>
-                <div className="absolute top-[28px] left-[50%] -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-emerald-600 to-amber-500 text-white text-[7px] font-black uppercase tracking-[0.2em] rounded-full shadow-[0_4px_12px_rgba(245,158,11,0.2)] flex items-center gap-1.5 animate-pulse border border-white/20">
-                  <Star className="w-2.5 h-2.5 fill-white" />
-                  Economize até R$ 240/ano no plano Anual!
-                </div>
-              </div>
+
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[

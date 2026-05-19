@@ -1,5 +1,6 @@
 // supabase/functions/process-checkout/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +10,8 @@ const corsHeaders = {
 
 const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY')
 const ASAAS_API_URL = 'https://www.asaas.com/api/v3'
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -30,6 +33,64 @@ serve(async (req) => {
 
     const cleanCpf = customer.cpfCnpj.replace(/\D/g, '')
     const cleanPhone = customer.phone.replace(/\D/g, '')
+
+    // Verificação de Duplicidade no Supabase Auth (via service role key)
+    if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        const { data: userData, error: listError } = await supabase.auth.admin.listUsers()
+        
+        if (!listError && userData?.users) {
+          for (const u of userData.users) {
+            if (u.id === userId) continue;
+            
+            if (u.email?.toLowerCase() === customer.email.toLowerCase()) {
+              return new Response(JSON.stringify({ success: false, message: 'Este e-mail já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200
+              })
+            }
+            
+            const uCpf = (u.user_metadata?.cpf_cnpj || '').replace(/\D/g, '')
+            if (uCpf && uCpf === cleanCpf) {
+              return new Response(JSON.stringify({ success: false, message: 'Este CPF/CNPJ já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200
+              })
+            }
+            
+            const uPhone = (u.user_metadata?.phone || '').replace(/\D/g, '')
+            if (uPhone && uPhone === cleanPhone) {
+              return new Response(JSON.stringify({ success: false, message: 'Este número de WhatsApp já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200
+              })
+            }
+          }
+        }
+      } catch (authCheckErr) {
+        console.error('Erro na verificação de duplicidade de Auth:', authCheckErr)
+      }
+    }
+
+    // Verificação de Duplicidade no Asaas (CPF/CNPJ)
+    try {
+      const cpfResp = await fetch(`${ASAAS_API_URL}/customers?cpfCnpj=${encodeURIComponent(cleanCpf)}`, {
+        headers: { 'access_token': ASAAS_API_KEY }
+      })
+      const cpfCustomers = await cpfResp.json()
+      if (cpfCustomers.data && cpfCustomers.data.length > 0) {
+        const existingCpfCust = cpfCustomers.data[0];
+        if (existingCpfCust.email?.toLowerCase() !== customer.email.toLowerCase()) {
+          return new Response(JSON.stringify({ success: false, message: 'Este CPF/CNPJ já possui uma conta de faturamento cadastrada. Por favor, utilize o e-mail original ou fale com o suporte.' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200
+          })
+        }
+      }
+    } catch (asaasCheckErr) {
+      console.error('Erro na verificação de duplicidade do Asaas:', asaasCheckErr)
+    }
 
     // 1. Garantir Cliente no Asaas
     let asaasCustomerId = null

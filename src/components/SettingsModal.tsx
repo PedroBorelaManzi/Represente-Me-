@@ -187,6 +187,10 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   };
 
   const currentPlan = planInfo[settings.plan_id as keyof typeof planInfo] || planInfo.exclusivo;
+  
+  const tierSequence = ['exclusivo', 'profissional', 'master'];
+  const tierId = settings.plan_id ? (settings.plan_id === 'premium' ? 'profissional' : settings.plan_id) : 'exclusivo';
+  const currentIndex = tierSequence.indexOf(tierId) !== -1 ? tierSequence.indexOf(tierId) : 0;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
