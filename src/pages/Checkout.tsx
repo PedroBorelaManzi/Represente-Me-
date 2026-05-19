@@ -18,6 +18,121 @@ const plans = {
   master: { id: 'master', name: 'Master', base: 197, icon: Crown, color: 'text-amber-500' }
 };
 
+
+function isValidCPF(value: string): boolean {
+  if (!value) return false;
+  const clean = value.replace(/\D/g, '');
+  if (clean.length !== 11) return false;
+  if (/^(\d)\1{10}$/.test(clean)) return false;
+  
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(clean.charAt(i)) * (10 - i);
+  }
+  let rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(clean.charAt(9))) return false;
+  
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(clean.charAt(i)) * (11 - i);
+  }
+  rev = 11 - (sum % 11);
+  if (rev === 10 || rev === 11) rev = 0;
+  if (rev !== parseInt(clean.charAt(10))) return false;
+  
+  return true;
+}
+
+function isValidCNPJ(value: string): boolean {
+  if (!value) return false;
+  const clean = value.replace(/\D/g, '');
+  if (clean.length !== 14) return false;
+  if (/^(\d)\1{13}$/.test(clean)) return false;
+  
+  let size = clean.length - 2;
+  let numbers = clean.substring(0, size);
+  const digits = clean.substring(size);
+  let sum = 0;
+  let pos = size - 7;
+  for (let i = size; i >= 1; i--) {
+    sum += parseInt(numbers.charAt(size - i)) * pos--;
+    if (pos < 2) pos = 9;
+  }
+  let result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+  if (result !== parseInt(digits.charAt(0))) return false;
+  
+  size = size + 1;
+  numbers = clean.substring(0, size);
+  sum = 0;
+  pos = size - 7;
+  for (let i = size; i >= 1; i--) {
+    sum += parseInt(numbers.charAt(size - i)) * pos--;
+    if (pos < 2) pos = 9;
+  }
+  result = sum % 11 < 2 ? 0 : 11 - (sum % 11);
+  if (result !== parseInt(digits.charAt(1))) return false;
+  
+  return true;
+}
+
+function isValidPhone(value: string): boolean {
+  if (!value) return false;
+  const clean = value.replace(/\D/g, '');
+  if (clean.length !== 10 && clean.length !== 11) return false;
+  
+  const ddd = parseInt(clean.substring(0, 2));
+  if (ddd < 11 || ddd > 99) return false;
+  
+  if (clean.length === 11 && clean.charAt(2) !== '9') return false;
+  
+  return true;
+}
+
+const formatCpfCnpj = (value: string) => {
+  const clean = value.replace(/\D/g, '').slice(0, 14);
+  if (clean.length <= 11) {
+    return clean
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  } else {
+    return clean
+      .replace(/(\d{2})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1/$2')
+      .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+  }
+};
+
+const formatPhone = (value: string) => {
+  const clean = value.replace(/\D/g, '').slice(0, 11);
+  if (clean.length <= 10) {
+    return clean
+      .replace(/(\d{2})(\d)/, '($1) $2')
+      .replace(/(\d{4})(\d{1,4})$/, '$1-$2');
+  } else {
+    return clean
+      .replace(/(\d{2})(\d)/, '($1) $2')
+      .replace(/(\d{5})(\d{1,4})$/, '$1-$2');
+  }
+};
+
+const formatCardNumber = (value: string) => {
+  const clean = value.replace(/\D/g, '').slice(0, 16);
+  return clean.replace(/(\d{4})(?=\d)/g, '$1 ');
+};
+
+const formatExpiry = (value: string) => {
+  const clean = value.replace(/\D/g, '').slice(0, 4);
+  if (clean.length <= 2) return clean;
+  return `${clean.slice(0, 2)}/${clean.slice(2)}`;
+};
+
+const formatCcv = (value: string) => {
+  return value.replace(/\D/g, '').slice(0, 4);
+};
+
 function Requirement({ label, met }: { label: string; met: boolean }) {
   return (
     <div className="flex items-center gap-2">
@@ -60,7 +175,7 @@ export default function Checkout() {
   const [installments, setInstallments] = useState(12);
 
   useEffect(() => {
-    setInstallments(billingCycle === 'ANNUAL' ? 12 : (billingCycle === 'SEMIANNUAL' ? 6 : 1));
+    setInstallments(12);
   }, [billingCycle]);
 
   const [formData, setFormData] = useState({
@@ -90,7 +205,31 @@ export default function Checkout() {
   }, [formData.password, formData.confirmPassword]);
 
   const isPasswordValid = Object.values(passwordRequirements).every(req => req);
-  const isStep1Valid = formData.name && formData.email && formData.cpfCnpj && formData.phone && isPasswordValid;
+  
+  const cleanCpfCnpj = formData.cpfCnpj.replace(/\D/g, '');
+  const cleanPhone = formData.phone.replace(/\D/g, '');
+  
+  const isCpf = cleanCpfCnpj.length <= 11;
+  const docValid = isCpf ? isValidCPF(cleanCpfCnpj) : isValidCNPJ(cleanCpfCnpj);
+  
+  const nameWords = formData.name.trim().split(/\s+/).filter(w => w.length > 0);
+  const isPersonalName = nameWords.length >= 2;
+  const hasCorporateTerms = /ltda|s\/?a|eireli|me|epp|cnpj/i.test(formData.name);
+  
+  const docNameMatch = isCpf 
+    ? (isPersonalName && !hasCorporateTerms)
+    : (formData.name.trim().length >= 3);
+    
+  const phoneValid = isValidPhone(cleanPhone);
+  
+  const isStep1Valid = formData.name && 
+                       formData.email && 
+                       formData.cpfCnpj && 
+                       docValid && 
+                       docNameMatch && 
+                       formData.phone && 
+                       phoneValid && 
+                       isPasswordValid;
 
   const getMonthlyRate = () => {
     const mod = billingCycle === 'MONTHLY' ? 20 : (billingCycle === 'SEMIANNUAL' ? 10 : 0);
@@ -238,12 +377,60 @@ export default function Checkout() {
           <div className="lg:col-span-7 space-y-12">
             
             {/* Cycle Selector (No Gradient) */}
-            <div className="space-y-6">
+            <div className="space-y-6 relative pb-6">
               <div className="flex items-center justify-between px-2">
                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em]">Escolha seu Ciclo</h3>
                 <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 dark:bg-amber-500/10 rounded-full">
                   <Sparkles className="w-3 h-3 text-amber-600" />
                   <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest">Recomendado</span>
+                </div>
+              </div>
+
+              {/* Balão de Destaque Premium (Economia do Anual) */}
+              <div className="p-4 bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-transparent border-l-4 border-amber-500 rounded-r-3xl text-left flex items-center gap-4 relative overflow-hidden group shadow-sm">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-600 shrink-0">
+                  <Sparkles className="w-4 h-4 animate-pulse" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest leading-none mb-1">
+                    Economia Máxima
+                  </p>
+                  <p className="text-xs font-black text-slate-800 dark:text-zinc-200 uppercase tracking-tight">
+                    Ao escolher o Plano Anual, você economiza <span className="text-amber-600 dark:text-amber-500">R$ 20 por mês (R$ 240/ano)</span> em relação ao plano Mensal!
+                  </p>
+                </div>
+              </div>
+
+              {/* Premium pointing arrow line (Mensal -> Anual) */}
+              <div className="hidden md:block absolute -bottom-4 left-4 right-4 h-12 pointer-events-none z-20">
+                <svg className="w-full h-full" viewBox="0 0 600 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path 
+                    d="M 500,8 C 400,32 200,32 100,24" 
+                    stroke="url(#gradient-arrow)" 
+                    strokeWidth="2.5" 
+                    strokeDasharray="6,4" 
+                    strokeLinecap="round"
+                    className="animate-[dash_30s_linear_infinite]"
+                  />
+                  <defs>
+                    <linearGradient id="gradient-arrow" x1="100%" y1="0%" x2="0%" y2="0%">
+                      <stop offset="0%" stopColor="#94a3b8" />
+                      <stop offset="50%" stopColor="#10b981" />
+                      <stop offset="100%" stopColor="#f59e0b" />
+                    </linearGradient>
+                  </defs>
+                  <path 
+                    d="M 108,16 L 98,24 L 110,29" 
+                    stroke="#f59e0b" 
+                    strokeWidth="3" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    fill="none" 
+                  />
+                </svg>
+                <div className="absolute top-[28px] left-[50%] -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-emerald-600 to-amber-500 text-white text-[7px] font-black uppercase tracking-[0.2em] rounded-full shadow-[0_4px_12px_rgba(245,158,11,0.2)] flex items-center gap-1.5 animate-pulse border border-white/20">
+                  <Star className="w-2.5 h-2.5 fill-white" />
+                  Economize até R$ 240/ano no plano Anual!
                 </div>
               </div>
 
@@ -347,15 +534,30 @@ export default function Checkout() {
 
                       <div className="space-y-2 md:col-span-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Nome Completo</label>
-                        <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Seu nome ou Razão Social" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-8 pr-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
+                        <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Seu nome completo ou Razão Social" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-8 pr-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
+                        {formData.name && cleanCpfCnpj.length > 0 && isCpf && !docNameMatch && (
+                          <p className="text-[9px] font-bold text-red-500 uppercase tracking-wider px-4 mt-1">
+                            {!isPersonalName ? "Informe Nome e Sobrenome para CPF" : "Nome não pode conter termos jurídicos"}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">CPF / CNPJ</label>
-                        <input required type="text" value={formData.cpfCnpj} onChange={(e) => setFormData({...formData, cpfCnpj: e.target.value})} placeholder="000.000.000-00" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-8 pr-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
+                        <input required type="text" value={formData.cpfCnpj} onChange={(e) => setFormData({...formData, cpfCnpj: formatCpfCnpj(e.target.value)})} placeholder="000.000.000-00" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-8 pr-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
+                        {formData.cpfCnpj && !docValid && (
+                          <p className="text-[9px] font-bold text-red-500 uppercase tracking-wider px-4 mt-1">
+                            {isCpf ? "CPF inválido (dígitos incorretos)" : "CNPJ inválido (dígitos incorretos)"}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">WhatsApp</label>
-                        <input required type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} placeholder="(00) 00000-0000" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-8 pr-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
+                        <input required type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: formatPhone(e.target.value)})} placeholder="(00) 00000-0000" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] pl-8 pr-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
+                        {formData.phone && !phoneValid && (
+                          <p className="text-[9px] font-bold text-red-500 uppercase tracking-wider px-4 mt-1">
+                            DDD ou número celular inválido
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -433,15 +635,15 @@ export default function Checkout() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                           <div className="md:col-span-2 space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Número do Cartão</label>
-                            <input type="text" value={formData.cardNumber} onChange={(e) => setFormData({...formData, cardNumber: e.target.value})} placeholder="0000 0000 0000 0000" className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all" />
+                            <input type="text" value={formData.cardNumber} onChange={(e) => setFormData({...formData, cardNumber: formatCardNumber(e.target.value)})} placeholder="0000 0000 0000 0000" className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all" />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Validade</label>
-                            <input type="text" value={formData.expiry} onChange={(e) => setFormData({...formData, expiry: e.target.value})} placeholder="MM/AA" className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all" />
+                            <input type="text" value={formData.expiry} onChange={(e) => setFormData({...formData, expiry: formatExpiry(e.target.value)})} placeholder="MM/AA" className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all" />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">CVC</label>
-                            <input type="text" value={formData.ccv} onChange={(e) => setFormData({...formData, ccv: e.target.value})} placeholder="123" className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all" />
+                            <input type="text" value={formData.ccv} onChange={(e) => setFormData({...formData, ccv: formatCcv(e.target.value)})} placeholder="123" className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all" />
                           </div>
                           <div className="md:col-span-2 space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Titular do Cartão</label>
@@ -455,7 +657,7 @@ export default function Checkout() {
                                 onChange={(e) => setInstallments(Number(e.target.value))} 
                                 className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all appearance-none cursor-pointer pr-12 font-black uppercase text-[10px] tracking-wider"
                               >
-                                {Array.from({ length: billingCycle === 'ANNUAL' ? 12 : (billingCycle === 'SEMIANNUAL' ? 6 : 1) }, (_, i) => i + 1).map((num) => {
+                                {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => {
                                   const installmentValue = finalPrice / num;
                                   return (
                                     <option key={num} value={num} className="font-bold text-slate-700 dark:text-zinc-300">
@@ -624,24 +826,39 @@ export default function Checkout() {
                   </div>
 
                   <div className="pt-8 space-y-6">
-                    <div>
-                       <p className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-4">
-                          Parcela do Investimento
-                       </p>
-                       <p className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter">
-                          <span className="text-2xl mr-1">R$</span>{(finalPrice / (billingCycle === 'ANNUAL' ? 12 : (billingCycle === 'SEMIANNUAL' ? 6 : 1))).toFixed(2).replace('.', ',')}
-                       </p>
-                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
-                          {billingCycle === 'ANNUAL' ? '12 parcelas mensais' : (billingCycle === 'SEMIANNUAL' ? '6 parcelas mensais' : 'Pagamento Mensal')}
-                       </p>
-                    </div>
+                    {paymentMethod === 'CREDIT_CARD' ? (
+                      <div>
+                         <p className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-4">
+                            Parcela do Investimento
+                         </p>
+                         <p className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter">
+                            <span className="text-2xl mr-1">R$</span>{(finalPrice / installments).toFixed(2).replace('.', ',')}
+                         </p>
+                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
+                            No Cartão em {installments} parcelas mensais sem juros
+                         </p>
+                      </div>
+                    ) : (
+                      <div>
+                         <p className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-4">
+                            Total a Investir (Valor Cheio)
+                         </p>
+                         <p className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter">
+                            <span className="text-2xl mr-1">R$</span>{finalPrice.toFixed(2).replace('.', ',')}
+                         </p>
+                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
+                            {paymentMethod === 'PIX' ? 'Pagamento Único à Vista via PIX' : 'Pagamento Único à Vista via Boleto'}
+                         </p>
+                      </div>
+                    )}
                     
-                    <div className="p-4 bg-slate-50 dark:bg-zinc-800/30 rounded-2xl border border-slate-100 dark:border-zinc-800">
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-1">Total a Investir (Valor Cheio)</p>
-                       <p className="text-xs font-black text-slate-400 dark:text-zinc-300">R$ {finalPrice.toFixed(2).replace('.', ',')}</p>
-                    </div>
-                  </div>
-                </div>
+                    {paymentMethod === 'CREDIT_CARD' && (
+                      <div className="p-4 bg-slate-50 dark:bg-zinc-800/30 rounded-2xl border border-slate-100 dark:border-zinc-800">
+                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-1">Total a Investir (Valor Cheio)</p>
+                         <p className="text-xs font-black text-slate-400 dark:text-zinc-300">R$ {finalPrice.toFixed(2).replace('.', ',')}</p>
+                      </div>
+                    )}
+                  </div>                </div>
 
                 <div className="p-6 bg-blue-50 rounded-[32px] border border-blue-100 flex gap-6 shadow-sm text-left">
                   <ShieldAlert className="w-6 h-6 text-blue-600 shrink-0" />
