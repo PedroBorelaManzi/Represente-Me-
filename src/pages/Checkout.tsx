@@ -101,7 +101,9 @@ export default function Checkout() {
 
   const baseValue = getTotalPrice();
   const couponDiscount = appliedCoupon ? (baseValue * appliedCoupon.discount) / 100 : 0;
-  const finalPrice = baseValue - couponDiscount;
+  const priceAfterCoupon = baseValue - couponDiscount;
+  const pixDiscount = paymentMethod === 'PIX' ? (priceAfterCoupon * 5) / 100 : 0;
+  const finalPrice = priceAfterCoupon - pixDiscount;
 
   const handleApplyCoupon = () => {
     setIsApplyingCoupon(true);
@@ -390,7 +392,7 @@ export default function Checkout() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-4 p-2 bg-slate-50 rounded-[32px] border border-slate-100 shadow-inner">
+                      <div className="grid grid-cols-3 gap-4 p-2 bg-slate-50 dark:bg-zinc-800/30 rounded-[32px] border border-slate-100 dark:border-zinc-800 shadow-inner">
                         {[
                           { id: 'CREDIT_CARD', icon: CreditCard, label: 'Cartão' },
                           { id: 'PIX', icon: QrCode, label: 'Pix' },
@@ -403,10 +405,15 @@ export default function Checkout() {
                             className={cn(
                               "flex flex-col items-center gap-3 py-6 rounded-[24px] transition-all relative overflow-hidden",
                               paymentMethod === method.id 
-                                ? "bg-white shadow-xl text-emerald-600 scale-[1.05]" 
-                                : "text-slate-400 hover:text-slate-600"
+                                ? "bg-white dark:bg-zinc-900 shadow-xl text-emerald-600 dark:text-emerald-500 scale-[1.05]" 
+                                : "text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-400"
                             )}
                           >
+                            {method.id === 'PIX' && (
+                              <span className="absolute top-2 right-2 px-2 py-0.5 bg-teal-500 text-white text-[7px] font-black uppercase tracking-wider rounded-full shadow-md shadow-teal-500/20 animate-bounce">
+                                5% OFF
+                              </span>
+                            )}
                             <method.icon className="w-6 h-6" />
                             <span className="text-[10px] font-black uppercase tracking-widest">{method.label}</span>
                             {paymentMethod === method.id && (
@@ -420,19 +427,58 @@ export default function Checkout() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                           <div className="md:col-span-2 space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Número do Cartão</label>
-                            <input type="text" value={formData.cardNumber} onChange={(e) => setFormData({...formData, cardNumber: e.target.value})} placeholder="0000 0000 0000 0000" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
+                            <input type="text" value={formData.cardNumber} onChange={(e) => setFormData({...formData, cardNumber: e.target.value})} placeholder="0000 0000 0000 0000" className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all" />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Validade</label>
-                            <input type="text" value={formData.expiry} onChange={(e) => setFormData({...formData, expiry: e.target.value})} placeholder="MM/AA" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
+                            <input type="text" value={formData.expiry} onChange={(e) => setFormData({...formData, expiry: e.target.value})} placeholder="MM/AA" className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all" />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">CVC</label>
-                            <input type="text" value={formData.ccv} onChange={(e) => setFormData({...formData, ccv: e.target.value})} placeholder="123" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
+                            <input type="text" value={formData.ccv} onChange={(e) => setFormData({...formData, ccv: e.target.value})} placeholder="123" className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all" />
                           </div>
                           <div className="md:col-span-2 space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-4">Titular do Cartão</label>
-                            <input type="text" value={formData.holderName} onChange={(e) => setFormData({...formData, holderName: e.target.value})} placeholder="NOME COMO NO CARTÃO" className="w-full bg-slate-50 border border-slate-100 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all uppercase" />
+                            <input type="text" value={formData.holderName} onChange={(e) => setFormData({...formData, holderName: e.target.value})} placeholder="NOME COMO NO CARTÃO" className="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-[24px] px-8 py-5 text-sm font-bold outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white dark:focus:bg-zinc-900 transition-all uppercase" />
+                          </div>
+                        </div>
+                      )}
+
+                      {paymentMethod === 'PIX' && (
+                        <div className="space-y-4 pt-4 text-left">
+                          <div className="p-6 bg-gradient-to-r from-teal-500/5 to-emerald-500/5 dark:from-teal-500/10 dark:to-emerald-500/10 border border-teal-500/20 dark:border-teal-500/30 rounded-[32px] flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-2xl bg-teal-500/10 flex items-center justify-center shrink-0">
+                              <QrCode className="w-5 h-5 text-teal-600" />
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-zinc-200">Pagamento Instantâneo</h4>
+                              <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-bold leading-normal">
+                                Ao clicar em <strong>Ativar Minha Assinatura</strong>, um código Copia e Cola e o QR Code do PIX serão gerados para você efetuar o pagamento imediatamente.
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="p-4 bg-teal-50 dark:bg-teal-500/5 border border-teal-100 dark:border-teal-500/10 rounded-2xl flex items-center gap-3">
+                            <Percent className="w-4 h-4 text-teal-600 shrink-0 animate-pulse" />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-teal-700 dark:text-teal-400">
+                              Você economizou R$ {pixDiscount.toFixed(2).replace('.', ',')} ao escolher pagar via PIX!
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {paymentMethod === 'BOLETO' && (
+                        <div className="space-y-4 pt-4 text-left">
+                          <div className="p-6 bg-slate-50 dark:bg-zinc-800/30 border border-slate-100 dark:border-zinc-800 rounded-[32px] flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                              <FileText className="w-5 h-5 text-slate-500" />
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-zinc-200">Boleto Bancário</h4>
+                              <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-bold leading-normal">
+                                O boleto será gerado ao prosseguir. Note que boletos levam até 3 dias úteis para compensação bancária e liberação do acesso.
+                              </p>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -478,12 +524,83 @@ export default function Checkout() {
                     </div>
                   </div>
 
-                  <div className="pt-8 border-t border-slate-100 space-y-6">
+                  {/* Cupom de Desconto Premium Highlighted */}
+                  <div className="p-6 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 dark:from-emerald-500/10 dark:to-teal-500/10 border border-emerald-500/20 dark:border-emerald-500/30 rounded-[32px] shadow-sm text-left space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Ticket className="w-5 h-5 text-emerald-600 animate-pulse" />
+                      <span className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-zinc-200">Possui um Cupom?</span>
+                    </div>
+                    
+                    {!appliedCoupon ? (
+                      <div className="flex gap-3">
+                        <input 
+                          type="text" 
+                          value={couponCode} 
+                          onChange={(e) => setCouponCode(e.target.value)} 
+                          placeholder="Digite o cupom (Ex: REPRESENTE95)" 
+                          className="flex-grow bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl px-4 py-3 text-xs font-black uppercase outline-none focus:ring-2 focus:ring-emerald-500 transition-all placeholder:text-slate-400"
+                        />
+                        <button 
+                          type="button" 
+                          onClick={handleApplyCoupon} 
+                          disabled={isApplyingCoupon || !couponCode}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl px-6 py-3 text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center min-w-[90px]"
+                        >
+                          {isApplyingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : "Aplicar"}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl p-4">
+                        <div className="flex items-center gap-3">
+                          <Percent className="w-4 h-4 text-emerald-600" />
+                          <div>
+                            <p className="text-[10px] font-black uppercase text-slate-500 tracking-wider leading-none mb-1">Cupom Ativo</p>
+                            <p className="text-xs font-black uppercase text-emerald-700 dark:text-emerald-400 leading-none">{appliedCoupon.code} (-{appliedCoupon.discount}%)</p>
+                          </div>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setAppliedCoupon(null);
+                            setCouponCode("");
+                            toast.info("Cupom removido");
+                          }}
+                          className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:text-red-600 transition-all hover:underline"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Resumo de Preços Detalhado */}
+                  <div className="py-6 border-y border-slate-100 dark:border-zinc-800 space-y-3 text-left">
+                    <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-widest">
+                      <span>Valor do Ciclo</span>
+                      <span>R$ {baseValue.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    
+                    {appliedCoupon && (
+                      <div className="flex justify-between text-xs font-bold text-emerald-600 uppercase tracking-widest">
+                        <span>Cupom ({appliedCoupon.code})</span>
+                        <span>- R$ {couponDiscount.toFixed(2).replace('.', ',')}</span>
+                      </div>
+                    )}
+
+                    {paymentMethod === 'PIX' && (
+                      <div className="flex justify-between text-xs font-black text-teal-600 dark:text-teal-400 uppercase tracking-widest animate-pulse">
+                        <span>Desconto PIX (5%)</span>
+                        <span>- R$ {pixDiscount.toFixed(2).replace('.', ',')}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-8 space-y-6">
                     <div>
                        <p className="text-[11px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-4">
                           Parcela do Investimento
                        </p>
-                       <p className="text-6xl font-black text-slate-900 tracking-tighter">
+                       <p className="text-6xl font-black text-slate-900 dark:text-white tracking-tighter">
                           <span className="text-2xl mr-1">R$</span>{(finalPrice / (billingCycle === 'ANNUAL' ? 12 : (billingCycle === 'SEMIANNUAL' ? 6 : 1))).toFixed(2).replace('.', ',')}
                        </p>
                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
@@ -491,9 +608,9 @@ export default function Checkout() {
                        </p>
                     </div>
                     
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="p-4 bg-slate-50 dark:bg-zinc-800/30 rounded-2xl border border-slate-100 dark:border-zinc-800">
                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] mb-1">Total a Investir (Valor Cheio)</p>
-                       <p className="text-xs font-black text-slate-400">R$ {finalPrice.toFixed(2).replace('.', ',')}</p>
+                       <p className="text-xs font-black text-slate-400 dark:text-zinc-300">R$ {finalPrice.toFixed(2).replace('.', ',')}</p>
                     </div>
                   </div>
                 </div>
