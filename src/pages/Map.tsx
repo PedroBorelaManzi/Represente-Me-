@@ -391,13 +391,13 @@ export default function Map() {
         <button 
           type="button"
           onClick={toggleFullscreen}
-          className="absolute bottom-8 left-8 z-[1000] flex items-center justify-center p-4 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-slate-700 dark:text-zinc-300 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-2xl border border-slate-100 dark:border-zinc-850 shadow-2xl transition-all hover:scale-105 active:scale-95 cursor-pointer pointer-events-auto"
+          className="absolute top-[10px] left-[54px] z-[1000] flex items-center justify-center w-[34px] h-[34px] bg-white hover:bg-[#f4f4f4] text-slate-700 rounded-[4px] border-2 border-black/20 shadow-[0_1px_5px_rgba(0,0,0,0.65)] transition-all cursor-pointer pointer-events-auto"
           title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
         >
           {isFullscreen ? (
-            <Minimize2 className="w-5 h-5" />
+            <Minimize2 className="w-4 h-4" />
           ) : (
-            <Maximize2 className="w-5 h-5" />
+            <Maximize2 className="w-4 h-4" />
           )}
         </button>
 
