@@ -152,6 +152,7 @@ export default function Layout() {
                     onClick={() => {
                       setIsSettingsModalOpen(true);
                       setSidebarOpen(false);
+                      setDesktopSidebarOpen(false);
                     }}
                     className={cn(
                       "flex items-center gap-4 w-full px-4 py-3.5 rounded-2xl transition-all duration-300 text-slate-500 dark:text-zinc-400 hover:text-emerald-600 hover:bg-slate-50 dark:hover:bg-zinc-800/30",

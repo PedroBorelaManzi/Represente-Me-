@@ -145,10 +145,10 @@ export default function DailyNotes({ selectedDate, className }: DailyNotesProps)
       "bg-white dark:bg-zinc-900 rounded-[32px] border-2 border-emerald-600/20 p-6 shadow-xl flex flex-col h-full",
       className
     )}>
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 min-h-0">
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-0">
         
         {/* Coluna de Anotações */}
-        <div className="flex flex-col h-full min-h-0">
+        <div className="flex flex-col h-full min-h-[150px]">
           <div className="flex items-center justify-between mb-4 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-500/10 rounded-xl">
@@ -179,7 +179,7 @@ export default function DailyNotes({ selectedDate, className }: DailyNotesProps)
         </div>
 
         {/* Coluna de Tarefas */}
-        <div className="flex flex-col h-full min-h-0">
+        <div className="flex flex-col h-full min-h-[200px]">
           <div className="flex items-center justify-between mb-4 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-500/10 rounded-xl">
@@ -195,16 +195,16 @@ export default function DailyNotes({ selectedDate, className }: DailyNotesProps)
           </div>
 
           <div className="flex flex-col gap-4 flex-1 min-h-0">
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex gap-2 flex-shrink-0 w-full">
               <input 
                 type="text" 
                 value={newTaskText}
                 onChange={(e) => setNewTaskText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addTask()}
                 placeholder="Adicionar tarefa..."
-                className="flex-1 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
+                className="flex-1 min-w-0 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
               />
-              <button onClick={addTask} className="p-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors">
+              <button onClick={addTask} className="p-2 flex-shrink-0 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors">
                 <Plus className="w-5 h-5" />
               </button>
             </div>
@@ -230,7 +230,7 @@ export default function DailyNotes({ selectedDate, className }: DailyNotesProps)
                         {task.completed ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                       </button>
                       <span className={cn(
-                        "flex-1 text-sm font-medium transition-all",
+                        "flex-1 min-w-0 text-sm font-medium transition-all break-words whitespace-normal",
                         task.completed ? "line-through text-slate-400" : "text-slate-700 dark:text-zinc-200"
                       )}>
                         {task.text}

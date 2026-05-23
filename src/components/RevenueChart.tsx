@@ -87,7 +87,7 @@ const RevenueChart = ({ data, loading, currentDate, onPrevMonth, onNextMonth }) 
            ))}
         </div>
         <div className={cn(
-          "flex-1 flex items-stretch px-4 relative overflow-hidden pb-2",
+          "flex-1 flex items-stretch px-4 relative pb-2",
           data.length > 10 ? "gap-1" : data.length > 6 ? "gap-2" : "gap-4"
         )}>
           {data.map((item, idx) => {
@@ -126,7 +126,7 @@ const RevenueChart = ({ data, loading, currentDate, onPrevMonth, onNextMonth }) 
                    </AnimatePresence>
                 </motion.div>
                 <div className="absolute bottom-0 left-0 right-0 h-8 flex items-center justify-center">
-                  <p className={cn("text-[8px] font-black uppercase truncate px-1", isSelected ? "text-emerald-600" : "text-slate-900 dark:text-zinc-100")}>{item.name}</p>
+                  <p className={cn("font-black uppercase truncate px-1", data.length > 6 ? "text-[7px]" : "text-[8px]", isSelected ? "text-emerald-600" : "text-slate-900 dark:text-zinc-100")}>{item.name}</p>
                 </div>
               </div>
             );

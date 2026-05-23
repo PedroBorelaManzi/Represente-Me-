@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip, ZoomControl } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Search, MapPin, Building2, Phone, Mail, Plus, X, Info, Loader2, ExternalLink, Trash2, Navigation2, Target, Users, FileDown, Maximize2, Minimize2 } from "lucide-react";
@@ -337,7 +337,7 @@ export default function Map() {
       {/* Premium Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 lg:gap-6">
         <div>
-          <h1 className="text-2xl xs:text-3xl lg:text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 lg:gap-4 uppercase tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 lg:gap-4 uppercase tracking-tight">
             <div className="p-2 sm:p-2.5 lg:p-3 bg-emerald-600 rounded-xl lg:rounded-[20px]">
               <Navigation2 className="w-6 h-6 lg:w-8 h-8 text-white" />
             </div>

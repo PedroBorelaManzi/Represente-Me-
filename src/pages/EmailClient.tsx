@@ -464,7 +464,7 @@ export default function EmailClient() {
         <div className={cn(
           "hidden lg:flex flex-col gap-2 transition-all duration-300",
           selectedEmail && isReadingFocusMode ? "lg:hidden" : "",
-          isFoldersCollapsed ? "w-24" : "w-72"
+          isFoldersCollapsed ? "w-20" : "w-64"
         )}>
            <div className="h-fit bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] p-4 flex flex-col shadow-sm">
               <div className="flex items-center justify-between px-2 mb-2">
@@ -503,7 +503,7 @@ export default function EmailClient() {
 
         <div className={cn(
           "flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-[32px] overflow-hidden shadow-sm transition-all duration-500 ease-in-out",
-          selectedEmail ? "w-80 flex-shrink-0 hidden md:flex" : "flex-1 w-full",
+          selectedEmail ? "w-[280px] lg:w-80 flex-shrink-0 hidden md:flex" : "flex-1 w-full",
           selectedEmail && isReadingFocusMode && "lg:hidden"
         )}>
           {currentFolder === 'inbox' && (
@@ -898,7 +898,7 @@ function ComposeBalloon({
           exit={{ y: "100%", opacity: 0 }}
           transition={{ type: "spring", damping: 30, stiffness: 300 }}
           className={cn(
-            "fixed bottom-0 right-0 sm:right-10 w-full sm:w-[550px] bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-2xl sm:rounded-t-[40px] z-[100] flex flex-col",
+            "fixed bottom-0 left-0 sm:left-auto right-0 sm:right-10 w-full sm:w-[550px] max-w-[100vw] bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-2xl sm:rounded-t-[40px] z-[100] flex flex-col",
             isMinimized ? "h-[80px]" : "h-[100dvh] sm:h-[750px]"
           )}
         >

@@ -239,15 +239,15 @@ export default function PedidosPage() {
             className="p-6 md:p-8 bg-white dark:bg-zinc-900 rounded-[32px] md:rounded-[40px] border border-slate-100 dark:border-zinc-850 shadow-sm group"
           >
              <div className="flex items-center justify-between mb-4">
-                <div className={cn("p-3 md:p-4 rounded-xl md:rounded-2xl group-hover:scale-110 transition-transform", item.bg)}>
-                   <item.icon className={cn("w-5 h-5 md:w-6 md:h-6", item.color)} />
+                <div className={cn("p-2 md:p-3 rounded-xl md:rounded-2xl group-hover:scale-110 transition-transform", item.bg)}>
+                   <item.icon className={cn("w-4 h-4 md:w-5 md:h-5", item.color)} />
                 </div>
                 <ArrowUpRight className="w-4 h-4 text-slate-200" />
              </div>
              <div>
                 <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{item.label}</p>
                 <div className="flex items-baseline gap-2">
-                   <p className="text-xl md:text-2xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter tabular-nums">
+                   <p className="text-lg md:text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter tabular-nums">
                       {typeof item.val === 'number' && item.suffix === 'BRL' ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(item.val) : item.val}
                    </p>
                    {item.suffix !== 'BRL' && <span className="text-[8px] md:text-[10px] font-black text-slate-300 uppercase tracking-widest">{item.suffix}</span>}

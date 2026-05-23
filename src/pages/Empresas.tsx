@@ -396,36 +396,36 @@ export default function EmpresasPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
         <div className="bg-white dark:bg-zinc-900 p-5 sm:p-6 lg:p-8 rounded-[32px] md:rounded-[40px] border border-slate-200 dark:border-zinc-800 shadow-sm group">
           <div className="flex items-center gap-4 md:gap-5">
-            <div className="p-2.5 sm:p-3 lg:p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl md:rounded-3xl group-hover:scale-110 transition-transform flex-shrink-0">
-              <TrendingUp className="w-5 h-5 sm:w-6 h-6 lg:w-8 lg:h-8 text-emerald-600" />
+            <div className="p-2 sm:p-2.5 lg:p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl md:rounded-3xl group-hover:scale-110 transition-transform flex-shrink-0">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-emerald-600" />
             </div>
             <div className="min-w-0">
               <p className="text-[7px] sm:text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Faturamento Mês</p>
-              <h2 className="text-lg sm:text-xl lg:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight truncate">{formatCurrency(totalGeral)}</h2>
+              <h2 className="text-base sm:text-lg lg:text-2xl font-black text-slate-900 dark:text-zinc-100 tracking-tight truncate">{formatCurrency(totalGeral)}</h2>
             </div>
           </div>
         </div>
 
         <div className="bg-white dark:bg-zinc-900 p-5 sm:p-6 lg:p-8 rounded-[32px] md:rounded-[40px] border border-slate-200 dark:border-zinc-800 shadow-sm group">
           <div className="flex items-center gap-4 md:gap-5">
-            <div className="p-2.5 sm:p-3 lg:p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl md:rounded-3xl group-hover:rotate-12 transition-transform flex-shrink-0">
-              <ShoppingBag className="w-5 h-5 sm:w-6 h-6 lg:w-8 lg:h-8 text-emerald-600" />
+            <div className="p-2 sm:p-2.5 lg:p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl md:rounded-3xl group-hover:rotate-12 transition-transform flex-shrink-0">
+              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-emerald-600" />
             </div>
             <div className="min-w-0">
               <p className="text-[7px] sm:text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pedidos Mês</p>
-              <h2 className="text-lg sm:text-xl lg:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{monthlyOrders.length}</h2>
+              <h2 className="text-base sm:text-lg lg:text-2xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{monthlyOrders.length}</h2>
             </div>
           </div>
         </div>
 
         <div className="bg-white dark:bg-zinc-900 p-5 sm:p-6 lg:p-8 rounded-[32px] md:rounded-[40px] border border-slate-200 dark:border-zinc-800 shadow-sm group">
           <div className="flex items-center gap-4 md:gap-5">
-            <div className="p-2.5 sm:p-3 lg:p-4 bg-amber-50 dark:bg-amber-950/20 rounded-2xl md:rounded-3xl group-hover:scale-90 transition-transform flex-shrink-0">
-              <Zap className="w-5 h-5 sm:w-6 h-6 lg:w-8 lg:h-8 text-amber-600" />
+            <div className="p-2 sm:p-2.5 lg:p-3 bg-amber-50 dark:bg-amber-950/20 rounded-2xl md:rounded-3xl group-hover:scale-90 transition-transform flex-shrink-0">
+              <Zap className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-amber-600" />
             </div>
             <div className="min-w-0">
               <p className="text-[7px] sm:text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pedidos Hoje</p>
-              <h2 className="text-lg sm:text-xl lg:text-3xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{ordersToday}</h2>
+              <h2 className="text-base sm:text-lg lg:text-2xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">{ordersToday}</h2>
             </div>
           </div>
         </div>
@@ -484,7 +484,7 @@ export default function EmpresasPage() {
                       <Settings className="w-3.5 h-3.5 md:w-4 md:h-4 opacity-30 group-hover:rotate-45 transition-transform" />
                     </button>
                   </div>
-                  <p className="text-base sm:text-lg lg:text-xl font-black tracking-tighter">{formatCurrency(catTotals[cat] || 0)}</p>
+                  <p className="text-sm sm:text-base lg:text-lg font-black tracking-tighter">{formatCurrency(catTotals[cat] || 0)}</p>
                 </div>
               ))}
             </div>
