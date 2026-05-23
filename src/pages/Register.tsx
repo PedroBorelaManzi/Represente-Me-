@@ -260,7 +260,25 @@ const Register = () => {
                   </motion.div>
                 ))}
               </div>
-            </motion.div>
+              <div className="max-w-2xl mx-auto mt-16 mb-8 relative">
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-6 md:p-8 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-[32px] shadow-sm flex flex-col md:flex-row items-center gap-6 text-center md:text-left relative overflow-hidden"
+                >
+                  <div className="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+                  <div className="w-16 h-16 shrink-0 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center shadow-sm relative z-10">
+                    <Shield className="w-8 h-8 text-emerald-600 dark:text-emerald-500" />
+                  </div>
+                  <div className="relative z-10">
+                    <h4 className="text-sm font-black uppercase tracking-widest text-emerald-900 dark:text-emerald-400 mb-2">Garantia Incondicional de 7 Dias</h4>
+                    <p className="text-sm text-emerald-700 dark:text-emerald-500 font-medium leading-relaxed">
+                      Você tem 7 dias para testar nossa plataforma. Se decidir não continuar, você pode <span className="font-bold text-emerald-900 dark:text-emerald-300">cancelar a qualquer momento</span> dentro do prazo sem nenhum custo. Risco zero.
+                    </p>
+                  </div>
+                </motion.div>
+              </div>
+</motion.div>
           )}
 
           {step === 2 && (
