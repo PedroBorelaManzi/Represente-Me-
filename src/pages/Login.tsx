@@ -60,7 +60,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, user } = useAuth();
+  const { signIn, signInOffline, user } = useAuth();
   const navigate = useNavigate();
 
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
@@ -103,13 +103,37 @@ export default function Login() {
 
       if (creds && creds.username && creds.password) {
         setIsLoading(true);
-        await signIn(creds.username, creds.password);
-        toast.success("Autenticado via Biometria!");
-        navigate("/dashboard");
+
+        const isOnline = navigator.onLine;
+
+        if (isOnline) {
+          try {
+            await signIn(creds.username, creds.password);
+            toast.success("Autenticado via Biometria!");
+            navigate("/dashboard");
+            return;
+          } catch (onlineError) {
+            console.warn("Online sign in failed, trying offline fallback...", onlineError);
+          }
+        }
+
+        // Offline fallback
+        const cachedUserStr = localStorage.getItem("rm_cached_user");
+        if (cachedUserStr) {
+          const cachedUser = JSON.parse(cachedUserStr);
+          if (cachedUser && cachedUser.email === creds.username) {
+            signInOffline(cachedUser);
+            toast.success("Autenticado offline via Biometria!");
+            navigate("/dashboard");
+            return;
+          }
+        }
+        
+        throw new Error("Usuário não encontrado localmente ou credenciais incompatíveis.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Biometric failed", error);
-      toast.error("Falha na autenticação biométrica. Digite sua senha.");
+      toast.error(error.message || "Falha na autenticação biométrica. Digite sua senha.");
     } finally {
       setIsLoading(false);
     }
@@ -118,12 +142,53 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    
+    const isOnline = navigator.onLine;
+    
+    if (!isOnline) {
+      // Offline login validation against secure keystore if biometrics is active
+      const cachedUserStr = localStorage.getItem("rm_cached_user");
+      if (cachedUserStr) {
+        const cachedUser = JSON.parse(cachedUserStr);
+        if (cachedUser && cachedUser.email === email) {
+          try {
+            const result = await NativeBiometric.isAvailable();
+            if (result.isAvailable) {
+              const isEnabled = localStorage.getItem("rm_biometric_enabled") === "true";
+              if (isEnabled) {
+                const creds = await NativeBiometric.getCredentials({
+                  server: "representeme.app",
+                });
+                if (creds && creds.username === email && creds.password === password) {
+                  signInOffline(cachedUser);
+                  toast.success("Autenticado offline!");
+                  navigate("/dashboard");
+                  setIsLoading(false);
+                  return;
+                }
+              }
+            }
+          } catch (biometricErr) {
+            console.error("Biometric verification offline failed:", biometricErr);
+          }
+        }
+      }
+      
+      toast.error("Sem conexão com a internet. Por favor, conecte-se ou use o Acesso Biométrico.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       await signIn(email, password);
       toast.success("Bem-vindo de volta!");
       navigate("/dashboard");
     } catch (error: any) {
-      toast.error(error.message || "Erro ao entrar");
+      if (error.message && error.message.includes("Failed to fetch")) {
+        toast.error("Erro de conexão. Verifique sua internet ou use o Acesso Biométrico.");
+      } else {
+        toast.error(error.message || "Erro ao entrar");
+      }
     } finally {
       setIsLoading(false);
     }

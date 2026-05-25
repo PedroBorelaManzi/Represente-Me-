@@ -7,6 +7,7 @@ type AuthContextType = {
   loading: boolean;
   signOut: () => Promise<void>;
   signIn: (email: string, pass: string) => Promise<any>;
+  signInOffline: (cachedUser: any) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,6 +19,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
+        if (session?.user) {
+          localStorage.setItem("rm_cached_user", JSON.stringify(session.user));
+        }
         setUser(session?.user ?? null);
         setLoading(false);
       })
@@ -27,6 +31,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        localStorage.setItem("rm_cached_user", JSON.stringify(session.user));
+      }
       setUser(session?.user ?? null);
       setLoading(false);
     });
@@ -42,17 +49,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: pass,
     });
     if (error) throw error;
+    if (data?.user) {
+      localStorage.setItem("rm_cached_user", JSON.stringify(data.user));
+    }
     return data;
+  };
+
+  const signInOffline = (cachedUser: any) => {
+    setUser(cachedUser);
+    setLoading(false);
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    localStorage.removeItem("rm_cached_user");
     localStorage.removeItem('has_completed_onboarding');
-    // Removed: localStorage.removeItem('theme'); so device remembers theme
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut, signIn }}>
+    <AuthContext.Provider value={{ user, loading, signOut, signIn, signInOffline }}>
       {children}
     </AuthContext.Provider>
   );
