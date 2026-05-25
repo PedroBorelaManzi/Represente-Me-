@@ -174,7 +174,7 @@ export default function Login() {
         }
       }
       
-      toast.error("Sem conexão com a internet. Por favor, conecte-se ou use o Acesso Biométrico.");
+      toast.error("Senha ou e-mail incorreto. Tente novamente.");
       setIsLoading(false);
       return;
     }
@@ -186,6 +186,8 @@ export default function Login() {
     } catch (error: any) {
       if (error.message && error.message.includes("Failed to fetch")) {
         toast.error("Erro de conexão. Verifique sua internet ou use o Acesso Biométrico.");
+      } else if (error.status === 400 || (error.message && error.message.toLowerCase().includes("invalid"))) {
+        toast.error("Senha ou e-mail incorreto. Tente novamente.");
       } else {
         toast.error(error.message || "Erro ao entrar");
       }
