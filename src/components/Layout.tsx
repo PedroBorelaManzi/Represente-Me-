@@ -28,6 +28,7 @@ import { useSync } from '../contexts/SyncContext';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import SettingsModal from './SettingsModal';
+import { Capacitor } from '@capacitor/core';
 import { WhatsAppButton } from './WhatsAppButton';
 import { Logo } from './Logo';
 import { SubscriptionGuard } from './SubscriptionGuard';
@@ -151,11 +152,42 @@ export default function Layout() {
             <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
               {menuItems.map((item) => {
                 const isActive = location.pathname === item.path;
+                const isEmailItem = item.label === 'E-mails';
+                
+                const handleItemClick = (e: React.MouseEvent) => {
+                  if (isEmailItem && Capacitor.isNativePlatform()) {
+                    e.preventDefault();
+                    setSidebarOpen(false);
+                    
+                    const platform = Capacitor.getPlatform();
+                    if (platform === 'android') {
+                      // Android Intent for Gmail with web fallback
+                      const androidIntent = "intent://#Intent;scheme=googlegmail;package=com.google.android.gm;end;S.browser_fallback_url=https%3A%2F%2Fwww.gmail.com;";
+                      window.open(androidIntent, "_system");
+                    } else if (platform === 'ios') {
+                      // iOS custom scheme for Gmail
+                      const start = Date.now();
+                      window.open("googlegmail://", "_system");
+                      
+                      // Fallback for iOS if not installed
+                      setTimeout(() => {
+                        if (Date.now() - start < 1500) {
+                          window.open("https://www.gmail.com", "_system");
+                        }
+                      }, 1000);
+                    } else {
+                      window.open("https://www.gmail.com", "_system");
+                    }
+                  } else {
+                    setSidebarOpen(false);
+                  }
+                };
+
                 return (
                   <Link
                     key={item.path}
                     to={item.path}
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={handleItemClick}
                     className={cn(
                       "flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
                       isActive 
