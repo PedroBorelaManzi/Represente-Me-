@@ -30,7 +30,7 @@ const defaultSettings: Settings = {
   has_completed_onboarding: false,
   categories: [],
   revenue_ceiling: 1000000,
-  subscription_status: 'inactive',
+  subscription_status: 'active', // Default to active to avoid locking out offline users
   plan_id: 'exclusivo',
   avatar_url: undefined,
 };
@@ -78,6 +78,25 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       }
       
       setLoading(true);
+      
+      // Try to load cached settings immediately to prevent blocking offline users
+      const cached = offlineCache.get(CacheKeys.USER_SETTINGS) as any;
+      if (cached) {
+        setSettings({
+          alerta_days: cached.alerta_days ?? defaultSettings.alerta_days,
+          critico_days: cached.critico_days ?? defaultSettings.critico_days,
+          perda_days: cached.perda_days ?? defaultSettings.perda_days,
+          inativo_days: cached.inativo_days ?? defaultSettings.inativo_days,
+          theme: (localStorage.getItem('theme') as 'light' | 'dark') || cached.theme || defaultSettings.theme,
+          has_completed_onboarding: cached.has_completed_onboarding ?? defaultSettings.has_completed_onboarding,
+          categories: cached.categories || [],
+          revenue_ceiling: parseFloat(cached.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
+          subscription_status: (cached.subscription_status as SubscriptionStatus) || 'active',
+          plan_id: cached.plan_id || 'exclusivo',
+          avatar_url: cached.avatar_url,
+        });
+      }
+
       const { data, error } = await supabase
         .from("user_settings")
         .select("*")
@@ -112,7 +131,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem('avatar_' + user.id, finalAvatar);
         }
 
-        setSettings({
+        const freshSettings = {
           alerta_days: data.alerta_days ?? defaultSettings.alerta_days,
           critico_days: data.critico_days ?? defaultSettings.critico_days,
           perda_days: data.perda_days ?? defaultSettings.perda_days,
@@ -124,9 +143,15 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           subscription_status: subStatus,
           plan_id: data.plan_id || 'exclusivo',
           avatar_url: finalAvatar,
-        });
+        };
+
+        setSettings(freshSettings);
+        offlineCache.set(CacheKeys.USER_SETTINGS, data);
       } else {
-        setSettings(defaultSettings);
+        // Fallback to cache or defaults
+        if (!cached) {
+          setSettings(defaultSettings);
+        }
       }
       setLoading(false);
     }
@@ -156,6 +181,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       ...(avatarUrl ? { avatar_url: avatarUrl } : {})
     };
     setSettings(updated);
+    
+    // Save immediately to local offline cache
+    offlineCache.set(CacheKeys.USER_SETTINGS, updated);
     
     if (newSettings.theme) {
       localStorage.setItem('theme', newSettings.theme);
