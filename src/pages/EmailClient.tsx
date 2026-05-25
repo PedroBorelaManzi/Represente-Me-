@@ -6,6 +6,8 @@ import { getGoogleEmailAuthUrl, getMicrosoftEmailAuthUrl, fetchEmailsFromApi, se
 import { useAuth } from "../contexts/AuthContext";
 import { useSettings } from "../contexts/SettingsContext";
 import { supabase } from "../lib/supabase";
+import { syncQueue } from "../lib/syncQueue";
+import { offlineCache, CacheKeys } from "../lib/offlineCache";
 
 type ConnectedAccount = {
   id: string;

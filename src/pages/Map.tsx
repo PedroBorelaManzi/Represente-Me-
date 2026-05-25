@@ -8,6 +8,9 @@ import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useSettings } from "../contexts/SettingsContext";
 import { toast } from "sonner";
+import { offlineCache, CacheKeys } from "../lib/offlineCache";
+import { syncQueue } from "../lib/syncQueue";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 // Fix for default marker icon in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -53,6 +56,17 @@ function MapResizeTrigger({ isFullscreen }: { isFullscreen: boolean }) {
 }
 
 export default function Map() {
+  const triggerLightHaptic = async () => {
+    try {
+      await Haptics.impact({ style: ImpactStyle.Light });
+    } catch (e) {}
+  };
+
+  // Immediate cache loading
+  useEffect(() => {
+    const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) as any[];
+    if (cachedClients) setCompanies(cachedClients);
+  }, []);
   const { settings } = useSettings();
   const [companies, setCompanies] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,30 +77,89 @@ export default function Map() {
   const [isSearchingCnpj, setIsSearchingCnpj] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
+  const isCurrentlyFullscreen = isFullscreen || isPseudoFullscreen;
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      setIsFullscreen(
+        !!(
+          document.fullscreenElement ||
+          (document as any).webkitFullscreenElement ||
+          (document as any).mozFullScreenElement ||
+          (document as any).msFullscreenElement
+        )
+      );
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
     };
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isPseudoFullscreen) {
+        setIsPseudoFullscreen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPseudoFullscreen]);
 
   const toggleFullscreen = () => {
     if (!mapContainerRef.current) return;
 
-    if (!document.fullscreenElement) {
-      mapContainerRef.current.requestFullscreen().catch((err) => {
-        console.error("Erro ao ativar tela cheia:", err.message);
+    const element = mapContainerRef.current;
+    const isNativeFullscreen = !!(
+      document.fullscreenElement ||
+      (document as any).webkitFullscreenElement ||
+      (document as any).mozFullScreenElement ||
+      (document as any).msFullscreenElement
+    );
+
+    if (isNativeFullscreen) {
+      const exitMethod = 
+        document.exitFullscreen || 
+        (document as any).webkitExitFullscreen || 
+        (document as any).mozCancelFullScreen || 
+        (document as any).msExitFullscreen;
+      if (exitMethod) {
+        exitMethod.call(document).catch(() => {});
+      }
+      return;
+    }
+
+    if (isPseudoFullscreen) {
+      setIsPseudoFullscreen(false);
+      return;
+    }
+
+    // Try native fullscreen
+    const requestMethod = 
+      element.requestFullscreen || 
+      (element as any).webkitRequestFullscreen || 
+      (element as any).mozRequestFullScreen || 
+      (element as any).msRequestFullscreen;
+
+    if (requestMethod) {
+      requestMethod.call(element).catch((err) => {
+        console.warn("Native fullscreen request failed, falling back to simulated fullscreen:", err);
+        setIsPseudoFullscreen(true);
       });
     } else {
-      document.exitFullscreen().catch((err) => {
-        console.error("Erro ao sair de tela cheia:", err.message);
-      });
+      // Fallback directly to simulated fullscreen
+      setIsPseudoFullscreen(true);
     }
   };
 
@@ -98,6 +171,12 @@ export default function Map() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    if (!offlineCache.isOnline()) {
+      const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) as any[];
+      if (cachedClients) setCompanies(cachedClients);
+      return;
+    }
+
     const { data: clientsData, error: clientsError } = await supabase.from("clients").select("*").eq("user_id", user.id);
     
     if (!clientsError && clientsData) {
@@ -107,7 +186,7 @@ export default function Map() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      const normalize = (s: string) => s?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+      const normalize = (s: string) => s?.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().trim();
 
       const clientsWithOrders = clientsData.map(client => {
         const lastOrdersByCategory = {};
@@ -127,8 +206,10 @@ export default function Map() {
       });
 
       setCompanies(clientsWithOrders);
+      offlineCache.set(CacheKeys.CLIENTS, clientsWithOrders);
     }
   };
+
 
   const handleDownload = async (fileName, filePath) => {
     try {
@@ -176,13 +257,16 @@ export default function Map() {
   }, []);
 
   const handleMarkerDrag = async (id: string, latlng: { lat: number, lng: number }) => {
+    triggerLightHaptic();
     const { error } = await supabase
       .from("clients")
       .update({ lat: latlng.lat, lng: latlng.lng })
       .eq("id", id);
 
     if (!error) {
-      setCompanies(prev => prev.map(c => c.id === id ? { ...c, lat: latlng.lat, lng: latlng.lng } : c));
+      const updated = companies.map(c => c.id === id ? { ...c, lat: latlng.lat, lng: latlng.lng } : c);
+      setCompanies(updated);
+      offlineCache.set(CacheKeys.CLIENTS, updated);
       toast.success("Localização atualizada!");
     } else {
       toast.error("Erro ao salvar localização");
@@ -192,7 +276,8 @@ export default function Map() {
   const handleDeleteClient = async (id: string, name: string) => {
     if (!window.confirm(`Deseja realmente excluir o cliente "${name}"? Esta ação não pode ser desfeita.`)) return;
 
-    const { error } = await supabase.from("clients").delete().eq("id", id);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from("clients").delete().eq("id", id).eq("user_id", user?.id);
     if (error) {
        toast.error(error.code === "23503" ? "Cliente vinculado a pedidos/compromissos." : "Erro ao excluir.");
        return;
@@ -336,14 +421,23 @@ export default function Map() {
     <div className="h-full flex flex-col gap-6 lg:gap-10 pb-4">
       {/* Premium Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 lg:gap-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 lg:gap-4 uppercase tracking-tight">
-            <div className="p-2 sm:p-2.5 lg:p-3 bg-emerald-600 rounded-xl lg:rounded-[20px]">
-              <Navigation2 className="w-6 h-6 lg:w-8 h-8 text-white" />
-            </div>
-            Mapa de <span className="text-emerald-600">Clientes</span>
-          </h1>
-          <p className="text-xs lg:text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Visualização geo-estratégica da sua carteira de clientes.</p>
+        <div className="flex items-center justify-between w-full">
+          <div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 lg:gap-4 uppercase tracking-tight">
+              <div className="p-2 sm:p-2.5 lg:p-3 bg-emerald-600 rounded-xl lg:rounded-[20px]">
+                <Navigation2 className="w-6 h-6 lg:w-8 h-8 text-white" />
+              </div>
+              Mapa de <span className="text-emerald-600">Clientes</span>
+            </h1>
+            <p className="text-xs lg:text-sm text-slate-500 dark:text-zinc-400 mt-2 font-medium">Visualização geo-estratégica da sua carteira de clientes.</p>
+          </div>
+          
+          {!offlineCache.isOnline() && (
+            <span className="px-3 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-amber-100 dark:border-amber-900/30 shadow-sm animate-pulse flex items-center gap-1.5 self-center">
+              <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
+              Mapa Offline Cache
+            </span>
+          )}
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full lg:w-auto">
@@ -371,8 +465,10 @@ export default function Map() {
 
       <div 
         ref={mapContainerRef}
-        className={`flex-1 bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-850 shadow-sm overflow-hidden relative z-0 min-h-[500px] lg:min-h-[700px] ${
-          isFullscreen ? "w-screen h-screen border-none rounded-none p-0 m-0" : "rounded-[48px]"
+        className={`bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-850 shadow-sm overflow-hidden relative min-h-[500px] lg:min-h-[700px] ${
+          isCurrentlyFullscreen 
+            ? "fixed inset-0 w-screen h-screen border-none rounded-none p-0 m-0 z-[9999]" 
+            : "flex-1 rounded-[48px] z-0"
         }`}
       >
         {/* Floating Mini Stats Overlay */}
@@ -391,10 +487,11 @@ export default function Map() {
         <button 
           type="button"
           onClick={toggleFullscreen}
-          className="absolute top-[10px] left-[54px] z-[1000] flex items-center justify-center w-[34px] h-[34px] bg-white hover:bg-[#f4f4f4] text-slate-700 rounded-[4px] border-2 border-black/20 shadow-[0_1px_5px_rgba(0,0,0,0.65)] transition-all cursor-pointer pointer-events-auto"
-          title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+          className="absolute left-[54px] z-[1000] flex items-center justify-center w-[34px] h-[34px] bg-white hover:bg-[#f4f4f4] text-slate-700 rounded-[4px] border-2 border-black/20 shadow-[0_1px_5px_rgba(0,0,0,0.65)] transition-all cursor-pointer pointer-events-auto"
+          style={{ top: isCurrentlyFullscreen ? "calc(env(safe-area-inset-top, 0px) + 48px)" : "10px" }}
+          title={isCurrentlyFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
         >
-          {isFullscreen ? (
+          {isCurrentlyFullscreen ? (
             <Minimize2 className="w-4 h-4" />
           ) : (
             <Maximize2 className="w-4 h-4" />
@@ -402,14 +499,14 @@ export default function Map() {
         </button>
 
         <MapContainer 
-          key={isFullscreen ? 'fullscreen' : 'normal'}
+          key={isCurrentlyFullscreen ? 'fullscreen' : 'normal'}
           center={center} 
           zoom={zoom} 
-          style={{ height: isFullscreen ? '100vh' : 'calc(100vh - 280px)', width: '100%' }} 
+          style={{ height: isCurrentlyFullscreen ? '100vh' : 'calc(100vh - 280px)', width: '100%' }} 
           scrollWheelZoom={true}
         >
           <ChangeView center={center} zoom={zoom} />
-          <MapResizeTrigger isFullscreen={isFullscreen} />
+          <MapResizeTrigger isFullscreen={isCurrentlyFullscreen} />
           <TileLayer 
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' 
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
@@ -421,7 +518,10 @@ export default function Map() {
               icon={(!company.lat || !company.lng) ? redIcon : (company.status === 'Inativo' ? inactiveIcon : defaultIcon)}
               draggable={selectedClientId === company.id}
               eventHandlers={{
-                click: () => setSelectedClientId(company.id),
+                click: () => {
+                  triggerLightHaptic();
+                  setSelectedClientId(company.id);
+                },
                 dragend: (e: any) => handleMarkerDrag(company.id, e.target.getLatLng())
               }}
             >

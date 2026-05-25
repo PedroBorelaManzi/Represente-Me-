@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from "../lib/supabase";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import { offlineCache, CacheKeys } from "../lib/offlineCache";
+import { syncQueue } from "../lib/syncQueue";
 
 export type SubscriptionStatus = 'active' | 'past_due' | 'inactive' | 'trialing';
 

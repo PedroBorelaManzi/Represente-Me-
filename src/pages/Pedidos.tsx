@@ -9,6 +9,8 @@ import { processOrderFile } from "../lib/orderProcessor";
 import { getHighPrecisionCoordinates } from "../lib/geminiGeocoding";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { syncQueue } from "../lib/syncQueue";
+import { offlineCache, CacheKeys } from "../lib/offlineCache";
 import { toast } from "sonner";
 
 export default function PedidosPage() {
@@ -115,7 +117,7 @@ export default function PedidosPage() {
       if (clientData) {
         const fat = clientData.faturamento || {};
         const updatedFat = { ...fat, [selectedCategory]: (Number(fat[selectedCategory] || 0) + parseFloat(orderValue)) };
-        await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", cid);
+        await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", cid).eq("user_id", user?.id);
       }
       setIsManualModalOpen(false); loadData();
       toast.success("Pedido registrado com sucesso!");
@@ -165,7 +167,7 @@ export default function PedidosPage() {
     if (!window.confirm("Deseja realmente excluir este pedido?")) return;
     try {
       if (order.file_path) await supabase.storage.from("client_vault").remove([order.file_path]);
-      const { error } = await supabase.from("orders").delete().eq("id", order.id);
+      const { error } = await supabase.from("orders").delete().eq("id", order.id).eq("user_id", user?.id);
       if (error) throw error;
       if (order.client_id) {
         const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", order.client_id).single();
@@ -173,7 +175,7 @@ export default function PedidosPage() {
           const fat = clientData.faturamento || {};
           const currentVal = Number(fat[order.category] || 0);
           const updatedFat = { ...fat, [order.category]: Math.max(0, currentVal - (order.value || 0)) };
-          await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", order.client_id);
+          await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", order.client_id).eq("user_id", user?.id);
         }
       }
       toast.success("Pedido excluído!");

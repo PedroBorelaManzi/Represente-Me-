@@ -21,6 +21,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
+import { SyncProvider } from "./contexts/SyncContext";
 import { UploadProvider } from "./contexts/UploadContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Toaster } from "sonner";
@@ -30,7 +31,8 @@ export default function App() {
     <AuthProvider>
       <Toaster position="top-right" expand={false} richColors />
       <BrowserRouter>
-        <SettingsProvider>
+        <SyncProvider>
+          <SettingsProvider>
           <UploadProvider>
             <Routes>
               <Route path="/" element={<Landing />} />
@@ -67,6 +69,7 @@ export default function App() {
             </Routes>
           </UploadProvider>
         </SettingsProvider>
+        </SyncProvider>
       </BrowserRouter>
     </AuthProvider>
   );

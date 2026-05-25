@@ -33,6 +33,8 @@ import { useUpload } from "../contexts/UploadContext";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { processOrderFile } from "../lib/orderProcessor";
+import { syncQueue } from "../lib/syncQueue";
+import { offlineCache, CacheKeys } from "../lib/offlineCache";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -123,6 +125,35 @@ export default function ClientDetails() {
     if (!window.confirm("Deseja realmente excluir este pedido e descontar do faturamento?")) return;
     
     try {
+      if (!offlineCache.isOnline()) {
+         const fileToDelete = files.find(f => f.id === fileId);
+         if (!fileToDelete) return;
+         
+         syncQueue.enqueue('orders', 'DELETE', null, fileId);
+         
+         if (fileToDelete.value && fileToDelete.category && client) {
+            const fat = client.faturamento || {};
+            const currentCatTotal = Number(fat[fileToDelete.category]) || 0;
+            const newTotal = Math.max(0, currentCatTotal - Number(fileToDelete.value));
+            const updatedFat = { ...fat, [fileToDelete.category]: newTotal };
+            syncQueue.enqueue('clients', 'UPDATE', { faturamento: updatedFat }, id);
+            
+            const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) || [];
+            const clientIndex = cachedClients.findIndex((c:any) => c.id === id);
+            if (clientIndex >= 0) {
+                cachedClients[clientIndex].faturamento = updatedFat;
+                offlineCache.set(CacheKeys.CLIENTS, cachedClients);
+            }
+         }
+         
+         const cachedOrders = (offlineCache.get(CacheKeys.ORDERS) as any[]) || [];
+         offlineCache.set(CacheKeys.ORDERS, cachedOrders.filter((o:any) => o.id !== fileId));
+         
+         setFiles(prev => prev.filter(f => f.id !== fileId));
+         toast.success("Pedido removido offline!");
+         return;
+      }
+
       // 1. Get the order details before deleting to deduct from client's total
       const { data: orderData } = await supabase.from('orders').select('*').eq('id', fileId).single();
       
@@ -152,7 +183,7 @@ export default function ClientDetails() {
               const newTotal = Math.max(0, currentCatTotal - Number(orderData.value));
               
               const updatedFat = { ...fat, [orderData.category]: newTotal };
-              await supabase.from('clients').update({ faturamento: updatedFat }).eq('id', id);
+              await supabase.from('clients').update({ faturamento: updatedFat }).eq('id', id).eq('user_id', user?.id);
           }
       }
 
@@ -213,26 +244,47 @@ export default function ClientDetails() {
 
       if (uploadError) throw uploadError;
 
-      const { error: dbError } = await supabase
-        .from('orders')
-        .insert([{
+      const orderPayload = {
+          id: crypto.randomUUID(),
           user_id: user.id,
           client_id: id,
           value: numericValue,
           category: uploadCategory,
           file_name: currentFile.name,
           file_path: filePath,
-          description: `Pedido via Upload: ${currentFile.name}`
-        }]);
-
-      if (dbError) throw dbError;
-
-      // Update client total faturamento if needed
-      const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", id).single();
-      if (clientData) {
-        const fat = clientData.faturamento || {};
-        const updatedFat = { ...fat, [uploadCategory]: (Number(fat[uploadCategory] || 0) + numericValue) };
-        await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", id);
+          description: `Pedido via Upload: ${currentFile.name}`,
+          created_at: new Date().toISOString()
+      };
+      
+      if (!offlineCache.isOnline()) {
+          syncQueue.enqueue('orders', 'INSERT', orderPayload);
+          
+          if (client) {
+             const fat = client.faturamento || {};
+             const updatedFat = { ...fat, [uploadCategory]: (Number(fat[uploadCategory] || 0) + numericValue) };
+             syncQueue.enqueue('clients', 'UPDATE', { faturamento: updatedFat }, id);
+             
+             const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) || [];
+             const clientIndex = cachedClients.findIndex((c:any) => c.id === id);
+             if (clientIndex >= 0) {
+                 cachedClients[clientIndex].faturamento = updatedFat;
+                 offlineCache.set(CacheKeys.CLIENTS, cachedClients);
+             }
+          }
+          
+          const cachedOrders = (offlineCache.get(CacheKeys.ORDERS) as any[]) || [];
+          offlineCache.set(CacheKeys.ORDERS, [orderPayload, ...cachedOrders]);
+          setFiles(prev => [orderPayload, ...prev]);
+      } else {
+          const { error: dbError } = await supabase.from('orders').insert([orderPayload]);
+          if (dbError) throw dbError;
+          
+          const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", id).single();
+          if (clientData) {
+            const fat = clientData.faturamento || {};
+            const updatedFat = { ...fat, [uploadCategory]: (Number(fat[uploadCategory] || 0) + numericValue) };
+            await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", id).eq("user_id", user?.id);
+          }
       }
 
       toast.success("Arquivo anexado com sucesso!");
@@ -298,6 +350,18 @@ export default function ClientDetails() {
   const handleSaveNotes = async () => {
     try {
       setIsSavingNotes(true);
+      if (!offlineCache.isOnline()) {
+          syncQueue.enqueue('clients', 'UPDATE', { notes }, id);
+          const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) || [];
+          const clientIndex = cachedClients.findIndex((c:any) => c.id === id);
+          if (clientIndex >= 0) {
+              cachedClients[clientIndex].notes = notes;
+              offlineCache.set(CacheKeys.CLIENTS, cachedClients);
+          }
+          toast.success("Observações salvas offline!");
+          return;
+      }
+
       const { error } = await supabase
         .from('clients')
         .update({ notes })

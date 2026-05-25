@@ -11,6 +11,13 @@
         "lint": "tsc --noEmit"
     },
     "dependencies": {
+        "@capacitor/android": "^8.3.4",
+        "@capacitor/cli": "^8.3.4",
+        "@capacitor/core": "^8.3.4",
+        "@capacitor/haptics": "^8.0.2",
+        "@capacitor/ios": "^8.3.4",
+        "@capacitor/local-notifications": "^8.2.0",
+        "@capgo/capacitor-native-biometric": "^8.4.5",
         "@google/generative-ai": "^0.24.1",
         "@supabase/supabase-js": "^2.99.3",
         "@tailwindcss/vite": "^4.1.14",

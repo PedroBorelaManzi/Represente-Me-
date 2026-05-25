@@ -34,6 +34,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { cn } from "../lib/utils";
 import { toast } from "sonner";
+import { NativeBiometric } from '@capgo/capacitor-native-biometric';
+import { Fingerprint } from 'lucide-react';
 
 const features = [
   {
@@ -61,11 +63,57 @@ export default function Login() {
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
 
+  const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
+
+  // Auto-login removed
+
   useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
+    const checkBiometrics = async () => {
+      try {
+        const result = await NativeBiometric.isAvailable();
+        if (result.isAvailable) {
+          const isEnabled = localStorage.getItem("rm_biometric_enabled") === "true";
+          if (isEnabled) {
+            setIsBiometricAvailable(true);
+            setTimeout(() => {
+              handleBiometricLogin();
+            }, 800); // Small delay to let the UI render beautifully
+          }
+        }
+      } catch (e) {
+        console.log("Biometria não suportada na web");
+      }
+    };
+    checkBiometrics();
+  }, []);
+
+  const handleBiometricLogin = async () => {
+    try {
+      await NativeBiometric.verifyIdentity({
+        reason: "Autentique-se para entrar de forma rápida",
+        title: "Acesso Biométrico",
+        subtitle: "Use a digital ou Face ID",
+        description: "Confirme sua identidade para entrar no Represente-se!",
+        maxAttempts: 3,
+      });
+
+      const creds = await NativeBiometric.getCredentials({
+        server: "representeme.app",
+      });
+
+      if (creds && creds.username && creds.password) {
+        setIsLoading(true);
+        await signIn(creds.username, creds.password);
+        toast.success("Autenticado via Biometria!");
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error("Biometric failed", error);
+      toast.error("Falha na autenticação biométrica. Digite sua senha.");
+    } finally {
+      setIsLoading(false);
     }
-  }, [user, navigate]);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +121,7 @@ export default function Login() {
     try {
       await signIn(email, password);
       toast.success("Bem-vindo de volta!");
+      navigate("/dashboard");
     } catch (error: any) {
       toast.error(error.message || "Erro ao entrar");
     } finally {
@@ -157,6 +206,17 @@ export default function Login() {
                 </>
               )}
             </button>
+
+            {isBiometricAvailable && (
+              <button
+                type="button"
+                onClick={handleBiometricLogin}
+                className="w-full mt-4 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 py-5 rounded-[32px] font-black uppercase text-xs tracking-[0.2em] hover:bg-emerald-100 transition-all border border-emerald-100 dark:border-emerald-900/30 flex items-center justify-center gap-3 active:scale-95"
+              >
+                <Fingerprint className="w-5 h-5" />
+                Acessar com Biometria
+              </button>
+            )}
           </form>
 
           <div className="pt-12 text-center">

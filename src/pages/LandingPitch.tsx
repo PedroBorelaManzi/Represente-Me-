@@ -133,8 +133,14 @@ export default function LandingPitch() {
         transition={{ duration: 0.35, ease: "easeInOut" }}
         className={cn(
           "fixed top-0 w-full z-50 transition-all duration-300",
-          scrolled ? "bg-white/90 backdrop-blur-xl border-b border-slate-200/50 py-3 shadow-sm" : "bg-transparent py-6"
+          scrolled ? "bg-white/90 backdrop-blur-xl border-b border-slate-200/50 shadow-sm" : "bg-transparent"
         )}
+        style={{
+          paddingTop: scrolled 
+            ? "calc(env(safe-area-inset-top, 0px) + 12px)" 
+            : "calc(env(safe-area-inset-top, 0px) + 24px)",
+          paddingBottom: scrolled ? "12px" : "24px"
+        }}
       >
         <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between gap-2 md:gap-4">
           <Link to={user ? "/dashboard" : "/"} className="flex-shrink-0 flex items-center gap-3">
@@ -161,7 +167,7 @@ export default function LandingPitch() {
       </motion.nav>
 
       {/* Hero Section */}
-      <section className="pt-48 pb-20 px-6">
+      <section className="pt-[calc(env(safe-area-inset-top,0px)+120px)] md:pt-48 pb-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -171,7 +177,7 @@ export default function LandingPitch() {
             <span className="px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-black uppercase tracking-widest border border-emerald-100 mb-8 inline-block shadow-sm">
               ✨ A revolução tecnológica do representante
             </span>
-            <h1 className="text-4xl md:text-8xl font-black tracking-tight text-slate-900 mb-6 md:mb-8 leading-[1.1] md:leading-[0.9] text-balance">
+            <h1 className="text-3xl sm:text-5xl md:text-8xl font-black tracking-tight text-slate-900 mb-6 md:mb-8 leading-[1.1] md:leading-[0.9] text-balance">
               Venda mais com <span className="text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400">Menos Esforço.</span>
             </h1>
             <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-12">
@@ -220,7 +226,7 @@ export default function LandingPitch() {
 
         <div className="max-w-7xl mx-auto px-6 relative z-20 w-full">
           <div className="text-center mb-16">
-            <h2 className={`text-4xl md:text-7xl font-black uppercase tracking-tighter mb-4 transition-all duration-500 ${hoveredIndustry !== null ? "text-white drop-shadow-lg" : "text-slate-900"}`}>
+            <h2 className={`text-2xl sm:text-4xl md:text-7xl font-black uppercase tracking-tighter mb-4 transition-all duration-500 ${hoveredIndustry !== null ? "text-white drop-shadow-lg" : "text-slate-900"}`}>
               Adaptável à sua realidade
             </h2>
             <p className={`font-bold uppercase text-[10px] md:text-sm tracking-[0.3em] transition-all duration-500 ${hoveredIndustry !== null ? "text-white/80" : "text-slate-400"}`}>
@@ -234,7 +240,7 @@ export default function LandingPitch() {
                 onMouseEnter={() => setHoveredIndustry(idx)}
                 onMouseLeave={() => setHoveredIndustry(null)}
                 whileHover={{ y: -12, scale: 1.15 }}
-                className={`p-6 md:p-12 rounded-[32px] md:rounded-[56px] border-2 flex flex-col items-center gap-6 transition-all duration-500 group shadow-lg ${
+                className={`p-4 md:p-12 rounded-[32px] md:rounded-[56px] border-2 flex flex-col items-center gap-4 md:gap-6 transition-all duration-500 group shadow-lg ${
                   hoveredIndustry === null 
                     ? "bg-white border-slate-50 hover:shadow-2xl" 
                     : hoveredIndustry === idx
@@ -245,7 +251,7 @@ export default function LandingPitch() {
                 <div className={`p-4 md:p-7 rounded-[28px] ${item.color} group-hover:scale-110 transition-transform shadow-md`}>
                   <item.icon className="w-6 h-6 md:w-9 md:h-9" />
                 </div>
-                <span className={`text-[9px] md:text-[11px] font-black uppercase tracking-tight text-center leading-tight max-w-[140px] transition-all duration-500 ${
+                <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-tight text-center leading-tight break-words px-1 transition-all duration-500 ${
                   hoveredIndustry === idx ? "text-slate-900" : (hoveredIndustry === null ? "text-slate-900" : "text-white/0")
                 }`}>
                   {item.name}
@@ -331,7 +337,7 @@ export default function LandingPitch() {
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
                   className="w-full px-8 py-6 flex items-center justify-between text-left group"
                 >
-                  <span className="text-sm md:text-base font-black text-slate-900 uppercase tracking-tight group-hover:text-emerald-600 transition-colors">
+                  <span className="text-xs sm:text-sm md:text-base font-black text-slate-900 tracking-tight group-hover:text-emerald-600 transition-colors">
                     {faq.question}
                   </span>
                   <div className={cn(
@@ -366,7 +372,7 @@ export default function LandingPitch() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
-              <h2 className="text-5xl lg:text-7xl font-black text-slate-900 uppercase tracking-tighter leading-none">
+              <h2 className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-900 uppercase tracking-tighter leading-none">
                 O futuro da <br />
                 <span className="text-emerald-600">Representação</span>
               </h2>
@@ -420,8 +426,8 @@ export default function LandingPitch() {
         <div className="max-w-5xl mx-auto rounded-[64px] bg-slate-900 p-12 md:p-24 text-center relative overflow-hidden group">
           <div className="absolute inset-0 bg-emerald-600/10 blur-[100px] group-hover:bg-emerald-600/20 transition-all" />
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} className="relative">
-            <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter mb-8 leading-none">
-              Pronto para ser um <br /> <span className="text-emerald-400 text-5xl md:text-8xl">SUPER REPRESENTANTE?</span>
+            <h2 className="text-2xl sm:text-4xl md:text-6xl font-black text-white uppercase tracking-tighter mb-8 leading-none">
+              Pronto para ser um <br /> <span className="text-emerald-400 text-3xl sm:text-5xl md:text-8xl">SUPER REPRESENTANTE?</span>
             </h2>
             <p className="text-slate-400 font-medium text-lg max-w-xl mx-auto mb-12">
               Junte-se a mais de 2.000 que já alavancaram mais de 150% de suas vendas com a Represente-se

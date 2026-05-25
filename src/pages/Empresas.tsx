@@ -27,7 +27,9 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "../lib/utils";
-import { SearchableClientPicker } from "../components/SearchableClientPicker"; // Motor Híbrido V2
+import { SearchableClientPicker } from "../components/SearchableClientPicker";
+import { syncQueue } from "../lib/syncQueue";
+import { offlineCache, CacheKeys } from "../lib/offlineCache"; // Motor Híbrido V2
 
 export default function EmpresasPage() {
   const { user } = useAuth();
@@ -59,6 +61,12 @@ export default function EmpresasPage() {
   const loadOrders = async () => {
     try {
       setLoading(true);
+      if (!offlineCache.isOnline()) {
+         setAllOrders((offlineCache.get(CacheKeys.ORDERS) as any[]) || []);
+         setClients((offlineCache.get(CacheKeys.CLIENTS) as any[]) || []);
+         setLoading(false);
+         return;
+      }
       const { data, error } = await supabase
         .from("orders")
         .select("*, client:clients(id, name, cnpj, city, state)")
@@ -66,6 +74,7 @@ export default function EmpresasPage() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      offlineCache.set(CacheKeys.ORDERS, data);
       setAllOrders(data || []);
 
       const { data: c } = await supabase
@@ -73,9 +82,11 @@ export default function EmpresasPage() {
         .select("id, name, cnpj")
         .eq("user_id", user?.id)
         .order("name");
+      if (c) offlineCache.set(CacheKeys.CLIENTS, c);
       setClients(c || []);
     } catch (err) {
-      console.error("Error loading data:", err);
+      setAllOrders((offlineCache.get(CacheKeys.ORDERS) as any[]) || []);
+      setClients((offlineCache.get(CacheKeys.CLIENTS) as any[]) || []);
     } finally {
       setLoading(false);
     }
@@ -115,9 +126,7 @@ export default function EmpresasPage() {
       } catch (e) {}
     }
 
-    const { data, error } = await supabase
-      .from("clients")
-      .insert([{ 
+    const newPayload: any = { 
         user_id: user?.id, 
         name: cleanName, 
         cnpj: cleanCnpj, 
@@ -125,7 +134,20 @@ export default function EmpresasPage() {
         lat, 
         lng, 
         status: "Ativo" 
-      }])
+    };
+    
+    if (!offlineCache.isOnline()) {
+       newPayload.id = crypto.randomUUID();
+       syncQueue.enqueue('clients', 'INSERT', newPayload);
+       const cached = (offlineCache.get(CacheKeys.CLIENTS) as any[]) || [];
+       offlineCache.set(CacheKeys.CLIENTS, [...cached, newPayload]);
+       setClients([...cached, newPayload] as any[]);
+       return newPayload;
+    }
+
+    const { data, error } = await supabase
+      .from("clients")
+      .insert([newPayload])
       .select()
       .single();
 
@@ -223,21 +245,43 @@ export default function EmpresasPage() {
         const formattedName = (item.category || 'GERAL') + "___VALOR_" + item.value + "___" + cleanName;
         const path = user?.id + "/" + cid + "/" + formattedName;
 
-        await supabase.storage.from("client_vault").upload(path, item.file, { upsert: true });
-        await supabase.from("orders").upsert([{ 
+        const orderPayload = { 
+          id: crypto.randomUUID(),
           user_id: user?.id, 
           client_id: cid, 
           category: item.category || 'GERAL', 
           value: parseFloat(item.value), 
           file_name: formattedName, 
-          file_path: path 
-        }], { onConflict: "client_id,file_path" });
+          file_path: path,
+          created_at: new Date().toISOString()
+        };
 
-        const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", cid).single();
-        if (clientData) {
-          const fat = clientData.faturamento || {};
-          const updatedFat = { ...fat, [item.category || 'GERAL']: (Number(fat[item.category || 'GERAL'] || 0) + parseFloat(item.value)) };
-          await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", cid);
+        if (!offlineCache.isOnline()) {
+           syncQueue.enqueue('orders', 'INSERT', orderPayload);
+           const cachedOrders = (offlineCache.get(CacheKeys.ORDERS) as any[]) || [];
+           const fullOrder = { ...orderPayload, client: clients.find(c => c.id === cid) };
+           offlineCache.set(CacheKeys.ORDERS, [fullOrder, ...cachedOrders]);
+           
+           const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) || [];
+           const clientIndex = cachedClients.findIndex(c => c.id === cid);
+           if (clientIndex >= 0) {
+              const fat = cachedClients[clientIndex].faturamento || {};
+              const catKey = item.category || 'GERAL';
+              const updatedFat = { ...fat, [catKey]: (Number(fat[catKey] || 0) + parseFloat(item.value)) };
+              syncQueue.enqueue('clients', 'UPDATE', { faturamento: updatedFat }, cid);
+              cachedClients[clientIndex].faturamento = updatedFat;
+              offlineCache.set(CacheKeys.CLIENTS, cachedClients);
+           }
+        } else {
+           await supabase.storage.from("client_vault").upload(path, item.file, { upsert: true });
+           await supabase.from("orders").upsert([orderPayload], { onConflict: "client_id,file_path" });
+
+           const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", cid).single();
+           if (clientData) {
+             const fat = clientData.faturamento || {};
+             const updatedFat = { ...fat, [item.category || 'GERAL']: (Number(fat[item.category || 'GERAL'] || 0) + parseFloat(item.value)) };
+             await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", cid).eq("user_id", user?.id);
+           }
         }
         successCount++;
       } catch (err: any) {
@@ -317,10 +361,19 @@ export default function EmpresasPage() {
     try {
       const updatedCategories = settings.categories.map((c: string) => c === managingCompany ? editName.trim() : c);
       await updateSettings({ categories: updatedCategories });
-      await supabase.from("orders").update({ category: editName.trim() }).eq("user_id", user?.id).eq("category", managingCompany);
+      if (!offlineCache.isOnline()) {
+         allOrders.filter(o => o.category === managingCompany).forEach(o => {
+            syncQueue.enqueue('orders', 'UPDATE', { category: editName.trim() }, o.id);
+         });
+         const newOrders = allOrders.map(o => o.category === managingCompany ? { ...o, category: editName.trim() } : o);
+         offlineCache.set(CacheKeys.ORDERS, newOrders);
+         setAllOrders(newOrders);
+      } else {
+         await supabase.from("orders").update({ category: editName.trim() }).eq("user_id", user?.id).eq("category", managingCompany);
+         loadOrders();
+      }
       toast.success("Empresa atualizada!");
       setManagingCompany(null);
-      loadOrders();
     } catch (err) {
       toast.error("Erro ao atualizar.");
     }

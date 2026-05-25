@@ -4,6 +4,8 @@ import { Search, MapPin, Building2, Phone, Mail, FileText, ChevronRight, Filter,
 import { supabase, logAudit } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { useSync } from '../contexts/SyncContext';
+import { syncQueue } from '../lib/syncQueue';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -13,6 +15,7 @@ import { getHighPrecisionCoordinates } from '../lib/geminiGeocoding';
 export default function CRMPage() {
   const { user } = useAuth();
   const { settings } = useSettings();
+  const { isOnline } = useSync();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Crítico' | 'Perda'>('Todos');
@@ -148,6 +151,13 @@ export default function CRMPage() {
   const handleDeleteClient = async (id: string) => {
     if (!window.confirm('Deseja realmente excluir este cliente? Todos os pedidos associados serão mantidos, mas o vínculo será perdido.')) return;
     
+    if (!isOnline) {
+        syncQueue.enqueue('clients', 'DELETE', null, id);
+        setClients(prev => prev.filter(c => c.id !== id));
+        toast.success('Cliente removido offline.');
+        return;
+    }
+
     try {
       const { error } = await supabase.from('clients').delete().eq('id', id).eq('user_id', user?.id);
       if (error) throw error;
@@ -187,7 +197,7 @@ export default function CRMPage() {
 
       const coords = await getHighPrecisionCoordinates(clientData.address, clientData.name, cleanCnpj);
 
-      const { data, error } = await supabase.from("clients").insert([{
+      const newClientData = {
         user_id: user.id,
         name: clientData.name,
         cnpj: cleanCnpj,
@@ -197,14 +207,23 @@ export default function CRMPage() {
         lng: coords?.lng || null,
         status: "Ativo",
         last_contact: new Date().toISOString().split("T")[0]
-      }]).select().single();
+      };
 
-      if (error) throw error;
-
-      toast.success("Cliente adicionado com sucesso!", { id: toastId });
-      setClients(prev => [data, ...prev]);
-      setIsAddingClient(false);
-      setNewCnpj("");
+      if (!isOnline) {
+        const optimisticId = crypto.randomUUID();
+        syncQueue.enqueue('clients', 'INSERT', newClientData);
+        toast.success("Cliente salvo localmente (Offline).", { id: toastId });
+        setClients(prev => [{...newClientData, id: optimisticId, alerts: []}, ...prev]);
+        setIsAddingClient(false);
+        setNewCnpj("");
+      } else {
+        const { data, error } = await supabase.from("clients").insert([newClientData]).select().single();
+        if (error) throw error;
+        toast.success("Cliente adicionado com sucesso!", { id: toastId });
+        setClients(prev => [{...data, alerts: []}, ...prev]);
+        setIsAddingClient(false);
+        setNewCnpj("");
+      }
     } catch (err: any) {
       console.error("Add Client Error:", err);
       toast.error("Erro ao adicionar cliente: " + err.message, { id: toastId });

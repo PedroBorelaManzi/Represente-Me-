@@ -19,6 +19,8 @@ import { useAuth } from "../contexts/AuthContext";
 import AppointmentForm from "../components/AppointmentForm";
 import DailyNotes from "../components/DailyNotes";
 import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../lib/googleSync";
+import { syncQueue } from "../lib/syncQueue";
+import { offlineCache, CacheKeys } from "../lib/offlineCache";
 import { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";

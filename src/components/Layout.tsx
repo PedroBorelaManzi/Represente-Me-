@@ -16,11 +16,15 @@ import {
   Building2,
   ChevronDown,
   User,
-  Mail
+  Mail,
+  Cloud,
+  CloudOff,
+  RefreshCw
 } from 'lucide-react';
 import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { useSync } from '../contexts/SyncContext';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import SettingsModal from './SettingsModal';
@@ -31,6 +35,7 @@ import { SubscriptionGuard } from './SubscriptionGuard';
 export default function Layout() {
   const { user, signOut } = useAuth();
   const { settings } = useSettings();
+  const { isOnline, pendingCount, isSyncing, syncNow } = useSync();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -75,7 +80,14 @@ export default function Layout() {
           !desktopSidebarOpen && "lg:-translate-x-full lg:w-0 lg:overflow-hidden lg:border-r-0 lg:opacity-0"
         )}>
           <div className="flex flex-col h-full">
-            <div className="p-8 flex items-center justify-between">
+            <div className="flex items-center justify-between"
+              style={{
+                paddingTop: "calc(env(safe-area-inset-top, 0px) + 32px)",
+                paddingLeft: "32px",
+                paddingRight: "32px",
+                paddingBottom: "32px"
+              }}
+            >
               <Logo size="sm" />
               <button 
                 onClick={() => setDesktopSidebarOpen(false)}
@@ -107,6 +119,33 @@ export default function Layout() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            
+            {/* Sync Status Button */}
+            <div className="px-6 mb-4">
+              <button 
+                onClick={syncNow}
+                disabled={isSyncing}
+                className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all ${
+                  !isOnline ? 'bg-red-50/50 border-red-100/50 text-red-600' : 
+                  pendingCount > 0 ? 'bg-amber-50 border-amber-200 text-amber-700' : 
+                  'bg-emerald-50 border-emerald-100 text-emerald-700'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {!isOnline ? <CloudOff className="w-4 h-4" /> : <Cloud className="w-4 h-4" />}
+                  <span className="text-[10px] font-black uppercase tracking-widest">
+                    {!isOnline ? 'Offline' : pendingCount > 0 ? 'Sincronizar' : 'Online'}
+                  </span>
+                </div>
+                {pendingCount > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black">{pendingCount}</span>
+                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                  </div>
+                )}
+              </button>
             </div>
 
             <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
@@ -171,7 +210,14 @@ export default function Layout() {
               </div>
             </nav>
 
-            <div className="p-8 mt-auto">
+            <div className="mt-auto"
+              style={{
+                paddingTop: "32px",
+                paddingLeft: "32px",
+                paddingRight: "32px",
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 32px)"
+              }}
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Versão 2.4.2</p>
@@ -188,7 +234,12 @@ export default function Layout() {
         <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
 
         <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-          <header className="lg:hidden h-20 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between px-6 flex-shrink-0">
+          <header className="lg:hidden bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between px-6 flex-shrink-0"
+            style={{
+              paddingTop: "env(safe-area-inset-top, 0px)",
+              height: "calc(env(safe-area-inset-top, 0px) + 80px)"
+            }}
+          >
             <div className="flex items-center gap-4">
               <button onClick={() => setSidebarOpen(true)} className="p-3 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-all active:scale-90">
                 <Menu className="w-6 h-6" />
@@ -196,6 +247,31 @@ export default function Layout() {
               <Link to="/dashboard" className="font-black text-base uppercase tracking-tighter text-slate-900 dark:text-zinc-100">Represente-se</Link>
             </div>
             <div className="flex items-center gap-3">
+               
+              <button 
+                onClick={syncNow}
+                disabled={isSyncing}
+                className={`flex items-center justify-center p-2 rounded-xl transition-all ${
+                  !isOnline ? 'bg-red-50 text-red-500' : 
+                  pendingCount > 0 ? 'bg-amber-50 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 
+                  'bg-slate-50 text-emerald-500'
+                }`}
+              >
+                {pendingCount > 0 ? (
+                  <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
+                ) : !isOnline ? (
+                  <CloudOff className="w-5 h-5" />
+                ) : (
+                  <Cloud className="w-5 h-5" />
+                )}
+                {pendingCount > 0 && !isSyncing && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 text-[8px] font-black text-white items-center justify-center">{pendingCount}</span>
+                  </span>
+                )}
+              </button>
+
                <div className="w-10 h-10 rounded-full border-2 border-white dark:border-zinc-900 bg-emerald-500 flex items-center justify-center text-[10px] font-black text-white shadow-sm overflow-hidden">
                   {settings.avatar_url && !mobileAvatarError ? (
                     <img 
@@ -222,10 +298,15 @@ export default function Layout() {
             </button>
           )}
 
-          <main className={cn(
-            "flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 xl:p-12 scroll-smooth custom-scrollbar transition-all duration-300",
-            !desktopSidebarOpen && "lg:pl-24"
-          )}>
+          <main 
+            className={cn(
+              "flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 xl:p-12 scroll-smooth custom-scrollbar transition-all duration-300",
+              !desktopSidebarOpen && "lg:pl-24"
+            )}
+            style={{
+              paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 24px)"
+            }}
+          >
             <div className="mx-auto">
               <Outlet />
             </div>

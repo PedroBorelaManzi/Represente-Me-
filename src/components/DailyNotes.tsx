@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useSync } from '../contexts/SyncContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StickyNote, CheckCircle2, Loader2, ListTodo, Plus, Trash2, CheckSquare, Square } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { syncQueue } from '../lib/syncQueue';
+import { offlineCache } from '../lib/offlineCache';
 
 interface Task {
   id: string;
@@ -30,6 +33,7 @@ const formatDateLocal = (date: Date) => {
 
 export default function DailyNotes({ selectedDate, className }: DailyNotesProps) {
   const { user } = useAuth();
+  const { isOnline } = useSync();
   const [dailyData, setDailyData] = useState<DailyData>({ notes: '', tasks: [] });
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -58,6 +62,19 @@ export default function DailyNotes({ selectedDate, className }: DailyNotesProps)
       if (!user) return;
       setLoading(true);
       setSaveStatus('idle');
+      
+      const cacheKey = `rm_cache_daily_notes_${user.id}_${dateIso}`;
+
+      if (!offlineCache.isOnline()) {
+        const cachedRaw = offlineCache.get(cacheKey);
+        if (cachedRaw && typeof cachedRaw === 'string') {
+          const structured = parseContent(cachedRaw);
+          setDailyData(structured);
+          setLastSavedRaw(cachedRaw);
+        }
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('daily_notes')
@@ -68,6 +85,7 @@ export default function DailyNotes({ selectedDate, className }: DailyNotesProps)
 
       if (!error) {
         const raw = data?.content || '';
+        offlineCache.set(cacheKey, raw);
         const structured = parseContent(raw);
         setDailyData(structured);
         setLastSavedRaw(raw);
@@ -87,6 +105,17 @@ export default function DailyNotes({ selectedDate, className }: DailyNotesProps)
     setSaveStatus('saving');
     saveTimeoutRef.current = setTimeout(async () => {
       if (!user) return;
+      
+      const cacheKey = `rm_cache_daily_notes_${user.id}_${dateIso}`;
+
+      if (!offlineCache.isOnline()) {
+         syncQueue.enqueue('daily_notes', 'UPSERT', { user_id: user.id, date: dateIso, content: currentRaw }, 'user_id,date');
+         offlineCache.set(cacheKey, currentRaw);
+         setSaveStatus('saved');
+         setLastSavedRaw(currentRaw);
+         setTimeout(() => setSaveStatus(prev => prev === 'saved' ? 'idle' : prev), 3000);
+         return;
+      }
 
       const { error } = await supabase
         .from('daily_notes')
@@ -96,6 +125,7 @@ export default function DailyNotes({ selectedDate, className }: DailyNotesProps)
         );
 
       if (!error) {
+        offlineCache.set(cacheKey, currentRaw);
         setSaveStatus('saved');
         setLastSavedRaw(currentRaw);
         setTimeout(() => setSaveStatus(prev => prev === 'saved' ? 'idle' : prev), 3000);
@@ -274,8 +304,10 @@ export default function DailyNotes({ selectedDate, className }: DailyNotesProps)
           </AnimatePresence>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          <span className="text-[9px] font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">Sincronizado</span>
+          <div className={cn("w-1.5 h-1.5 rounded-full", isOnline ? "bg-emerald-500" : "bg-amber-500")} />
+          <span className="text-[9px] font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter">
+            {isOnline ? "Sincronizado" : "Offline (Local)"}
+          </span>
         </div>
       </div>
     </div>
