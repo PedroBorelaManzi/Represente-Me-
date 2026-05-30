@@ -39,6 +39,10 @@ export default function EmpresasPage() {
   const [allOrders, setAllOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [showUpsellModal, setShowUpsellModal] = useState(false);
+  const currentPlan = settings.plan_id ? (settings.plan_id === 'premium' ? 'profissional' : settings.plan_id) : 'exclusivo';
+  const companyLimit = currentPlan === 'exclusivo' ? 1 : (currentPlan === 'profissional' ? 5 : Infinity);
+  const isLimitExceeded = (settings.categories || []).length >= companyLimit;
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [newCat, setNewCat] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -491,7 +495,7 @@ export default function EmpresasPage() {
           </div>
           
           <div className="grid grid-cols-2 lg:flex lg:flex-col gap-3 w-full">
-            <button onClick={() => setIsAddModalOpen(true)} className="w-full text-left p-4 sm:p-5 lg:p-6 rounded-3xl md:rounded-[32px] bg-emerald-600 text-white shadow-xl flex items-center justify-between group mb-2 md:mb-4 transition-all active:scale-95 col-span-2 lg:col-span-1">
+            <button onClick={() => isLimitExceeded ? setShowUpsellModal(true) : setIsAddModalOpen(true)} className="w-full text-left p-4 sm:p-5 lg:p-6 rounded-3xl md:rounded-[32px] bg-emerald-600 text-white shadow-xl flex items-center justify-between group mb-2 md:mb-4 transition-all active:scale-95 col-span-2 lg:col-span-1">
               <span className="text-[10px] sm:text-xs lg:text-[14px] font-black uppercase tracking-tight">Nova Empresa</span>
               <Plus className="w-4 h-4 sm:w-5 h-5 lg:w-6 lg:h-6 group-hover:rotate-90 transition-transform" />
             </button>
@@ -596,6 +600,37 @@ export default function EmpresasPage() {
       </div>
 
       <AnimatePresence>
+        {showUpsellModal && (
+           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowUpsellModal(false)} className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl" />
+              <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-[40px] md:rounded-[56px] shadow-2xl relative z-10 w-full max-w-md border border-white/20 text-center space-y-6">
+                 <div className="w-16 h-16 rounded-3xl bg-amber-500/10 flex items-center justify-center mx-auto text-amber-500 animate-pulse">
+                    <Zap className="w-8 h-8" />
+                 </div>
+                 <h3 className="text-xl md:text-2xl font-black uppercase text-slate-900 dark:text-zinc-100 tracking-tighter">Limite de Empresas</h3>
+                 <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed font-bold uppercase tracking-wider">
+                    {currentPlan === 'exclusivo' 
+                      ? "Você já atingiu o limite de suas empresas com o seu plano Exclusivo (limite: 1 empresa). Para cadastrar mais empresas, você deve fazer o upgrade para o plano Profissional." 
+                      : "Você já atingiu o limite de suas empresas com o seu plano Profissional (limite: 5 empresas). Para cadastrar mais empresas, você deve fazer o upgrade para o plano Master."
+                    }
+                 </p>
+                 <div className="space-y-3 pt-2">
+                    <button 
+                       onClick={() => { setShowUpsellModal(false); navigate('/dashboard/order-bump'); }} 
+                       className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-[24px] font-black uppercase tracking-widest text-[10px] md:text-xs shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                       <Sparkles className="w-4 h-4" /> Dê um Upgrade no seu Plano
+                    </button>
+                    <button 
+                       onClick={() => setShowUpsellModal(false)} 
+                       className="w-full py-4 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-500 dark:text-zinc-400 rounded-[24px] font-black uppercase tracking-widest text-[9px] md:text-[10px] transition-all"
+                    >
+                       Talvez mais tarde
+                    </button>
+                 </div>
+              </motion.div>
+           </div>
+        )}
         {isAddModalOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsAddModalOpen(false)} className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl" />
