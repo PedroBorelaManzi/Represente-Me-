@@ -75,7 +75,27 @@ export default function OrderBump() {
   const [couponError, setCouponError] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // Checkout states
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'Mensal' | 'Semestral' | 'Anual'>('Mensal');
+  const [cardHolder, setCardHolder] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+
   const currentTier = settings.plan_id ? (settings.plan_id === 'premium' ? 'profissional' : settings.plan_id) : 'exclusivo';
+
+  const getExpirationDate = (cycle: 'Mensal' | 'Semestral' | 'Anual') => {
+    const date = new Date();
+    if (cycle === 'Mensal') {
+      date.setDate(date.getDate() + 30);
+    } else if (cycle === 'Semestral') {
+      date.setMonth(date.getMonth() + 6);
+    } else if (cycle === 'Anual') {
+      date.setFullYear(date.getFullYear() + 1);
+    }
+    return date.toLocaleDateString('pt-BR');
+  };
 
   // Master is index 2, if they are already on Master, handle gracefully
   if (currentTier === 'master') {
@@ -142,20 +162,33 @@ export default function OrderBump() {
   };
 
   const handleConfirmUpgrade = async () => {
-    setLoading(true);
-    try {
-      // Simulate gateway transaction
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Update in local settings context which syncs online and offline cache
-      await updateSettings({ plan_id: nextTier });
-      
-      setIsSuccess(true);
-      toast.success(`Parabéns! Seu upgrade para o plano ${nextPlan.name} foi processado!`);
-    } catch (e) {
-      toast.error("Erro ao processar o seu upgrade de assinatura. Tente novamente.");
-    } finally {
-      setLoading(false);
+    if (showCheckout) {
+      if (!cardHolder || !cardNumber || !cardExpiry || !cardCvv) {
+        toast.error("Por favor, preencha todos os campos do cartão para simular o pagamento.");
+        return;
+      }
+      setLoading(true);
+      try {
+        // Simulate gateway transaction
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Update in local settings context which syncs online and offline cache
+        await updateSettings({ plan_id: nextTier });
+        
+        // Save cycle and calculated expiration in localStorage
+        const expDate = getExpirationDate(billingCycle);
+        localStorage.setItem('rm_billing_cycle', billingCycle);
+        localStorage.setItem('rm_expiration_date', expDate);
+        
+        setIsSuccess(true);
+        toast.success("Parabéns! Seu upgrade para o plano " + nextPlan.name + " foi processado!");
+      } catch (e) {
+        toast.error("Erro ao processar o seu upgrade de assinatura. Tente novamente.");
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setShowCheckout(true);
     }
   };
 
@@ -180,12 +213,16 @@ export default function OrderBump() {
             </p>
             <p className="text-slate-400 dark:text-zinc-500 text-xs leading-relaxed font-medium">
               Todos os benefícios e recursos de inteligência do plano **{nextPlan.name}** já estão ativos e liberados em sua conta. Nosso motor neural já reconfigurou seus limites de acesso.
+              <br />
+              <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest block mt-3 bg-emerald-500/10 py-2 px-4 rounded-xl border border-emerald-500/20">
+                📅 Válido até {localStorage.getItem('rm_expiration_date') || "N/A"} (Ciclo {localStorage.getItem('rm_billing_cycle') || 'Mensal'})
+              </span>
             </p>
           </div>
 
           <div className="p-6 bg-slate-50 dark:bg-zinc-800/40 rounded-3xl border border-slate-100 dark:border-zinc-800 flex items-center justify-between text-left">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-emerald-500 text-white rounded-xl">
+              <div className="p-3 bg-emerald-500 text-white rounded-xl" style={{ backgroundColor: '#10b981' }}>
                 <nextPlan.icon className="w-5 h-5" />
               </div>
               <div>
@@ -195,7 +232,7 @@ export default function OrderBump() {
             </div>
             <div className="text-right">
               <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">R$ {nextPlan.price}/mês</p>
-              <p className="text-[8px] font-bold text-slate-400 uppercase">Faturamento Mensal</p>
+              <p className="text-[8px] font-bold text-slate-400 uppercase">Faturamento {localStorage.getItem('rm_billing_cycle') || 'Mensal'}</p>
             </div>
           </div>
 
@@ -280,7 +317,7 @@ export default function OrderBump() {
                 {nextPlan.features.map((feature, i) => (
                   <div key={i} className="flex items-start gap-3 bg-slate-50/50 dark:bg-zinc-800/20 p-3 rounded-2xl border border-slate-100/50 dark:border-zinc-800/40">
                     <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: '#10b981' }}>
-                      <Check className="w-3 h-3 font-bold" />
+                      <Check className="w-3.5 h-3.5 font-bold" />
                     </div>
                     <span className="text-[10px] font-black text-slate-700 dark:text-zinc-300 uppercase tracking-tight leading-tight">{feature}</span>
                   </div>
@@ -293,108 +330,256 @@ export default function OrderBump() {
           {/* Right Column: Checkout Summary, Coupon & Confirm Button */}
           <div className="lg:col-span-5 space-y-6">
             
-            {/* Price Breakdown Box */}
-            <div className="p-8 bg-white dark:bg-zinc-900 rounded-[36px] border border-slate-100 dark:border-zinc-800 text-left space-y-6 shadow-lg shadow-slate-100/50 dark:shadow-none">
-              <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white pb-3 border-b border-slate-50 dark:border-zinc-800">Resumo da Assinatura</h3>
-              
-              <div className="space-y-4">
-                <div className="flex justify-between text-xs font-bold text-slate-500">
-                  <span>Novo Plano ({nextPlan.name})</span>
-                  <span>R$ {nextPlan.price}/mês</span>
+            {showCheckout ? (
+              <div className="p-8 bg-white dark:bg-zinc-900 rounded-[36px] border border-slate-100 dark:border-zinc-800 text-left space-y-6 shadow-lg shadow-slate-100/50 dark:shadow-none">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-50 dark:border-zinc-800">
+                  <button 
+                    onClick={() => setShowCheckout(false)}
+                    className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 hover:text-emerald-600 uppercase tracking-widest"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" /> Voltar
+                  </button>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Checkout Seguro</h3>
                 </div>
-                <div className="flex justify-between text-xs font-bold text-slate-400">
-                  <span>Crédito do Plano Atual ({currentPlan.name})</span>
-                  <span>-R$ {currentPlan.price}/mês</span>
-                </div>
-                
-                {activeCoupon && (
-                  <div className="flex justify-between text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2.5 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
-                    <div className="flex items-center gap-1.5">
-                      <Ticket className="w-3.5 h-3.5" />
-                      <span>Cupom {activeCoupon}</span>
+
+                {/* Pricing Summary */}
+                <div className="p-5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100/30 dark:border-emerald-900/20 text-left">
+                  <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider bg-emerald-500/10 px-2 py-0.5 rounded-full mb-2 inline-block">Valor Adicional</span>
+                  <div className="flex justify-between items-baseline mt-1">
+                    <p className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">A partir deste mês:</p>
+                    <div className="text-right">
+                      <span className="text-xs font-black text-slate-400">R$</span>
+                      <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter"> {finalDiff}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">/mês a mais</span>
                     </div>
-                    <span>-R$ {discountAmount}/mês</span>
-                  </div>
-                )}
-
-                <div className="pt-4 border-t border-slate-50 dark:border-zinc-800 flex justify-between items-baseline">
-                  <div>
-                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Diferença Mensal</h4>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Cobrado apenas o delta proporcional</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs font-black text-slate-400">R$</span>
-                    <span className="text-4xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter">{finalDiff}</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">/mês</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Coupon Form */}
-              <div className="pt-6 border-t border-slate-50 dark:border-zinc-800 space-y-4">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Possui um cupom de desconto?</p>
-                
-                {!activeCoupon ? (
-                  <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="Código do cupom (opcional)" 
-                      value={couponCode}
-                      onChange={(e) => { setCouponCode(e.target.value); setCouponError(""); }}
-                      className="flex-1 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-850 rounded-2xl px-4 py-3.5 text-xs font-bold uppercase tracking-widest outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-900 transition-all placeholder:text-slate-400 placeholder:normal-case placeholder:tracking-normal"
-                    />
-                    <button 
-                      type="submit"
-                      className="px-5 bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all shadow-md shrink-0"
-                    >
-                      Aplicar
-                    </button>
-                  </form>
-                ) : (
-                  <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-zinc-850/50 rounded-2xl border border-slate-100 dark:border-zinc-800">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">{activeCoupon}</span>
-                    </div>
-                    <button 
-                      onClick={handleRemoveCoupon}
-                      className="text-[9px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest"
-                    >
-                      Remover
-                    </button>
+                {/* Billing Cycle Selection */}
+                <div className="space-y-3">
+                  <label className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-emerald-500 animate-pulse" /> Selecione o ciclo do seu plano atual:
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['Mensal', 'Semestral', 'Anual'].map((cycle) => (
+                      <button
+                        key={cycle}
+                        type="button"
+                        onClick={() => setBillingCycle(cycle)}
+                        className={cn(
+                          "py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95",
+                          billingCycle === cycle
+                            ? "bg-slate-900 border-slate-900 text-white dark:bg-zinc-100 dark:border-zinc-100 dark:text-zinc-900"
+                            : "bg-slate-50 border-slate-100 text-slate-500 dark:bg-zinc-800/40 dark:border-zinc-700/50 dark:text-zinc-400"
+                        )}
+                      >
+                        {cycle}
+                      </button>
+                    ))}
                   </div>
-                )}
+                  
+                  {/* Dynamic Expiration Display */}
+                  <div className="p-4 bg-slate-50 dark:bg-zinc-850/50 rounded-2xl border border-slate-100 dark:border-zinc-800/80">
+                    <p className="text-[10px] text-slate-700 dark:text-zinc-300 leading-relaxed font-bold uppercase tracking-tight">
+                      📅 Vencimento do Upgrade: <span className="text-emerald-600 dark:text-emerald-400">{getExpirationDate(billingCycle)}</span>
+                    </p>
+                    <p className="text-[8px] text-slate-400 uppercase font-bold mt-1">
+                      (Acaba junto ao término do seu plano {billingCycle.toLowerCase()})
+                    </p>
+                  </div>
+                </div>
 
-                {couponError && (
-                  <p className="text-[9px] font-bold text-red-500 uppercase tracking-wide text-left pl-1">{couponError}</p>
-                )}
+                {/* Simulated Payment Form */}
+                <div className="space-y-4">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Informações de Pagamento</p>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <input 
+                        type="text" 
+                        placeholder="Nome no Cartão" 
+                        value={cardHolder}
+                        onChange={(e) => setCardHolder(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-850 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-900 transition-all placeholder:text-slate-400 placeholder:normal-case placeholder:tracking-normal"
+                      />
+                    </div>
+                    
+                    <div>
+                      <input 
+                        type="text" 
+                        placeholder="Número do Cartão" 
+                        value={cardNumber}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').substring(0, 16);
+                          const matches = val.match(/\d{4,16}/g);
+                          const match = matches && matches[0] || '';
+                          const parts = [];
+                          for (let i = 0, len = match.length; i < len; i += 4) {
+                            parts.push(match.substring(i, i + 4));
+                          }
+                          if (parts.length > 0) {
+                            setCardNumber(parts.join(' '));
+                          } else {
+                            setCardNumber(val);
+                          }
+                        }}
+                        className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-850 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-900 transition-all placeholder:text-slate-400 placeholder:normal-case placeholder:tracking-normal"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <input 
+                        type="text" 
+                        placeholder="Validade (MM/AA)" 
+                        value={cardExpiry}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').substring(0, 4);
+                          if (val.length >= 2) {
+                            setCardExpiry(val.substring(0, 2) + '/' + val.substring(2));
+                          } else {
+                            setCardExpiry(val);
+                          }
+                        }}
+                        className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-850 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-900 transition-all placeholder:text-slate-400 placeholder:normal-case placeholder:tracking-normal"
+                      />
+                      <input 
+                        type="password" 
+                        placeholder="CVV" 
+                        value={cardCvv}
+                        onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, '').substring(0, 3))}
+                        className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-850 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-900 transition-all placeholder:text-slate-400 placeholder:normal-case placeholder:tracking-normal"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Finalize Payment Button */}
+                <button 
+                  onClick={handleConfirmUpgrade}
+                  disabled={loading}
+                  className="w-full py-5 rounded-[24px] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black uppercase text-[11px] tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 active:scale-98 disabled:opacity-50 transition-all relative overflow-hidden"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Processando Pagamento...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Confirmar e Pagar +R$ {finalDiff}</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center justify-center gap-2 text-slate-400 dark:text-zinc-500 pt-2 border-t border-slate-50 dark:border-zinc-800">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600/30" />
+                  <span className="text-[8px] font-bold uppercase tracking-widest">Upgrade seguro & Criptografado</span>
+                </div>
               </div>
+            ) : (
+              <div className="p-8 bg-white dark:bg-zinc-900 rounded-[36px] border border-slate-100 dark:border-zinc-800 text-left space-y-6 shadow-lg shadow-slate-100/50 dark:shadow-none">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white pb-3 border-b border-slate-50 dark:border-zinc-800">Resumo da Assinatura</h3>
+                
+                <div className="space-y-4">
+                  <div className="flex justify-between text-xs font-bold text-slate-500">
+                    <span>Novo Plano ({nextPlan.name})</span>
+                    <span>R$ {nextPlan.price}/mês</span>
+                  </div>
+                  <div className="flex justify-between text-xs font-bold text-slate-400">
+                    <span>Crédito do Plano Atual ({currentPlan.name})</span>
+                    <span>-R$ {currentPlan.price}/mês</span>
+                  </div>
+                  
+                  {activeCoupon && (
+                    <div className="flex justify-between text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2.5 rounded-xl border border-emerald-100/30 dark:border-emerald-900/30">
+                      <div className="flex items-center gap-1.5">
+                        <Ticket className="w-3.5 h-3.5" />
+                        <span>Cupom {activeCoupon}</span>
+                      </div>
+                      <span>-R$ {discountAmount}/mês</span>
+                    </div>
+                  )}
 
-              {/* Confirm Upgrade Button */}
-              <button 
-                onClick={handleConfirmUpgrade}
-                disabled={loading}
-                className="w-full py-5 rounded-[24px] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black uppercase text-[11px] tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 active:scale-98 disabled:opacity-50 transition-all relative overflow-hidden"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Processando Upgrade...</span>
-                  </>
-                ) : (
-                  <>
-                    <Crown className="w-4 h-4" />
-                    <span>Confirmar Meu Upgrade</span>
-                  </>
-                )}
-              </button>
+                  <div className="pt-4 border-t border-slate-50 dark:border-zinc-800 flex justify-between items-baseline">
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Diferença Mensal</h4>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Cobrado apenas o delta proporcional</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-black text-slate-400">R$</span>
+                      <span className="text-4xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter">{finalDiff}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">/mês</span>
+                    </div>
+                  </div>
+                </div>
 
-              <div className="flex items-center justify-center gap-2 text-slate-400 dark:text-zinc-500 pt-2 border-t border-slate-50 dark:border-zinc-800">
-                <ShieldCheck className="w-4 h-4 text-emerald-600/30" />
-                <span className="text-[8px] font-bold uppercase tracking-widest">Upgrade seguro & Criptografado</span>
+                {/* Coupon Form */}
+                <div className="pt-6 border-t border-slate-50 dark:border-zinc-800 space-y-4">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Possui um cupom de desconto?</p>
+                  
+                  {!activeCoupon ? (
+                    <form onSubmit={handleApplyCoupon} className="flex gap-2">
+                      <input 
+                        type="text" 
+                        placeholder="Código do cupom (opcional)" 
+                        value={couponCode}
+                        onChange={(e) => { setCouponCode(e.target.value); setCouponError(""); }}
+                        className="flex-1 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-850 rounded-2xl px-4 py-3.5 text-xs font-bold uppercase tracking-widest outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-zinc-900 transition-all placeholder:text-slate-400 placeholder:normal-case placeholder:tracking-normal"
+                      />
+                      <button 
+                        type="submit"
+                        className="px-5 bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all shadow-md shrink-0"
+                      >
+                        Aplicar
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-zinc-850/50 rounded-2xl border border-slate-100 dark:border-zinc-800">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">{activeCoupon}</span>
+                      </div>
+                      <button 
+                        onClick={handleRemoveCoupon}
+                        className="text-[9px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  )}
+
+                  {couponError && (
+                    <p className="text-[9px] font-bold text-red-500 uppercase tracking-wide text-left pl-1">{couponError}</p>
+                  )}
+                </div>
+
+                {/* Confirm Upgrade Button */}
+                <button 
+                  onClick={handleConfirmUpgrade}
+                  disabled={loading}
+                  className="w-full py-5 rounded-[24px] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black uppercase text-[11px] tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl shadow-emerald-500/20 active:scale-98 disabled:opacity-50 transition-all relative overflow-hidden"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Processando Upgrade...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Crown className="w-4 h-4" />
+                      <span>Confirmar Meu Upgrade</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="flex items-center justify-center gap-2 text-slate-400 dark:text-zinc-500 pt-2 border-t border-slate-50 dark:border-zinc-800">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600/30" />
+                  <span className="text-[8px] font-bold uppercase tracking-widest">Upgrade seguro & Criptografado</span>
+                </div>
+
               </div>
-
-            </div>
+            )}
 
             {/* Satisfaction Banner */}
             <div className="p-6 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100/50 dark:border-emerald-900/20 rounded-[28px] text-left flex items-start gap-4">

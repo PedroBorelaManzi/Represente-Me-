@@ -6,6 +6,7 @@ import {
   Bell, 
   Shield, 
   CreditCard,
+  Clock,
   LogOut,
   Moon,
   Sun,
@@ -895,10 +896,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           </div>
                        </div>
 
-                       <div className="grid grid-cols-2 gap-4">
+                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           {[
                             { label: 'Status', value: 'Ativo', icon: CheckCircle2, color: 'text-emerald-500' },
-                            { label: 'Renovação', value: 'Mensal', icon: TrendingUp, color: 'text-blue-500' }
+                            { label: 'Renovação', value: localStorage.getItem('rm_billing_cycle') || 'Mensal', icon: TrendingUp, color: 'text-blue-500' },
+                            { label: 'Vencimento', value: localStorage.getItem('rm_expiration_date') || '30 dias', icon: Clock, color: 'text-amber-500' }
                           ].map((stat, i) => (
                             <div key={i} className="p-4 bg-white/50 dark:bg-zinc-900/50 rounded-2xl border border-white/20 dark:border-zinc-800 text-left">
                               <p className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1">{stat.label}</p>
