@@ -97,6 +97,53 @@ export default function OrderBump() {
     return date.toLocaleDateString('pt-BR');
   };
 
+  const getExpirationMonthName = (cycle: 'Mensal' | 'Semestral' | 'Anual') => {
+    const date = new Date();
+    if (cycle === 'Mensal') {
+      date.setDate(date.getDate() + 30);
+    } else if (cycle === 'Semestral') {
+      date.setMonth(date.getMonth() + 6);
+    } else if (cycle === 'Anual') {
+      date.setFullYear(date.getFullYear() + 1);
+    }
+    return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  };
+
+  const validateCard = () => {
+    if (!cardHolder.trim() || cardHolder.trim().length < 3) {
+      toast.error("Por favor, insira o nome completo do titular do cartão.");
+      return false;
+    }
+    const cleanNum = cardNumber.replace(/\D/g, '');
+    if (cleanNum.length !== 16) {
+      toast.error("O número do cartão de crédito deve conter exatamente 16 dígitos.");
+      return false;
+    }
+    const expiryMatch = cardExpiry.match(/^(\d{2})\/(\d{2})$/);
+    if (!expiryMatch) {
+      toast.error("A data de validade deve estar no formato MM/AA.");
+      return false;
+    }
+    const month = parseInt(expiryMatch[1], 10);
+    const year = parseInt("20" + expiryMatch[2], 10);
+    if (month < 1 || month > 12) {
+      toast.error("Mês de validade inválido. Deve ser entre 01 e 12.");
+      return false;
+    }
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    if (year < currentYear || (year === currentYear && month < currentMonth)) {
+      toast.error("O cartão informado está vencido.");
+      return false;
+    }
+    if (cardCvv.length !== 3) {
+      toast.error("O código de segurança CVV deve conter exatamente 3 dígitos.");
+      return false;
+    }
+    return true;
+  };
+
   // Master is index 2, if they are already on Master, handle gracefully
   if (currentTier === 'master') {
     return (
@@ -163,9 +210,8 @@ export default function OrderBump() {
 
   const handleConfirmUpgrade = async () => {
     if (showCheckout) {
-      if (!cardHolder || !cardNumber || !cardExpiry || !cardCvv) {
-        toast.error("Por favor, preencha todos os campos do cartão para simular o pagamento.");
-        return;
+      if (!validateCard()) {
+        return; // Validation failed
       }
       setLoading(true);
       try {
@@ -378,13 +424,13 @@ export default function OrderBump() {
                     ))}
                   </div>
                   
-                  {/* Dynamic Expiration Display */}
-                  <div className="p-4 bg-slate-50 dark:bg-zinc-850/50 rounded-2xl border border-slate-100 dark:border-zinc-800/80">
-                    <p className="text-[10px] text-slate-700 dark:text-zinc-300 leading-relaxed font-bold uppercase tracking-tight">
-                      📅 Vencimento do Upgrade: <span className="text-emerald-600 dark:text-emerald-400">{getExpirationDate(billingCycle)}</span>
+                  {/* Dynamic Expiration Wording */}
+                  <div className="p-4 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl space-y-2">
+                    <p className="text-[10px] text-emerald-800 dark:text-emerald-300 font-black uppercase tracking-tight">
+                      ℹ️ O seu plano atual encerra no mês de <span className="underline">{getExpirationMonthName(billingCycle)}</span>.
                     </p>
-                    <p className="text-[8px] text-slate-400 uppercase font-bold mt-1">
-                      (Acaba junto ao término do seu plano {billingCycle.toLowerCase()})
+                    <p className="text-[9px] text-emerald-700 dark:text-emerald-400 font-bold leading-relaxed">
+                      Você está contratando o upgrade para o plano {nextPlan.name} até o final do seu plano anterior.
                     </p>
                   </div>
                 </div>
