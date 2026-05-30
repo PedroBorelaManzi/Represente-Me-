@@ -68,27 +68,65 @@ export default function Agenda() {
     if (!user) return;
     setLoading(true);
 
-    const { data: tokenData } = await supabase
-      .from("user_google_tokens")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    setGoogleConnected(!!tokenData);
+    // Try loading immediately from offline cache to prevent empty visual flashes
+    const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) || [];
+    const cachedEvents = (offlineCache.get(CacheKeys.APPOINTMENTS) as Appointment[]) || [];
+    
+    if (cachedClients.length > 0) setClients(cachedClients);
+    if (cachedEvents.length > 0) setEvents(cachedEvents);
 
-    const { data: clientsData } = await supabase.from("clients").select("id, name, city, state, cnpj").order("name");
-    setClients(clientsData || []);
+    if (!offlineCache.isOnline()) {
+      setLoading(false);
+      return;
+    }
 
-    const locations = (clientsData || []).filter(c => c.city).map(c => ({ city: c.city, state: c.state }));
-    const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
-    setHolidays(fetchedHolidays);
+    try {
+      const { data: tokenData } = await supabase
+        .from("user_google_tokens")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setGoogleConnected(!!tokenData);
 
-    const { data, error } = await supabase
-      .from("appointments")
-      .select("*")
-      .eq("user_id", user.id);
+      // Safe RLS compliant select
+      const { data: clientsData } = await supabase
+        .from("clients")
+        .select("id, name, city, state, cnpj")
+        .eq("user_id", user.id)
+        .order("name");
+        
+      if (clientsData) {
+        setClients(clientsData);
+        offlineCache.set(CacheKeys.CLIENTS, clientsData);
+      }
 
-    if (!error) setEvents(data || []);
-    setLoading(false);
+      // Holiday loading wrapped safely so third-party failures do not block agenda events
+      try {
+        const activeClients = clientsData || cachedClients;
+        const locations = (activeClients || []).filter(c => c.city).map(c => ({ city: c.city, state: c.state }));
+        const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
+        setHolidays(fetchedHolidays);
+      } catch (hError) {
+        console.warn("Holiday fetch failed safely:", hError);
+      }
+
+      const { data: eventsData, error: eventsError } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (!eventsError && eventsData) {
+        setEvents(eventsData);
+        offlineCache.set(CacheKeys.APPOINTMENTS, eventsData);
+      }
+    } catch (e) {
+      console.error("Erro técnico no carregamento online da agenda:", e);
+      // Ensure we always have events fallback
+      const freshCachedEvents = (offlineCache.get(CacheKeys.APPOINTMENTS) as Appointment[]) || [];
+      setEvents(freshCachedEvents);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchEvents(); }, [user, currentDate.getFullYear()]);
@@ -112,17 +150,58 @@ export default function Agenda() {
     setIsSaving(true);
     const savePayload = { ...payload, user_id: user.id };
     
+    if (!offlineCache.isOnline()) {
+      const isNew = !editingEvent?.id;
+      const eventId = editingEvent?.id || crypto.randomUUID();
+      const updatedEvent = { ...savePayload, id: eventId };
+
+      if (isNew) {
+        syncQueue.enqueue('appointments', 'INSERT', updatedEvent);
+        const newEvents = [...events, updatedEvent];
+        setEvents(newEvents);
+        offlineCache.set(CacheKeys.APPOINTMENTS, newEvents);
+        toast.success("Compromisso agendado offline!");
+      } else {
+        syncQueue.enqueue('appointments', 'UPDATE', savePayload, eventId);
+        const newEvents = events.map(e => e.id === eventId ? { ...e, ...savePayload } : e);
+        setEvents(newEvents);
+        offlineCache.set(CacheKeys.APPOINTMENTS, newEvents);
+        toast.success("Compromisso atualizado offline!");
+      }
+      setIsSaving(false);
+      setIsModalOpen(false);
+      setEditingEvent(null);
+      return;
+    }
+
     let dbResult;
     if (editingEvent?.id) {
-      dbResult = await supabase.from("appointments").update(savePayload).eq("id", editingEvent.id).select().single();
+      dbResult = await supabase
+        .from("appointments")
+        .update(savePayload)
+        .eq("id", editingEvent.id)
+        .eq("user_id", user.id)
+        .select()
+        .single();
     } else {
-      dbResult = await supabase.from("appointments").insert([savePayload]).select().single();
+      dbResult = await supabase
+        .from("appointments")
+        .insert([savePayload])
+        .select()
+        .single();
     }
 
     if (!dbResult.error && dbResult.data) {
-      await pushEventToGoogle(user.id, dbResult.data);
+      try {
+        await pushEventToGoogle(user.id, dbResult.data);
+      } catch (gErr) {
+        console.warn("Failed to push to Google Calendar:", gErr);
+      }
       await fetchEvents();
       toast.success("Evento orquestrado com sucesso!");
+    } else {
+      console.error("Erro ao salvar compromisso:", dbResult.error);
+      toast.error("Erro ao salvar compromisso.");
     }
     
     setIsSaving(false);
@@ -133,13 +212,37 @@ export default function Agenda() {
   const handleDelete = async () => {
     if (!editingEvent?.id || !window.confirm("Deseja realmente excluir este compromisso?")) return;
     setIsSaving(true);
-    const { error } = await supabase.from("appointments").delete().eq("id", editingEvent.id);
+
+    if (!offlineCache.isOnline()) {
+      syncQueue.enqueue('appointments', 'DELETE', null, editingEvent.id);
+      const newEvents = events.filter(e => e.id !== editingEvent.id);
+      setEvents(newEvents);
+      offlineCache.set(CacheKeys.APPOINTMENTS, newEvents);
+      toast.success("Compromisso removido offline!");
+      setIsSaving(false);
+      setIsModalOpen(false);
+      setEditingEvent(null);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("appointments")
+      .delete()
+      .eq("id", editingEvent.id)
+      .eq("user_id", user.id);
+
     if (!error && editingEvent.google_event_id) {
-      await deleteEventFromGoogle(user.id, editingEvent.google_event_id);
+      try {
+        await deleteEventFromGoogle(user.id, editingEvent.google_event_id);
+      } catch (gErr) {
+        console.warn("Failed to delete from Google Calendar:", gErr);
+      }
     }
     if (!error) {
       await fetchEvents();
       toast.success("Evento removido.");
+    } else {
+      toast.error("Erro ao remover compromisso.");
     }
     setIsSaving(false);
     setIsModalOpen(false);
@@ -188,19 +291,34 @@ export default function Agenda() {
     const eventToMove = events.find(ev => ev.id === id);
     if (!eventToMove || eventToMove.date === targetDate) return;
 
-    setEvents(events.map(ev => ev.id === id ? { ...ev, date: targetDate } : ev));
+    const updatedEvents = events.map(ev => ev.id === id ? { ...ev, date: targetDate } : ev);
+    setEvents(updatedEvents);
+    offlineCache.set(CacheKeys.APPOINTMENTS, updatedEvents);
+
+    if (!offlineCache.isOnline()) {
+      syncQueue.enqueue('appointments', 'UPDATE', { date: targetDate }, id);
+      toast.success("Compromisso reagendado offline!");
+      return;
+    }
 
     const { data, error } = await supabase
       .from("appointments")
       .update({ date: targetDate })
       .eq("id", id)
+      .eq("user_id", user.id)
       .select()
       .single();
 
     if (!error && data) {
-      await pushEventToGoogle(user.id, data);
+      try {
+        await pushEventToGoogle(user.id, data);
+      } catch (gErr) {
+        console.warn("Failed to sync reschedule with Google Calendar:", gErr);
+      }
       await fetchEvents();
       toast.success("Data reordenada via radar.");
+    } else {
+      toast.error("Erro ao reagendar compromisso.");
     }
   };
 
