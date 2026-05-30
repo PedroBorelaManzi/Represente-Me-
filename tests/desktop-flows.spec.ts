@@ -1,21 +1,21 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
 
-test.describe('Etapa 1: Revisão Frontend (Web Desktop) - Fluxos Principais', () => {
+test.describe('Etapa 1: RevisÃ£o Frontend (Web Desktop) - Fluxos Principais', () => {
   
   test('Deve renderizar a tela de login corretamente', async ({ page }) => {
     await page.goto('/login');
 
-    // Validar presença do logo e campos de entrada
+    // Validar presenÃ§a do logo e campos de entrada
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
     
-    // Validar botão de submissão
+    // Validar botÃ£o de submissÃ£o
     const submitBtn = page.locator('button[type="submit"]');
     await expect(submitBtn).toBeVisible();
-    await expect(submitBtn).toContainText('ENTRAR NA DASHBOARD');
+    await expect(submitBtn).toContainText('Entrar na Dashboard');
   });
 
-  test('Deve exibir erro amigável ao tentar logar com credenciais incorretas', async ({ page }) => {
+  test('Deve exibir erro amigÃ¡vel ao tentar logar com credenciais incorretas', async ({ page }) => {
     await page.goto('/login');
     
     await page.fill('input[type="email"]', 'usuario_invalido@exemplo.com');
@@ -27,11 +27,11 @@ test.describe('Etapa 1: Revisão Frontend (Web Desktop) - Fluxos Principais', ()
     await expect(toast).toBeVisible({ timeout: 5000 });
   });
 
-  test('Deve carregar a página de cadastro com seleção de planos', async ({ page }) => {
+  test('Deve carregar a pÃ¡gina de cadastro com seleÃ§Ã£o de planos', async ({ page }) => {
     await page.goto('/register');
     
-    // Validar presença de opções de planos
-    await expect(page.locator('text=Escolha o seu plano')).toBeVisible();
-    await expect(page.locator('text=Plano Exclusivo')).toBeVisible();
+    // Validar presenÃ§a de opÃ§Ãµes de planos
+    await expect(page.locator('text=Selecione o plano ideal')).toBeVisible();
+    await expect(page.locator('text=Exclusivo')).toBeVisible();
   });
 });
