@@ -175,7 +175,7 @@ export default function DailyNotes({ selectedDate, className }: DailyNotesProps)
       "bg-white dark:bg-zinc-900 rounded-[32px] border-2 border-emerald-600/20 p-6 shadow-xl flex flex-col h-full",
       className
     )}>
-      <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-0">
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-0 overflow-y-auto xl:overflow-y-hidden custom-scrollbar">
         
         {/* Coluna de Anotações */}
         <div className="flex flex-col h-full min-h-[150px]">
