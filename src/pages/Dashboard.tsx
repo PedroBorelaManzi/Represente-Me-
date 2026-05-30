@@ -181,6 +181,18 @@ export default function Dashboard() {
     if (cachedEvents) setEvents(cachedEvents);
     if (cachedMonthlyOrders) setMonthlyOrders(cachedMonthlyOrders);
     if (cachedAllTimeCategories) setAllTimeCategories(cachedAllTimeCategories);
+
+    // Instant local cached holidays loading
+    const loadCachedHolidays = async () => {
+      try {
+        const locations = (cachedClients || []).filter(c => c && c.city).map(c => ({ city: c.city, state: c.state }));
+        const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
+        setHolidays(fetchedHolidays);
+      } catch (e) {
+        console.warn("Error loading cached holidays on mount:", e);
+      }
+    };
+    loadCachedHolidays();
   }, []);
 
   const loadData = async () => {
@@ -292,6 +304,11 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  // Mount and date-change hook to load online data and sync state
+  useEffect(() => {
+    loadData();
+  }, [user, currentDate.getMonth(), currentDate.getFullYear()]);
 
 
   const handleSync = async () => {

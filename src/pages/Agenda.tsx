@@ -75,6 +75,16 @@ export default function Agenda() {
     if (cachedClients.length > 0) setClients(cachedClients);
     if (cachedEvents.length > 0) setEvents(cachedEvents);
 
+    // Load holidays instantly from cache if possible, even when offline
+    try {
+      const activeClients = cachedClients;
+      const locations = (activeClients || []).filter(c => c && c.city).map(c => ({ city: c.city, state: c.state }));
+      const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
+      setHolidays(fetchedHolidays);
+    } catch (hError) {
+      console.warn("Holiday fetch failed safely on initial load:", hError);
+    }
+
     if (!offlineCache.isOnline()) {
       setLoading(false);
       return;
@@ -100,10 +110,10 @@ export default function Agenda() {
         offlineCache.set(CacheKeys.CLIENTS, clientsData);
       }
 
-      // Holiday loading wrapped safely so third-party failures do not block agenda events
+      // Holiday loading synced online
       try {
         const activeClients = clientsData || cachedClients;
-        const locations = (activeClients || []).filter(c => c.city).map(c => ({ city: c.city, state: c.state }));
+        const locations = (activeClients || []).filter(c => c && c.city).map(c => ({ city: c.city, state: c.state }));
         const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
         setHolidays(fetchedHolidays);
       } catch (hError) {

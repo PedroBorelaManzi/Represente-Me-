@@ -56,18 +56,39 @@ async function getCachedOrFetch<T>(key: string, url: string): Promise<T | null> 
   }
 }
 
+const BACKUP_NATIONAL_HOLIDAYS = [
+  { month: 1, day: 1, name: "Confraternização Universal" },
+  { month: 4, day: 21, name: "Tiradentes" },
+  { month: 5, day: 1, name: "Dia do Trabalho" },
+  { month: 9, day: 7, name: "Independência do Brasil" },
+  { month: 10, day: 12, name: "Nossa Senhora Aparecida" },
+  { month: 11, day: 2, name: "Finados" },
+  { month: 11, day: 15, name: "Proclamação da República" },
+  { month: 11, day: 20, name: "Dia Nacional de Zumbi e da Consciência Negra" },
+  { month: 12, day: 25, name: "Natal" }
+];
+
 export async function fetchHolidays(year: number, locations: { city: string; state?: string }[]): Promise<Holiday[]> {
   try {
     const nationalUrl = `https://brasilapi.com.br/api/feriados/v1/${year}`;
-    const nationalRes = await fetch(nationalUrl);
-    const nationalData = await nationalRes.json();
+    const nationalData = await getCachedOrFetch<any[]>(`br_national_holidays_${year}`, nationalUrl);
     
-    let allHolidays: Holiday[] = Array.isArray(nationalData) ? nationalData.map((h: any) => ({
-      id: h.name,
-      name: h.name,
-      date: h.date,
-      type: "national" as const
-    })) : [];
+    let allHolidays: Holiday[] = [];
+    if (Array.isArray(nationalData) && nationalData.length > 0) {
+      allHolidays = nationalData.map((h: any) => ({
+        id: h.name,
+        name: h.name,
+        date: h.date,
+        type: "national" as const
+      }));
+    } else {
+      allHolidays = BACKUP_NATIONAL_HOLIDAYS.map(h => ({
+        id: `backup-${year}-${h.name}`,
+        name: h.name,
+        date: `${year}-\n        ${String(h.month).padStart(2, "0")}-\n        ${String(h.day).padStart(2, "0")}`.replace(/\s/g, ""),
+        type: "national" as const
+      }));
+    }
 
     if (locations.length === 0) return allHolidays;
 
