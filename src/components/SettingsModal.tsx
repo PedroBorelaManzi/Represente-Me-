@@ -835,26 +835,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   </div>
 
                   {/* Compare Plan Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Inferior Plan */}
-                    {currentIndex > 0 ? (() => {
-                      const infId = tierSequence[currentIndex - 1];
-                      const infPlan = planInfo[infId as keyof typeof planInfo];
-                      return (
-                        <div className="p-6 rounded-3xl border opacity-50 relative overflow-hidden bg-slate-50/50 dark:bg-zinc-800/20 border-slate-100 dark:border-zinc-800/40 text-left">
-                          <div className="flex items-center gap-3 mb-4">
-                            <infPlan.icon className="w-5 h-5 text-slate-400" />
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nível Anterior</span>
-                          </div>
-                          <h4 className="text-lg font-black text-slate-500 dark:text-zinc-400 uppercase tracking-tight leading-none">{infPlan.name}</h4>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase mt-2">Plano descontinuado ou inferior</p>
-                        </div>
-                      );
-                    })() : (
-                      <div className="p-6 rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800/50 flex flex-col justify-center items-center opacity-30 text-center">
-                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Nenhum nível inferior</span>
-                      </div>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
 
                     {/* Current Plan */}
                     <div className={cn("p-6 rounded-3xl border relative overflow-hidden shadow-lg text-left", currentPlan.bg, currentPlan.border)}>
@@ -877,7 +859,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       return (
                         <button 
                           type="button"
-                          onClick={() => { onClose(); navigate('/planos'); }}
+                          onClick={() => { onClose(); navigate('/dashboard/order-bump'); }}
                           className="p-6 rounded-3xl border border-amber-200/50 dark:border-amber-900/30 bg-amber-50/10 dark:bg-amber-950/5 relative overflow-hidden text-left shadow-[0_16px_32px_rgba(245,158,11,0.05)] ring-2 ring-amber-500/10 hover:scale-[1.03] active:scale-98 transition-all group"
                         >
                           <div className="absolute top-3 right-3 px-2 py-0.5 bg-amber-500 text-white text-[7px] rounded-full font-black uppercase tracking-wider animate-bounce">
@@ -983,7 +965,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       <button 
                         onClick={() => {
                           onClose();
-                          setTimeout(() => navigate('/planos'), 100);
+                          setTimeout(() => navigate('/dashboard/order-bump'), 100);
                         }}
                         className="w-full py-5 rounded-[24px] bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black uppercase text-[11px] tracking-[0.2em] flex items-center justify-center gap-4 group shadow-xl shadow-emerald-500/20 active:scale-98 transition-all relative overflow-hidden"
                       >

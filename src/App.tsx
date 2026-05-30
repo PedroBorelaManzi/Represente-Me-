@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import Recovery from './pages/Recovery';
 import Checkout from './pages/Checkout';
 import Layout from "./components/Layout";
+import OrderBumpPage from "./pages/OrderBump";
 import Dashboard from "./pages/Dashboard";
 import MapPage from "./pages/Map";
 import LinksPage from "./pages/Links";
@@ -55,6 +56,7 @@ export default function App() {
                   <Route path="email" element={<EmailClient />} />
                   <Route path="pedidos" element={<PedidosPage />} />
                 </Route>
+                <Route path="order-bump" element={<OrderBumpPage />} />
               </Route>
 
               {/* Google OAuth Callback */}
