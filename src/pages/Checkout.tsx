@@ -480,15 +480,47 @@ export default function Checkout() {
                         <p className={cn("text-[9px] font-bold uppercase tracking-tight opacity-70", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>{cycle.save}</p>
                       </div>
 
-                      <div className="mt-auto pt-4 border-t border-current/10">
-                        <span className={cn("text-lg font-black", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>R$ {cycle.monthly}</span>
-                        <span className={cn("text-[10px] font-bold opacity-60 ml-1", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>/mês</span>
+                      <div className="mt-auto pt-3 border-t border-current/10 flex flex-col gap-0.5">
+                        {cycle.id !== 'MONTHLY' ? (
+                          <>
+                            <span className={cn(
+                              "text-xs font-bold line-through opacity-60",
+                              billingCycle === cycle.id ? "text-white" : "text-slate-400"
+                            )}>
+                              R$ {selectedPlan.prices.MONTHLY}
+                            </span>
+                            <div className="flex items-baseline gap-1">
+                              <span className={cn("text-2xl font-black tracking-tighter", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>
+                                R$ {cycle.monthly}
+                              </span>
+                              <span className={cn("text-[10px] font-bold opacity-60", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>/mês</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-xs font-bold opacity-0 select-none">—</span>
+                            <div className="flex items-baseline gap-1">
+                              <span className={cn("text-2xl font-black tracking-tighter", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>
+                                R$ {cycle.monthly}
+                              </span>
+                              <span className={cn("text-[10px] font-bold opacity-60", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>/mês</span>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
 
-                    {cycle.id === 'ANNUAL' && (
-                      <div className="absolute top-4 right-4">
-                        <Star className={cn("w-4 h-4", billingCycle === cycle.id ? "text-amber-300 fill-amber-300" : "text-amber-400 opacity-20")} />
+                    {cycle.id !== 'MONTHLY' && (
+                      <div className={cn(
+                        "absolute top-3 right-3 w-12 h-12 rounded-full flex flex-col items-center justify-center font-black shadow-lg border-2 border-white/20 transition-transform group-hover:rotate-6 group-hover:scale-115 duration-300",
+                        billingCycle === cycle.id
+                          ? "bg-amber-400 text-slate-900"
+                          : "bg-emerald-500 text-white"
+                      )}>
+                        <span className="text-[11px] font-black tracking-tighter leading-none">
+                          -{Math.round((1 - cycle.monthly / selectedPlan.prices.MONTHLY) * 100)}%
+                        </span>
+                        <span className="text-[6px] font-black uppercase tracking-widest leading-none mt-0.5">OFF</span>
                       </div>
                     )}
                   </button>
