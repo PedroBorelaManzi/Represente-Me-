@@ -484,10 +484,10 @@ export default function Checkout() {
                         {cycle.id !== 'MONTHLY' ? (
                           <>
                             <span className={cn(
-                              "text-sm font-black line-through decoration-2",
+                              "text-lg font-black line-through decoration-4",
                               billingCycle === cycle.id 
-                                ? "text-white/80 decoration-amber-300"
-                                : "text-slate-400 dark:text-zinc-500 decoration-red-500/80"
+                                ? "text-white/85 decoration-amber-300"
+                                : "text-slate-400 dark:text-zinc-400 decoration-red-500"
                             )}>
                               R$ {selectedPlan.prices.MONTHLY}
                             </span>
@@ -500,7 +500,7 @@ export default function Checkout() {
                           </>
                         ) : (
                           <>
-                            <span className="text-sm font-black opacity-0 select-none">—</span>
+                            <span className="text-lg font-black opacity-0 select-none">—</span>
                             <div className="flex items-baseline gap-1">
                               <span className={cn("text-3xl font-black tracking-tighter", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>
                                 R$ {cycle.monthly}
