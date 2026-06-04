@@ -93,6 +93,68 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [showBiometricPasswordPrompt, setShowBiometricPasswordPrompt] = useState(false);
   const [biometricPassword, setBiometricPassword] = useState("");
 
+  const [emailNotifications, setEmailNotifications] = useState(() => {
+    return localStorage.getItem("rm_email_notifications") !== "false";
+  });
+  const [pushNotifications, setPushNotifications] = useState(() => {
+    return localStorage.getItem("rm_push_notifications") !== "false";
+  });
+  const [agendaReminders, setAgendaReminders] = useState(() => {
+    return localStorage.getItem("rm_agenda_reminders") !== "false";
+  });
+
+  const handleTogglePush = async (checked: boolean) => {
+    if (checked) {
+      if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          toast.success("Notificações Push autorizadas no seu navegador!");
+          localStorage.setItem("rm_push_notifications", "true");
+          setPushNotifications(true);
+        } else {
+          toast.error("Permissão de notificação negada pelo navegador.");
+          localStorage.setItem("rm_push_notifications", "false");
+          setPushNotifications(false);
+        }
+      } else {
+        toast.error("Notificações Push não são suportadas neste navegador.");
+      }
+    } else {
+      localStorage.setItem("rm_push_notifications", "false");
+      setPushNotifications(false);
+      toast.info("Notificações Push desativadas.");
+    }
+  };
+
+  const handleToggleEmail = (checked: boolean) => {
+    localStorage.setItem("rm_email_notifications", checked ? "true" : "false");
+    setEmailNotifications(checked);
+    toast.success(checked ? "Notificações por e-mail ativadas!" : "Notificações por e-mail desativadas.");
+  };
+
+  const handleToggleAgenda = async (checked: boolean) => {
+    if (checked) {
+      if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          toast.success("Lembretes de agenda ativados!");
+          localStorage.setItem("rm_agenda_reminders", "true");
+          setAgendaReminders(true);
+        } else {
+          toast.error("Permissão de notificação negada pelo navegador.");
+          localStorage.setItem("rm_agenda_reminders", "false");
+          setAgendaReminders(false);
+        }
+      } else {
+        toast.error("Notificações Push não são suportadas neste navegador.");
+      }
+    } else {
+      localStorage.setItem("rm_agenda_reminders", "false");
+      setAgendaReminders(false);
+      toast.info("Lembretes de agenda desativados.");
+    }
+  };
+
   useEffect(() => {
     NativeBiometric.isAvailable().then(result => {
       setIsBiometricAvailable(result.isAvailable);
@@ -478,9 +540,27 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Notificações</h2>
                   <div className="space-y-4">
                     {[
-                      { title: 'Notificações por E-mail', desc: 'Receba alertas de inatividade e relatórios por e-mail', icon: Globe },
-                      { title: 'Notificações Push', desc: 'Alertas em tempo real no seu navegador', icon: Smartphone },
-                      { title: 'Lembretes de Agenda', desc: 'Avisos sobre seus compromissos e reuniões', icon: Bell }
+                      { 
+                        title: 'Notificações por E-mail', 
+                        desc: 'Receba alertas de inatividade e relatórios por e-mail', 
+                        icon: Globe,
+                        enabled: emailNotifications,
+                        toggle: () => handleToggleEmail(!emailNotifications)
+                      },
+                      { 
+                        title: 'Notificações Push', 
+                        desc: 'Alertas em tempo real no seu navegador', 
+                        icon: Smartphone,
+                        enabled: pushNotifications,
+                        toggle: () => handleTogglePush(!pushNotifications)
+                      },
+                      { 
+                        title: 'Lembretes de Agenda', 
+                        desc: 'Avisos sobre seus compromissos e reuniões', 
+                        icon: Bell,
+                        enabled: agendaReminders,
+                        toggle: () => handleToggleAgenda(!agendaReminders)
+                      }
                     ].map((item, i) => (
                       <div key={i} className="flex items-center justify-between p-4 md:p-6 rounded-2xl md:rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800">
                         <div className="flex items-center gap-6">
@@ -492,9 +572,18 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{item.desc}</p>
                           </div>
                         </div>
-                        <div className="w-12 h-6 rounded-full p-1 bg-emerald-500 flex items-center justify-end">
-                          <div className="w-4 h-4 rounded-full bg-white shadow-sm" />
-                        </div>
+                        <button 
+                          onClick={item.toggle}
+                          className={cn(
+                            "w-12 h-7 rounded-full p-1 transition-all duration-300 relative flex items-center cursor-pointer",
+                            item.enabled ? "bg-emerald-500 justify-end" : "bg-slate-300 dark:bg-zinc-700 justify-start"
+                          )}
+                        >
+                          <motion.div 
+                            layout
+                            className="w-5 h-5 rounded-full bg-white shadow-sm" 
+                          />
+                        </button>
                       </div>
                     ))}
                   </div>

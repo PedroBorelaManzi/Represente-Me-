@@ -22,7 +22,8 @@ import {
   Star,
   Sparkles,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Wheat
 } from "lucide-react";
 import { Logo } from "../components/Logo";
 import { Link, useNavigate } from "react-router-dom";
@@ -61,6 +62,12 @@ const industries = [
     color: "bg-emerald-50 text-emerald-600",
     image: "/assets/setor_servicos.png",
     objectPosition: "50% 15%"
+  },
+  { 
+    name: "Agronegócio", 
+    icon: Wheat, 
+    color: "bg-amber-50 text-amber-700",
+    image: "/assets/setor_agro.png"
   },
   { 
     name: "Outros", 
@@ -233,7 +240,7 @@ export default function LandingPitch() {
               Interface customizada por setor de atuação
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-8 max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 md:gap-6 max-w-7xl mx-auto">
             {industries.map((item, idx) => (
               <motion.button
                 key={idx}

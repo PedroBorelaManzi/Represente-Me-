@@ -13,9 +13,39 @@ import { toast } from "sonner";
 import { supabase } from "../lib/supabase";
 
 const plans = {
-  exclusivo: { id: 'exclusivo', name: 'Exclusivo', base: 97, icon: Trophy, color: 'text-slate-400' },
-  profissional: { id: 'profissional', name: 'Profissional', base: 147, icon: Gem, color: 'text-emerald-500' },
-  master: { id: 'master', name: 'Master', base: 197, icon: Crown, color: 'text-amber-500' }
+  exclusivo: {
+    id: 'exclusivo',
+    name: 'Exclusivo',
+    icon: Trophy,
+    color: 'text-slate-400',
+    prices: {
+      MONTHLY: 97,
+      SEMIANNUAL: 77,
+      ANNUAL: 67
+    }
+  },
+  profissional: {
+    id: 'profissional',
+    name: 'Profissional',
+    icon: Gem,
+    color: 'text-emerald-500',
+    prices: {
+      MONTHLY: 147,
+      SEMIANNUAL: 117,
+      ANNUAL: 107
+    }
+  },
+  master: {
+    id: 'master',
+    name: 'Master',
+    icon: Crown,
+    color: 'text-amber-500',
+    prices: {
+      MONTHLY: 197,
+      SEMIANNUAL: 157,
+      ANNUAL: 137
+    }
+  }
 };
 
 
@@ -233,8 +263,7 @@ export default function Checkout() {
                        isPasswordValid;
 
   const getMonthlyRate = () => {
-    const mod = billingCycle === 'MONTHLY' ? 20 : (billingCycle === 'SEMIANNUAL' ? 10 : 0);
-    return selectedPlan.base + mod;
+    return selectedPlan.prices[billingCycle as keyof typeof selectedPlan.prices] || selectedPlan.prices.ANNUAL;
   };
 
   const monthlyRate = getMonthlyRate();
@@ -242,6 +271,18 @@ export default function Checkout() {
     if (billingCycle === 'ANNUAL') return monthlyRate * 12;
     if (billingCycle === 'SEMIANNUAL') return monthlyRate * 6;
     return monthlyRate;
+  };
+
+  const getCycleSavings = (cycleId: string) => {
+    const monthlyPrice = selectedPlan.prices.MONTHLY;
+    const currentPrice = selectedPlan.prices[cycleId as keyof typeof selectedPlan.prices] || monthlyPrice;
+    if (cycleId === 'ANNUAL') {
+      return `Economize R$ ${(monthlyPrice - currentPrice) * 12}`;
+    }
+    if (cycleId === 'SEMIANNUAL') {
+      return `Economize R$ ${(monthlyPrice - currentPrice) * 6}`;
+    }
+    return "Sem fidelidade";
   };
 
   const baseValue = getTotalPrice();
@@ -404,18 +445,16 @@ export default function Checkout() {
                     Economia Máxima
                   </p>
                   <p className="text-xs font-black text-slate-800 dark:text-zinc-200 uppercase tracking-tight">
-                    Ao escolher o Plano Anual, você economiza <span className="text-amber-600 dark:text-amber-500">R$ 20 por mês (R$ 240/ano)</span> em relação ao plano Mensal!
+                    Ao escolher o Plano Anual, você economiza <span className="text-amber-600 dark:text-amber-500 font-black">R$ {selectedPlan.prices.MONTHLY - selectedPlan.prices.ANNUAL} por mês (R$ {(selectedPlan.prices.MONTHLY - selectedPlan.prices.ANNUAL) * 12}/ano)</span> em relação ao plano Mensal!
                   </p>
                 </div>
               </div>
 
-
-
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                  { id: 'ANNUAL', label: 'Anual', icon: Zap, save: 'Economize R$ 240', color: 'bg-emerald-600', monthly: selectedPlan.base },
-                  { id: 'SEMIANNUAL', label: '6 Meses', icon: TrendingUp, save: 'Economize R$ 60', color: 'bg-emerald-600', monthly: selectedPlan.base + 10 },
-                  { id: 'MONTHLY', label: 'Mensal', icon: Calendar, save: 'Sem fidelidade', color: 'bg-emerald-600', monthly: selectedPlan.base + 20 }
+                  { id: 'ANNUAL', label: 'Anual', icon: Zap, color: 'bg-emerald-600', monthly: selectedPlan.prices.ANNUAL, save: `Economize R$ ${selectedPlan.prices.MONTHLY - selectedPlan.prices.ANNUAL}/mês` },
+                  { id: 'SEMIANNUAL', label: '6 Meses', icon: TrendingUp, color: 'bg-emerald-600', monthly: selectedPlan.prices.SEMIANNUAL, save: `Economize R$ ${selectedPlan.prices.MONTHLY - selectedPlan.prices.SEMIANNUAL}/mês` },
+                  { id: 'MONTHLY', label: 'Mensal', icon: Calendar, color: 'bg-emerald-600', monthly: selectedPlan.prices.MONTHLY, save: 'Sem desconto' }
                 ].map((cycle) => (
                   <button 
                     key={cycle.id}

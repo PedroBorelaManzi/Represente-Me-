@@ -27,9 +27,9 @@ const plans = [
   {
     name: "Exclusivo",
     id: "exclusivo",
-    monthlyPrice: 117,
-    semiannualPrice: 107,
-    annualPrice: 97,
+    monthlyPrice: 97,
+    semiannualPrice: 77,
+    annualPrice: 67,
     description: "Para quem está começando.",
     features: ["1 Empresa", "Mapa Básico", "CRM Básico", "Suporte Email"],
     icon: Building2,
@@ -39,11 +39,11 @@ const plans = [
   {
     name: "Profissional",
     id: "profissional",
-    monthlyPrice: 167,
-    semiannualPrice: 157,
-    annualPrice: 147,
+    monthlyPrice: 147,
+    semiannualPrice: 117,
+    annualPrice: 107,
     description: "Ideal para equipes em crescimento.",
-    features: ["5 Empresas", "Busca CNPJ Automática", "Dashboard de Faturamento", "Suporte WhatsApp"],
+    features: ["5 Empresas", "Mapa Básico", "CRM Básico", "Busca CNPJ Automática", "Dashboard de Faturamento", "Suporte WhatsApp"],
     icon: Star,
     color: "from-emerald-500 to-emerald-600",
     popular: true,
@@ -51,11 +51,11 @@ const plans = [
   {
     name: "Master",
     id: "master",
-    monthlyPrice: 217,
-    semiannualPrice: 207,
-    annualPrice: 197,
+    monthlyPrice: 197,
+    semiannualPrice: 157,
+    annualPrice: 137,
     description: "A solução completa definitiva.",
-    features: ["Empresas Ilimitadas", "BI & Analytics Avançado", "Personalização White-label", "Inbox Integrada"],
+    features: ["Empresas Ilimitadas", "Radar Territorial Avançado", "CRM Básico", "Busca CNPJ Automática", "BI & Analytics Avançado", "Lançamento via IA (Gemini)", "Personalização White-label", "Inbox Integrada", "Suporte Ultra Prioritário"],
     icon: Crown,
     color: "from-emerald-600 to-emerald-700",
     popular: false,
@@ -132,10 +132,26 @@ export default function Planos() {
           <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mb-6 leading-none">
             Escolha o nível do seu <br /> <span className="text-emerald-600">Sucesso Profissional</span>
           </h1>
-          <p className="text-slate-500 dark:text-zinc-400 font-medium max-w-2xl mx-auto text-lg leading-relaxed mb-12">
+          <p className="text-slate-500 dark:text-zinc-400 font-medium max-w-2xl mx-auto text-lg leading-relaxed mb-8">
             Invista na tecnologia que organiza sua rotina e potencializa suas vendas. 
             Mude de plano quando quiser.
           </p>
+
+          {/* 7-Day Guarantee Banner Prominently at the Top */}
+          <div className="max-w-2xl mx-auto mb-10 relative">
+            <div className="p-5 md:p-6 bg-emerald-500/10 dark:bg-emerald-950/20 border-2 border-emerald-500/30 dark:border-emerald-900/30 rounded-[28px] shadow-lg shadow-emerald-500/5 flex flex-col md:flex-row items-center gap-5 text-center md:text-left relative overflow-hidden">
+              <div className="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="w-12 h-12 shrink-0 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center shadow-md relative z-10">
+                <ShieldCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-500" />
+              </div>
+              <div className="relative z-10">
+                <h4 className="text-xs font-black uppercase tracking-widest text-emerald-900 dark:text-emerald-400 mb-1">Garantia Incondicional de 7 Dias</h4>
+                <p className="text-xs text-emerald-700 dark:text-emerald-500/80 font-bold leading-normal uppercase">
+                  Satisfação garantida ou seu dinheiro de volta! Teste por 7 dias e cancele quando quiser sem custo.
+                </p>
+              </div>
+            </div>
+          </div>
 
           <div className="flex flex-col items-center gap-4">
             <div className="flex p-2 bg-white dark:bg-zinc-900 border-2 border-slate-100 dark:border-zinc-800 rounded-[32px] shadow-sm relative z-10">
@@ -164,12 +180,12 @@ export default function Planos() {
                 onClick={() => setBillingCycle("annual")}
                 className={cn(
                   "px-10 py-5 rounded-[26px] text-[11px] font-black uppercase tracking-widest transition-all relative",
-                  billingCycle === "annual" ? "bg-slate-900 text-white shadow-xl scale-105" : "text-slate-400 hover:text-slate-600"
+                  billingCycle === "annual" ? "bg-emerald-600 text-white shadow-xl scale-105 border-2 border-emerald-400 shadow-emerald-500/20" : "text-slate-400 hover:text-slate-600"
                 )}
               >
-                Anual
-                <div className="absolute -top-3 -right-2 px-3 py-1 bg-emerald-500 text-white text-[8px] rounded-full font-black uppercase shadow-lg shadow-emerald-500/20">
-                  -R$20/mês
+                Anual 🔥
+                <div className="absolute -top-3 -right-2 px-3 py-1 bg-amber-500 text-white text-[8px] rounded-full font-black uppercase shadow-lg shadow-amber-500/20 animate-pulse">
+                  RECOMENDADO (-30%)
                 </div>
               </button>
             </div>
@@ -181,9 +197,9 @@ export default function Planos() {
             >
               <TrendingUp className="w-4 h-4 text-emerald-600" />
               <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">
-                {billingCycle === "annual" ? "Economia de R$ 240,00 por ano no plano anual" : 
-                 billingCycle === "semiannual" ? "Economia de R$ 60,00 por semestre" : 
-                 "Plano mensal sem fidelidade"}
+                {billingCycle === "annual" ? "Economize até R$ 720,00 por ano optando pelo plano anual" : 
+                 billingCycle === "semiannual" ? "Economize até R$ 240,00 por semestre no plano semestral" : 
+                 "Plano mensal flexível sem fidelidade"}
               </span>
             </motion.div>
           </div>
@@ -228,10 +244,24 @@ export default function Planos() {
                   <p className="text-sm text-slate-500 dark:text-zinc-400 font-medium leading-tight">{plan.description}</p>
                 </div>
 
-                <div className="mb-10 flex items-baseline gap-1">
-                  <span className="text-sm font-black text-slate-400">R$</span>
-                  <span className="text-5xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter">{price}</span>
-                  <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">/mês</span>
+                <div className="mb-8 flex flex-col gap-1 text-left min-h-[70px]">
+                  {billingCycle !== "monthly" ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-400 line-through">De R$ {plan.monthlyPrice}</span>
+                      <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase rounded-md tracking-wider">
+                        {billingCycle === "annual" 
+                          ? `${Math.round((1 - plan.annualPrice/plan.monthlyPrice) * 100)}% OFF` 
+                          : `${Math.round((1 - plan.semiannualPrice/plan.monthlyPrice) * 100)}% OFF`}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Preço Regular</span>
+                  )}
+                  <div className="flex items-baseline gap-1 mt-1">
+                    <span className="text-sm font-black text-slate-400">R$</span>
+                    <span className="text-5xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter">{price}</span>
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">/mês</span>
+                  </div>
                 </div>
 
                 <div className="space-y-4 mb-10 flex-grow">
@@ -269,25 +299,7 @@ export default function Planos() {
           })}
         </div>
 
-        {/* Guarantee Badge */}
-        <div className="max-w-2xl mx-auto mb-20 relative">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-6 md:p-8 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-[32px] shadow-sm flex flex-col md:flex-row items-center gap-6 text-center md:text-left relative overflow-hidden"
-          >
-            <div className="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
-            <div className="w-16 h-16 shrink-0 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center shadow-sm">
-              <ShieldCheck className="w-8 h-8 text-emerald-600 dark:text-emerald-500" />
-            </div>
-            <div className="relative z-10">
-              <h4 className="text-sm font-black uppercase tracking-widest text-emerald-900 dark:text-emerald-400 mb-2">Garantia Incondicional de 7 Dias</h4>
-              <p className="text-sm text-emerald-700 dark:text-emerald-500 font-medium leading-relaxed">
-                Você tem 7 dias para testar nossa plataforma. Se decidir não continuar, você pode <span className="font-bold text-emerald-900 dark:text-emerald-300">cancelar a qualquer momento</span> dentro do prazo sem nenhum custo. Risco zero para o seu negócio.
-              </p>
-            </div>
-          </motion.div>
-        </div>
+
 
         {/* Cancellation Section Refined */}
         <div className="max-w-4xl mx-auto p-12 bg-white dark:bg-zinc-900 rounded-[56px] border border-slate-100 dark:border-zinc-800 text-center relative overflow-hidden group">

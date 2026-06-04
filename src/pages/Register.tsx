@@ -55,10 +55,12 @@ const plans = [
     justification: 'A automação de busca de CNPJ economiza cerca de 10 horas de trabalho manual por mês.',
     features: [
       { text: 'Até 5 Empresas', icon: Building2 },
+      { text: 'Mapa Territorial Básico', icon: MapIcon },
+      { text: 'CRM Essencial', icon: Check },
       { text: 'Busca CNPJ Automática', icon: Zap },
       { text: 'Dashboard de Faturamento', icon: BarChart3 },
-      { text: 'Suporte via WhatsApp', icon: Star },
-      { text: 'Exportação de Relatórios', icon: Check }
+      { text: 'Exportação de Relatórios', icon: Check },
+      { text: 'Suporte via WhatsApp', icon: Star }
     ],
     featured: true,
     color: 'emerald',
@@ -73,10 +75,15 @@ const plans = [
     justification: 'Potencializado por Inteligência Artificial para processar pedidos e analisar mercado em tempo real.',
     features: [
       { text: 'Empresas Ilimitadas', icon: Infinity },
-      { text: 'Lançamento via IA (Gemini)', icon: Sparkles },
       { text: 'Radar Territorial Avançado', icon: MapIcon },
+      { text: 'CRM Essencial', icon: Check },
+      { text: 'Busca CNPJ Automática', icon: Zap },
+      { text: 'BI & Analytics Avançado', icon: BarChart3 },
+      { text: 'Exportação de Relatórios', icon: Check },
+      { text: 'Lançamento via IA (Gemini)', icon: Sparkles },
       { text: 'Automação de Pedidos', icon: Zap },
-      { text: 'Integração com Inbox', icon: Mail }
+      { text: 'Integração com Inbox', icon: Mail },
+      { text: 'Suporte via WhatsApp Prioritário', icon: Star }
     ],
     featured: false,
     color: 'zinc',
@@ -205,6 +212,22 @@ const Register = () => {
                 </p>
               </div>
 
+              {/* 7-Day Guarantee Prominently at the Top */}
+              <div className="max-w-2xl mx-auto relative">
+                <div className="p-5 md:p-6 bg-emerald-500/10 dark:bg-emerald-950/20 border-2 border-emerald-500/30 dark:border-emerald-900/30 rounded-[28px] shadow-lg shadow-emerald-500/5 flex flex-col md:flex-row items-center gap-5 text-center md:text-left relative overflow-hidden">
+                  <div className="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+                  <div className="w-12 h-12 shrink-0 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center shadow-md relative z-10">
+                    <Shield className="w-6 h-6 text-emerald-600 dark:text-emerald-500" />
+                  </div>
+                  <div className="relative z-10">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-emerald-900 dark:text-emerald-400 mb-1">Garantia Incondicional de 7 Dias</h4>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-500/80 font-bold leading-normal uppercase">
+                      Satisfação garantida ou seu dinheiro de volta! Teste por 7 dias e cancele quando quiser sem custo.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
                 {plans.map((plan) => (
                   <motion.div
@@ -259,24 +282,6 @@ const Register = () => {
                     </button>
                   </motion.div>
                 ))}
-              </div>
-              <div className="max-w-2xl mx-auto mt-16 mb-8 relative">
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-6 md:p-8 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-[32px] shadow-sm flex flex-col md:flex-row items-center gap-6 text-center md:text-left relative overflow-hidden"
-                >
-                  <div className="absolute -right-10 -top-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
-                  <div className="w-16 h-16 shrink-0 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center shadow-sm relative z-10">
-                    <Shield className="w-8 h-8 text-emerald-600 dark:text-emerald-500" />
-                  </div>
-                  <div className="relative z-10">
-                    <h4 className="text-sm font-black uppercase tracking-widest text-emerald-900 dark:text-emerald-400 mb-2">Garantia Incondicional de 7 Dias</h4>
-                    <p className="text-sm text-emerald-700 dark:text-emerald-500 font-medium leading-relaxed">
-                      Você tem 7 dias para testar nossa plataforma. Se decidir não continuar, você pode <span className="font-bold text-emerald-900 dark:text-emerald-300">cancelar a qualquer momento</span> dentro do prazo sem nenhum custo. Risco zero.
-                    </p>
-                  </div>
-                </motion.div>
               </div>
 </motion.div>
           )}

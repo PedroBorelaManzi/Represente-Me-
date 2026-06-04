@@ -28,6 +28,7 @@ import { useSync } from '../contexts/SyncContext';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import SettingsModal from './SettingsModal';
+import { supabase } from '../lib/supabase';
 import { Capacitor } from '@capacitor/core';
 import { WhatsAppButton } from './WhatsAppButton';
 import { Logo } from './Logo';
@@ -50,6 +51,88 @@ export default function Layout() {
     setAvatarError(false);
     setMobileAvatarError(false);
   }, [settings.avatar_url]);
+
+  // Request browser notification permission on load if enabled by default
+  useEffect(() => {
+    const isPushEnabled = localStorage.getItem("rm_push_notifications") !== "false";
+    if (isPushEnabled && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Background check for notifications (appointments in 1h, client inactivities)
+  useEffect(() => {
+    if (!user) return;
+
+    const sendNotification = (title: string, body: string, tag: string) => {
+      const isPushEnabled = localStorage.getItem("rm_push_notifications") !== "false";
+      if (!isPushEnabled || Notification.permission !== "granted") return;
+
+      const notifiedTags = JSON.parse(localStorage.getItem("rm_notified_tags") || "[]");
+      if (notifiedTags.includes(tag)) return;
+
+      new Notification(title, { body, icon: "/favicon.ico" });
+      notifiedTags.push(tag);
+      localStorage.setItem("rm_notified_tags", JSON.stringify(notifiedTags));
+    };
+
+    const runChecks = async () => {
+      try {
+        // 1. Check appointments in 1 hour
+        const now = new Date();
+        const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+        
+        const { data: appointments } = await supabase
+          .from("appointments")
+          .select("id, title, start_time")
+          .eq("user_id", user.id)
+          .gte("start_time", now.toISOString())
+          .lte("start_time", oneHourFromNow.toISOString());
+
+        if (appointments && appointments.length > 0) {
+          appointments.forEach((appt: any) => {
+            const timeDiff = Math.round((new Date(appt.start_time).getTime() - now.getTime()) / (60 * 1000));
+            sendNotification(
+              "Lembrete de Compromisso",
+              `Não esqueça que você tem um agendamento para daqui ${timeDiff} minutos: ${appt.title}`,
+              `appt_${appt.id}`
+            );
+          });
+        }
+
+        // 2. Check client inactivities (Alerta state)
+        const { data: clientsData } = await supabase
+          .from("clients")
+          .select("id, name, last_contact")
+          .eq("user_id", user.id);
+
+        if (clientsData && clientsData.length > 0) {
+          const alertaDays = settings?.alerta_days || 30;
+          const today = new Date().getTime();
+
+          clientsData.forEach((client: any) => {
+            if (!client.last_contact) return;
+            const contactDate = new Date(client.last_contact).getTime();
+            const daysInactive = Math.floor((today - contactDate) / (1000 * 60 * 60 * 24));
+            
+            if (daysInactive >= alertaDays) {
+              sendNotification(
+                "Alerta de Inatividade",
+                `${client.name} está há ${daysInactive} dias sem comprar e entrou no estado de alerta.`,
+                `client_alert_${client.id}_${client.last_contact}`
+              );
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Error running background notification checks:", err);
+      }
+    };
+
+    runChecks();
+    const interval = setInterval(runChecks, 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user, settings?.alerta_days]);
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Início', path: '/dashboard' },
