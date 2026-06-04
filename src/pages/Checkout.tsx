@@ -480,30 +480,32 @@ export default function Checkout() {
                         <p className={cn("text-[9px] font-bold uppercase tracking-tight opacity-70", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>{cycle.save}</p>
                       </div>
 
-                      <div className="mt-auto pt-3 border-t border-current/10 flex flex-col gap-0.5">
+                      <div className="mt-auto pt-3 border-t border-current/10 flex flex-col gap-1">
                         {cycle.id !== 'MONTHLY' ? (
                           <>
                             <span className={cn(
-                              "text-xs font-bold line-through opacity-60",
-                              billingCycle === cycle.id ? "text-white" : "text-slate-400"
+                              "text-sm font-black line-through decoration-2",
+                              billingCycle === cycle.id 
+                                ? "text-white/80 decoration-amber-300"
+                                : "text-slate-400 dark:text-zinc-500 decoration-red-500/80"
                             )}>
                               R$ {selectedPlan.prices.MONTHLY}
                             </span>
                             <div className="flex items-baseline gap-1">
-                              <span className={cn("text-2xl font-black tracking-tighter", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>
+                              <span className={cn("text-3xl font-black tracking-tighter", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>
                                 R$ {cycle.monthly}
                               </span>
-                              <span className={cn("text-[10px] font-bold opacity-60", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>/mês</span>
+                              <span className={cn("text-xs font-bold opacity-75", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>/mês</span>
                             </div>
                           </>
                         ) : (
                           <>
-                            <span className="text-xs font-bold opacity-0 select-none">—</span>
+                            <span className="text-sm font-black opacity-0 select-none">—</span>
                             <div className="flex items-baseline gap-1">
-                              <span className={cn("text-2xl font-black tracking-tighter", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>
+                              <span className={cn("text-3xl font-black tracking-tighter", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>
                                 R$ {cycle.monthly}
                               </span>
-                              <span className={cn("text-[10px] font-bold opacity-60", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>/mês</span>
+                              <span className={cn("text-xs font-bold opacity-75", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>/mês</span>
                             </div>
                           </>
                         )}
@@ -512,15 +514,15 @@ export default function Checkout() {
 
                     {cycle.id !== 'MONTHLY' && (
                       <div className={cn(
-                        "absolute top-3 right-3 w-12 h-12 rounded-full flex flex-col items-center justify-center font-black shadow-lg border-2 border-white/20 transition-transform group-hover:rotate-6 group-hover:scale-115 duration-300",
+                        "absolute top-3 right-3 w-14 h-14 rounded-full flex flex-col items-center justify-center font-black shadow-xl border-2 border-white/20 transition-transform group-hover:rotate-6 group-hover:scale-115 duration-300",
                         billingCycle === cycle.id
-                          ? "bg-amber-400 text-slate-900"
+                          ? "bg-amber-400 text-slate-900 animate-pulse"
                           : "bg-emerald-500 text-white"
                       )}>
-                        <span className="text-[11px] font-black tracking-tighter leading-none">
+                        <span className="text-[13px] font-black tracking-tighter leading-none">
                           -{Math.round((1 - cycle.monthly / selectedPlan.prices.MONTHLY) * 100)}%
                         </span>
-                        <span className="text-[6px] font-black uppercase tracking-widest leading-none mt-0.5">OFF</span>
+                        <span className="text-[7px] font-black uppercase tracking-widest leading-none mt-0.5">OFF</span>
                       </div>
                     )}
                   </button>
