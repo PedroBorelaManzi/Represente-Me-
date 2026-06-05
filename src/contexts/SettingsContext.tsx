@@ -131,6 +131,14 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           localStorage.setItem('avatar_' + user.id, finalAvatar);
         }
 
+        let planId = 'exclusivo';
+        if (data.subscription_plan) {
+          const planStr = data.subscription_plan.toLowerCase();
+          if (planStr.includes('master')) planId = 'master';
+          else if (planStr.includes('profissional') || planStr.includes('premium')) planId = 'profissional';
+          else planId = 'exclusivo';
+        }
+
         const freshSettings = {
           alerta_days: data.alerta_days ?? defaultSettings.alerta_days,
           critico_days: data.critico_days ?? defaultSettings.critico_days,
@@ -141,12 +149,12 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
           categories: categories,
           revenue_ceiling: parseFloat(data.revenue_ceiling?.toString() || "1000000") ?? defaultSettings.revenue_ceiling,
           subscription_status: subStatus,
-          plan_id: data.plan_id || 'exclusivo',
+          plan_id: planId,
           avatar_url: finalAvatar,
         };
 
         setSettings(freshSettings);
-        offlineCache.set(CacheKeys.USER_SETTINGS, data);
+        offlineCache.set(CacheKeys.USER_SETTINGS, freshSettings);
       } else {
         // Fallback to cache or defaults
         if (!cached) {
@@ -189,13 +197,18 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('theme', newSettings.theme);
     }
 
-    const { avatar_url, ...dbSettings } = updated;
+    const { avatar_url, plan_id, ...dbSettings } = updated;
+
+    let subscription_plan = 'Acesso Exclusivo';
+    if (plan_id === 'master') subscription_plan = 'Master';
+    else if (plan_id === 'profissional' || plan_id === 'premium') subscription_plan = 'Profissional';
 
     const { error } = await supabase
       .from("user_settings")
       .upsert({
         user_id: user.id,
         ...dbSettings,
+        subscription_plan,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' });
 
