@@ -1,10 +1,89 @@
 import { useState } from "react";
-import { Plus, Trash2, Sun, Moon, Check, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Sun, Moon, Check, X, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSettings } from "../contexts/SettingsContext";
+import { toast } from "sonner";
 
 
 export default function OnboardingModal() {
+  const [editingDaysField, setEditingDaysField] = useState<'alerta' | 'critico' | 'inativo' | null>(null);
+  const [editingDaysValue, setEditingDaysValue] = useState('');
+  const renderOnboardingDaysConfig = (field: 'alerta' | 'critico' | 'inativo', label: string, currentVal: number, colorClass: string) => {
+    const isEditing = editingDaysField === field;
+    
+    const handleSave = () => {
+      const val = parseInt(editingDaysValue, 10);
+      if (isNaN(val) || val <= 0) {
+        toast.error("Insira um número de dias válido.");
+        return;
+      }
+      
+      if (field === 'alerta') {
+        setAlerta(val);
+        if (critico <= val) setCritico(val + 5);
+        if (inativo <= (critico <= val ? val + 5 : critico)) setInativo((critico <= val ? val + 5 : critico) + 5);
+      } else if (field === 'critico') {
+        if (val <= alerta) {
+          toast.error("Crítico deve ser maior que Alerta.");
+          return;
+        }
+        setCritico(val);
+        if (inativo <= val) setInativo(val + 5);
+      } else if (field === 'inativo') {
+        if (val <= critico) {
+          toast.error("Inativo deve ser maior que Crítico.");
+          return;
+        }
+        setInativo(val);
+      }
+      setEditingDaysField(null);
+    };
+
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-950 border border-slate-150 dark:border-zinc-850 rounded-2xl p-3 justify-between w-full">
+          <span className={`text-xs font-bold uppercase ${colorClass}`}>{label}</span>
+          <div className="flex items-center gap-2">
+            <input 
+              type="number"
+              value={editingDaysValue}
+              onChange={(e) => setEditingDaysValue(e.target.value)}
+              className="w-16 px-2 py-1 text-center bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-bold outline-none"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSave();
+                if (e.key === 'Escape') setEditingDaysField(null);
+              }}
+            />
+            <button type="button" onClick={handleSave} className="p-1.5 bg-emerald-600 text-white rounded-lg">
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <button type="button" onClick={() => setEditingDaysField(null)} className="p-1.5 bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-405 rounded-lg">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <button 
+        type="button"
+        onClick={() => {
+          setEditingDaysField(field);
+          setEditingDaysValue(currentVal.toString());
+        }}
+        className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 hover:border-emerald-500/30 transition-all text-left"
+      >
+        <span className={`text-xs font-bold uppercase ${colorClass}`}>{label}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold text-slate-700 dark:text-zinc-350">{currentVal} dias</span>
+          <span className="text-[10px] font-black uppercase tracking-wider bg-white dark:bg-zinc-900 text-slate-400 dark:text-zinc-500 px-2 py-1 rounded-xl border border-slate-150 dark:border-zinc-800">Ajustar</span>
+        </div>
+      </button>
+    );
+  };
+
   const { settings, loading, updateSettings } = useSettings();
   const [step, setStep] = useState(1);
 
@@ -23,24 +102,22 @@ export default function OnboardingModal() {
   // Step 2: Alerts
   const [alerta, setAlerta] = useState(15);
   const [critico, setCritico] = useState(30);
-  const [perda, setPerda] = useState(45);
+
   const [inativo, setInativo] = useState(90);
 
   // Step 3: Theme
   const [theme, setTheme] = useState<'light' | 'dark'>(settings.theme || 'light');
 
   // Step 4: Revenue Ceiling
-  const [ceiling, setCeiling] = useState(1000000);
+
 
   const handleFinish = async () => {
     await updateSettings({
       categories,
       alerta_days: alerta,
       critico_days: critico,
-      perda_days: perda,
       inativo_days: inativo,
       theme,
-      revenue_ceiling: ceiling,
       has_completed_onboarding: true,
     });
   };
@@ -59,7 +136,6 @@ export default function OnboardingModal() {
           <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? "bg-emerald-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
           <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? "bg-emerald-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
           <div className={`h-1.5 flex-1 rounded-full ${step >= 3 ? "bg-emerald-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
-          <div className={`h-1.5 flex-1 rounded-full ${step >= 4 ? "bg-emerald-600" : "bg-slate-100 dark:bg-zinc-800"}`} />
         </div>
 
         <AnimatePresence mode="wait">
@@ -131,44 +207,13 @@ export default function OnboardingModal() {
             >
               <div>
                 <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 uppercase tracking-tight">Alertas de Inatividade</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Como você deseja acompanhar suas perdas, crítico e alertas de clientes sem compra?</p>
+                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Como você deseja acompanhar os alertas e inatividade de clientes sem compra?</p>
               </div>
 
               <div className="space-y-3">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-semibold text-amber-600">Dias para Alerta (Frio)</span>
-                    <span className="font-bold text-slate-700 dark:text-zinc-300">{alerta} dias</span>
-                  </div>
-                  <input type="range" min="5" max="60" step="5" value={alerta} onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setAlerta(val);
-                    if (critico <= val) setCritico(val + 5);
-                    if (perda <= val + 5) setPerda(val + 10);
-                    if (inativo <= val + 10) setInativo(val + 15);
-                  }} className="w-full accent-amber-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-semibold text-orange-600">Dias para Crítico (Quente)</span>
-                    <span className="font-bold text-slate-700 dark:text-zinc-300">{critico} dias</span>
-                  </div>
-                  <input type="range" min={alerta + 5} max="90" step="5" value={critico} onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setCritico(val);
-                    if (perda <= val) setPerda(val + 5);
-                    if (inativo <= val + 5) setInativo(val + 10);
-                  }} className="w-full accent-orange-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-semibold text-red-600">Dias para Perda</span>
-                    <span className="font-bold text-slate-700 dark:text-zinc-300">{perda} dias</span>
-                  </div>
-                  <input type="range" min={critico + 5} max="180" step="5" value={perda} onChange={(e) => { setPerda(Number(e.target.value)); if (inativo <= Number(e.target.value)) setInativo(Number(e.target.value) + 5); }} className="w-full accent-red-500 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full" />
-                </div>
+                {renderOnboardingDaysConfig('alerta', 'Dias para Alerta (Frio)', alerta, 'text-amber-600')}
+                {renderOnboardingDaysConfig('critico', 'Dias para Crítico (Quente)', critico, 'text-orange-655')}
+                {renderOnboardingDaysConfig('inativo', 'Dias para Inativo', inativo, 'text-red-500')}
               </div>
 
               <div className="flex gap-3 mt-4">
@@ -210,59 +255,12 @@ export default function OnboardingModal() {
 
               <div className="flex gap-3 mt-4">
                 <button onClick={() => setStep(2)} className="flex-1 py-3 bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300 rounded-xl font-bold text-sm">Voltar</button>
-                <button onClick={() => setStep(4)} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1">Próximo</button>
-              </div>
-            </motion.div>
-          )}
-
-          {step === 4 && (
-            <motion.div
-              key="step4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="space-y-4"
-            >
-              <div>
-                <h2 className="text-xl font-black text-slate-900 dark:text-zinc-50 uppercase tracking-tight">Teto de Faturamento</h2>
-                <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">Agora configure qual é o seu teto de faturamento hoje?</p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-semibold text-slate-500">Valor do Teto Anual/Mensal</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(ceiling)}
-                    </span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="100000" 
-                    max="10000000" 
-                    step="100000" 
-                    value={ceiling} 
-                    onChange={(e) => setCeiling(Number(e.target.value))} 
-                    className="w-full accent-emerald-600 h-2 bg-slate-100 dark:bg-zinc-800 rounded-full cursor-pointer" 
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-400">
-                    <span>R$ 100k</span>
-                    <span>R$ 10M</span>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl border border-emerald-100 dark:border-emerald-500/20">
-                  <p className="text-xs text-emerald-700 dark:text-emerald-300">
-                    Este valor será usado como limite máximo nos gráficos de faturamento por empresa. Você pode alterar isso depois nas configurações do gráfico.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-4">
-                <button onClick={() => setStep(3)} className="flex-1 py-3 bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300 rounded-xl font-bold text-sm">Voltar</button>
                 <button onClick={handleFinish} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-1"><Check className="w-4 h-4" /> Finalizar</button>
               </div>
             </motion.div>
           )}
+
+
         </AnimatePresence>
       </motion.div>
     </div>

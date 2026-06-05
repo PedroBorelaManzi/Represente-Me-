@@ -35,6 +35,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { Logo } from './Logo';
 import { cn } from '../lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -58,6 +60,8 @@ const menuItems = [
 ];
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+
+
   const [activeTab, setActiveTab] = useState('profile');
   const { user, signOut } = useAuth();
   const { settings, updateSettings } = useSettings();
@@ -105,7 +109,22 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const handleTogglePush = async (checked: boolean) => {
     if (checked) {
-      if ('Notification' in window) {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const perm = await LocalNotifications.requestPermissions();
+          if (perm.display === 'granted') {
+            toast.success("Notificações autorizadas no seu dispositivo!");
+            localStorage.setItem("rm_push_notifications", "true");
+            setPushNotifications(true);
+          } else {
+            toast.error("Permissão de notificação negada.");
+            localStorage.setItem("rm_push_notifications", "false");
+            setPushNotifications(false);
+          }
+        } catch (e) {
+          console.error("Local notifications permission error", e);
+        }
+      } else if ('Notification' in window) {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
           toast.success("Notificações Push autorizadas no seu navegador!");
@@ -130,6 +149,40 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     localStorage.setItem("rm_email_notifications", checked ? "true" : "false");
     setEmailNotifications(checked);
     toast.success(checked ? "Notificações por e-mail ativadas!" : "Notificações por e-mail desativadas.");
+  };
+
+  const handleTriggerTestNotification = async () => {
+    toast.info("Enviando notificação de teste em 3 segundos. Saia do app ou bloqueie a tela para testar!");
+    setTimeout(async () => {
+      const title = "Represente-Me 📈 🔔";
+      const body = "Parabéns! Suas notificações push estão ativas e funcionando perfeitamente.";
+      
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const perm = await LocalNotifications.checkPermissions();
+          if (perm.display !== 'granted') {
+            await LocalNotifications.requestPermissions();
+          }
+          await LocalNotifications.schedule({
+            notifications: [{
+              title,
+              body,
+              id: 9999,
+              schedule: { at: new Date(Date.now() + 1000) },
+              sound: 'default'
+            }]
+          });
+        } catch (e) {
+          console.error("Local notification error", e);
+        }
+      } else {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification(title, { body, icon: '/favicon.ico' });
+        } else {
+          toast.success("Teste: " + body);
+        }
+      }
+    }, 3000);
   };
 
   const handleToggleAgenda = async (checked: boolean) => {
@@ -587,6 +640,24 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </div>
                     ))}
                   </div>
+
+
+
+                  {pushNotifications && (
+                    <div className="p-4 md:p-6 rounded-2xl md:rounded-[32px] bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 flex flex-col md:flex-row items-center justify-between gap-4 mt-6">
+                      <div className="text-left flex-1">
+                        <p className="text-xs font-black uppercase tracking-widest text-emerald-800 dark:text-emerald-400">Verificar Dispositivo</p>
+                        <p className="text-[10px] font-bold text-emerald-600/80 dark:text-emerald-500/80 uppercase tracking-tight">Dispare uma notificação de teste para verificar se o recebimento está ativo no seu celular</p>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={handleTriggerTestNotification}
+                        className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all w-full md:w-auto"
+                      >
+                        Testar Notificação
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               )}
 

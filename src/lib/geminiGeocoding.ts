@@ -4,21 +4,54 @@ const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 export async function getHighPrecisionCoordinates(address: string, clientName?: string, cnpj?: string): Promise<{ lat: number; lng: number } | null> {
-  // Tier 1: Nominatim with Full Address (Quick lookup)
   if (address) {
+    const queries = [address];
+    
     try {
-      const geoResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
-      if (geoResponse.ok) {
-        const geoData = await geoResponse.json();
-        if (geoData && geoData.length > 0) {
-          return {
-            lat: parseFloat(geoData[0].lat),
-            lng: parseFloat(geoData[0].lon)
-          };
+      const dashParts = address.split(" - ");
+      if (dashParts.length >= 2) {
+        const streetAndNum = dashParts[0];
+        const streetOnly = streetAndNum.split(",")[0].trim();
+        const cityAndState = dashParts[dashParts.length - 1];
+        const city = cityAndState.split("-")[0].trim();
+        const state = cityAndState.split("-")[1]?.trim() || "";
+        
+        if (streetOnly && city) {
+          queries.push(`${streetOnly}, ${city} - ${state}`);
+        }
+        
+        const bairro = dashParts.length === 3 ? dashParts[1].trim() : "";
+        if (bairro && city) {
+          queries.push(`${bairro}, ${city} - ${state}`);
+        }
+        
+        if (city) {
+          queries.push(`${city} - ${state}`);
         }
       }
-    } catch (err) {
-      console.warn("Nominatim failed, falling back to Deep Search...");
+    } catch (e) {
+      console.warn("Error parsing address for fallbacks, using full address only.");
+    }
+
+    for (const q of queries) {
+      try {
+        const geoResponse = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`,
+          { headers: { "User-Agent": "RepresenteSeGeocoding/1.0" } }
+        );
+        if (geoResponse.ok) {
+          const geoData = await geoResponse.json();
+          if (geoData && geoData.length > 0) {
+            console.log(`Nominatim successfully geocoded "${q}"`);
+            return {
+              lat: parseFloat(geoData[0].lat),
+              lng: parseFloat(geoData[0].lon)
+            };
+          }
+        }
+      } catch (err) {
+        console.warn(`Nominatim search failed for query: "${q}"`, err);
+      }
     }
   }
 

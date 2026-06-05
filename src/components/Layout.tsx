@@ -8,6 +8,7 @@ import {
   LogOut, 
   Menu, 
   X, 
+  Check, 
   ChevronRight, 
   ChevronLeft,
   Bell, 
@@ -30,13 +31,53 @@ import { motion, AnimatePresence } from 'framer-motion';
 import SettingsModal from './SettingsModal';
 import { supabase } from '../lib/supabase';
 import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { WhatsAppButton } from './WhatsAppButton';
 import { Logo } from './Logo';
 import { SubscriptionGuard } from './SubscriptionGuard';
+import { toast } from 'sonner';
 
 export default function Layout() {
+  const [isEditingInactivity, setIsEditingInactivity] = useState(false);
+  const [tempAlerta, setTempAlerta] = useState<string | number>('');
+  const [tempCritico, setTempCritico] = useState<string | number>('');
+  const [tempInativo, setTempInativo] = useState<string | number>('');
+
+  const handleSaveInactivity = async () => {
+    const alertDays = parseInt(tempAlerta.toString(), 10);
+    const critDays = parseInt(tempCritico.toString(), 10);
+    const inatDays = parseInt(tempInativo.toString(), 10);
+
+    if (isNaN(alertDays) || alertDays <= 0 || isNaN(critDays) || critDays <= 0 || isNaN(inatDays) || inatDays <= 0) {
+      toast.error("Por favor, insira um número válido de dias para todos os campos.");
+      return;
+    }
+
+    if (alertDays >= critDays) {
+      toast.error("O status Alerta deve ter menos dias que o status Crítico.");
+      return;
+    }
+
+    if (critDays >= inatDays) {
+      toast.error("O status Crítico deve ter menos dias que o status Inativo.");
+      return;
+    }
+
+    try {
+      await updateSettings({
+        alerta_days: alertDays,
+        critico_days: critDays,
+        inativo_days: inatDays
+      });
+      toast.success("Limiares de inatividade atualizados!");
+      setIsEditingInactivity(false);
+    } catch (err) {
+      toast.error("Erro ao salvar configurações.");
+    }
+  };
+
   const { user, signOut } = useAuth();
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const { isOnline, pendingCount, isSyncing, syncNow } = useSync();
   const location = useLocation();
   const navigate = useNavigate();
@@ -64,65 +105,148 @@ export default function Layout() {
   useEffect(() => {
     if (!user) return;
 
-    const sendNotification = (title: string, body: string, tag: string) => {
+    const sendNotification = async (title: string, body: string, tag: string) => {
       const isPushEnabled = localStorage.getItem("rm_push_notifications") !== "false";
-      if (!isPushEnabled || Notification.permission !== "granted") return;
+      if (!isPushEnabled) return;
 
       const notifiedTags = JSON.parse(localStorage.getItem("rm_notified_tags") || "[]");
       if (notifiedTags.includes(tag)) return;
 
-      new Notification(title, { body, icon: "/favicon.ico" });
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const perm = await LocalNotifications.checkPermissions();
+          if (perm.display === 'granted') {
+            const hashCode = (str: string): number => {
+              let hash = 0;
+              for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+              }
+              return Math.abs(hash);
+            };
+            
+            await LocalNotifications.schedule({
+              notifications: [{
+                title,
+                body,
+                id: hashCode(tag),
+                schedule: { at: new Date(Date.now() + 1000) },
+                sound: 'default'
+              }]
+            });
+          }
+        } catch (e) {
+          console.error("Local notification scheduling error", e);
+        }
+      } else {
+        if ('Notification' in window && Notification.permission === "granted") {
+          new Notification(title, { body, icon: "/favicon.ico" });
+        }
+      }
+
       notifiedTags.push(tag);
       localStorage.setItem("rm_notified_tags", JSON.stringify(notifiedTags));
     };
 
     const runChecks = async () => {
       try {
-        // 1. Check appointments in 1 hour
         const now = new Date();
-        const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
-        
+
+        // 1. Check appointments in 1 hour
         const { data: appointments } = await supabase
           .from("appointments")
-          .select("id, title, start_time")
-          .eq("user_id", user.id)
-          .gte("start_time", now.toISOString())
-          .lte("start_time", oneHourFromNow.toISOString());
+          .select("id, title, date, time")
+          .eq("user_id", user.id);
 
         if (appointments && appointments.length > 0) {
           appointments.forEach((appt: any) => {
-            const timeDiff = Math.round((new Date(appt.start_time).getTime() - now.getTime()) / (60 * 1000));
-            sendNotification(
-              "Lembrete de Compromisso",
-              `Não esqueça que você tem um agendamento para daqui ${timeDiff} minutos: ${appt.title}`,
-              `appt_${appt.id}`
-            );
+            if (!appt.date || !appt.time) return;
+            const startTimeStr = appt.time.split(" - ")[0];
+            const [hours, minutes] = startTimeStr.split(":").map(Number);
+            const apptDate = new Date(`${appt.date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`);
+            
+            const timeDiff = Math.round((apptDate.getTime() - now.getTime()) / (60 * 1000));
+            if (timeDiff >= 0 && timeDiff <= 60) {
+              sendNotification(
+                "Represente-Me 📈 🔔",
+                `Lembrete de Compromisso: Não esqueça que você tem um agendamento para daqui ${timeDiff} minutos: ${appt.title}`,
+                `appt_${appt.id}`
+              );
+            }
           });
         }
 
-        // 2. Check client inactivities (Alerta state)
+        // 2. Check client inactivities (Alerta, Crítico, Inativo states)
         const { data: clientsData } = await supabase
           .from("clients")
-          .select("id, name, last_contact")
+          .select("id, name, last_contact, city, state")
           .eq("user_id", user.id);
 
         if (clientsData && clientsData.length > 0) {
           const alertaDays = settings?.alerta_days || 30;
-          const today = new Date().getTime();
+          const criticoDays = settings?.critico_days || 45;
+          const inativoDays = settings?.inativo_days || 90;
+          const today = now.getTime();
 
           clientsData.forEach((client: any) => {
             if (!client.last_contact) return;
             const contactDate = new Date(client.last_contact).getTime();
             const daysInactive = Math.floor((today - contactDate) / (1000 * 60 * 60 * 24));
             
-            if (daysInactive >= alertaDays) {
+            let stateName = "";
+            let targetDays = 0;
+            
+            if (daysInactive >= inativoDays) {
+              stateName = "Inativo";
+              targetDays = inativoDays;
+            } else if (daysInactive >= criticoDays) {
+              stateName = "Crítico";
+              targetDays = criticoDays;
+            } else if (daysInactive >= alertaDays) {
+              stateName = "Alerta";
+              targetDays = alertaDays;
+            }
+            
+            if (stateName) {
               sendNotification(
-                "Alerta de Inatividade",
-                `${client.name} está há ${daysInactive} dias sem comprar e entrou no estado de alerta.`,
-                `client_alert_${client.id}_${client.last_contact}`
+                "Represente-Me 📈 🔔",
+                "Alerta de Inatividade (" + stateName + "): " + client.name + " está há " + daysInactive + " dias sem comprar (limiar: " + targetDays + " dias).",
+                "client_state_" + client.id + "_" + stateName + "_" + targetDays + "_" + client.last_contact
               );
             }
           });
+
+          // 3. Check for holidays today (Municipal & National) based on client locations
+          const locations = [];
+          const seenLocs = new Set();
+          clientsData.forEach((c: any) => {
+            if (c.city) {
+              const key = `${c.city.trim().toLowerCase()}|${c.state ? c.state.trim().toLowerCase() : ''}`;
+              if (!seenLocs.has(key)) {
+                seenLocs.add(key);
+                locations.push({ city: c.city.trim(), state: c.state?.trim() });
+              }
+            }
+          });
+
+          if (locations.length > 0) {
+            const year = now.getFullYear();
+            const { fetchHolidays } = await import('../lib/holidayService');
+            const holidays = await fetchHolidays(year, locations);
+            const todayStr = now.toISOString().split('T')[0];
+            
+            const todayHolidays = holidays.filter(h => h.date === todayStr);
+            todayHolidays.forEach((h: any) => {
+              let msg = `Hoje é ${h.name}`;
+              if (h.type === 'municipal' && h.city) msg += ` em ${h.city}`;
+              msg += `. Planeje suas visitas e rotas considerando este feriado!`;
+              
+              sendNotification(
+                "Represente-Me 📈 🔔",
+                `Feriado Hoje: ${msg}`,
+                `holiday_${h.id}_${todayStr}`
+              );
+            });
+          }
         }
       } catch (err) {
         console.error("Error running background notification checks:", err);
@@ -132,9 +256,9 @@ export default function Layout() {
     runChecks();
     const interval = setInterval(runChecks, 2 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [user, settings?.alerta_days]);
+  }, [user, settings?.alerta_days, settings?.critico_days, settings?.inativo_days]);
 
-  const menuItems = [
+    const menuItems = [
     { icon: LayoutDashboard, label: 'Início', path: '/dashboard' },
     { icon: MapIcon, label: 'Mapa de Clientes', path: '/dashboard/map' },
     { icon: Users, label: 'Meus Clientes', path: '/dashboard/clientes' },
@@ -241,26 +365,7 @@ export default function Layout() {
                   if (isEmailItem && Capacitor.isNativePlatform()) {
                     e.preventDefault();
                     setSidebarOpen(false);
-                    
-                    const platform = Capacitor.getPlatform();
-                    if (platform === 'android') {
-                      // Android Intent for Gmail with web fallback
-                      const androidIntent = "intent://#Intent;scheme=googlegmail;package=com.google.android.gm;end;S.browser_fallback_url=https%3A%2F%2Fwww.gmail.com;";
-                      window.open(androidIntent, "_system");
-                    } else if (platform === 'ios') {
-                      // iOS custom scheme for Gmail
-                      const start = Date.now();
-                      window.open("googlegmail://", "_system");
-                      
-                      // Fallback for iOS if not installed
-                      setTimeout(() => {
-                        if (Date.now() - start < 1500) {
-                          window.open("https://www.gmail.com", "_system");
-                        }
-                      }, 1000);
-                    } else {
-                      window.open("https://www.gmail.com", "_system");
-                    }
+                    window.open("mailto:", "_system");
                   } else {
                     setSidebarOpen(false);
                   }
@@ -316,6 +421,97 @@ export default function Layout() {
                     <Settings className='w-5 h-5' />
                     <span className="text-[13px] font-bold uppercase tracking-tight">Configurações</span>
                   </button>
+                </div>
+
+                {/* Configurações de inatividade no rodapé da barra lateral */}
+                <div className="px-4 py-4 mt-4 border-t border-slate-100 dark:border-zinc-800/50">
+                  <div className="flex items-center justify-between mb-3 px-2">
+                    <p className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest leading-none">Inatividade</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isEditingInactivity) {
+                          setTempAlerta(settings.alerta_days || 30);
+                          setTempCritico(settings.critico_days || 45);
+                          setTempInativo(settings.inativo_days || 90);
+                        }
+                        setIsEditingInactivity(!isEditingInactivity);
+                      }}
+                      className="p-1 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-400 hover:text-emerald-600 rounded-lg transition-colors"
+                      title="Configurar Inatividade"
+                    >
+                      <Settings className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {isEditingInactivity ? (
+                    <div className="bg-slate-50 dark:bg-zinc-900/40 border border-slate-100 dark:border-zinc-800 rounded-2xl p-3 space-y-3">
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <div className="space-y-1">
+                          <label className="block text-[8px] font-black uppercase text-amber-650 text-center">Alerta</label>
+                          <input 
+                            type="number"
+                            value={tempAlerta}
+                            onChange={(e) => setTempAlerta(e.target.value)}
+                            className="w-full px-1.5 py-1 text-center bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-850 rounded-xl text-[11px] font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
+                            placeholder="30"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[8px] font-black uppercase text-orange-500 text-center">Crítico</label>
+                          <input 
+                            type="number"
+                            value={tempCritico}
+                            onChange={(e) => setTempCritico(e.target.value)}
+                            className="w-full px-1.5 py-1 text-center bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-850 rounded-xl text-[11px] font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
+                            placeholder="45"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="block text-[8px] font-black uppercase text-red-500 text-center">Inativo</label>
+                          <input 
+                            type="number"
+                            value={tempInativo}
+                            onChange={(e) => setTempInativo(e.target.value)}
+                            className="w-full px-1.5 py-1 text-center bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-850 rounded-xl text-[11px] font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
+                            placeholder="90"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSaveInactivity}
+                          className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1 transition-colors"
+                        >
+                          <Check className="w-3.5 h-3.5" /> Salvar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingInactivity(false)}
+                          className="px-2 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-slate-500 dark:text-zinc-400 rounded-xl flex items-center justify-center transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-50/50 dark:bg-zinc-950/40 border border-slate-100/50 dark:border-zinc-850/60 rounded-2xl">
+                      <div className="text-center py-2 px-1 rounded-xl bg-white dark:bg-zinc-900 border border-slate-100/50 dark:border-zinc-800/40">
+                        <p className="text-[8px] font-black uppercase tracking-wider text-amber-600 mb-0.5">Alerta</p>
+                        <p className="text-[11px] font-bold text-slate-700 dark:text-zinc-350">{settings.alerta_days || 30}d</p>
+                      </div>
+                      <div className="text-center py-2 px-1 rounded-xl bg-white dark:bg-zinc-900 border border-slate-100/50 dark:border-zinc-800/40">
+                        <p className="text-[8px] font-black uppercase tracking-wider text-orange-500 mb-0.5">Crítico</p>
+                        <p className="text-[11px] font-bold text-slate-700 dark:text-zinc-350">{settings.critico_days || 45}d</p>
+                      </div>
+                      <div className="text-center py-2 px-1 rounded-xl bg-white dark:bg-zinc-900 border border-slate-100/50 dark:border-zinc-800/40">
+                        <p className="text-[8px] font-black uppercase tracking-wider text-red-500 mb-0.5">Inativo</p>
+                        <p className="text-[11px] font-bold text-slate-700 dark:text-zinc-350">{settings.inativo_days || 90}d</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <button onClick={() => signOut()} className="flex items-center gap-4 w-full px-4 py-3.5 mt-2 rounded-2xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all duration-300">

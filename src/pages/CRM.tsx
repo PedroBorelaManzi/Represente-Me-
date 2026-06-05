@@ -18,7 +18,7 @@ export default function CRMPage() {
   const { isOnline } = useSync();
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Crítico' | 'Perda'>('Todos');
+  const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Crítico' | 'Inativo'>('Todos');
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
@@ -29,7 +29,7 @@ export default function CRMPage() {
     const tab = params.get("tab");
     if (tab === "Alerta") setActiveTab("Alerta");
     else if (tab === "Critico" || tab === "Crítico") setActiveTab("Crítico");
-    else if (tab === "Perda") setActiveTab("Perda");
+    else if (tab === "Inativo") setActiveTab("Inativo");
   }, [location.search]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,9 +100,9 @@ export default function CRMPage() {
           const today = new Date().getTime();
           for (const [cat, date] of Object.entries(lastDates)) {
             const days = Math.floor((today - (date as number)) / (1000 * 60 * 60 * 24));
-            if (days >= (settings?.perda_days || 365)) alerts.push({ company: cat, type: "Perda", days });
-            else if (days >= (settings?.critico_days || 90)) alerts.push({ company: cat, type: "Crítico", days });
-            else if (days >= (settings?.alerta_days || 45)) alerts.push({ company: cat, type: "Alerta", days });
+            if (days >= (settings?.inativo_days || 90)) alerts.push({ company: cat, type: "Inativo", days });
+            else if (days >= (settings?.critico_days || 45)) alerts.push({ company: cat, type: "Crítico", days });
+            else if (days >= (settings?.alerta_days || 30)) alerts.push({ company: cat, type: "Alerta", days });
           }
           return { ...client, alerts: alerts.sort((a, b) => b.days - a.days) };
         }));
@@ -367,7 +367,7 @@ export default function CRMPage() {
       </div>
       <div className="flex-1 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 flex flex-col min-h-0 shadow-sm overflow-hidden relative">
         <div className="px-4 pt-4 border-b dark:border-zinc-850 bg-slate-50/50 dark:bg-zinc-950/20 flex items-center gap-4 overflow-x-auto no-scrollbar">
-          {(['Todos', 'Alerta', 'Crítico', 'Perda'] as const).map(tab => (
+          {(['Todos', 'Alerta', 'Crítico', 'Inativo'] as const).map(tab => (
             <button 
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -403,7 +403,7 @@ export default function CRMPage() {
                              {client.alerts?.length > 0 && (
                                <span className="flex gap-1 shrink-0">
                                  {client.alerts.filter((a: any) => activeTab === 'Todos' ? true : a.type === activeTab).slice(0, 1).map((a: any, i: number) => (
-                                   <span key={i} className={cn("px-2 py-0.5 rounded-md text-[8px] font-black uppercase border flex items-center gap-1", a.type === 'Perda' ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/30 dark:border-red-900/40' : a.type === 'Crítico' ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-950/30 dark:border-orange-900/40' : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/30 dark:border-amber-900/40') }>
+                                   <span key={i} className={cn("px-2 py-0.5 rounded-md text-[8px] font-black uppercase border flex items-center gap-1", a.type === 'Inativo' ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/30 dark:border-red-900/40' : a.type === 'Crítico' ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-950/30 dark:border-orange-900/40' : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/30 dark:border-amber-900/40') }>
                                      <span className="opacity-60">{a.company}</span> <span className="w-1 h-1 rounded-full bg-current opacity-30" /> <span>{a.type}: {a.days}D</span>
                                    </span>
                                  ))}

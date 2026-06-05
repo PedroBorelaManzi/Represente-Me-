@@ -136,12 +136,12 @@ export default function Dashboard() {
         const apptDate = new Date(`${appt.date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`);
         
         if (apptDate > now) {
-          const triggerTime = new Date(apptDate.getTime() - 30 * 60 * 1000); // 30 mins lead time
+          const triggerTime = new Date(apptDate.getTime() - 60 * 60 * 1000); // 60 mins (1 hour) lead time
           
           if (triggerTime > now) {
             notificationsToSchedule.push({
-              title: `⏰ Visita: ${appt.title}`,
-              body: `Visita marcada com cliente às ${startTimeStr}.`,
+              title: "Represente-Me 📈 🔔",
+              body: `Visita marcada: ${appt.title} às ${startTimeStr}.`,
               id: Math.abs(hashCode(appt.id || String(Math.random()))),
               schedule: { at: triggerTime },
               sound: 'default'

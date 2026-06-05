@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { offlineCache, CacheKeys } from "../lib/offlineCache";
 import { syncQueue } from "../lib/syncQueue";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 // Fix for default marker icon in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
