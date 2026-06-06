@@ -21,6 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(({ data: { session } }) => {
         if (session?.user) {
           localStorage.setItem("rm_cached_user", JSON.stringify(session.user));
+          localStorage.setItem("rm_has_logged_in_once", "true");
         }
         setUser(session?.user ?? null);
         setLoading(false);
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         localStorage.setItem("rm_cached_user", JSON.stringify(session.user));
+        localStorage.setItem("rm_has_logged_in_once", "true");
       }
       setUser(session?.user ?? null);
       setLoading(false);
@@ -51,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
     if (data?.user) {
       localStorage.setItem("rm_cached_user", JSON.stringify(data.user));
+      localStorage.setItem("rm_has_logged_in_once", "true");
     }
     return data;
   };

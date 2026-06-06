@@ -1,5 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./pages/LandingPitch";
+import { useEffect } from "react";
+import { Capacitor } from "@capacitor/core";
+import { useAuth } from "./contexts/AuthContext";
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Recovery from './pages/Recovery';
@@ -27,6 +30,31 @@ import { UploadProvider } from "./contexts/UploadContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Toaster } from "sonner";
 
+function LandingOrRedirect() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-zinc-950">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-500"></div>
+      </div>
+    );
+  }
+
+  const hasLoggedInOnce = localStorage.getItem("rm_has_logged_in_once") === "true";
+  const isMobile = Capacitor.isNativePlatform();
+
+  if (isMobile && hasLoggedInOnce) {
+    if (user) {
+      return <Navigate to="/dashboard" replace />;
+    } else {
+      return <Navigate to="/login" replace />;
+    }
+  }
+
+  return <Landing />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -36,7 +64,7 @@ export default function App() {
           <SettingsProvider>
           <UploadProvider>
             <Routes>
-              <Route path="/" element={<Landing />} />
+              <Route path="/" element={<LandingOrRedirect />} />
               <Route path='/login' element={<Login />} />
               <Route path='/register' element={<Register />} />
               <Route path='/recovery' element={<Recovery />} />
