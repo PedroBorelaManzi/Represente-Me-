@@ -1,4 +1,4 @@
-﻿import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import * as pdfjs from "pdfjs-dist";
 import { geminiWithSystem } from "./geminiProxy";
 
@@ -161,8 +161,14 @@ export async function processOrderFile(file: File, knownClients = [], categories
       }
     } else if (detected.type === "excel") {
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer);
-      extractedText = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
+      if (workbook.worksheets.length > 0) {
+        workbook.worksheets[0].eachRow(row => {
+           const rowValues = Array.isArray(row.values) ? row.values.slice(1).join(',') : '';
+           extractedText += rowValues + '\n';
+        });
+      }
     }
 
     const localCnpj = extractCNPJLocally(extractedText);

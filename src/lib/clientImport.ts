@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import * as pdfjs from 'pdfjs-dist';
 import { callGeminiProxy } from "./geminiProxy";
 
@@ -56,8 +56,14 @@ async function processWithGemini(file: File): Promise<string[]> {
       let text = "";
       if (detected.type === 'excel') {
         const buffer = await file.arrayBuffer();
-        const workbook = XLSX.read(buffer);
-        workbook.SheetNames.forEach(name => { text += XLSX.utils.sheet_to_csv(workbook.Sheets[name]) + '\n'; });
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer);
+        workbook.worksheets.forEach(worksheet => {
+          worksheet.eachRow(row => {
+             const rowValues = Array.isArray(row.values) ? row.values.slice(1).join(',') : '';
+             text += rowValues + '\n';
+          });
+        });
       } else if (detected.type === 'pdf') {
         const pages = await extractTextFromPDF(file);
         text = pages.join('\n');
