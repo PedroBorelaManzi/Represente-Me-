@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Mail, Search, ChevronLeft, ChevronRight, Inbox, Send, Edit, Trash2, Plus, Sparkles, AlertCircle, ArrowLeft, Star, Reply, Forward, CheckCircle2, X, Minimize2, Maximize2, Loader2, RefreshCw, Clock, Info, ShieldAlert, Layers, Bookmark, PartyPopper, Users, Zap, Paperclip, Download, FileText, ChevronDown } from "lucide-react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -282,9 +282,16 @@ export default function EmailClient() {
     }
   }
 
-  const handleConnectProvider = (provider: EmailProvider) => {
+  const handleConnectProvider = async (provider: EmailProvider) => {
     if (provider === 'google') window.location.href = getGoogleEmailAuthUrl();
-    else window.location.href = getMicrosoftEmailAuthUrl();
+    else {
+      try {
+        const url = await getMicrosoftEmailAuthUrl();
+        window.location.href = url;
+      } catch (err: any) {
+        alert(err.message || "Erro ao conectar conta da Microsoft.");
+      }
+    }
   };
 
   const getFolderIcon = (folder: EmailFolder) => {

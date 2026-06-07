@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { 
   User, 
@@ -59,6 +59,8 @@ export default function ClientDetails() {
   const [uploadValue, setUploadValue] = useState(draft.value || "");
   const [uploadCategory, setUploadCategory] = useState(draft.category || "");
 
+  const initializedRef = useRef(false);
+
   useEffect(() => {
     if (user && id) {
       loadClientData();
@@ -66,15 +68,27 @@ export default function ClientDetails() {
   }, [user, id]);
 
   useEffect(() => {
-    if (uploadValue !== draft.value || uploadCategory !== draft.category) {
-      setDraft(id || "", { value: uploadValue, category: uploadCategory });
-    }
-  }, [uploadValue, uploadCategory]);
+    initializedRef.current = false;
+  }, [id]);
 
   useEffect(() => {
-    if (draft.value !== uploadValue) setUploadValue(draft.value || "");
-    if (draft.category !== uploadCategory) setUploadCategory(draft.category || "");
-  }, [draft.value, draft.category]);
+    if (id && !initializedRef.current) {
+      const currentDraft = drafts[id] || { value: "", category: "" };
+      setUploadValue(currentDraft.value || "");
+      setUploadCategory(currentDraft.category || "");
+      initializedRef.current = true;
+    }
+  }, [id, drafts]);
+
+  const handleUpdateValue = (val: string) => {
+    setUploadValue(val);
+    setDraft(id || "", { value: val });
+  };
+
+  const handleUpdateCategory = (cat: string) => {
+    setUploadCategory(cat);
+    setDraft(id || "", { category: cat });
+  };
 
   const loadClientData = async () => {
     try {
@@ -271,8 +285,8 @@ export default function ClientDetails() {
       toast.success("Arquivo anexado com sucesso!");
       clearDraft(id || "");
       setDraft(id || "", { isOpen: false });
-      setUploadValue("");
-      setUploadCategory("");
+      handleUpdateValue("");
+      handleUpdateCategory("");
       loadClientData();
     } catch (err: any) {
       console.error("Upload error:", err);
@@ -292,10 +306,10 @@ export default function ClientDetails() {
     try {
         const result = await processOrderFile(file, [client?.name || ""], settings.categories || []);
         if (result.value) {
-            setUploadValue(result.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+            handleUpdateValue(result.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
         }
         if (result.category) {
-            setUploadCategory(result.category);
+            handleUpdateCategory(result.category);
         }
     } catch (err) {
         console.error("Error processing file:", err);
@@ -308,7 +322,7 @@ export default function ClientDetails() {
     if (!newCategoryName.trim()) return;
     const current = settings.categories || [];
     if (current.includes(newCategoryName.trim())) {
-      setUploadCategory(newCategoryName.trim());
+      handleUpdateCategory(newCategoryName.trim());
       setIsCreatingCategory(false);
       return;
     }
@@ -318,7 +332,7 @@ export default function ClientDetails() {
         const { error } = await supabase.from('user_settings').upsert({ user_id: user?.id, categories: updatedCategories });
         if (error) throw error;
         
-        setUploadCategory(newCategoryName.trim());
+        handleUpdateCategory(newCategoryName.trim());
         setIsCreatingCategory(false);
         setNewCategoryName("");
         toast.success("Categoria criada com sucesso!");
@@ -558,7 +572,7 @@ export default function ClientDetails() {
                     <div className="flex gap-2 p-2 bg-slate-50 dark:bg-zinc-950 rounded-3xl border border-slate-100 dark:border-zinc-800">
                       <select 
                         value={uploadCategory}
-                        onChange={(e) => setUploadCategory(e.target.value)}
+                        onChange={(e) => handleUpdateCategory(e.target.value)}
                         className="flex-1 bg-transparent px-4 py-2 text-xs font-black uppercase outline-none text-slate-900 dark:text-zinc-100"
                       >
                         <option value="">Selecione...</option>
@@ -619,7 +633,7 @@ export default function ClientDetails() {
                     <input 
                         type="text" 
                         value={uploadValue}
-                        onChange={(e) => setUploadValue(e.target.value.replace(/[^0-9,.]/g, ''))}
+                        onChange={(e) => handleUpdateValue(e.target.value.replace(/[^0-9,.]/g, ''))}
                         placeholder="0,00"
                         className="w-full pl-16 pr-8 py-5 bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 rounded-3xl text-sm font-black text-slate-900 dark:text-zinc-100 outline-none focus:ring-8 focus:ring-emerald-500/10 transition-all"
                     />

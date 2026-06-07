@@ -25,6 +25,7 @@ import { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayServic
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 type Appointment = {
   id: string;
@@ -64,82 +65,87 @@ export default function Agenda() {
   const [selectedHoliday, setSelectedHoliday] = useState<Holiday | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
 
-  const fetchEvents = async () => {
-    if (!user) return;
-    setLoading(true);
+  const queryClient = useQueryClient();
 
-    // Try loading immediately from offline cache to prevent empty visual flashes
-    const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) || [];
-    const cachedEvents = (offlineCache.get(CacheKeys.APPOINTMENTS) as Appointment[]) || [];
-    
-    if (cachedClients.length > 0) setClients(cachedClients);
-    if (cachedEvents.length > 0) setEvents(cachedEvents);
+  const { data: agendaData, isLoading: isQueryLoading } = useQuery({
+    queryKey: ['agendaData', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const [tokenRes, clientsRes, eventsRes] = await Promise.all([
+        supabase.from("user_google_tokens").select("id").eq("user_id", user.id).maybeSingle(),
+        supabase.from("clients").select("id, name, city, state, cnpj").eq("user_id", user.id).order("name"),
+        supabase.from("appointments").select("*").eq("user_id", user.id)
+      ]);
 
-    // Load holidays instantly from cache if possible, even when offline
-    try {
-      const activeClients = cachedClients;
-      const locations = (activeClients || []).filter(c => c && c.city).map(c => ({ city: c.city, state: c.state }));
-      const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
-      setHolidays(fetchedHolidays);
-    } catch (hError) {
-      console.warn("Holiday fetch failed safely on initial load:", hError);
+      const isGoogleConnected = !!tokenRes.data;
+      const clientsList = clientsRes.data || [];
+      const appList = eventsRes.data || [];
+
+      // Update sessionStorage Cache
+      offlineCache.set(CacheKeys.CLIENTS, clientsList);
+      offlineCache.set(CacheKeys.APPOINTMENTS, appList);
+
+      return {
+        googleConnected: isGoogleConnected,
+        clients: clientsList,
+        events: appList
+      };
+    },
+    enabled: !!user && offlineCache.isOnline(),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // Sync state with React Query Data
+  useEffect(() => {
+    if (agendaData) {
+      setGoogleConnected(agendaData.googleConnected);
+      setClients(agendaData.clients);
+      setEvents(agendaData.events);
+      setLoading(false);
+    } else if (!isQueryLoading) {
+      setLoading(false);
     }
+  }, [agendaData, isQueryLoading]);
+
+  // Instant local cache loading on mount
+  useEffect(() => {
+    const cachedClients = offlineCache.get<any[]>(CacheKeys.CLIENTS);
+    const cachedEvents = offlineCache.get<Appointment[]>(CacheKeys.APPOINTMENTS);
+
+    if (cachedClients) setClients(cachedClients);
+    if (cachedEvents) setEvents(cachedEvents);
 
     if (!offlineCache.isOnline()) {
       setLoading(false);
-      return;
     }
+  }, []);
 
-    try {
-      const { data: tokenData } = await supabase
-        .from("user_google_tokens")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setGoogleConnected(!!tokenData);
-
-      // Safe RLS compliant select
-      const { data: clientsData } = await supabase
-        .from("clients")
-        .select("id, name, city, state, cnpj")
-        .eq("user_id", user.id)
-        .order("name");
-        
-      if (clientsData) {
-        setClients(clientsData);
-        offlineCache.set(CacheKeys.CLIENTS, clientsData);
-      }
-
-      // Holiday loading synced online
+  // Load holidays based on clients and currentDate
+  useEffect(() => {
+    const loadHolidays = async () => {
       try {
-        const activeClients = clientsData || cachedClients;
-        const locations = (activeClients || []).filter(c => c && c.city).map(c => ({ city: c.city, state: c.state }));
+        const locations = clients.filter(c => c && c.city).map(c => ({ city: c.city, state: c.state }));
         const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
         setHolidays(fetchedHolidays);
-      } catch (hError) {
-        console.warn("Holiday fetch failed safely:", hError);
+      } catch (e) {
+        console.warn("Error loading holidays:", e);
       }
+    };
+    if (clients.length > 0) {
+      loadHolidays();
+    }
+  }, [clients, currentDate.getFullYear()]);
 
-      const { data: eventsData, error: eventsError } = await supabase
-        .from("appointments")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (!eventsError && eventsData) {
-        setEvents(eventsData);
-        offlineCache.set(CacheKeys.APPOINTMENTS, eventsData);
-      }
-    } catch (e) {
-      console.error("Erro técnico no carregamento online da agenda:", e);
-      // Ensure we always have events fallback
-      const freshCachedEvents = (offlineCache.get(CacheKeys.APPOINTMENTS) as Appointment[]) || [];
-      setEvents(freshCachedEvents);
-    } finally {
-      setLoading(false);
+  const invalidateAgenda = async () => {
+    queryClient.invalidateQueries({ queryKey: ['agendaData'] });
+    if (!offlineCache.isOnline()) {
+      const cachedClients = offlineCache.get<any[]>(CacheKeys.CLIENTS) || [];
+      const cachedEvents = offlineCache.get<Appointment[]>(CacheKeys.APPOINTMENTS) || [];
+      setClients(cachedClients);
+      setEvents(cachedEvents);
     }
   };
-
-  useEffect(() => { fetchEvents(); }, [user, currentDate.getFullYear()]);
 
   const handleSync = async () => {
     if (!user) return;
@@ -148,7 +154,7 @@ export default function Agenda() {
     const res = await syncGoogleEvents(user.id);
     if (res.success) {
       toast.success(res.message, { id: toastId });
-      await fetchEvents();
+      await invalidateAgenda();
     } else {
       toast.error(res.message, { id: toastId });
     }
@@ -207,7 +213,7 @@ export default function Agenda() {
       } catch (gErr) {
         console.warn("Failed to push to Google Calendar:", gErr);
       }
-      await fetchEvents();
+      await invalidateAgenda();
       toast.success("Evento orquestrado com sucesso!");
     } else {
       console.error("Erro ao salvar compromisso:", dbResult.error);
@@ -249,7 +255,7 @@ export default function Agenda() {
       }
     }
     if (!error) {
-      await fetchEvents();
+      await invalidateAgenda();
       toast.success("Evento removido.");
     } else {
       toast.error("Erro ao remover compromisso.");
@@ -325,7 +331,7 @@ export default function Agenda() {
       } catch (gErr) {
         console.warn("Failed to sync reschedule with Google Calendar:", gErr);
       }
-      await fetchEvents();
+      await invalidateAgenda();
       toast.success("Data reordenada via radar.");
     } else {
       toast.error("Erro ao reagendar compromisso.");
@@ -638,7 +644,7 @@ export default function Agenda() {
                 <AppointmentForm
                   appointment={editingEvent}
                   onClose={() => { setIsModalOpen(false); setEditingEvent(null); }}
-                  onSaved={fetchEvents}
+                  onSaved={invalidateAgenda}
                   clients={clients}
                   onSave={handleSave}
                   onDelete={handleDelete}

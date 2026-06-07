@@ -1,18 +1,49 @@
 // supabase/functions/geocode/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost",
+  "capacitor://localhost",
+  "app://localhost",
+  "https://represente-me.vercel.app"
+];
+
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return false;
+  if (allowedOrigins.includes(origin)) return true;
+  if (origin.endsWith(".vercel.app") && origin.includes("represente-me")) return true;
+  return false;
 }
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', {
+      headers: {
+        'Access-Control-Allow-Origin': origin && isOriginAllowed(origin) ? origin : 'null',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      }
+    });
   }
+
+  if (!isOriginAllowed(origin)) {
+    console.warn(`Origin blocked: ${origin}`);
+    return new Response(JSON.stringify({ error: 'Forbidden origin' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': origin || 'null',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
 
   try {
     const { address, name, cnpj } = await req.json()

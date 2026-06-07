@@ -1,4 +1,4 @@
-﻿import { supabase } from './supabase';
+import { supabase } from './supabase';
 
 export type EmailProvider = 'google' | 'microsoft';
 
@@ -44,10 +44,16 @@ export function getGoogleEmailAuthUrl() {
   return `${rootUrl}?${qs.toString()}`;
 }
 
-export function getMicrosoftEmailAuthUrl() {
+export async function getMicrosoftEmailAuthUrl() {
+  const { data, error } = await supabase.functions.invoke('microsoft-token', {
+    body: { get_client_id: true }
+  });
+  if (error || !data?.client_id) {
+    throw new Error("Não foi possível obter o Client ID da Microsoft: " + (error?.message || "Erro desconhecido"));
+  }
   const rootUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
   const options = {
-    client_id: import.meta.env.VITE_MICROSOFT_CLIENT_ID,
+    client_id: data.client_id,
     response_type: 'code',
     redirect_uri: window.location.origin + '/auth/callback/email',
     response_mode: 'query',
@@ -85,25 +91,26 @@ async function getValidEmailToken(userId: string, provider: EmailProvider, email
     return null;
   }
 
-  const refreshParams = new URLSearchParams();
-  refreshParams.append('client_id', import.meta.env.VITE_MICROSOFT_CLIENT_ID);
-  refreshParams.append('client_secret', import.meta.env.VITE_MICROSOFT_CLIENT_SECRET);
-  refreshParams.append('refresh_token', tokenData.refresh_token);
-  refreshParams.append('grant_type', 'refresh_token');
-
-  const url = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
-
   try {
-    const res = await fetch(url, { method: 'POST', body: refreshParams });
-    const data = await res.json();
-    if (data.access_token) {
+    const { data, error } = await supabase.functions.invoke('microsoft-token', {
+      body: {
+        grant_type: 'refresh_token',
+        refresh_token: tokenData.refresh_token
+      }
+    });
+    if (error) throw error;
+    if (data && data.access_token) {
+      const updatedRefreshToken = data.refresh_token || tokenData.refresh_token;
       await supabase.from('user_email_tokens').update({
         access_token: data.access_token,
+        refresh_token: updatedRefreshToken,
         expires_at: now + (data.expires_in || 3600),
       }).eq('id', tokenData.id);
       return data.access_token;
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error("Erro ao atualizar token da Microsoft via Edge Function:", e);
+  }
   return null;
 }
 

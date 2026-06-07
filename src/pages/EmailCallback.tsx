@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -60,26 +60,18 @@ export default function EmailCallback() {
              console.error("Erro ao buscar email do Google:", e);
            }
         } else {
-           const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID;
-           const secret = import.meta.env.VITE_MICROSOFT_CLIENT_SECRET;
-           if(!clientId) throw new Error("Chaves da Microsoft ausentes.");
-
-           const endpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
-           const bodyRequest = new URLSearchParams();
-           bodyRequest.append("client_id", clientId);
-           if(secret) bodyRequest.append("client_secret", secret);
-           bodyRequest.append("code", code);
-           bodyRequest.append("redirect_uri", redirectUri);
-           bodyRequest.append("grant_type", "authorization_code");
-
-           const response = await fetch(endpoint, {
-             method: "POST",
-             headers: { "Content-Type": "application/x-www-form-urlencoded" },
-             body: bodyRequest,
-           });
-
-           tokens = await response.json();
-           if (tokens.error) throw new Error(tokens.error_description || tokens.error);
+            const { data, error } = await supabase.functions.invoke('microsoft-token', {
+              body: {
+                grant_type: 'authorization_code',
+                code,
+                redirect_uri: redirectUri
+              }
+            });
+            if (error) throw error;
+            if (!data || data.error) {
+              throw new Error(data?.error_description || data?.error || "Falha na troca do código de autorização.");
+            }
+            tokens = data;
         }
 
         const { error: upsertError } = await supabase

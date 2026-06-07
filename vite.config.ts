@@ -16,6 +16,9 @@ export default defineConfig(({mode}) => {
       },
     },
     
+    esbuild: {
+      drop: mode === 'production' ? ['console', 'debugger'] : [],
+    },
     build: {
       chunkSizeWarningLimit: 1000,
     },
