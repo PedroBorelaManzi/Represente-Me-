@@ -109,12 +109,33 @@ export async function getHighPrecisionCoordinates(address: string, clientName?: 
     }
   }
 
-  // Tier 2: Call Supabase Edge Function to avoid exposing Gemini API Key
+  // Tier 2: Call Vercel Serverless Function to proxy AI securely with Rate Limiting
   try {
-    const { data, error } = await supabase.functions.invoke('geocode', {
-      body: { address, name: clientName, cnpj }
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    
+    if (!token) {
+      console.warn("No active session, skipping AI geocoding");
+      return null;
+    }
+
+    const response = await fetch('/api/ai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        action: 'geocode',
+        payload: { address, name: clientName, cnpj }
+      })
     });
-    if (error) throw error;
+
+    if (!response.ok) {
+       throw new Error(`AI API Error: ${response.status}`);
+    }
+
+    const data = await response.json();
     if (data && typeof data.lat === 'number' && typeof data.lng === 'number') {
       const isSpDefault = Math.abs(data.lat - (-23.5505)) < 0.001 && Math.abs(data.lng - (-46.6333)) < 0.001;
       if (!isSpDefault) {
@@ -123,7 +144,7 @@ export async function getHighPrecisionCoordinates(address: string, clientName?: 
       }
     }
   } catch (error) {
-    console.error("Gemini Edge Function Geocoding Error:", error);
+    console.error("Vercel AI Proxy Geocoding Error:", error);
   }
 
   setCachedCoords(address, null);
