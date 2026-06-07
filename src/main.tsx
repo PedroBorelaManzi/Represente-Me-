@@ -19,11 +19,21 @@ const queryClient = new QueryClient({
   },
 });
 
-// Configure React Query Persistence in IndexedDB
+// Configure React Query Persistence in IndexedDB with Security Filters
 persistQueryClient({
   queryClient,
   persister: indexedDBPersister,
   maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+  dehydrateOptions: {
+    shouldDehydrateQuery: (query) => {
+      // Security rule: Do not persist sensitive information in plain text
+      const sensitiveKeys = ['clientes', 'pedidos', 'empresas', 'agenda', 'dashboard', 'emails', 'valores', 'auth'];
+      const isSensitive = query.queryKey.some(key => 
+         typeof key === 'string' && sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))
+      );
+      return !isSensitive && query.state.status === 'success';
+    }
+  }
 });
 
 // Register Global Error Listeners for Telemetry
