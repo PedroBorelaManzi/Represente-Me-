@@ -9,14 +9,10 @@ import {
   Menu, 
   X, 
   Check, 
-  ChevronRight, 
   ChevronLeft,
   Bell, 
   Shield, 
-  Palette,
   Building2,
-  ChevronDown,
-  User,
   Mail,
   Cloud,
   CloudOff,
@@ -28,7 +24,6 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useSync } from '../contexts/SyncContext';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import SettingsModal from './SettingsModal';
 import { supabase } from '../lib/supabase';
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -36,6 +31,8 @@ import { WhatsAppButton } from './WhatsAppButton';
 import { Logo } from './Logo';
 import { SubscriptionGuard } from './SubscriptionGuard';
 import { toast } from 'sonner';
+
+const SettingsModal = React.lazy(() => import('./SettingsModal'));
 
 export default function Layout() {
   const [isEditingInactivity, setIsEditingInactivity] = useState(false);
@@ -84,7 +81,6 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
-  const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
   const [mobileAvatarError, setMobileAvatarError] = useState(false);
 
@@ -216,7 +212,7 @@ export default function Layout() {
           });
 
           // 3. Check for holidays today (Municipal & National) based on client locations
-          const locations = [];
+          const locations: { city: string; state?: string }[] = [];
           const seenLocs = new Set();
           clientsData.forEach((c: any) => {
             if (c.city) {
@@ -258,7 +254,7 @@ export default function Layout() {
     return () => clearInterval(interval);
   }, [user, settings?.alerta_days, settings?.critico_days, settings?.inativo_days]);
 
-    const menuItems = [
+  const menuItems = [
     { icon: LayoutDashboard, label: 'Início', path: '/dashboard' },
     { icon: MapIcon, label: 'Mapa de Clientes', path: '/dashboard/map' },
     { icon: Users, label: 'Meus Clientes', path: '/dashboard/clientes' },
@@ -329,7 +325,6 @@ export default function Layout() {
               </div>
             </div>
 
-            
             {/* Sync Status Button */}
             <div className="px-6 mb-4">
               <button 
@@ -448,7 +443,7 @@ export default function Layout() {
                     <div className="bg-slate-50 dark:bg-zinc-900/40 border border-slate-100 dark:border-zinc-800 rounded-2xl p-3 space-y-3">
                       <div className="grid grid-cols-3 gap-1.5">
                         <div className="space-y-1">
-                          <label className="block text-[8px] font-black uppercase text-amber-650 text-center">Alerta</label>
+                          <label className="block text-[8px] font-black uppercase text-amber-655 text-center">Alerta</label>
                           <input 
                             type="number"
                             value={tempAlerta}
@@ -473,7 +468,7 @@ export default function Layout() {
                             type="number"
                             value={tempInativo}
                             onChange={(e) => setTempInativo(e.target.value)}
-                            className="w-full px-1.5 py-1 text-center bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-850 rounded-xl text-[11px] font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
+                            className="w-full px-1.5 py-1 text-center bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-855 rounded-xl text-[11px] font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
                             placeholder="90"
                           />
                         </div>
@@ -542,7 +537,9 @@ export default function Layout() {
           </div>
         </aside>
 
-        <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
+        <React.Suspense fallback={null}>
+          <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
+        </React.Suspense>
 
         <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
           <header className="lg:hidden bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between px-6 flex-shrink-0"
@@ -562,7 +559,7 @@ export default function Layout() {
               <button 
                 onClick={syncNow}
                 disabled={isSyncing}
-                className={`flex items-center justify-center p-2 rounded-xl transition-all ${
+                className={`flex items-center justify-center p-2 rounded-xl transition-all relative ${
                   !isOnline ? 'bg-red-50 text-red-500' : 
                   pendingCount > 0 ? 'bg-amber-50 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 
                   'bg-slate-50 text-emerald-500'

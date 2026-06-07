@@ -1,6 +1,6 @@
 import { useUpload } from '../contexts/UploadContext';
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, Search, FileText, Upload, Loader2, ShoppingBag, Trash2, ArrowUpRight, TrendingUp, DollarSign, Calendar, ChevronRight, Filter, MoreVertical, ShieldCheck, Zap, Layers, X, Sparkles, Navigation } from "lucide-react";
+import { Plus, Search, FileText, Upload, Loader2, ShoppingBag, Trash2, ArrowUpRight, TrendingUp, DollarSign, Calendar, ChevronRight, X, Sparkles, Navigation } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -9,9 +9,28 @@ import { processOrderFile } from "../lib/orderProcessor";
 import { getHighPrecisionCoordinates } from "../lib/geminiGeocoding";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { syncQueue } from "../lib/syncQueue";
-import { offlineCache, CacheKeys } from "../lib/offlineCache";
 import { toast } from "sonner";
+import { Client, Order } from "../types";
+
+interface BatchResult {
+  file: File;
+  client: string;
+  category: string;
+  value: number;
+  needsNewClient: boolean;
+  clientId?: string;
+  address?: string;
+  cnpj?: string;
+}
+
+interface AnalysisResult {
+  client: string;
+  cnpj?: string;
+  address?: string;
+  category?: string;
+  value?: number;
+  status?: string;
+}
 
 export default function PedidosPage() {
   const { user } = useAuth();
@@ -24,39 +43,42 @@ export default function PedidosPage() {
   const selectedCategory = manualDraft.category;
   const orderValue = manualDraft.value;
   const isManualModalOpen = manualDraft.isOpen;
-  const selectedClient = (manualDraft as any).clientId || "";
+  const selectedClient = (manualDraft as { clientId?: string }).clientId || "";
 
-  const setSelectedFile = (file) => setDraft("manual_order", { file });
-  const setSelectedCategory = (category) => setDraft("manual_order", { category });
-  const setOrderValue = (value) => setDraft("manual_order", { value });
-  const setIsManualModalOpen = (isOpen) => setDraft("manual_order", { isOpen });
-  const setSelectedClient = (clientId) => setDraft("manual_order", { clientId } as any);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
+  const setSelectedFile = (file: File | null) => setDraft("manual_order", { file });
+  const setSelectedCategory = (category: string) => setDraft("manual_order", { category });
+  const setOrderValue = (value: string) => setDraft("manual_order", { value });
+  const setIsManualModalOpen = (isOpen: boolean) => setDraft("manual_order", { isOpen });
+  const setSelectedClient = (clientId: string) => setDraft("manual_order", { clientId } as any);
+  
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   
-  
-  
-  
-  
-  
   const [isSaving, setIsSaving] = useState(false);
   const [isAnalyzingManual, setIsAnalyzingManual] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [showNewClientForm, setShowNewClientForm] = useState(false);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
-  const [batchResults, setBatchResults] = useState<any[]>([]);
+  const [batchResults, setBatchResults] = useState<BatchResult[]>([]);
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
-  const [viewDate, setViewDate] = useState(new Date());
+  const [viewDate] = useState(new Date());
 
   useEffect(() => { if (user) { loadData();  } }, [user]);
 
   const loadData = async () => {
     setLoading(true);
-    const { data: o } = await supabase.from("orders").select("*, client:clients(id, name, cnpj, city, state)").eq("user_id", user?.id).order("created_at", { ascending: false });
-    const { data: c } = await supabase.from("clients").select("id, name, cnpj").eq("user_id", user?.id).order("name");
-    setOrders(o || []); setClients(c || []); setLoading(false);
+    try {
+      const { data: o } = await supabase.from("orders").select("*, client:clients(id, name, cnpj, city, state)").eq("user_id", user?.id).order("created_at", { ascending: false });
+      const { data: c } = await supabase.from("clients").select("id, name, cnpj").eq("user_id", user?.id).order("name");
+      setOrders((o as Order[]) || []); 
+      setClients((c as Client[]) || []);
+    } catch (err) {
+      console.error("Error loading data:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const registerNewClient = async (name: string, cnpj: string, address: string) => {
@@ -105,7 +127,7 @@ export default function PedidosPage() {
     try {
       let cid = selectedClient;
       if (showNewClientForm && analysisResult) {
-        const n = await registerNewClient(analysisResult.client, analysisResult.cnpj, analysisResult.address);
+        const n = await registerNewClient(analysisResult.client, analysisResult.cnpj || "", analysisResult.address || "");
         if (n) cid = n.id;
       }
       const cleanName = selectedFile.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
@@ -115,7 +137,7 @@ export default function PedidosPage() {
       await supabase.from("orders").upsert([{ user_id: user.id, client_id: cid, category: selectedCategory, value: parseFloat(orderValue), file_name: formattedName, file_path: path }], { onConflict: "client_id,file_path" });
       const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", cid).single();
       if (clientData) {
-        const fat = clientData.faturamento || {};
+        const fat = (clientData.faturamento as Record<string, number>) || {};
         const updatedFat = { ...fat, [selectedCategory]: (Number(fat[selectedCategory] || 0) + parseFloat(orderValue)) };
         await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", cid).eq("user_id", user?.id);
       }
@@ -137,16 +159,16 @@ export default function PedidosPage() {
           const clientName = c.name?.trim().toLowerCase();
           return (cleanResCnpj && clientCnpj === cleanResCnpj) || (clientName && clientName === cleanResName);
         });
-        setBatchResults(prev => [...prev, { file, client: res.client, category: res.category, value: res.value, needsNewClient: !match, clientId: match?.id, address: res.address, cnpj: res.cnpj }]);
+        setBatchResults(prev => [...prev, { file, client: res.client, category: res.category || "Outros", value: res.value || 0, needsNewClient: !match, clientId: match?.id, address: res.address, cnpj: res.cnpj }]);
       } catch (err) {} 
     }
     setIsProcessingBatch(false);
   };
 
-  const confirmBatchOrder = async (res: any) => {
+  const confirmBatchOrder = async (res: BatchResult) => {
     try {
       let cid = res.clientId;
-      if (res.needsNewClient) { const n = await registerNewClient(res.client, res.cnpj, res.address); if (n) cid = n.id; }
+      if (res.needsNewClient) { const n = await registerNewClient(res.client, res.cnpj || "", res.address || ""); if (n) cid = n.id; }
       const cleanName = res.file.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s.-]/g, "").replace(/\s+/g, "_");
       const formattedName = `${res.category}___VALOR_${res.value}___${cleanName}`;
       const path = `${user?.id}/${cid}/${formattedName}`;
@@ -154,7 +176,7 @@ export default function PedidosPage() {
       await supabase.from("orders").upsert([{ user_id: user?.id, client_id: cid, category: res.category, value: res.value, file_name: formattedName, file_path: path }], { onConflict: "client_id,file_path" });
       const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", cid).single();
       if (clientData) {
-        const fat = clientData.faturamento || {};
+        const fat = (clientData.faturamento as Record<string, number>) || {};
         const updatedFat = { ...fat, [res.category]: (Number(fat[res.category] || 0) + res.value) };
         await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", cid);
       }
@@ -163,7 +185,7 @@ export default function PedidosPage() {
     } catch (err: any) { alert(err.message); }
   };
 
-  const handleDeleteOrder = async (order: any) => {
+  const handleDeleteOrder = async (order: Order) => {
     if (!window.confirm("Deseja realmente excluir este pedido?")) return;
     try {
       if (order.file_path) await supabase.storage.from("client_vault").remove([order.file_path]);
@@ -172,7 +194,7 @@ export default function PedidosPage() {
       if (order.client_id) {
         const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", order.client_id).single();
         if (clientData) {
-          const fat = clientData.faturamento || {};
+          const fat = (clientData.faturamento as Record<string, number>) || {};
           const currentVal = Number(fat[order.category] || 0);
           const updatedFat = { ...fat, [order.category]: Math.max(0, currentVal - (order.value || 0)) };
           await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", order.client_id).eq("user_id", user?.id);
@@ -203,10 +225,8 @@ export default function PedidosPage() {
     { label: "Ticket Médio", val: monthlyOrders.length > 0 ? (monthlyOrders.reduce((a,b)=>a+(b.value||0),0) / monthlyOrders.length) : 0, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50", suffix: "BRL" },
   ], [monthlyOrders]);
 
-
   return (
     <div className="h-full flex flex-col gap-6 md:gap-10 pb-20 overflow-x-hidden">
-      {/* Premium Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-2xl md:text-4xl font-black text-slate-900 dark:text-zinc-100 flex items-center gap-3 md:gap-4 uppercase tracking-tight">
@@ -223,14 +243,12 @@ export default function PedidosPage() {
               onClick={() => setIsBatchModalOpen(true)}
               className="px-4 md:px-6 py-3 md:py-4 bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 rounded-2xl md:rounded-[24px] text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-all shadow-sm flex items-center gap-2 md:gap-3 active:scale-95 whitespace-nowrap"
             >
-              <Zap className="w-4 h-4 md:w-5 md:h-5" />
+              <Plus className="w-4 h-4 md:w-5 md:h-5" />
               Lote IA
             </button>
-            
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {stats.map((item, i) => (
           <motion.div 
@@ -259,9 +277,7 @@ export default function PedidosPage() {
         ))}
       </div>
 
-      {/* Main List */}
       <div className="bg-white dark:bg-zinc-950 rounded-[32px] md:rounded-[48px] border border-slate-100 dark:border-zinc-850 shadow-sm overflow-hidden flex flex-col flex-1">
-        {/* Table Controls */}
         <div className="p-4 md:p-8 border-b border-slate-50 dark:border-zinc-850 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/30 dark:bg-zinc-950/20">
           <div className="relative group flex-1 max-w-md">
             <Search className="absolute left-5 md:left-6 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
@@ -282,7 +298,6 @@ export default function PedidosPage() {
           </div>
         </div>
 
-        {/* List View (Desktop) */}
         <div className="hidden md:block flex-1 overflow-x-auto custom-scrollbar">
            <div className="min-w-[900px]">
               <div className="grid grid-cols-12 px-10 py-6 border-b border-slate-50 dark:border-zinc-850 bg-slate-50/10 dark:bg-zinc-900 text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -355,7 +370,6 @@ export default function PedidosPage() {
            </div>
         </div>
 
-        {/* Card View (Mobile) */}
         <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-4 pb-12">
           {filteredOrders.length === 0 ? (
             <div className="py-16 text-center flex flex-col items-center justify-center gap-4 opacity-50">
@@ -402,7 +416,7 @@ export default function PedidosPage() {
                 <div className="flex items-center justify-between text-[7px] font-black text-slate-400 uppercase tracking-widest">
                   <div className="flex items-center gap-1">
                     <Calendar className="w-2.5 h-2.5" />
-                    {new Date(order.created_at).toLocaleDateString('pt-BR')}
+                    {order.created_at ? new Date(order.created_at).toLocaleDateString('pt-BR') : ""}
                   </div>
                   <div className="flex items-center gap-1">
                     <Navigation className="w-2.5 h-2.5" />
@@ -415,7 +429,6 @@ export default function PedidosPage() {
         </div>
       </div>
 
-      {/* Manual Order Modal */}
       <AnimatePresence>
         {isManualModalOpen && (
            <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4">
@@ -444,7 +457,6 @@ export default function PedidosPage() {
                        </div>
                     </div>
 
-                                        
                     <div className="grid grid-cols-2 gap-4 md:gap-6">
                        <div className="space-y-3 md:space-y-4">
                           <label className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-widest px-2">Representada</label>
@@ -477,16 +489,15 @@ export default function PedidosPage() {
                       disabled={isSaving} 
                       className="w-full py-5 md:py-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[24px] md:rounded-[32px] font-black uppercase text-[10px] md:text-xs tracking-widest shadow-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-3 md:gap-4 disabled:opacity-50"
                     >
-                       {isSaving ? <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin" /> : <ShieldCheck className="w-5 h-5 md:w-6 md:h-6" />}
+                       {isSaving ? <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin" /> : <Plus className="w-5 h-5 md:w-6 md:h-6" />}
                        {isSaving ? "Sincronizando..." : "Efetivar Registro"}
                     </button>
                  </form>
               </motion.div>
            </div>
-        )}
-      </AnimatePresence>
+         )}
+       </AnimatePresence>
 
-      {/* Batch Modal */}
       <AnimatePresence>
         {isBatchModalOpen && (
            <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">
@@ -501,56 +512,56 @@ export default function PedidosPage() {
                  </div>
 
                  <div className="flex-1 overflow-y-auto p-6 md:p-12 custom-scrollbar">
-                   {batchResults.length === 0 ? (
-                      <div className="h-60 md:h-96 border-4 border-dashed border-slate-100 dark:border-zinc-850 rounded-[32px] md:rounded-[56px] flex flex-col items-center justify-center relative group">
-                         <input type="file" multiple onChange={handleBatchUpload} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                         <div className="p-6 md:p-10 bg-white dark:bg-zinc-900 rounded-[24px] md:rounded-[48px] shadow-xl text-emerald-600 mb-6">
-                            <Sparkles className="w-10 h-10 md:w-16 md:h-16" />
-                         </div>
-                         <p className="text-sm md:text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Múltiplos Arquivos</p>
-                         <p className="text-[7px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">{isProcessingBatch ? "Aguarde, processando..." : "PDF, JPG, PNG"}</p>
-                      </div>
-                   ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 pb-12">
-                        {batchResults.map((r, i) => (
-                          <motion.div 
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            key={i} 
-                            className="p-6 md:p-10 bg-slate-50 dark:bg-zinc-950/20 rounded-[32px] md:rounded-[48px] border border-slate-100 dark:border-zinc-850 flex flex-col gap-6 md:gap-8"
-                          >
-                             <div className="flex items-center gap-4">
-                                <div className="p-3 md:p-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm">
-                                   <FileText className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                   <p className="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Cliente</p>
-                                   <h4 className="text-[10px] md:text-sm font-black text-slate-900 dark:text-zinc-100 uppercase truncate">{r.client}</h4>
-                                </div>
-                             </div>
+                    {batchResults.length === 0 ? (
+                       <div className="h-60 md:h-96 border-4 border-dashed border-slate-100 dark:border-zinc-850 rounded-[32px] md:rounded-[56px] flex flex-col items-center justify-center relative group">
+                          <input type="file" multiple onChange={handleBatchUpload} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                          <div className="p-6 md:p-10 bg-white dark:bg-zinc-900 rounded-[24px] md:rounded-[48px] shadow-xl text-emerald-600 mb-6">
+                             <Sparkles className="w-10 h-10 md:w-16 md:h-16" />
+                          </div>
+                          <p className="text-sm md:text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tight">Múltiplos Arquivos</p>
+                          <p className="text-[7px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">{isProcessingBatch ? "Aguarde, processando..." : "PDF, JPG, PNG"}</p>
+                       </div>
+                    ) : (
+                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 pb-12">
+                         {batchResults.map((r, i) => (
+                           <motion.div 
+                             initial={{ opacity: 0, scale: 0.95 }}
+                             animate={{ opacity: 1, scale: 1 }}
+                             key={i} 
+                             className="p-6 md:p-10 bg-slate-50 dark:bg-zinc-950/20 rounded-[32px] md:rounded-[48px] border border-slate-100 dark:border-zinc-850 flex flex-col gap-6 md:gap-8"
+                           >
+                              <div className="flex items-center gap-4">
+                                 <div className="p-3 md:p-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm">
+                                    <FileText className="w-6 h-6 md:w-8 md:h-8 text-emerald-600" />
+                                 </div>
+                                 <div className="min-w-0 flex-1">
+                                    <p className="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Cliente</p>
+                                    <h4 className="text-[10px] md:text-sm font-black text-slate-900 dark:text-zinc-100 uppercase truncate">{r.client}</h4>
+                                 </div>
+                              </div>
 
-                             <div className="grid grid-cols-2 gap-3 md:gap-4">
-                                <div className="p-4 md:p-5 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-50 dark:border-zinc-850">
-                                   <p className="text-[6px] md:text-[7px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Empresa</p>
-                                   <p className="text-[8px] md:text-[10px] font-black text-slate-900 dark:text-zinc-100 uppercase truncate">{r.category}</p>
-                                </div>
-                                <div className="p-4 md:p-5 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-50 dark:border-zinc-850">
-                                   <p className="text-[6px] md:text-[7px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Valor</p>
-                                   <p className="text-[8px] md:text-[10px] font-black text-emerald-600 tabular-nums">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(r.value)}</p>
-                                </div>
-                             </div>
+                              <div className="grid grid-cols-2 gap-3 md:gap-4">
+                                 <div className="p-4 md:p-5 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-50 dark:border-zinc-850">
+                                    <p className="text-[6px] md:text-[7px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Empresa</p>
+                                    <p className="text-[8px] md:text-[10px] font-black text-slate-900 dark:text-zinc-100 uppercase truncate">{r.category}</p>
+                                 </div>
+                                 <div className="p-4 md:p-5 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-slate-50 dark:border-zinc-850">
+                                    <p className="text-[6px] md:text-[7px] font-black text-slate-300 uppercase tracking-widest leading-none mb-1">Valor</p>
+                                    <p className="text-[8px] md:text-[10px] font-black text-emerald-600 tabular-nums">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(r.value)}</p>
+                                 </div>
+                              </div>
 
-                             <button 
-                               onClick={() => confirmBatchOrder(r)}
-                               className="w-full py-4 md:py-5 bg-emerald-600 text-white rounded-[20px] md:rounded-[28px] font-black uppercase text-[8px] md:text-[10px] tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 md:gap-3"
-                             >
-                                <ShieldCheck className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                Efetivar
-                             </button>
-                          </motion.div>
-                        ))}
-                      </div>
-                   )}
+                              <button 
+                                onClick={() => confirmBatchOrder(r)}
+                                className="w-full py-4 md:py-5 bg-emerald-600 text-white rounded-[20px] md:rounded-[28px] font-black uppercase text-[8px] md:text-[10px] tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 md:gap-3"
+                              >
+                                 <Plus className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                 Efetivar
+                              </button>
+                           </motion.div>
+                         ))}
+                       </div>
+                    )}
                  </div>
 
                  {isProcessingBatch && (
@@ -563,8 +574,8 @@ export default function PedidosPage() {
                  )}
               </motion.div>
            </div>
-        )}
-      </AnimatePresence>
+         )}
+       </AnimatePresence>
     </div>
   );
 }

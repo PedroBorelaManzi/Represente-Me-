@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { Loader2, CheckCircle2, AlertCircle, Globe, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { exchangeGoogleCode } from "../lib/googleTokenExchange";
 
 export default function GoogleCallback() {
   const [searchParams] = useSearchParams();
@@ -31,28 +32,8 @@ export default function GoogleCallback() {
       }
 
       try {
-        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-        const clientSecret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
-        const redirectUri = `${window.location.origin}/auth/callback/google`;
-
-        if (!clientId || !clientSecret) {
-          throw new Error("As chaves do Google (Client ID/Secret) não foram configuradas.");
-        }
-
-        const response = await fetch("https://oauth2.googleapis.com/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            code,
-            client_id: clientId,
-            client_secret: clientSecret,
-            redirect_uri: redirectUri,
-            grant_type: "authorization_code",
-          }),
-        });
-
-        const tokens = await response.json();
-        if (tokens.error) throw new Error(tokens.error_description || tokens.error);
+        const redirectUri = window.location.origin + "/auth/callback/google";
+        const tokens = await exchangeGoogleCode(code, redirectUri);
 
         const { error: upsertError } = await supabase
           .from("user_google_tokens")

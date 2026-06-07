@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { Loader2, CheckCircle2, AlertCircle, Globe, ShieldCheck } from "lucide-react";
+import { exchangeGoogleCode } from "../lib/googleTokenExchange";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function EmailCallback() {
@@ -41,48 +42,44 @@ export default function EmailCallback() {
       }
 
       try {
-        let endpoint = "";
-        let bodyRequest = new URLSearchParams();
-        const redirectUri = `${window.location.origin}/auth/callback/email`;
+        let tokens;
+        let emailAddress = "Contectado";
+        const redirectUri = window.location.origin + "/auth/callback/email";
 
         if (providerState === 'google') {
-           const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-           const secret = import.meta.env.VITE_GOOGLE_CLIENT_SECRET;
-           if(!clientId || !secret) throw new Error("As chaves do Google (Client ID/Secret) náo foram configuradas.");
-           
-           endpoint = "https://oauth2.googleapis.com/token";
-           bodyRequest.append("client_id", clientId);
-           bodyRequest.append("client_secret", secret);
-           bodyRequest.append("code", code);
-           bodyRequest.append("redirect_uri", redirectUri);
-           bodyRequest.append("grant_type", "authorization_code");
+           tokens = await exchangeGoogleCode(code, redirectUri);
+           try {
+             const userinfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+               headers: { Authorization: "Bearer " + tokens.access_token }
+             });
+             if (userinfoRes.ok) {
+               const userinfo = await userinfoRes.json();
+               emailAddress = userinfo.email || emailAddress;
+             }
+           } catch (e) {
+             console.error("Erro ao buscar email do Google:", e);
+           }
         } else {
            const clientId = import.meta.env.VITE_MICROSOFT_CLIENT_ID;
            const secret = import.meta.env.VITE_MICROSOFT_CLIENT_SECRET;
            if(!clientId) throw new Error("Chaves da Microsoft ausentes.");
 
-           endpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
+           const endpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
+           const bodyRequest = new URLSearchParams();
            bodyRequest.append("client_id", clientId);
            if(secret) bodyRequest.append("client_secret", secret);
            bodyRequest.append("code", code);
            bodyRequest.append("redirect_uri", redirectUri);
            bodyRequest.append("grant_type", "authorization_code");
-        }
 
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: bodyRequest,
-        });
+           const response = await fetch(endpoint, {
+             method: "POST",
+             headers: { "Content-Type": "application/x-www-form-urlencoded" },
+             body: bodyRequest,
+           });
 
-        const tokens = await response.json();
-        if (tokens.error) throw new Error(tokens.error_description || tokens.error);
-
-        let emailAddress = "Contectado";
-        if (tokens.id_token) {
-           try {
-             emailAddress = parseJwt(tokens.id_token).email || emailAddress;
-           } catch { }
+           tokens = await response.json();
+           if (tokens.error) throw new Error(tokens.error_description || tokens.error);
         }
 
         const { error: upsertError } = await supabase

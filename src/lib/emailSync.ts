@@ -68,15 +68,30 @@ async function getValidEmailToken(userId: string, provider: EmailProvider, email
   const now = Math.floor(Date.now() / 1000);
   if (tokenData.expires_at > now + 60) return tokenData.access_token;
 
+  if (provider === 'google') {
+    try {
+      const { refreshGoogleToken } = await import('./googleTokenExchange');
+      const newAccessToken = await refreshGoogleToken(tokenData.refresh_token);
+      if (newAccessToken) {
+        await supabase.from('user_email_tokens').update({
+          access_token: newAccessToken,
+          expires_at: now + 3600,
+        }).eq('id', tokenData.id);
+        return newAccessToken;
+      }
+    } catch (e) {
+      console.error("Erro ao atualizar token do Google:", e);
+    }
+    return null;
+  }
+
   const refreshParams = new URLSearchParams();
-  refreshParams.append('client_id', provider === 'google' ? import.meta.env.VITE_GOOGLE_CLIENT_ID : import.meta.env.VITE_MICROSOFT_CLIENT_ID);
-  refreshParams.append('client_secret', provider === 'google' ? import.meta.env.VITE_GOOGLE_CLIENT_SECRET : import.meta.env.VITE_MICROSOFT_CLIENT_SECRET);
+  refreshParams.append('client_id', import.meta.env.VITE_MICROSOFT_CLIENT_ID);
+  refreshParams.append('client_secret', import.meta.env.VITE_MICROSOFT_CLIENT_SECRET);
   refreshParams.append('refresh_token', tokenData.refresh_token);
   refreshParams.append('grant_type', 'refresh_token');
 
-  const url = provider === 'google' 
-    ? 'https://oauth2.googleapis.com/token' 
-    : 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+  const url = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
 
   try {
     const res = await fetch(url, { method: 'POST', body: refreshParams });

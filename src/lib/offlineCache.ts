@@ -12,7 +12,7 @@ export const CacheKeys = {
 export const offlineCache = {
   set: (key: string, data: any) => {
     try {
-      localStorage.setItem(key, JSON.stringify({
+      sessionStorage.setItem(key, JSON.stringify({
         data,
         timestamp: Date.now()
       }));
@@ -23,7 +23,7 @@ export const offlineCache = {
   
   get: <T>(key: string): T | null => {
     try {
-      const item = localStorage.getItem(key);
+      const item = sessionStorage.getItem(key);
       if (!item) return null;
       const parsed = JSON.parse(item);
       return parsed.data as T;
@@ -35,7 +35,7 @@ export const offlineCache = {
   
   clear: () => {
     Object.values(CacheKeys).forEach(key => {
-      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
     });
   },
 

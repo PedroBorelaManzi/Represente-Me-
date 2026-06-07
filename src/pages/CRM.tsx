@@ -1,16 +1,17 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, MapPin, Building2, Phone, Mail, FileText, ChevronRight, Filter, Plus, Trash2, Clock, CheckCircle2, TrendingUp, AlertCircle, X, Download, UserPlus, MoreHorizontal, Settings, LayoutGrid, Info, Loader2, Upload, FileUp, Activity, ChevronDown } from 'lucide-react';
+import { Search, MapPin, Building2, Trash2, ChevronRight, Plus, Loader2, FileUp, X, ChevronDown } from 'lucide-react';
 import { supabase, logAudit } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { useSync } from '../contexts/SyncContext';
 import { syncQueue } from '../lib/syncQueue';
-import { cn } from '../lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { cn, useDebounce } from '../lib/utils';
+import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { parseFileForCnpjs } from '../lib/clientImport';
 import { getHighPrecisionCoordinates } from '../lib/geminiGeocoding';
+import { Client, Alert } from '../types';
 
 export default function CRMPage() {
   const { user } = useAuth();
@@ -19,10 +20,11 @@ export default function CRMPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Crítico' | 'Inativo'>('Todos');
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 200);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -48,65 +50,62 @@ export default function CRMPage() {
     if (!user) return;
     try {
       setLoading(true);
+      setLoadingAlerts(true);
       
       const { data: clientsData, error } = await supabase
         .from('clients')
-        .select('id, name, cnpj, city, address, status, last_contact, created_at')
+        .select(`
+          id, name, cnpj, city, address, status, last_contact, created_at,
+          orders (
+            client_id,
+            file_name,
+            created_at
+          )
+        `)
         .eq('user_id', user.id)
         .order('name', { ascending: true });
 
       if (error) throw error;
       
-      const initialClients = (clientsData || []).map(c => ({ ...c, alerts: [] }));
-      setClients(initialClients);
-      setLoading(false);
+      const categoryLookup = new Map<string, string>();
+      settings?.categories?.forEach((c: string) => categoryLookup.set(c.toLowerCase(), c));
 
-      setLoadingAlerts(true);
-      
-      let files: any[] = [];
-      try {
-        const { data: filesData } = await supabase.rpc("list_user_files", { u_id: user.id });
-        files = filesData || [];
-      } catch (err) {
-        console.error("RPC Error:", err);
-      }
-      
-      if (files.length > 0) {
-        const filesByClient: any = {};
-        files.forEach((f: any) => {
-          const cId = f.client_id;
-          if (!filesByClient[cId]) filesByClient[cId] = [];
-          filesByClient[cId].push({ file_name: f.file_name, created_at: f.created_at });
+      const processedClients: Client[] = (clientsData || []).map((client: any) => {
+        const clientFiles = client.orders || [];
+        const lastDates: Record<string, number> = {};
+        
+        clientFiles.forEach((f: any) => {
+          if (!f.file_name) return;
+          const parts = f.file_name.split("___");
+          if (parts.length > 1) {
+            const rawCatLower = parts[0].toLowerCase();
+            const cat = categoryLookup.get(rawCatLower) || parts[0];
+            const date = new Date(f.created_at).getTime();
+            if (!lastDates[cat] || date > lastDates[cat]) lastDates[cat] = date;
+          }
         });
 
-        const categoryLookup = new Map();
-        settings?.categories?.forEach((c: string) => categoryLookup.set(c.toLowerCase(), c));
-
-        setClients(prevClients => prevClients.map((client: any) => {
-          const clientFiles = filesByClient[client.id] || [];
-          const lastDates: any = {};
-          
-          clientFiles.forEach((f: any) => {
-            const parts = f.file_name.split("___");
-            if (parts.length > 1) {
-              const rawCatLower = parts[0].toLowerCase();
-              const cat = categoryLookup.get(rawCatLower) || parts[0];
-              const date = new Date(f.created_at).getTime();
-              if (!lastDates[cat] || date > lastDates[cat]) lastDates[cat] = date;
-            }
-          });
-
-          const alerts: any[] = [];
-          const today = new Date().getTime();
-          for (const [cat, date] of Object.entries(lastDates)) {
-            const days = Math.floor((today - (date as number)) / (1000 * 60 * 60 * 24));
-            if (days >= (settings?.inativo_days || 90)) alerts.push({ company: cat, type: "Inativo", days });
-            else if (days >= (settings?.critico_days || 45)) alerts.push({ company: cat, type: "Crítico", days });
-            else if (days >= (settings?.alerta_days || 30)) alerts.push({ company: cat, type: "Alerta", days });
+        const alerts: Alert[] = [];
+        const today = new Date().getTime();
+        for (const [cat, date] of Object.entries(lastDates)) {
+          const days = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+          if (days >= (settings?.inativo_days || 90)) {
+            alerts.push({ company: cat, type: "Inativo", days });
+          } else if (days >= (settings?.critico_days || 45)) {
+            alerts.push({ company: cat, type: "Crítico", days });
+          } else if (days >= (settings?.alerta_days || 30)) {
+            alerts.push({ company: cat, type: "Alerta", days });
           }
-          return { ...client, alerts: alerts.sort((a, b) => b.days - a.days) };
-        }));
-      }
+        }
+
+        const { orders, ...clientWithoutOrders } = client;
+        return {
+          ...clientWithoutOrders,
+          alerts: alerts.sort((a, b) => b.days - a.days)
+        };
+      });
+
+      setClients(processedClients);
     } catch (err) {
       console.error('Load Clients Error:', err);
       toast.error('Erro ao carregar clientes');
@@ -125,24 +124,24 @@ export default function CRMPage() {
 
   useEffect(() => {
     setDisplayLimit(40);
-  }, [searchTerm, activeTab]);
+  }, [debouncedSearchTerm, activeTab]);
 
   const filteredClients = useMemo(() => {
-    const lowerSearch = searchTerm.toLowerCase();
+    const lowerSearch = debouncedSearchTerm.toLowerCase();
     const result = (clients || []).filter(c => {
-      const searchMatch = !searchTerm || 
+      const searchMatch = !debouncedSearchTerm || 
         (c.name || "").toLowerCase().includes(lowerSearch) || 
-        (c.cnpj || "").includes(searchTerm) || 
+        (c.cnpj || "").includes(debouncedSearchTerm) || 
         (c.city || "").toLowerCase().includes(lowerSearch);
       
       if (!searchMatch) return false;
       
       if (activeTab === 'Todos') return true;
-      return c.alerts?.some((a: any) => a.type === activeTab);
+      return c.alerts?.some((a: Alert) => a.type === activeTab);
     });
 
     return result.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  }, [clients, searchTerm, activeTab]);
+  }, [clients, debouncedSearchTerm, activeTab]);
 
   const displayClients = useMemo(() => {
     return filteredClients.slice(0, displayLimit);
@@ -180,7 +179,7 @@ export default function CRMPage() {
       const cleanCnpj = newCnpj.replace(/\D/g, "");
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
       
-      let clientData: any = {};
+      let clientData = { name: "Novo Cliente", city: "", address: "" };
       if (response.ok) {
         const data = await response.json();
         clientData = {
@@ -212,7 +211,7 @@ export default function CRMPage() {
       if (!isOnline) {
         const optimisticId = crypto.randomUUID();
         syncQueue.enqueue('clients', 'INSERT', newClientData);
-        toast.success("Cliente salvo localmente (Offline).", { id: toastId });
+        toast.success("Cliente salv localmente (Offline).", { id: toastId });
         setClients(prev => [{...newClientData, id: optimisticId, alerts: []}, ...prev]);
         setIsAddingClient(false);
         setNewCnpj("");
@@ -251,71 +250,80 @@ export default function CRMPage() {
         return;
       }
 
-      setImportStats({ current: 0, total: cnpjs.length });
-      toast.loading(`Importando ${cnpjs.length} potenciais clientes...`, { id: toastId });
+      const processedLocal = new Set<string>();
+      const uniqueCnpjs = cnpjs.filter(cnpj => {
+        if (processedLocal.has(cnpj)) return false;
+        processedLocal.add(cnpj);
+        return true;
+      });
+
+      setImportStats({ current: 0, total: uniqueCnpjs.length });
+      toast.loading(`Importando ${uniqueCnpjs.length} potenciais clientes...`, { id: toastId });
 
       let importedCount = 0;
-      const processedLocal = new Set();
-      
-      for (const cnpj of cnpjs) {
-        setImportStats(prev => ({ ...prev, current: prev.current + 1 }));
-        if (processedLocal.has(cnpj)) continue;
-        processedLocal.add(cnpj);
+      const chunkSize = 5;
 
-        try {
-          const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
-          let clientData: any = {};
-          
-          if (response.ok) {
-            const data = await response.json();
-            clientData = {
-              name: data.razao_social || data.nome_fantasia || 'Cliente Importado',
-              city: data.municipio || "",
-              address: `${data.logradouro || ""}, ${data.numero || "S/N"} - ${data.bairro || ""}, ${data.municipio || ""} - ${data.uf || ""}`.trim(),
-            };
-          } else {
-             clientData = { name: `Cliente ${cnpj.substring(0, 4)}`, city: "", address: "" };
-          }
-
-          const coords = await getHighPrecisionCoordinates(clientData.address, clientData.name, cnpj);
-
-          let clientId = null;
-          const existing = clients.find(c => c.cnpj === cnpj);
-          
-          if (existing) {
-            clientId = existing.id;
-          } else {
-            const { data, error: insertError } = await supabase.from('clients').insert([{
-              user_id: user.id,
-              name: clientData.name,
-              cnpj: cnpj,
-              city: clientData.city,
-              address: clientData.address,
-              lat: coords?.lat || null,
-              lng: coords?.lng || null,
-              status: 'Ativo',
-              last_contact: new Date().toISOString().split('T')[0]
-            }]).select('id').single();
+      for (let i = 0; i < uniqueCnpjs.length; i += chunkSize) {
+        const chunk = uniqueCnpjs.slice(i, i + chunkSize);
+        
+        const chunkPromises = chunk.map(async (cnpj) => {
+          try {
+            const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+            let clientData = { name: `Cliente ${cnpj.substring(0, 4)}`, city: "", address: "" };
             
-            if (!insertError && data) {
-              clientId = data.id;
-              importedCount++;
+            if (response.ok) {
+              const data = await response.json();
+              clientData = {
+                name: data.razao_social || data.nome_fantasia || 'Cliente Importado',
+                city: data.municipio || "",
+                address: `${data.logradouro || ""}, ${data.numero || "S/N"} - ${data.bairro || ""}, ${data.municipio || ""} - ${data.uf || ""}`.trim(),
+              };
             }
-          }
 
-          if (clientId) {
-            await supabase.from('orders').insert([{
-              user_id: user.id,
-              client_id: clientId,
-              category: "Lista Importada",
-              value: 0,
-              file_path: importPath,
-              file_name: file.name
-            }]);
+            const coords = await getHighPrecisionCoordinates(clientData.address, clientData.name, cnpj);
+
+            let clientId = null;
+            const existing = clients.find(c => c.cnpj === cnpj);
+            
+            if (existing) {
+              clientId = existing.id;
+            } else {
+              const { data, error: insertError } = await supabase.from('clients').insert([{
+                user_id: user.id,
+                name: clientData.name,
+                cnpj: cnpj,
+                city: clientData.city,
+                address: clientData.address,
+                lat: coords?.lat || null,
+                lng: coords?.lng || null,
+                status: 'Ativo',
+                last_contact: new Date().toISOString().split('T')[0]
+              }]).select('id').single();
+              
+              if (!insertError && data) {
+                clientId = data.id;
+                importedCount++;
+              }
+            }
+
+            if (clientId) {
+              await supabase.from('orders').insert([{
+                user_id: user.id,
+                client_id: clientId,
+                category: "Lista Importada",
+                value: 0,
+                file_path: importPath,
+                file_name: file.name
+              }]);
+            }
+          } catch (err) {
+            console.error('Import Step Error for CNPJ:', cnpj, err);
+          } finally {
+            setImportStats(prev => ({ ...prev, current: prev.current + 1 }));
           }
-        } catch (err) {
-          console.error('Import Step Error:', err);
-        }
+        });
+
+        await Promise.allSettled(chunkPromises);
       }
 
       toast.success(`Importação concluída! ${importedCount} novos clientes adicionados.`, { id: toastId });
@@ -363,7 +371,7 @@ export default function CRMPage() {
              {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
              {isImporting ? `Importando` : 'Importar Lista'}
            </button>
-        </div>
+         </div>
       </div>
       <div className="flex-1 bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200 dark:border-zinc-800 flex flex-col min-h-0 shadow-sm overflow-hidden relative">
         <div className="px-4 pt-4 border-b dark:border-zinc-850 bg-slate-50/50 dark:bg-zinc-950/20 flex items-center gap-4 overflow-x-auto no-scrollbar">
@@ -373,7 +381,7 @@ export default function CRMPage() {
               onClick={() => setActiveTab(tab)}
               className={`pb-3 px-2 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all whitespace-nowrap ${activeTab === tab ? "border-emerald-600 text-emerald-600" : "border-transparent text-slate-400 hover:text-slate-600"}`}
             >
-              {tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: any) => a.type === tab)).length})</span>
+              {tab} <span className="ml-1 opacity-50">({clients.filter(c => tab === 'Todos' ? true : c.alerts?.some((a: Alert) => a.type === tab)).length})</span>
             </button>
           ))}
           {loadingAlerts && (
@@ -400,9 +408,9 @@ export default function CRMPage() {
                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                              <p className="text-sm font-black text-slate-900 dark:text-zinc-100 uppercase truncate pr-1">{client.name}</p>
-                             {client.alerts?.length > 0 && (
+                             {client.alerts && client.alerts.length > 0 && (
                                <span className="flex gap-1 shrink-0">
-                                 {client.alerts.filter((a: any) => activeTab === 'Todos' ? true : a.type === activeTab).slice(0, 1).map((a: any, i: number) => (
+                                 {client.alerts.filter((a: Alert) => activeTab === 'Todos' ? true : a.type === activeTab).slice(0, 1).map((a: Alert, i: number) => (
                                    <span key={i} className={cn("px-2 py-0.5 rounded-md text-[8px] font-black uppercase border flex items-center gap-1", a.type === 'Inativo' ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-950/30 dark:border-red-900/40' : a.type === 'Crítico' ? 'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-950/30 dark:border-orange-900/40' : 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-950/30 dark:border-amber-900/40') }>
                                      <span className="opacity-60">{a.company}</span> <span className="w-1 h-1 rounded-full bg-current opacity-30" /> <span>{a.type}: {a.days}D</span>
                                    </span>

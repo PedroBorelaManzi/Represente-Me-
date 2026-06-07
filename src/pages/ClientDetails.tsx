@@ -5,12 +5,8 @@ import {
   MapPin, 
   Phone, 
   Mail, 
-  Building2, 
   Calendar, 
-  Clock, 
-  TrendingUp, 
   ArrowLeft,
-  ChevronRight,
   FileText,
   Download,
   Trash2,
@@ -20,11 +16,8 @@ import {
   HardDrive,
   Upload,
   AlertCircle,
-  Briefcase,
-  ExternalLink,
   CheckCircle2,
-  CreditCard,
-  Filter
+  CreditCard
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
@@ -35,8 +28,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { processOrderFile } from "../lib/orderProcessor";
 import { syncQueue } from "../lib/syncQueue";
 import { offlineCache, CacheKeys } from "../lib/offlineCache";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { Client, Order } from "../types";
 
 function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(" ");
@@ -52,8 +44,8 @@ export default function ClientDetails() {
   const draft = drafts[id || ""] || { file: null, category: "", value: "", isOpen: false };
   const currentFile = draft.file;
   
-  const [client, setClient] = useState<any>(null);
-  const [files, setFiles] = useState<any[]>([]);
+  const [client, setClient] = useState<Client | null>(null);
+  const [files, setFiles] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
@@ -64,7 +56,6 @@ export default function ClientDetails() {
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   
-  // Local states for form that sync with draft
   const [uploadValue, setUploadValue] = useState(draft.value || "");
   const [uploadCategory, setUploadCategory] = useState(draft.category || "");
 
@@ -74,14 +65,12 @@ export default function ClientDetails() {
     }
   }, [user, id]);
 
-  // Sync local state to draft
   useEffect(() => {
     if (uploadValue !== draft.value || uploadCategory !== draft.category) {
       setDraft(id || "", { value: uploadValue, category: uploadCategory });
     }
   }, [uploadValue, uploadCategory]);
 
-  // Sync draft to local state (when modal opens or file is processed)
   useEffect(() => {
     if (draft.value !== uploadValue) setUploadValue(draft.value || "");
     if (draft.category !== uploadCategory) setUploadCategory(draft.category || "");
@@ -90,7 +79,6 @@ export default function ClientDetails() {
   const loadClientData = async () => {
     try {
       setLoading(true);
-      // Load Client
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .select('*')
@@ -98,19 +86,17 @@ export default function ClientDetails() {
         .single();
       
       if (clientError) throw clientError;
-      setClient(clientData);
+      setClient(clientData as Client);
       setNotes(clientData.notes || "");
 
-      // Load Files (Orders with file_path)
       const { data: ordersData } = await supabase
         .from('orders')
         .select('*')
         .eq('client_id', id)
         .order('created_at', { ascending: false });
       
-      setFiles(ordersData || []);
+      setFiles((ordersData as Order[]) || []);
 
-      // Log access
       import('../lib/supabase').then(({ logAudit }) => logAudit('ACCESS_CLIENT_DETAILS', { client_id: id, client_name: clientData.name }));
 
     } catch (err) {
@@ -132,32 +118,30 @@ export default function ClientDetails() {
          syncQueue.enqueue('orders', 'DELETE', null, fileId);
          
          if (fileToDelete.value && fileToDelete.category && client) {
-            const fat = client.faturamento || {};
+            const fat = (client.faturamento as Record<string, number>) || {};
             const currentCatTotal = Number(fat[fileToDelete.category]) || 0;
             const newTotal = Math.max(0, currentCatTotal - Number(fileToDelete.value));
             const updatedFat = { ...fat, [fileToDelete.category]: newTotal };
             syncQueue.enqueue('clients', 'UPDATE', { faturamento: updatedFat }, id);
             
-            const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) || [];
-            const clientIndex = cachedClients.findIndex((c:any) => c.id === id);
+            const cachedClients = offlineCache.get<Client[]>(CacheKeys.CLIENTS) || [];
+            const clientIndex = cachedClients.findIndex((c: Client) => c.id === id);
             if (clientIndex >= 0) {
                 cachedClients[clientIndex].faturamento = updatedFat;
                 offlineCache.set(CacheKeys.CLIENTS, cachedClients);
             }
          }
          
-         const cachedOrders = (offlineCache.get(CacheKeys.ORDERS) as any[]) || [];
-         offlineCache.set(CacheKeys.ORDERS, cachedOrders.filter((o:any) => o.id !== fileId));
+         const cachedOrders = offlineCache.get<Order[]>(CacheKeys.ORDERS) || [];
+         offlineCache.set(CacheKeys.ORDERS, cachedOrders.filter((o: Order) => o.id !== fileId));
          
          setFiles(prev => prev.filter(f => f.id !== fileId));
          toast.success("Pedido removido offline!");
          return;
       }
 
-      // 1. Get the order details before deleting to deduct from client's total
       const { data: orderData } = await supabase.from('orders').select('*').eq('id', fileId).single();
       
-      // 2. Remove file from storage
       const { error: storageError } = await supabase.storage
         .from('client_vault')
         .remove([filePath]);
@@ -166,7 +150,6 @@ export default function ClientDetails() {
           await supabase.storage.from('orders').remove([filePath]);
       }
 
-      // 3. Delete the order completely from database (instead of just nullifying the file path)
       const { error: dbError } = await supabase
         .from('orders')
         .delete()
@@ -174,16 +157,15 @@ export default function ClientDetails() {
       
       if (dbError) throw dbError;
 
-      // 4. Update the client's faturamento to deduct the deleted order's value
       if (orderData && orderData.value && orderData.category) {
           const { data: clientData } = await supabase.from('clients').select('faturamento').eq('id', id).single();
           if (clientData) {
-              const fat = clientData.faturamento || {};
+              const fat = (clientData.faturamento as Record<string, number>) || {};
               const currentCatTotal = Number(fat[orderData.category]) || 0;
               const newTotal = Math.max(0, currentCatTotal - Number(orderData.value));
               
               const updatedFat = { ...fat, [orderData.category]: newTotal };
-              await supabase.from('clients').update({ faturamento: updatedFat }).eq('id', id).eq('user_id', user?.id);
+              await supabase.from('clients').update({ faturamento: updatedFat }).eq('id', id).eq("user_id", user?.id);
           }
       }
 
@@ -201,7 +183,6 @@ export default function ClientDetails() {
         .download(filePath);
       
       if (error) {
-          // Fallback to orders bucket
           const { data: d2, error: e2 } = await supabase.storage.from('orders').download(filePath);
           if (e2) throw e2;
           const url = URL.createObjectURL(d2);
@@ -260,19 +241,19 @@ export default function ClientDetails() {
           syncQueue.enqueue('orders', 'INSERT', orderPayload);
           
           if (client) {
-             const fat = client.faturamento || {};
+             const fat = (client.faturamento as Record<string, number>) || {};
              const updatedFat = { ...fat, [uploadCategory]: (Number(fat[uploadCategory] || 0) + numericValue) };
              syncQueue.enqueue('clients', 'UPDATE', { faturamento: updatedFat }, id);
              
-             const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) || [];
-             const clientIndex = cachedClients.findIndex((c:any) => c.id === id);
+             const cachedClients = offlineCache.get<Client[]>(CacheKeys.CLIENTS) || [];
+             const clientIndex = cachedClients.findIndex((c: Client) => c.id === id);
              if (clientIndex >= 0) {
                  cachedClients[clientIndex].faturamento = updatedFat;
                  offlineCache.set(CacheKeys.CLIENTS, cachedClients);
              }
           }
           
-          const cachedOrders = (offlineCache.get(CacheKeys.ORDERS) as any[]) || [];
+          const cachedOrders = offlineCache.get<Order[]>(CacheKeys.ORDERS) || [];
           offlineCache.set(CacheKeys.ORDERS, [orderPayload, ...cachedOrders]);
           setFiles(prev => [orderPayload, ...prev]);
       } else {
@@ -281,7 +262,7 @@ export default function ClientDetails() {
           
           const { data: clientData } = await supabase.from("clients").select("faturamento").eq("id", id).single();
           if (clientData) {
-            const fat = clientData.faturamento || {};
+            const fat = (clientData.faturamento as Record<string, number>) || {};
             const updatedFat = { ...fat, [uploadCategory]: (Number(fat[uploadCategory] || 0) + numericValue) };
             await supabase.from("clients").update({ faturamento: updatedFat }).eq("id", id).eq("user_id", user?.id);
           }
@@ -309,7 +290,7 @@ export default function ClientDetails() {
     setIsProcessingFile(true);
     
     try {
-        const result = await processOrderFile(file, [client.name], settings.categories || []);
+        const result = await processOrderFile(file, [client?.name || ""], settings.categories || []);
         if (result.value) {
             setUploadValue(result.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
         }
@@ -332,7 +313,6 @@ export default function ClientDetails() {
       return;
     }
     
-    // Save to user_settings
     try {
         const updatedCategories = [...current, newCategoryName.trim()];
         const { error } = await supabase.from('user_settings').upsert({ user_id: user?.id, categories: updatedCategories });
@@ -352,8 +332,8 @@ export default function ClientDetails() {
       setIsSavingNotes(true);
       if (!offlineCache.isOnline()) {
           syncQueue.enqueue('clients', 'UPDATE', { notes }, id);
-          const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) || [];
-          const clientIndex = cachedClients.findIndex((c:any) => c.id === id);
+          const cachedClients = offlineCache.get<Client[]>(CacheKeys.CLIENTS) || [];
+          const clientIndex = cachedClients.findIndex((c: Client) => c.id === id);
           if (clientIndex >= 0) {
               cachedClients[clientIndex].notes = notes;
               offlineCache.set(CacheKeys.CLIENTS, cachedClients);
@@ -412,7 +392,6 @@ export default function ClientDetails() {
 
   return (
     <div className="flex flex-col gap-8 pb-20 max-w-7xl mx-auto">
-      {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-4">
           <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors">
@@ -440,7 +419,6 @@ export default function ClientDetails() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* LEFT COLUMN: INFO & NOTES */}
         <div className="lg:col-span-1 space-y-8">
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-8 space-y-6">
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 border-b border-slate-50 dark:border-zinc-800 pb-4">Informações de Contato</h3>
@@ -458,7 +436,7 @@ export default function ClientDetails() {
                 <div className="p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg text-slate-400"><Phone className="w-4 h-4" /></div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase">Telefone</p>
-                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">{client.phone || "(---) ---- ----"}</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">{client.cnpj ? "Disponível no CNPJ" : "(---) ---- ----"}</p>
                 </div>
               </div>
 
@@ -466,7 +444,7 @@ export default function ClientDetails() {
                 <div className="p-2 bg-slate-50 dark:bg-zinc-800 rounded-lg text-slate-400"><Mail className="w-4 h-4" /></div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase">E-mail Comercial</p>
-                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">{client.email || "não configurado"}</p>
+                  <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">Não configurado</p>
                 </div>
               </div>
             </div>
@@ -493,7 +471,6 @@ export default function ClientDetails() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: FILES & TIMELINE */}
         <div className="lg:col-span-2 space-y-8">
            <div className="bg-white dark:bg-zinc-900 rounded-[32px] border border-slate-200 dark:border-zinc-800 shadow-sm p-8 flex flex-col h-full min-h-[600px]">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-slate-50 dark:border-zinc-850">
@@ -538,14 +515,14 @@ export default function ClientDetails() {
                               </div>
                               <h4 className="text-sm font-black text-slate-900 dark:text-zinc-100 truncate max-w-xs uppercase tracking-tight">{actualName}</h4>
                               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 flex items-center gap-2">
-                                <Calendar className="w-3 h-3" /> {new Date(file.created_at).toLocaleDateString('pt-BR')}
+                                <Calendar className="w-3 h-3" /> {file.created_at ? new Date(file.created_at).toLocaleDateString('pt-BR') : ""}
                               </p>
                            </div>
                         </div>
 
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                           <button onClick={() => handleDownload(file.file_name, file.file_path)} className="p-3 bg-white dark:bg-zinc-800 text-slate-400 hover:text-emerald-600 rounded-xl shadow-sm border border-slate-100 dark:border-zinc-800"><Download className="w-4 h-4" /></button>
-                           <button onClick={() => handleFileDelete(file.id, file.file_path)} className="p-3 bg-white dark:bg-zinc-800 text-slate-400 hover:text-red-500 rounded-xl shadow-sm border border-slate-100 dark:border-zinc-800"><Trash2 className="w-4 h-4" /></button>
+                           <button onClick={() => handleDownload(file.file_name || "", file.file_path || "")} className="p-3 bg-white dark:bg-zinc-800 text-slate-400 hover:text-emerald-600 rounded-xl shadow-sm border border-slate-100 dark:border-zinc-800"><Download className="w-4 h-4" /></button>
+                           <button onClick={() => handleFileDelete(file.id, file.file_path || "")} className="p-3 bg-white dark:bg-zinc-800 text-slate-400 hover:text-red-500 rounded-xl shadow-sm border border-slate-100 dark:border-zinc-800"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </div>
                     )
@@ -556,7 +533,6 @@ export default function ClientDetails() {
         </div>
       </div>
 
-      {/* Upload Modal - High Fidelity */}
       <AnimatePresence>
         {draft.isOpen && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">

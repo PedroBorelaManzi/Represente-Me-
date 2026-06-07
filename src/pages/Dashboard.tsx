@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, ChevronLeft, ChevronRight, Clock, X, Home, Loader2, Users, Globe, RefreshCw, Calendar } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Clock, Home, Loader2, Globe, RefreshCw, Calendar } from "lucide-react";
 import { supabase, logAudit } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
-import { useSettings } from "../contexts/SettingsContext";
 import { cn } from "../lib/utils";
 import { syncGoogleEvents, pushEventToGoogle, deleteEventFromGoogle } from "../lib/googleSync";
 import { fetchHolidays, getClientLocations, Holiday } from "../lib/holidayService";
@@ -10,18 +9,10 @@ import AppointmentForm from "../components/AppointmentForm";
 import RevenueChart from "../components/RevenueChart";
 import DailyNotes from "../components/DailyNotes";
 import { offlineCache, CacheKeys } from "../lib/offlineCache";
-import { syncQueue } from "../lib/syncQueue";
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
-
-type EventType = { 
-  id: string; 
-  title: string; 
-  time: string; 
-  date: string; 
-  client_id?: string;
-  google_event_id?: string;
-};
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Client, Order, Appointment } from "../types";
 
 // Extended to 22:00 (16 hours total from 07:00)
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); 
@@ -36,13 +27,14 @@ const formatDateLocal = (date: Date) => {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
   
   const [selectedNoteDate, setSelectedNoteDate] = useState(new Date());
-  const [events, setEvents] = useState<EventType[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
+  const [events, setEvents] = useState<Appointment[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingEvent, setEditingEvent] = useState<Partial<EventType> | null>(null);
+  const [editingEvent, setEditingEvent] = useState<Partial<Appointment> | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [dragOverInfo, setDragOverInfo] = useState<{ dayIndex: number; hour: number } | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -50,7 +42,98 @@ export default function Dashboard() {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [userCategories, setUserCategories] = useState<string[]>([]);
   const [allTimeCategories, setAllTimeCategories] = useState<string[]>([]);
-  const [monthlyOrders, setMonthlyOrders] = useState<any[]>([]);
+  const [monthlyOrders, setMonthlyOrders] = useState<Order[]>([]);
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  // React Query for parallel Supabase requests with 5 minutes staleTime
+  const { data: dashboardData, isLoading: isQueryLoading, refetch } = useQuery({
+    queryKey: ['dashboardData', user?.id, year, month],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const startOfMonth = new Date(year, month, 1).toISOString();
+      const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+
+      const [
+        tokenRes,
+        settingsRes,
+        ordersRes,
+        clientsRes,
+        appRes,
+        monthlyOrdersRes
+      ] = await Promise.all([
+        supabase.from("user_google_tokens").select("id").eq("user_id", user.id).maybeSingle(),
+        supabase.from("user_settings").select("categories").eq("user_id", user.id).maybeSingle(),
+        supabase.from("orders").select("category").eq("user_id", user.id),
+        supabase.from("clients").select("id, name, city, state, faturamento, cnpj").eq("user_id", user.id).order("name"),
+        supabase.from("appointments").select("*").eq("user_id", user.id),
+        supabase.from("orders").select("*").eq("user_id", user.id).gte("created_at", startOfMonth).lte("created_at", endOfMonth)
+      ]);
+
+      const isGoogleConnected = !!tokenRes.data;
+      const userSettings = settingsRes.data;
+      const allOrdersCats = ordersRes.data || [];
+      const clientsList = clientsRes.data || [];
+      const appList = appRes.data || [];
+      const monthlyOrdersList = monthlyOrdersRes.data || [];
+
+      // Process categories
+      const cats = userSettings?.categories;
+      const catsArray = Array.isArray(cats) ? cats : [];
+      const catsMap = new Map<string, string>();
+      catsArray.forEach(c => {
+        if (c && c.trim()) {
+          const trimmed = c.trim();
+          catsMap.set(trimmed.toUpperCase(), trimmed);
+        }
+      });
+      allOrdersCats.forEach(o => {
+        if (o.category && o.category.trim()) {
+          const trimmed = o.category.trim();
+          const key = trimmed.toUpperCase();
+          if (!catsMap.has(key)) catsMap.set(key, trimmed);
+        }
+      });
+      const resolvedCats = Array.from(catsMap.values());
+
+      // Update sessionStorage Cache
+      offlineCache.set(CacheKeys.CLIENTS, clientsList);
+      offlineCache.set(CacheKeys.APPOINTMENTS, appList);
+      offlineCache.set(CacheKeys.MONTHLY_ORDERS, monthlyOrdersList);
+      offlineCache.set(CacheKeys.ALL_TIME_CATEGORIES, resolvedCats);
+      if (userSettings) offlineCache.set(CacheKeys.USER_SETTINGS, userSettings);
+
+      scheduleLocalNotifications(appList);
+
+      return {
+        googleConnected: isGoogleConnected,
+        userCategories: catsArray,
+        allTimeCategories: resolvedCats,
+        clients: clientsList,
+        events: appList,
+        monthlyOrders: monthlyOrdersList
+      };
+    },
+    enabled: !!user && offlineCache.isOnline(),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // Sync state with React Query Data
+  useEffect(() => {
+    if (dashboardData) {
+      setGoogleConnected(dashboardData.googleConnected);
+      setUserCategories(dashboardData.userCategories);
+      setAllTimeCategories(dashboardData.allTimeCategories);
+      setClients(dashboardData.clients);
+      setEvents(dashboardData.events);
+      setMonthlyOrders(dashboardData.monthlyOrders);
+      setLoading(false);
+    } else if (!isQueryLoading) {
+      setLoading(false);
+    }
+  }, [dashboardData, isQueryLoading]);
 
   const revenueChartData = useMemo(() => {
     if (!monthlyOrders || monthlyOrders.length === 0) {
@@ -68,7 +151,6 @@ export default function Dashboard() {
       .slice(0, 10);
   }, [monthlyOrders, allTimeCategories]);
 
-
   const handlePrevMonth = () => {
     const next = new Date(currentDate);
     next.setMonth(next.getMonth() - 1);
@@ -81,7 +163,7 @@ export default function Dashboard() {
     setCurrentDate(next);
   };
 
-    const weekDays = useMemo(() => { 
+  const weekDays = useMemo(() => { 
     try { 
       const start = new Date(currentDate); 
       const day = start.getDay(); 
@@ -103,7 +185,6 @@ export default function Dashboard() {
     return formatDateLocal(d1) === d2; 
   };
 
-  // Helper for micro-vibrations
   const triggerLightHaptic = async () => {
     try {
       await Haptics.impact({ style: ImpactStyle.Light });
@@ -112,7 +193,7 @@ export default function Dashboard() {
     }
   };
 
-  const scheduleLocalNotifications = async (appointments: any[]) => {
+  const scheduleLocalNotifications = async (appointments: Appointment[]) => {
     try {
       const perm = await LocalNotifications.checkPermissions();
       if (perm.display !== 'granted') {
@@ -170,22 +251,25 @@ export default function Dashboard() {
     return hash;
   };
 
-  // Instant local cache loading
+  // Instant local cache loading on mount
   useEffect(() => {
-    const cachedClients = offlineCache.get(CacheKeys.CLIENTS) as any[];
-    const cachedEvents = offlineCache.get(CacheKeys.APPOINTMENTS) as EventType[];
-    const cachedMonthlyOrders = offlineCache.get(CacheKeys.MONTHLY_ORDERS) as any[];
-    const cachedAllTimeCategories = offlineCache.get(CacheKeys.ALL_TIME_CATEGORIES) as string[];
+    const cachedClients = offlineCache.get<Client[]>(CacheKeys.CLIENTS);
+    const cachedEvents = offlineCache.get<Appointment[]>(CacheKeys.APPOINTMENTS);
+    const cachedMonthlyOrders = offlineCache.get<Order[]>(CacheKeys.MONTHLY_ORDERS);
+    const cachedAllTimeCategories = offlineCache.get<string[]>(CacheKeys.ALL_TIME_CATEGORIES);
 
     if (cachedClients) setClients(cachedClients);
     if (cachedEvents) setEvents(cachedEvents);
     if (cachedMonthlyOrders) setMonthlyOrders(cachedMonthlyOrders);
     if (cachedAllTimeCategories) setAllTimeCategories(cachedAllTimeCategories);
 
-    // Instant local cached holidays loading
+    if (!offlineCache.isOnline()) {
+      setLoading(false);
+    }
+
     const loadCachedHolidays = async () => {
       try {
-        const locations = (cachedClients || []).filter(c => c && c.city).map(c => ({ city: c.city, state: c.state }));
+        const locations = (cachedClients || []).filter(c => c && c.city).map(c => ({ city: c.city || "", state: c.state || "" }));
         const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
         setHolidays(fetchedHolidays);
       } catch (e) {
@@ -195,121 +279,40 @@ export default function Dashboard() {
     loadCachedHolidays();
   }, []);
 
-  const loadData = async () => {
-    if (!user) return;
-    
-    // Only show loading spinner if cache is empty to prevent screen flickering
-    const cachedClients = offlineCache.get(CacheKeys.CLIENTS);
-    if (!cachedClients || (cachedClients as any[]).length === 0) {
-      setLoading(true);
-    }
-
-    try {
-      if (offlineCache.isOnline()) {
-        // Check Google Connection
-        const { data: tokenData } = await supabase
-          .from("user_google_tokens")
-          .select("id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        setGoogleConnected(!!tokenData);
-
-        // Fetch categories from user settings
-        const { data: settingsData } = await supabase
-          .from("user_settings")
-          .select("categories")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        const cats = settingsData?.categories; setUserCategories(Array.isArray(cats) ? cats : []);
-
-        // Fetch all unique categories ever used by this user
-        const { data: allOrdersCats } = await supabase
-          .from("orders")
-          .select("category")
-          .eq("user_id", user.id);
-        
-        const catsMap = new Map();
-        // Add from settings
-        if (Array.isArray(cats)) {
-          cats.forEach(c => {
-            if (c && c.trim()) {
-              const trimmed = c.trim();
-              catsMap.set(trimmed.toUpperCase(), trimmed);
-            }
-          });
-        }
-        // Add from orders
-        if (allOrdersCats) {
-          allOrdersCats.forEach(o => {
-            if (o.category && o.category.trim()) {
-              const trimmed = o.category.trim();
-              const key = trimmed.toUpperCase();
-              if (!catsMap.has(key)) catsMap.set(key, trimmed);
-            }
-          });
-        }
-        
-        const resolvedCats = Array.from(catsMap.values());
-        setAllTimeCategories(resolvedCats);
-
-        const { data: clientsData } = await supabase
-          .from("clients")
-          .select("id, name, city, state, faturamento, cnpj")
-          .eq("user_id", user.id)
-          .order("name");
-        setClients(clientsData || []);
-
-        const { data: appData } = await supabase
-          .from("appointments")
-          .select("*")
-          .eq("user_id", user.id);
-        setEvents(appData || []);
-
-        // Fetch Monthly Orders for the chart
-        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString();
-        const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
-        
-        const { data: ordersData } = await supabase
-          .from("orders")
-          .select("*")
-          .eq("user_id", user.id)
-          .gte("created_at", startOfMonth)
-          .lte("created_at", endOfMonth);
-        setMonthlyOrders(ordersData || []);
-
-        // Fetch Holidays
-        const locations = await getClientLocations(user.id);
-        const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
-        setHolidays(fetchedHolidays);
-
-        // Save fresh data to local cache
-        offlineCache.set(CacheKeys.CLIENTS, clientsData || []);
-        offlineCache.set(CacheKeys.APPOINTMENTS, appData || []);
-        offlineCache.set(CacheKeys.MONTHLY_ORDERS, ordersData || []);
-        offlineCache.set(CacheKeys.ALL_TIME_CATEGORIES, resolvedCats);
-        offlineCache.set(CacheKeys.USER_SETTINGS, settingsData);
-        scheduleLocalNotifications(appData || []);
-
-      } else {
-        // Read from offline cache
-        const cachedSettings = offlineCache.get(CacheKeys.USER_SETTINGS) as any;
-        const cachedAllTimeCats = offlineCache.get(CacheKeys.ALL_TIME_CATEGORIES) as string[];
-        if (cachedSettings?.categories) setUserCategories(cachedSettings.categories);
-        if (cachedAllTimeCats) setAllTimeCategories(cachedAllTimeCats);
-      }
-
-    } catch (error) {
-      console.error("Error loading dashboard data:", error);
-    } finally {
+  // Offline cache updates or fetch fallback
+  useEffect(() => {
+    if (!offlineCache.isOnline()) {
+      const cachedSettings = offlineCache.get<any>(CacheKeys.USER_SETTINGS);
+      const cachedAllTimeCats = offlineCache.get<string[]>(CacheKeys.ALL_TIME_CATEGORIES);
+      if (cachedSettings?.categories) setUserCategories(cachedSettings.categories);
+      if (cachedAllTimeCats) setAllTimeCategories(cachedAllTimeCats);
+      
+      const cachedClients = offlineCache.get<Client[]>(CacheKeys.CLIENTS) || [];
+      const cachedEvents = offlineCache.get<Appointment[]>(CacheKeys.APPOINTMENTS) || [];
+      const cachedMonthlyOrders = offlineCache.get<Order[]>(CacheKeys.MONTHLY_ORDERS) || [];
+      
+      setClients(cachedClients);
+      setEvents(cachedEvents);
+      setMonthlyOrders(cachedMonthlyOrders);
       setLoading(false);
     }
-  };
-
-  // Mount and date-change hook to load online data and sync state
-  useEffect(() => {
-    loadData();
   }, [user, currentDate.getMonth(), currentDate.getFullYear()]);
 
+  // Load holidays based on clients and currentDate
+  useEffect(() => {
+    const loadHolidays = async () => {
+      try {
+        const locations = clients.filter(c => c && c.city).map(c => ({ city: c.city || "", state: c.state || "" }));
+        const fetchedHolidays = await fetchHolidays(currentDate.getFullYear(), locations);
+        setHolidays(fetchedHolidays);
+      } catch (e) {
+        console.warn("Error loading holidays:", e);
+      }
+    };
+    if (clients.length > 0) {
+      loadHolidays();
+    }
+  }, [clients, currentDate.getFullYear()]);
 
   const handleSync = async () => {
     if (!user) return;
@@ -317,7 +320,7 @@ export default function Dashboard() {
     const res = await syncGoogleEvents(user.id);
     alert(res.message);
     if (res.success) {
-      await loadData();
+      await refetch();
     }
     setIsSyncing(false);
   };
@@ -346,11 +349,11 @@ export default function Dashboard() {
     setDragOverInfo({ dayIndex, hour });
   };
 
-    const onDrop = async (e: React.DragEvent, targetDate: Date, targetHour: number) => {
+  const onDrop = async (e: React.DragEvent, targetDate: Date, targetHour: number) => {
     e.preventDefault();
     setDragOverInfo(null);
     const id = e.dataTransfer.getData("eventId");
-    if (!id) return;
+    if (!id || !user) return;
 
     try {
       const appt = events.find(ev => ev.id === id);
@@ -375,13 +378,14 @@ export default function Dashboard() {
       if (error) throw error;
 
       await pushEventToGoogle(user.id, { ...appt, date: isoDate, time: newTime });
+      queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
     } catch (err) {
       console.error("Error updating appointment:", err);
-      loadData();
+      refetch();
     }
   };
 
-  const handleSave = async (payload: any) => {
+  const handleSave = async (payload: Omit<Appointment, 'id' | 'user_id' | 'created_at'>) => {
     if (!user) return;
     setIsSaving(true);
     const savePayload = { ...payload, user_id: user.id };
@@ -390,8 +394,8 @@ export default function Dashboard() {
     if (editingEvent?.id) {
       const { error } = await supabase.from("appointments").update(savePayload).eq("id", editingEvent.id).eq("user_id", user.id);
       if (!error) {
-        savedEvent = { ...editingEvent, ...savePayload };
-        setEvents(events.map(ev => ev.id === editingEvent.id ? savedEvent : ev));
+        savedEvent = { ...editingEvent, ...savePayload } as Appointment;
+        setEvents(events.map(ev => ev.id === editingEvent.id ? savedEvent : ev) as Appointment[]);
       }
     } else {
       const { data, error } = await supabase.from("appointments").insert([savePayload]).select().single();
@@ -405,21 +409,23 @@ export default function Dashboard() {
       await pushEventToGoogle(user.id, savedEvent);
     }
 
+    queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
     setIsSaving(false);
     setEditingEvent(null);
   };
 
   const handleDelete = async () => {
-    if (!editingEvent?.id || !window.confirm("Deseja realmente excluir este compromisso?")) return;
+    if (!editingEvent?.id || !user || !window.confirm("Deseja realmente excluir este compromisso?")) return;
     setIsSaving(true);
     const { error } = await supabase.from("appointments").delete().eq("id", editingEvent.id).eq("user_id", user.id);
     if (!error) {
-        if (editingEvent.google_event_id) {
-          await deleteEventFromGoogle(user.id, editingEvent.google_event_id);
-        }
-        setEvents(events.filter(ev => ev.id !== editingEvent.id)); 
-        setEditingEvent(null); 
+      if (editingEvent.google_event_id) {
+        await deleteEventFromGoogle(user.id, editingEvent.google_event_id);
       }
+      setEvents(events.filter(ev => ev.id !== editingEvent.id)); 
+      setEditingEvent(null); 
+      queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
+    }
     setIsSaving(false);
   };
 
@@ -434,7 +440,7 @@ export default function Dashboard() {
       const hour = parseInt(start.split(":")[0]);
       const minute = parseInt(start.split(":")[1] || "0");
       if (hour < 7 || hour > 22) return null;
-          return (hour - 7) * 60 + minute;
+      return (hour - 7) * 60 + minute;
     } catch { return null; }
   };
 
@@ -446,7 +452,7 @@ export default function Dashboard() {
       const startMin = parseInt(start[0]) * 60 + parseInt(start[1] || "0");
       const endMin = parseInt(end[0]) * 60 + parseInt(end[1] || "0");
       const duration = endMin - startMin;
-      return Math.max(duration, 24); // Mínimo de 24px para visibilidade
+      return Math.max(duration, 24); 
     } catch { return 48; }
   };
 
@@ -477,10 +483,7 @@ export default function Dashboard() {
         </div>
       </div>
       
-      {/* 5 columns layout main container: 3 for agenda (60%), 2 for chart (40%) */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 flex-1 min-h-0">
-        
-        {/* Left Column: Agenda (Occupying ~60% - 3/5) */}
         <div className="lg:col-span-3 bg-white dark:bg-zinc-900 shadow-2xl border border-slate-200/80 dark:border-zinc-800/80 rounded-3xl overflow-hidden flex flex-col h-full min-h-[500px]">
           <div className="p-4 border-b border-slate-200 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 dark:bg-zinc-950/40 z-40 gap-4">
             <div className="flex items-center gap-4">
@@ -529,7 +532,6 @@ export default function Dashboard() {
           </div>
 
           <div className="flex-1 flex flex-col overflow-hidden relative">
-            {/* Desktop Weekly Grid */}
             <div className="hidden lg:flex flex-1 min-h-[960px] overflow-auto custom-scrollbar">
               <div className="flex flex-col flex-1 min-w-[1000px] lg:min-w-0">
                 <div className="flex bg-slate-50/95 dark:bg-zinc-950/95 border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-30 backdrop-blur-md">
@@ -537,7 +539,7 @@ export default function Dashboard() {
                   <div className="flex-1 grid grid-cols-7 divide-x divide-slate-300 dark:divide-zinc-800">
                     {weekDays.map((date, i) => {
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
-                          return (
+                      return (
                         <div 
                           key={i} 
                           className={cn(
@@ -550,7 +552,6 @@ export default function Dashboard() {
                           <div className={cn("text-[6px] font-black uppercase tracking-widest", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-zinc-500")}>{date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}</div>
                           <div className={cn("text-[10px] font-black", isToday ? "text-emerald-600 dark:text-emerald-400" : "text-slate-700 dark:text-zinc-100")}>{date.getDate()}</div>
 
-                          {/* Holidays for this day */}
                           { (holidays || []).filter(h => h && h.date === formatDateLocal(date)).map((h, idx) => (
                             <div key={idx} className="mt-1 px-1 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-[6px] font-black text-amber-700 dark:text-amber-400 rounded-md border border-amber-100 dark:border-amber-800/50 flex items-center gap-1 shadow-sm" title={h.name}>
                               <span className="w-0.5 h-0.5 rounded-full bg-amber-500 flex-shrink-0" />
@@ -574,7 +575,7 @@ export default function Dashboard() {
                       const dayEvents = (events || []).filter(e => e && isSameDay(date, e.date));
                       const isToday = isSameDay(date, formatDateLocal(new Date()));
                       const isWeekend = dayIdx === 0 || dayIdx === 6;
-                          return (
+                      return (
                         <div 
                           key={dayIdx} 
                           className={cn(
@@ -592,7 +593,7 @@ export default function Dashboard() {
                               const height = getEventHeight(event.time);
                               if (top === null) return null;
                               const clientName = clients.find(c => c.id === event.client_id)?.name;
-                                  return (
+                              return (
                                 <div 
                                   key={event.id} 
                                   draggable 
@@ -615,7 +616,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Mobile Weekly List View */}
             <div className="lg:hidden flex-1 flex flex-col bg-white dark:bg-zinc-900 overflow-hidden">
                 <div className="flex items-center gap-3 p-4 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-x-auto no-scrollbar scroll-smooth">
                     {weekDays.map((date, i) => {
@@ -654,8 +654,6 @@ export default function Dashboard() {
                            {selectedNoteDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
                         </span>
                     </div>
-
-
 
                     {selectedDayEvents.length > 0 ? (
                         <div className="space-y-4">
@@ -707,7 +705,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right Column: Revenue Chart (~40% - 2/5 Width) */}
         <div className="lg:col-span-2 flex flex-col gap-6">
            <div className="h-[400px]">
               <RevenueChart data={revenueChartData} loading={loading} currentDate={currentDate} onPrevMonth={handlePrevMonth} onNextMonth={handleNextMonth} />
@@ -723,7 +720,7 @@ export default function Dashboard() {
         <AppointmentForm 
           appointment={editingEvent}
           onClose={() => setEditingEvent(null)}
-          onSaved={loadData}
+          onSaved={refetch}
           clients={clients}
           onSave={handleSave}
           onDelete={handleDelete}
@@ -733,4 +730,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
