@@ -1,9 +1,10 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test.describe('Etapa 1: RevisÃ£o Frontend (Web Desktop) - Fluxos Principais', () => {
   
   test('Deve renderizar a tela de login corretamente', async ({ page }) => {
     await page.goto('/login');
+    await page.waitForLoadState('networkidle');
 
     // Validar presenÃ§a do logo e campos de entrada
     await expect(page.locator('input[type="email"]')).toBeVisible();
@@ -17,6 +18,7 @@ test.describe('Etapa 1: RevisÃ£o Frontend (Web Desktop) - Fluxos Principais', 
 
   test('Deve exibir erro amigÃ¡vel ao tentar logar com credenciais incorretas', async ({ page }) => {
     await page.goto('/login');
+    await page.waitForLoadState('networkidle');
     
     await page.fill('input[type="email"]', 'usuario_invalido@exemplo.com');
     await page.fill('input[type="password"]', 'senha_incorreta');
@@ -29,6 +31,7 @@ test.describe('Etapa 1: RevisÃ£o Frontend (Web Desktop) - Fluxos Principais', 
 
   test('Deve carregar a pÃ¡gina de cadastro com seleÃ§Ã£o de planos', async ({ page }) => {
     await page.goto('/register');
+    await page.waitForLoadState('networkidle');
     
     // Validar presenÃ§a de opÃ§Ãµes de planos
     await expect(page.locator('text=Selecione o plano ideal')).toBeVisible();

@@ -1,4 +1,4 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 test.describe('Etapa 2: Revisão Frontend (Mobile + Responsivo)', () => {
   
@@ -8,14 +8,17 @@ test.describe('Etapa 2: Revisão Frontend (Mobile + Responsivo)', () => {
 
   test('Deve renderizar a Landing Page com layout empilhado e responsivo', async ({ page }) => {
     await page.goto('/');
+    await page.waitForLoadState('networkidle');
     await expect(page.locator('text=Represente-se').first()).toBeVisible();
     await page.goto('/planos');
+    await page.waitForLoadState('networkidle');
     await expect(page.locator('text=Sucesso Profissional')).toBeVisible();
     await expect(page.locator('text=Exclusivo')).toBeVisible();
   });
 
   test('Deve renderizar a tela de login otimizada para toque (mobile)', async ({ page }) => {
     await page.goto('/login');
+    await page.waitForLoadState('networkidle');
     const emailInput = page.locator('input[type="email"]');
     const passwordInput = page.locator('input[type="password"]');
     const submitBtn = page.locator('button[type="submit"]');
@@ -31,6 +34,7 @@ test.describe('Etapa 2: Revisão Frontend (Mobile + Responsivo)', () => {
 
   test('Deve renderizar a página de termos de serviço de forma responsiva', async ({ page }) => {
     await page.goto('/terms');
+    await page.waitForLoadState('networkidle');
     await expect(page.locator('text=Termos de Serviço').first()).toBeVisible();
   });
 });
