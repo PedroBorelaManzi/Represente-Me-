@@ -11,7 +11,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { parseFileForCnpjs } from '../lib/clientImport';
 import { getHighPrecisionCoordinates } from '../lib/geminiGeocoding';
-import { Client, Alert } from '../types';
+import { Client, Alert, Order } from '../types';
 
 export default function CRMPage() {
   const { user } = useAuth();
@@ -70,11 +70,11 @@ export default function CRMPage() {
       const categoryLookup = new Map<string, string>();
       settings?.categories?.forEach((c: string) => categoryLookup.set(c.toLowerCase(), c));
 
-      const processedClients: Client[] = (clientsData || []).map((client: any) => {
+      const processedClients: Client[] = (clientsData || []).map((client: Client & { orders?: Partial<Order>[] }) => {
         const clientFiles = client.orders || [];
         const lastDates: Record<string, number> = {};
         
-        clientFiles.forEach((f: any) => {
+        clientFiles.forEach((f: Partial<Order>) => {
           if (!f.file_name) return;
           const parts = f.file_name.split("___");
           if (parts.length > 1) {
@@ -223,9 +223,9 @@ export default function CRMPage() {
         setIsAddingClient(false);
         setNewCnpj("");
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Add Client Error:", err);
-      toast.error("Erro ao adicionar cliente: " + err.message, { id: toastId });
+      toast.error("Erro ao adicionar cliente: " + (err instanceof Error ? err.message : 'Erro desconhecido'), { id: toastId });
     } finally {
       setIsSearchingCnpj(false);
     }
@@ -328,8 +328,8 @@ export default function CRMPage() {
 
       toast.success(`Importação concluída! ${importedCount} novos clientes adicionados.`, { id: toastId });
       loadClients();
-    } catch (err: any) {
-      toast.error('Erro na Importação: ' + err.message, { id: toastId });
+    } catch (err) {
+      toast.error('Erro na Importação: ' + (err instanceof Error ? err.message : 'Erro desconhecido'), { id: toastId });
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

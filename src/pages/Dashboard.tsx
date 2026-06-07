@@ -99,11 +99,12 @@ export default function Dashboard() {
       const resolvedCats = Array.from(catsMap.values());
 
       // Update sessionStorage Cache
-      offlineCache.set(CacheKeys.CLIENTS, clientsList);
-      offlineCache.set(CacheKeys.APPOINTMENTS, appList);
-      offlineCache.set(CacheKeys.MONTHLY_ORDERS, monthlyOrdersList);
-      offlineCache.set(CacheKeys.ALL_TIME_CATEGORIES, resolvedCats);
-      if (userSettings) offlineCache.set(CacheKeys.USER_SETTINGS, userSettings);
+      const TTL_5_MIN = 5 * 60 * 1000;
+      offlineCache.set(CacheKeys.CLIENTS, clientsList, TTL_5_MIN);
+      offlineCache.set(CacheKeys.APPOINTMENTS, appList, TTL_5_MIN);
+      offlineCache.set(CacheKeys.MONTHLY_ORDERS, monthlyOrdersList, TTL_5_MIN);
+      offlineCache.set(CacheKeys.ALL_TIME_CATEGORIES, resolvedCats, TTL_5_MIN);
+      if (userSettings) offlineCache.set(CacheKeys.USER_SETTINGS, userSettings, TTL_5_MIN);
 
       scheduleLocalNotifications(appList);
 

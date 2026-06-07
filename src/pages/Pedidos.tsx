@@ -144,7 +144,7 @@ export default function PedidosPage() {
       setIsManualModalOpen(false); loadData();
       toast.success("Pedido registrado com sucesso!");
       clearDraft("manual_order");
-    } catch (err: any) { toast.error(err.message); } finally { setIsSaving(false); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Erro desconhecido'); } finally { setIsSaving(false); }
   };
 
   const handleBatchUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,7 +182,7 @@ export default function PedidosPage() {
       }
       setBatchResults(prev => prev.filter(item => item.file !== res.file)); loadData();
       toast.success("Pedido em lote processado!");
-    } catch (err: any) { alert(err.message); }
+    } catch (err) { alert(err instanceof Error ? err.message : 'Erro desconhecido'); }
   };
 
   const handleDeleteOrder = async (order: Order) => {
@@ -202,7 +202,7 @@ export default function PedidosPage() {
       }
       toast.success("Pedido excluído!");
       loadData();
-    } catch (err: any) { toast.error(err.message); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Erro desconhecido'); }
   };
 
   const monthlyOrders = useMemo(() => {

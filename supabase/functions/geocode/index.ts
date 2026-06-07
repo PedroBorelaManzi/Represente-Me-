@@ -1,0 +1,99 @@
+// supabase/functions/geocode/index.ts
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const { address, name, cnpj } = await req.json()
+
+    if (!GEMINI_API_KEY) {
+      console.error('Chave GEMINI_API_KEY não configurada nos secrets do Supabase.');
+      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not configured in Edge Function' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      })
+    }
+
+    const prompt = `INSTRUTIVO DE PESQUISA PROFUNDA (DEEP SEARCH):
+Você deve localizar as coordenadas geográficas exatas (Latitude e Longitude) para esta empresa brasileira.
+
+DADOS RECEBIDOS:
+Nome: ${name || "Não informado"}
+CNPJ: ${cnpj || "Não informado"}
+Endereço Parcial: ${address || "Não informado"}
+
+SUA MISSÃO:
+1. Use seus recursos internos para pesquisar o endereço oficial desta empresa pelo CNPJ/Nome.
+2. Tente identificar a localização no Google Maps (considere sites oficiais ou de consulta de CNPJ).
+3. Retorne a localização do prédio/sede exata se possível.
+4. Se não encontrar o prédio, use o centro da rua.
+5. Se for impossível determinar a rua, retorne null.
+
+FORMATO DE RESPOSTA (APENAS JSON):
+{"lat": -00.00000, "lng": -00.00000}
+
+Nota: Não invente coordenadas. Se não tiver certeza mínima da cidade, retorne null.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: prompt }]
+        }]
+      })
+    })
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('Gemini API Error:', errText);
+      return new Response(JSON.stringify({ error: 'Gemini API call failed' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 502
+      })
+    }
+
+    const data = await response.json()
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    
+    let cleanJson = responseText.trim();
+    if (responseText.includes("{")) {
+       cleanJson = responseText.substring(responseText.indexOf("{"), responseText.lastIndexOf("}") + 1);
+    }
+    
+    try {
+      const coords = JSON.parse(cleanJson);
+      if (coords && typeof coords.lat === 'number' && typeof coords.lng === 'number') {
+        return new Response(JSON.stringify(coords), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        })
+      }
+    } catch (parseErr) {
+      console.error('Error parsing JSON from Gemini text:', responseText, parseErr);
+    }
+
+    return new Response(JSON.stringify(null), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200
+    })
+
+  } catch (error: any) {
+    console.error('Geocode Edge Function Error:', error)
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500
+    })
+  }
+})

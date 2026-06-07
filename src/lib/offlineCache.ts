@@ -10,11 +10,12 @@ export const CacheKeys = {
 };
 
 export const offlineCache = {
-  set: (key: string, data: any) => {
+  set: (key: string, data: any, ttlMs: number = 24 * 60 * 60 * 1000) => {
     try {
       sessionStorage.setItem(key, JSON.stringify({
         data,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        expiry: Date.now() + ttlMs
       }));
     } catch (e) {
       console.error('Erro ao gravar no cache offline:', e);
@@ -26,6 +27,18 @@ export const offlineCache = {
       const item = sessionStorage.getItem(key);
       if (!item) return null;
       const parsed = JSON.parse(item);
+      
+      if (parsed.expiry && Date.now() > parsed.expiry) {
+        sessionStorage.removeItem(key);
+        return null;
+      }
+      
+      // Backward compatibility check for old cache without expiry field
+      if (!parsed.expiry && parsed.timestamp && Date.now() - parsed.timestamp > 24 * 60 * 60 * 1000) {
+        sessionStorage.removeItem(key);
+        return null;
+      }
+      
       return parsed.data as T;
     } catch (e) {
       console.error('Erro ao ler do cache offline:', e);
