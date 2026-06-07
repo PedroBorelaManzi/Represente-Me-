@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /checkout/
+Disallow: /auth/
+Disallow: /recovery/
+
+Sitemap: https://represente-me.vercel.app/sitemap.xml
