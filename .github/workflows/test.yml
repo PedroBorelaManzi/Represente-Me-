@@ -15,17 +15,30 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version: 18
+
+    - name: Cache npm modules
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
     - name: Install dependencies
       run: |
         rm -f package-lock.json
+        rm -rf node_modules
         npm install
+        
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
+      
     - name: Run Playwright tests
       run: npm run test:e2e
       env:
         VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
         VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        
     - uses: actions/upload-artifact@v4
       if: always()
       with:
