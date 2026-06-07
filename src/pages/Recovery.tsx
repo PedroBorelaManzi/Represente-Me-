@@ -36,7 +36,7 @@ export default function Recovery() {
   useEffect(() => {
     if (window.location.hash.includes("access_token")) {
       // Just log or ensure we are ready
-      console.log("Token de recuperação detectado.");
+      console.debug("Token de recuperação detectado.");
     }
   }, []);
 

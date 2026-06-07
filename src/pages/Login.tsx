@@ -81,7 +81,7 @@ export default function Login() {
           }
         }
       } catch (e) {
-        console.log("Biometria não suportada na web");
+        console.debug("Biometria não suportada na web");
       }
     };
     checkBiometrics();

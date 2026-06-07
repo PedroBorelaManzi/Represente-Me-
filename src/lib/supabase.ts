@@ -79,3 +79,20 @@ export async function logAudit(action: string, metadata: any = {}) {
     console.error("Erro ao registrar log de auditoria:", err);
   }
 }
+
+export async function logError(error: any, contextInfo: string = "") {
+  try {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    await logAudit("error_occurred", {
+      message: errorMessage,
+      stack: errorStack,
+      context: contextInfo,
+      url: typeof window !== 'undefined' ? window.location.href : '',
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : ''
+    });
+  } catch (err) {
+    console.error("Erro ao canalizar telemetria de erro:", err);
+  }
+}

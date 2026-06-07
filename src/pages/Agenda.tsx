@@ -68,7 +68,7 @@ export default function Agenda() {
   const queryClient = useQueryClient();
 
   const { data: agendaData, isLoading: isQueryLoading } = useQuery({
-    queryKey: ['agendaData', user?.id],
+    queryKey: ['agendaData', user?.id, currentDate.getFullYear(), currentDate.getMonth()],
     queryFn: async () => {
       if (!user) return null;
       

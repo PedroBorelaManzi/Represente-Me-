@@ -496,12 +496,27 @@ export default function ClientDetails() {
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Repositório Privado de Pedidos e Contratos</p>
                 </div>
 
-                <button 
-                  onClick={() => setDraft(id || "", { isOpen: true })}
-                  className="flex items-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
-                >
-                  <Upload className="w-4 h-4" /> Anexar Novo
-                </button>
+                <div className="flex items-center gap-3">
+                  <AnimatePresence>
+                    {(draft.file || draft.category || draft.value) && !draft.isOpen && (
+                      <motion.span 
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="text-[9px] font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 rounded-xl border border-amber-100 dark:border-amber-900/30 uppercase tracking-widest shadow-sm"
+                      >
+                        Rascunho Salvo Localmente
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+
+                  <button 
+                    onClick={() => setDraft(id || "", { isOpen: true })}
+                    className="flex items-center gap-3 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                  >
+                    <Upload className="w-4 h-4" /> Anexar Novo
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">

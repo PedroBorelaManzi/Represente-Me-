@@ -54,7 +54,7 @@ export async function getHighPrecisionCoordinates(address: string, clientName?: 
   // Check cache first
   const cached = getCachedCoords(address);
   if (cached !== undefined) {
-    console.log(`Geocoding cache hit for "${address}":`, cached);
+    console.debug(`Geocoding cache hit for "${address}":`, cached);
     return cached;
   }
 
@@ -95,7 +95,7 @@ export async function getHighPrecisionCoordinates(address: string, clientName?: 
       if (geoResponse.ok) {
         const geoData = await geoResponse.json();
         if (geoData && geoData.length > 0) {
-          console.log(`Nominatim successfully geocoded "${q}"`);
+          console.debug(`Nominatim successfully geocoded "${q}"`);
           const coords = {
             lat: parseFloat(geoData[0].lat),
             lng: parseFloat(geoData[0].lon)
