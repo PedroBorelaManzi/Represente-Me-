@@ -59,13 +59,12 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signInOffline, user } = useAuth();
   const navigate = useNavigate();
 
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
-
-  // Auto-login removed
 
   useEffect(() => {
     const checkBiometrics = async () => {
@@ -77,7 +76,7 @@ export default function Login() {
             setIsBiometricAvailable(true);
             setTimeout(() => {
               handleBiometricLogin();
-            }, 800); // Small delay to let the UI render beautifully
+            }, 800);
           }
         }
       } catch (e) {
@@ -89,6 +88,8 @@ export default function Login() {
 
   const handleBiometricLogin = async () => {
     try {
+      localStorage.setItem("rm_remember_me", rememberMe ? "true" : "false");
+
       await NativeBiometric.verifyIdentity({
         reason: "Autentique-se para entrar de forma rápida",
         title: "Acesso Biométrico",
@@ -118,7 +119,7 @@ export default function Login() {
         }
 
         // Offline fallback
-        const cachedUserStr = localStorage.getItem("rm_cached_user");
+        const cachedUserStr = localStorage.getItem("rm_cached_user") || sessionStorage.getItem("rm_cached_user");
         if (cachedUserStr) {
           const cachedUser = JSON.parse(cachedUserStr);
           if (cachedUser && cachedUser.email === creds.username) {
@@ -143,11 +144,12 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
     
+    localStorage.setItem("rm_remember_me", rememberMe ? "true" : "false");
+
     const isOnline = navigator.onLine;
     
     if (!isOnline) {
-      // Offline login validation against secure keystore if biometrics is active
-      const cachedUserStr = localStorage.getItem("rm_cached_user");
+      const cachedUserStr = localStorage.getItem("rm_cached_user") || sessionStorage.getItem("rm_cached_user");
       if (cachedUserStr) {
         const cachedUser = JSON.parse(cachedUserStr);
         if (cachedUser && cachedUser.email === email) {
@@ -198,7 +200,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-stretch overflow-hidden font-sans">
-      {/* Coluna Esquerda - Formulário */}
       <div className="w-full lg:w-[45%] bg-white p-8 md:p-16 lg:p-24 flex flex-col justify-center relative z-10 shadow-2xl">
         <Link to="/landing" className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center justify-center p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-900 border border-slate-100/50 transition-all group z-50 hover:scale-105 active:scale-95 shadow-sm" title="Voltar para a página inicial"><ArrowLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" /></Link>
         <div className="max-w-md mx-auto w-full space-y-12">
@@ -259,6 +260,19 @@ export default function Login() {
               </div>
             </div>
 
+            <div className="flex items-center px-4">
+              <input
+                id="remember"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 bg-slate-200 border-slate-300 rounded focus:ring-emerald-500 focus:ring-2 cursor-pointer"
+              />
+              <label htmlFor="remember" className="ml-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest cursor-pointer">
+                Mantenha-me conectado
+              </label>
+            </div>
+
             <button 
               disabled={isLoading}
               type="submit" 
@@ -301,7 +315,6 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Coluna Direita - Visual/Testemunho */}
       <div className="hidden lg:flex lg:w-[55%] bg-slate-900 relative items-center justify-center p-24 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(16,185,129,0.1),transparent)]" />
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-600/10 blur-[120px] rounded-full" />
@@ -338,7 +351,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Testimonial Section */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -366,4 +378,3 @@ export default function Login() {
     </div>
   );
 }
-

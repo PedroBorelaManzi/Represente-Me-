@@ -12,6 +12,20 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const saveOfflineUser = (user: User) => {
+  const minimalUser = { id: user.id, email: user.email };
+  const rememberMe = localStorage.getItem("rm_remember_me") === "true";
+  
+  if (rememberMe) {
+    localStorage.setItem("rm_cached_user", JSON.stringify(minimalUser));
+    localStorage.setItem("rm_has_logged_in_once", "true");
+  } else {
+    sessionStorage.setItem("rm_cached_user", JSON.stringify(minimalUser));
+    // Se não quis lembrar, garantimos que não fica no localstorage
+    localStorage.removeItem("rm_cached_user");
+  }
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,9 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         if (session?.user) {
-          const minimalUser = { id: session.user.id, email: session.user.email };
-          localStorage.setItem("rm_cached_user", JSON.stringify(minimalUser));
-          localStorage.setItem("rm_has_logged_in_once", "true");
+          saveOfflineUser(session.user);
         }
         setUser(session?.user ?? null);
         setLoading(false);
@@ -34,9 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        const minimalUser = { id: session.user.id, email: session.user.email };
-        localStorage.setItem("rm_cached_user", JSON.stringify(minimalUser));
-        localStorage.setItem("rm_has_logged_in_once", "true");
+        saveOfflineUser(session.user);
       }
       setUser(session?.user ?? null);
       setLoading(false);
@@ -54,9 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     if (error) throw error;
     if (data?.user) {
-      const minimalUser = { id: data.user.id, email: data.user.email };
-      localStorage.setItem("rm_cached_user", JSON.stringify(minimalUser));
-      localStorage.setItem("rm_has_logged_in_once", "true");
+      saveOfflineUser(data.user);
     }
     return data;
   };
@@ -69,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem("rm_cached_user");
+    sessionStorage.removeItem("rm_cached_user");
     localStorage.removeItem('has_completed_onboarding');
   };
 
