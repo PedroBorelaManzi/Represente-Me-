@@ -247,18 +247,28 @@ export default function Map() {
     loadClients();
   }, []);
 
-  useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
+    useEffect(() => {
+    const getPos = async () => {
+      try {
+        if (Capacitor.isNativePlatform()) {
+          const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
           setCenter([position.coords.latitude, position.coords.longitude]);
           setZoom(14);
-        },
-        (error) => {
-          console.error("Erro ao obter localização:", error);
+        } else if ("geolocation" in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              setCenter([position.coords.latitude, position.coords.longitude]);
+              setZoom(14);
+            },
+            (error) => console.error("Erro ao obter localização web:", error),
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+          );
         }
-      );
-    }
+      } catch (e) {
+        console.error("Erro no Capacitor Geolocation:", e);
+      }
+    };
+    getPos();
   }, []);
 
   const handleMarkerDrag = async (id: string, latlng: { lat: number, lng: number }) => {
