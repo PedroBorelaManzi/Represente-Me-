@@ -39,7 +39,7 @@ export function useClients() {
       // 3. Fetch ONLY clients modified AFTER the maxUpdatedAt
       const { data: newOrUpdatedClients, error } = await supabase
         .from('clients')
-        .select(\`
+        .select(`
           id, name, cnpj, city, address, status, last_contact, created_at, updated_at, lat, lng, phone, email,
           orders (
             client_id,
@@ -48,7 +48,7 @@ export function useClients() {
             category,
             file_path
           )
-        \`)
+        `)
         .eq('user_id', user.id)
         .gt('updated_at', maxUpdatedAt)
         .order('name', { ascending: true });
