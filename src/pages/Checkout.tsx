@@ -192,7 +192,7 @@ export default function Checkout() {
   
   const [selectedPlan] = useState<any>(plans[planId as keyof typeof plans] || plans.profissional);
   
-  const [billingCycle, setBillingCycle] = useState<any>(periodParam);
+  const billingCycle = 'ANNUAL';
   const [paymentMethod, setPaymentMethod] = useState<'CREDIT_CARD' | 'PIX' | 'BOLETO'>('CREDIT_CARD');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
@@ -425,108 +425,36 @@ export default function Checkout() {
           
           <div className="lg:col-span-7 space-y-12">
             
-            {/* Cycle Selector (No Gradient) */}
+            
+            {/* Fixed Annual Plan Highlight */}
             <div className="space-y-6 relative pb-6">
-              <div className="flex items-center justify-between px-2">
-                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em]">Escolha seu Ciclo</h3>
-                <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 dark:bg-amber-500/10 rounded-full">
-                  <Sparkles className="w-3 h-3 text-amber-600" />
-                  <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest">Recomendado</span>
+              <div className="p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-zinc-900 dark:via-zinc-800 dark:to-zinc-900 rounded-[40px] border border-slate-700/50 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-10">
+                  <Crown className="w-40 h-40" />
                 </div>
-              </div>
-
-              {/* Balão de Destaque Premium (Economia do Anual) */}
-              <div className="p-4 bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-transparent border-l-4 border-amber-500 rounded-r-3xl text-left flex items-center gap-4 relative overflow-hidden group shadow-sm">
-                <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-600 shrink-0">
-                  <Sparkles className="w-4 h-4 animate-pulse" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest leading-none mb-1">
-                    Economia Máxima
-                  </p>
-                  <p className="text-xs font-black text-slate-800 dark:text-zinc-200 uppercase tracking-tight">
-                    Ao escolher o Plano Anual, você economiza <span className="text-amber-600 dark:text-amber-500 font-black">R$ {selectedPlan.prices.MONTHLY - selectedPlan.prices.ANNUAL} por mês (R$ {(selectedPlan.prices.MONTHLY - selectedPlan.prices.ANNUAL) * 12}/ano)</span> em relação ao plano Mensal!
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[
-                  { id: 'ANNUAL', label: 'Anual', icon: Zap, color: 'bg-emerald-600', monthly: selectedPlan.prices.ANNUAL, save: `Economize R$ ${selectedPlan.prices.MONTHLY - selectedPlan.prices.ANNUAL}/mês` },
-                  { id: 'SEMIANNUAL', label: '6 Meses', icon: TrendingUp, color: 'bg-emerald-600', monthly: selectedPlan.prices.SEMIANNUAL, save: `Economize R$ ${selectedPlan.prices.MONTHLY - selectedPlan.prices.SEMIANNUAL}/mês` },
-                  { id: 'MONTHLY', label: 'Mensal', icon: Calendar, color: 'bg-emerald-600', monthly: selectedPlan.prices.MONTHLY, save: 'Sem desconto' }
-                ].map((cycle) => (
-                  <button 
-                    key={cycle.id}
-                    type="button"
-                    onClick={() => setBillingCycle(cycle.id)}
-                    className={cn(
-                      "relative p-6 rounded-[32px] border transition-all duration-500 text-left group overflow-hidden",
-                      billingCycle === cycle.id 
-                        ? `${cycle.color} border-emerald-700 shadow-2xl shadow-emerald-500/30 scale-[1.02]` 
-                        : "bg-white dark:bg-zinc-900 border-slate-100 dark:border-zinc-800 hover:border-emerald-500/50"
-                    )}
-                  >
-                    <div className="relative z-10 flex flex-col h-full gap-4">
-                      <div className={cn(
-                        "w-10 h-10 rounded-2xl flex items-center justify-center transition-all",
-                        billingCycle === cycle.id ? "bg-white/20 text-white" : "bg-slate-50 dark:bg-zinc-800 text-slate-400 group-hover:scale-110"
-                      )}>
-                        <cycle.icon className="w-5 h-5" />
-                      </div>
-                      
-                      <div>
-                        <p className={cn("text-xs font-black uppercase tracking-widest mb-1", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>{cycle.label}</p>
-                        <p className={cn("text-[9px] font-bold uppercase tracking-tight opacity-70", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>{cycle.save}</p>
-                      </div>
-
-                      <div className="mt-auto pt-3 border-t border-current/10 flex flex-col gap-1">
-                        {cycle.id !== 'MONTHLY' ? (
-                          <>
-                            <span className={cn(
-                              "text-lg font-black line-through decoration-4",
-                              billingCycle === cycle.id 
-                                ? "text-white/85 decoration-amber-300"
-                                : "text-slate-400 dark:text-zinc-400 decoration-red-500"
-                            )}>
-                              R$ {selectedPlan.prices.MONTHLY}
-                            </span>
-                            <div className="flex items-baseline gap-1">
-                              <span className={cn("text-3xl font-black tracking-tighter", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>
-                                R$ {cycle.monthly}
-                              </span>
-                              <span className={cn("text-xs font-bold opacity-75", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>/mês</span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-lg font-black opacity-0 select-none">—</span>
-                            <div className="flex items-baseline gap-1">
-                              <span className={cn("text-3xl font-black tracking-tighter", billingCycle === cycle.id ? "text-white" : "text-slate-900 dark:text-white")}>
-                                R$ {cycle.monthly}
-                              </span>
-                              <span className={cn("text-xs font-bold opacity-75", billingCycle === cycle.id ? "text-white" : "text-slate-400")}>/mês</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                
+                <div className="relative z-10 space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="px-4 py-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full">
+                      <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+                        <Zap className="w-3 h-3" />
+                        Plano Anual
+                      </span>
                     </div>
+                  </div>
 
-                    {cycle.id !== 'MONTHLY' && (
-                      <div className={cn(
-                        "absolute top-3 right-3 w-14 h-14 rounded-full flex flex-col items-center justify-center font-black shadow-xl border-2 border-white/20 transition-transform group-hover:rotate-6 group-hover:scale-115 duration-300",
-                        billingCycle === cycle.id
-                          ? "bg-amber-400 text-slate-900 animate-pulse"
-                          : "bg-emerald-500 text-white"
-                      )}>
-                        <span className="text-[13px] font-black tracking-tighter leading-none">
-                          -{Math.round((1 - cycle.monthly / selectedPlan.prices.MONTHLY) * 100)}%
-                        </span>
-                        <span className="text-[7px] font-black uppercase tracking-widest leading-none mt-0.5">OFF</span>
-                      </div>
-                    )}
-                  </button>
-                ))}
+                  <div>
+                    <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-2">
+                      <span className="text-2xl font-bold text-slate-400 align-top mr-1">12x</span>
+                      R$ {selectedPlan.prices.ANNUAL}
+                      <span className="text-lg font-bold text-slate-400 ml-1">/mês</span>
+                    </h2>
+                    <p className="text-sm font-bold text-slate-400">
+                      Total de R$ {selectedPlan.prices.ANNUAL * 12} cobrados no limite do cartão.<br/>
+                      Garantia de acesso e atualizações por 12 meses.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
