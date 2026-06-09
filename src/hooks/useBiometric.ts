@@ -54,12 +54,12 @@ export function useBiometric() {
     if (!Capacitor.isNativePlatform() || !isAvailable || !isEnabled) return false;
     
     try {
-      const verified = await NativeBiometric.verifyIdentity({
+      await NativeBiometric.verifyIdentity({
         reason: "Para fazer login seguro no Represente-Se",
         title: "Log in",
       });
 
-      if (verified) {
+      
         const credentials = await NativeBiometric.getCredentials({ server: "representese" });
         if (credentials.username && credentials.password) {
           // Utilizar o token salvo para setar a sessao
@@ -70,7 +70,6 @@ export function useBiometric() {
           
           if (!error) return true;
         }
-      }
       return false;
     } catch (error) {
       console.error("Biometric auth failed", error);

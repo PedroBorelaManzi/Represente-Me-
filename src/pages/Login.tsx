@@ -32,6 +32,7 @@ import {
 import { Logo } from "../components/Logo";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useBiometric } from "../hooks/useBiometric";
 import { cn } from "../lib/utils";
 import { toast } from "sonner";
 import { NativeBiometric } from '@capgo/capacitor-native-biometric';

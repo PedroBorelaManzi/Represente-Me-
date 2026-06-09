@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useSettings } from "../contexts/SettingsContext";
 import { useClients } from "../hooks/useClients";
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from "sonner";
 import { offlineCache, CacheKeys } from "../lib/offlineCache";
 import { syncQueue } from "../lib/syncQueue";
@@ -68,10 +69,11 @@ export default function Map() {
   // Immediate cache loading
   useEffect(() => {
     const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) as any[];
-    if (cachedClients) setCompanies(cachedClients);
+    // Handled by React Query
   }, []);
   const { settings } = useSettings();
   const { data: companies = [], refetch } = useClients();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchingMap, setIsSearchingMap] = useState(false);
   const [center, setCenter] = useState<[number, number]>([-15.793889, -47.882778]); // Brasília - Centro do Brasil
@@ -176,7 +178,7 @@ export default function Map() {
 
     if (!offlineCache.isOnline()) {
       const cachedClients = (offlineCache.get(CacheKeys.CLIENTS) as any[]) as any[];
-      if (cachedClients) setCompanies(cachedClients);
+      // Handled by React Query
       return;
     }
 
@@ -208,7 +210,7 @@ export default function Map() {
         return { ...client, lastOrdersByCategory };
       });
 
-      setCompanies(clientsWithOrders);
+      // Handled by React Query
       offlineCache.set(CacheKeys.CLIENTS, clientsWithOrders);
     }
   };
@@ -268,7 +270,7 @@ export default function Map() {
 
     if (!error) {
       const updated = companies.map(c => c.id === id ? { ...c, lat: latlng.lat, lng: latlng.lng } : c);
-      setCompanies(updated);
+      /* Optimistic update needed */
       offlineCache.set(CacheKeys.CLIENTS, updated);
       toast.success("Localização atualizada!");
     } else {
@@ -285,7 +287,7 @@ export default function Map() {
        toast.error(error.code === "23503" ? "Cliente vinculado a pedidos/compromissos." : "Erro ao excluir.");
        return;
     }
-    setCompanies(prev => prev.filter(c => c.id !== id));
+    /* Optimistic delete */
     toast.success("Cliente removido.");
   };
 

@@ -14,6 +14,7 @@ export interface Client {
   status?: string;
   last_contact?: string;
   created_at?: string;
+  updated_at?: string;
   user_id?: string;
   lat?: number | null;
   lng?: number | null;
