@@ -1,3 +1,4 @@
+import { NotificationService } from './services/NotificationService';
 import React, { Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
@@ -63,6 +64,9 @@ function LandingOrRedirect() {
 }
 
 export default function App() {
+  React.useEffect(() => {
+    NotificationService.initialize();
+  }, []);
   return (
     <AuthProvider>
       <Toaster position="top-right" expand={false} richColors />

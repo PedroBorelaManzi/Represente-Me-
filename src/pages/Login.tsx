@@ -61,6 +61,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { isAvailable, isEnabled, setupBiometric, authenticate } = useBiometric();
   const { signIn, signInOffline, user } = useAuth();
   const navigate = useNavigate();
 
@@ -299,6 +300,21 @@ export default function Login() {
               </button>
             )}
           </form>
+
+            {isAvailable && isEnabled && (
+              <button
+                type="button"
+                onClick={async () => {
+                  const success = await authenticate();
+                  if (success) navigate('/dashboard');
+                  else toast.error('Falha na biometria');
+                }}
+                className="w-full flex items-center justify-center gap-2 py-4 bg-slate-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 rounded-[24px] font-black uppercase text-xs tracking-widest mt-4"
+              >
+                <Fingerprint className="w-5 h-5" />
+                Login com Biometria
+              </button>
+            )}
 
           <div className="pt-12 text-center">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">

@@ -1,48 +1,50 @@
-export const config = {
-  runtime: 'edge',
-};
+import express from 'express';
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// In-memory rate limiting for Edge Functions (Per Edge region)
-// Map of userId -> { count, resetAt }
-const rateLimit = new Map<string, { count: number; resetAt: number }>();
-const MAX_REQ_PER_MIN = 10;
+const app = express();
 
-export default async function handler(req: Request) {
-  // CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'authorization, content-type',
-      },
-    });
+const allowedOrigins = [
+  'https://representese.com',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
+
+app.use(express.json());
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: 'Rate limit exceeded. Try again later.' }
+});
+
+app.use(limiter);
+
+app.use(async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Missing authorization header' });
   }
 
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Content-Type': 'application/json',
-  };
+  const token = authHeader.replace('Bearer ', '');
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
-  if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return res.status(500).json({ error: 'Supabase config missing' });
   }
 
   try {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Missing authorization header' }), { status: 401, headers: corsHeaders });
-    }
-
-    // Call Supabase to verify the token
-    const token = authHeader.replace('Bearer ', '');
-    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-    const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-       return new Response(JSON.stringify({ error: 'Supabase URL/Key not configured' }), { status: 500, headers: corsHeaders });
-    }
-
     const authRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -51,39 +53,27 @@ export default async function handler(req: Request) {
     });
 
     if (!authRes.ok) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: corsHeaders });
+      return res.status(401).json({ error: 'Invalid token' });
     }
-
-    const userData = await authRes.json();
-    const userId = userData.id;
-
-    // Rate Limiting
-    const now = Date.now();
-    const userRate = rateLimit.get(userId) || { count: 0, resetAt: now + 60000 };
     
-    if (now > userRate.resetAt) {
-      userRate.count = 1;
-      userRate.resetAt = now + 60000;
-    } else {
-      userRate.count++;
-    }
-    rateLimit.set(userId, userRate);
+    next();
+  } catch (err) {
+    return res.status(500).json({ error: 'Auth check failed' });
+  }
+});
 
-    if (userRate.count > MAX_REQ_PER_MIN) {
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Try again later.' }), { status: 429, headers: corsHeaders });
-    }
+app.post('/api/ai', async (req, res) => {
+  const { action, payload } = req.body;
 
-    const body = await req.json();
-    const { action, payload } = body;
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+  }
 
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+  try {
     if (action === 'geocode') {
       const { address, name, cnpj } = payload;
-      const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-      if (!GEMINI_API_KEY) {
-        return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not configured' }), { status: 500, headers: corsHeaders });
-      }
-
       const prompt = `INSTRUTIVO DE PESQUISA PROFUNDA (DEEP SEARCH):
 Você deve localizar as coordenadas geográficas exatas (Latitude e Longitude) para esta empresa brasileira.
 
@@ -104,20 +94,9 @@ FORMATO DE RESPOSTA (APENAS JSON):
 
 Nota: Não invente coordenadas. Se não tiver certeza mínima da cidade, retorne null.`;
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
-        })
-      });
-
-      if (!response.ok) {
-        return new Response(JSON.stringify({ error: 'Gemini API call failed' }), { status: 502, headers: corsHeaders });
-      }
-
-      const data = await response.json();
-      const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text();
       
       let cleanJson = responseText.trim();
       if (responseText.includes("{")) {
@@ -127,17 +106,31 @@ Nota: Não invente coordenadas. Se não tiver certeza mínima da cidade, retorne
       try {
         const coords = JSON.parse(cleanJson);
         if (coords && typeof coords.lat === 'number' && typeof coords.lng === 'number') {
-          return new Response(JSON.stringify(coords), { status: 200, headers: corsHeaders });
+          return res.status(200).json(coords);
         }
-      } catch (e) {
-        // failed to parse
-      }
+      } catch (e) {}
 
-      return new Response(JSON.stringify(null), { status: 200, headers: corsHeaders });
+      return res.status(200).json(null);
+    } 
+    
+    if (action === 'gemini_text' || action === 'gemini_system') {
+      const { prompt, systemInstruction } = payload;
+      const modelName = payload?.model || "gemini-2.0-flash";
+      
+      const modelConfig: any = { model: modelName };
+      if (systemInstruction) {
+        modelConfig.systemInstruction = systemInstruction;
+      }
+      
+      const model = genAI.getGenerativeModel(modelConfig);
+      const result = await model.generateContent(prompt);
+      return res.status(200).json({ text: result.response.text() });
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: corsHeaders });
+    return res.status(400).json({ error: 'Invalid action' });
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+    return res.status(500).json({ error: error.message });
   }
-}
+});
+
+export default app;

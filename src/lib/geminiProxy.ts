@@ -1,7 +1,5 @@
 import { supabase } from './supabase';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-
 interface GeminiProxyRequest {
   contents: Array<{
     role: string;
@@ -13,7 +11,7 @@ interface GeminiProxyRequest {
 }
 
 /**
- * Calls the Gemini API through a secure Supabase Edge Function proxy.
+ * Calls the Gemini API through our secure Express backend.
  * The API key never leaves the server.
  */
 export async function callGeminiProxy(request: GeminiProxyRequest): Promise<string> {
@@ -22,13 +20,16 @@ export async function callGeminiProxy(request: GeminiProxyRequest): Promise<stri
     throw new Error("Usuario nao autenticado.");
   }
 
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/gemini-proxy`, {
+  const response = await fetch('/api/ai', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify(request),
+    body: JSON.stringify({
+      action: 'gemini_proxy',
+      payload: request
+    }),
   });
 
   const data = await response.json();

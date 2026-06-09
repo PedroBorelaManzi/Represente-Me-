@@ -5,6 +5,7 @@ import { supabase, logAudit } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { useSync } from '../contexts/SyncContext';
+import { useClients } from '../hooks/useClients';
 import { syncQueue } from '../lib/syncQueue';
 import { cn, useDebounce } from '../lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -20,9 +21,7 @@ export default function CRMPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<'Todos' | 'Alerta' | 'Crítico' | 'Inativo'>('Todos');
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingAlerts, setLoadingAlerts] = useState(false);
+  const { data: clients = [], isLoading: loading, isFetching: loadingAlerts } = useClients();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 200);
 
@@ -46,81 +45,9 @@ export default function CRMPage() {
   // Pagination for performance on mobile
   const [displayLimit, setDisplayLimit] = useState(40);
 
-  const loadClients = async () => {
-    if (!user) return;
-    try {
-      setLoading(true);
-      setLoadingAlerts(true);
-      
-      const { data: clientsData, error } = await supabase
-        .from('clients')
-        .select(`
-          id, name, cnpj, city, address, status, last_contact, created_at,
-          orders (
-            client_id,
-            file_name,
-            created_at
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-      
-      const categoryLookup = new Map<string, string>();
-      settings?.categories?.forEach((c: string) => categoryLookup.set(c.toLowerCase(), c));
-
-      const processedClients: Client[] = (clientsData || []).map((client: Client & { orders?: Partial<Order>[] }) => {
-        const clientFiles = client.orders || [];
-        const lastDates: Record<string, number> = {};
-        
-        clientFiles.forEach((f: Partial<Order>) => {
-          if (!f.file_name) return;
-          const parts = f.file_name.split("___");
-          if (parts.length > 1) {
-            const rawCatLower = parts[0].toLowerCase();
-            const cat = categoryLookup.get(rawCatLower) || parts[0];
-            const date = new Date(f.created_at).getTime();
-            if (!lastDates[cat] || date > lastDates[cat]) lastDates[cat] = date;
-          }
-        });
-
-        const alerts: Alert[] = [];
-        const today = new Date().getTime();
-        for (const [cat, date] of Object.entries(lastDates)) {
-          const days = Math.floor((today - date) / (1000 * 60 * 60 * 24));
-          if (days >= (settings?.inativo_days || 90)) {
-            alerts.push({ company: cat, type: "Inativo", days });
-          } else if (days >= (settings?.critico_days || 45)) {
-            alerts.push({ company: cat, type: "Crítico", days });
-          } else if (days >= (settings?.alerta_days || 30)) {
-            alerts.push({ company: cat, type: "Alerta", days });
-          }
-        }
-
-        const { orders, ...clientWithoutOrders } = client;
-        return {
-          ...clientWithoutOrders,
-          alerts: alerts.sort((a, b) => b.days - a.days)
-        };
-      });
-
-      setClients(processedClients);
-    } catch (err) {
-      console.error('Load Clients Error:', err);
-      toast.error('Erro ao carregar clientes');
-    } finally {
-      setLoading(false);
-      setLoadingAlerts(false);
-    }
-  };
-
   useEffect(() => {
     logAudit('ACCESS_CLIENT_LIST');
-    if (user && settings) {
-      loadClients();
-    }
-  }, [user, settings?.categories]);
+  }, [user]);
 
   useEffect(() => {
     setDisplayLimit(40);
@@ -152,7 +79,6 @@ export default function CRMPage() {
     
     if (!isOnline) {
         syncQueue.enqueue('clients', 'DELETE', null, id);
-        setClients(prev => prev.filter(c => c.id !== id));
         toast.success('Cliente removido offline.');
         return;
     }
@@ -160,7 +86,6 @@ export default function CRMPage() {
     try {
       const { error } = await supabase.from('clients').delete().eq('id', id).eq('user_id', user?.id);
       if (error) throw error;
-      setClients(prev => prev.filter(c => c.id !== id));
       toast.success('Cliente removido com sucesso.');
     } catch (err) {
       console.error('Delete Error:', err);
@@ -212,14 +137,14 @@ export default function CRMPage() {
         const optimisticId = crypto.randomUUID();
         syncQueue.enqueue('clients', 'INSERT', newClientData);
         toast.success("Cliente salv localmente (Offline).", { id: toastId });
-        setClients(prev => [{...newClientData, id: optimisticId, alerts: []}, ...prev]);
+        // Optimistic updates via queryClient would go here
         setIsAddingClient(false);
         setNewCnpj("");
       } else {
         const { data, error } = await supabase.from("clients").insert([newClientData]).select().single();
         if (error) throw error;
         toast.success("Cliente adicionado com sucesso!", { id: toastId });
-        setClients(prev => [{...data, alerts: []}, ...prev]);
+        // React Query will refetch or invalidate
         setIsAddingClient(false);
         setNewCnpj("");
       }
@@ -327,7 +252,7 @@ export default function CRMPage() {
       }
 
       toast.success(`Importação concluída! ${importedCount} novos clientes adicionados.`, { id: toastId });
-      loadClients();
+      // React Query handles refetching
     } catch (err) {
       toast.error('Erro na Importação: ' + (err instanceof Error ? err.message : 'Erro desconhecido'), { id: toastId });
     } finally {

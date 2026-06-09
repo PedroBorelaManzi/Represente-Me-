@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { useSettings } from "../contexts/SettingsContext";
+import { useClients } from "../hooks/useClients";
 import { toast } from "sonner";
 import { offlineCache, CacheKeys } from "../lib/offlineCache";
 import { syncQueue } from "../lib/syncQueue";
@@ -70,7 +71,7 @@ export default function Map() {
     if (cachedClients) setCompanies(cachedClients);
   }, []);
   const { settings } = useSettings();
-  const [companies, setCompanies] = useState<any[]>([]);
+  const { data: companies = [], refetch } = useClients();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchingMap, setIsSearchingMap] = useState(false);
   const [center, setCenter] = useState<[number, number]>([-15.793889, -47.882778]); // Brasília - Centro do Brasil

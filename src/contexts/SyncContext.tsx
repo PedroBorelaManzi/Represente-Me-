@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { syncQueue } from '../lib/syncQueue';
 import { toast } from 'sonner';
 
@@ -15,6 +16,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const queryClient = useQueryClient();
 
   const updateStatus = () => {
     setIsOnline(navigator.onLine);
@@ -56,22 +58,25 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       toast.error("Você precisa estar conectado à internet para sincronizar.");
       return;
     }
-    
-    if (pendingCount === 0) {
-      toast.info("Tudo já está sincronizado!");
-      return;
-    }
 
     setIsSyncing(true);
     toast.loading("Sincronizando dados com a nuvem...", { id: 'sync-toast' });
 
     try {
-      const { success, errors } = await syncQueue.processQueue();
-      if (success) {
-        toast.success("Sincronização concluída com sucesso!", { id: 'sync-toast' });
-      } else {
-        toast.error(`Sincronização parcial. ${errors.length} erros encontrados.`, { id: 'sync-toast' });
+      // 1. Push PENDING offline mutations FIRST
+      if (pendingCount > 0) {
+         const { success, errors } = await syncQueue.processQueue();
+         if (!success) {
+            toast.error(`Falha ao enviar dados locais: ${errors.length} erros.`, { id: 'sync-toast' });
+            return;
+         }
       }
+
+      // 2. Pull / Refetch ALL active queries (Delta Sync)
+      await queryClient.refetchQueries();
+
+      toast.success("Sincronização concluída com sucesso!", { id: 'sync-toast' });
+      
     } catch (e) {
       toast.error("Erro inesperado durante a sincronização.", { id: 'sync-toast' });
     } finally {
