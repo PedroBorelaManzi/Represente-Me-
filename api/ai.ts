@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import rateLimit from 'express-rate-limit';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const app = express();
@@ -113,6 +114,16 @@ Nota: Não invente coordenadas. Se não tiver certeza mínima da cidade, retorne
       return res.status(200).json(null);
     } 
     
+    if (action === 'gemini_proxy') {
+      const { contents, model: modelName, systemInstruction, generationConfig } = payload;
+      const modelConfig: any = { model: modelName || 'gemini-2.0-flash' };
+      if (systemInstruction) modelConfig.systemInstruction = systemInstruction;
+      if (generationConfig) modelConfig.generationConfig = generationConfig;
+      const model = genAI.getGenerativeModel(modelConfig);
+      const result = await model.generateContent({ contents });
+      return res.status(200).json({ text: result.response.text() });
+    }
+
     if (action === 'gemini_text' || action === 'gemini_system') {
       const { prompt, systemInstruction } = payload;
       const modelName = payload?.model || "gemini-2.0-flash";

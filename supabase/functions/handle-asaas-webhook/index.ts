@@ -23,8 +23,8 @@ serve(async (req) => {
     const receivedToken = req.headers.get('asaas-access-token')
     const expectedToken = Deno.env.get('ASAAS_WEBHOOK_TOKEN')
 
-    if (expectedToken && receivedToken !== expectedToken) {
-      console.error('Tentativa de acesso bloqueada: Token Inválido')
+    if (!expectedToken || receivedToken !== expectedToken) {
+      console.error('Tentativa de acesso bloqueada: Token Inválido ou Ausente')
       return new Response(JSON.stringify({ message: 'Acesso não autorizado' }), { status: 401 })
     }
 

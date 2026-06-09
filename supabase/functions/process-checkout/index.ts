@@ -13,6 +13,14 @@ const ASAAS_API_URL = 'https://www.asaas.com/api/v3'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
+const PLAN_PRICES = {
+  'exclusivo': { MONTHLY: 97, SEMIANNUAL: 77, ANNUAL: 67 },
+  'profissional': { MONTHLY: 147, SEMIANNUAL: 117, ANNUAL: 107 },
+  'master': { MONTHLY: 197, SEMIANNUAL: 157, ANNUAL: 137 },
+  'default': { MONTHLY: 147, SEMIANNUAL: 117, ANNUAL: 107 }
+};
+
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -26,7 +34,7 @@ serve(async (req) => {
   }
 
   try {
-    const { action, userId, planId, billingCycle, paymentMethod, customer = {}, creditCard, finalPrice } = body
+    const { action, userId, planId, billingCycle, paymentMethod, coupon, customer = {}, creditCard } = body
 
     if (!customer.email || !customer.cpfCnpj || !customer.phone || !customer.name) {
       return new Response(JSON.stringify({ success: false, message: 'Dados do formulário incompletos ou em branco.' }), {
@@ -225,11 +233,28 @@ const uPhone = (u.user_metadata?.phone || '').replace(/\D/g, '')
     // - MONTHLY: Assinatura recorrente mensal (cancelável)
     // - SEMIANNUAL / ANNUAL: Pagamento único parcelado (compromisso fixo)
     
+    
+    const pricing = PLAN_PRICES[planId] || PLAN_PRICES['default'];
+    const monthlyRate = pricing[billingCycle] || pricing.ANNUAL;
+    let baseValue = monthlyRate;
+    if (billingCycle === 'ANNUAL') baseValue = monthlyRate * 12;
+    if (billingCycle === 'SEMIANNUAL') baseValue = monthlyRate * 6;
+
+    let couponDiscount = 0;
+    if (coupon === 'REPRESENTE95') couponDiscount = (baseValue * 95) / 100;
+    else if (coupon === 'TESTE') couponDiscount = (baseValue * 50) / 100;
+
+    let priceAfterCoupon = baseValue - couponDiscount;
+    let pixDiscount = paymentMethod === 'PIX' ? (priceAfterCoupon * 5) / 100 : 0;
+    let serverFinalPrice = priceAfterCoupon - pixDiscount;
+    // Arredondar para duas casas decimais no Asaas
+    serverFinalPrice = Math.round(serverFinalPrice * 100) / 100;
+
     let endpoint = '/subscriptions'
     const paymentBody: any = {
       customer: asaasCustomerId,
       billingType: paymentMethod,
-      value: Number(finalPrice),
+      value: serverFinalPrice,
       externalReference: userId,
       description: `Plano ${planId} - ${billingCycle}`,
     }
