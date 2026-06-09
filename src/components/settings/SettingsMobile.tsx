@@ -6,6 +6,7 @@ import { offlineCache } from '../../lib/offlineCache';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
+import { Capacitor } from '@capacitor/core';
 
 export const SettingsMobile = React.memo(function SettingsMobile() {
   const { user } = useAuth();
@@ -16,7 +17,8 @@ export const SettingsMobile = React.memo(function SettingsMobile() {
       <h2 className="text-xl md:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Recursos do Aplicativo</h2>
       
       <div className="space-y-6">
-        {/* Biometric Toggle */}
+        {/* Biometric Toggle (Native Only) */}
+        {Capacitor.isNativePlatform() && (
         <div className="p-4 md:p-6 rounded-2xl md:rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
@@ -75,6 +77,7 @@ export const SettingsMobile = React.memo(function SettingsMobile() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Cache Management */}
         <div className="p-4 md:p-6 rounded-2xl md:rounded-[32px] bg-slate-50 dark:bg-zinc-950 border border-slate-100 dark:border-zinc-800 space-y-4">
@@ -100,10 +103,12 @@ export const SettingsMobile = React.memo(function SettingsMobile() {
             </button>
           </div>
           
+          {Capacitor.isNativePlatform() && (
           <div className="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs font-bold text-slate-500">
             <span className="uppercase text-[9px] tracking-wider text-slate-400">Status da Sincronização</span>
             <span className="uppercase text-emerald-600">Dados Protegidos Localmente</span>
           </div>
+          )}
         </div>
 
       </div>

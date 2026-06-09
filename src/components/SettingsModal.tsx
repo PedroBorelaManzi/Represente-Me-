@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { Logo } from './Logo';
 import { cn } from '../lib/utils';
+import { Capacitor } from '@capacitor/core';
 import { SettingsAccount } from './settings/SettingsAccount';
 import { SettingsAppearance } from './settings/SettingsAppearance';
 import { SettingsSubscription } from './settings/SettingsSubscription';
@@ -68,9 +69,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         className="relative w-full max-w-5xl h-[90vh] md:h-[85vh] bg-white dark:bg-zinc-900 rounded-[32px] md:rounded-[40px] shadow-2xl overflow-hidden border border-slate-200/50 dark:border-zinc-800/50 flex flex-col md:flex-row"
       >
         {/* Mobile Horizontal Menu (Icons Only & Centered Layout) */}
-        <div className="md:hidden flex flex-row items-center justify-center gap-4 px-6 py-4 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50 sticky top-0 z-20 shrink-0 w-full">
-          <div className="flex items-center gap-3 justify-center">
-            {menuItems.map((item) => {
+        <div className="md:hidden flex flex-row items-center justify-between gap-2 px-4 py-3 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50 sticky top-0 z-20 shrink-0 w-full">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 flex-1">
+            {menuItems.filter(item => {
+              if (item.id === 'notifications' && !Capacitor.isNativePlatform()) return false;
+              return true;
+            }).map((item) => {
               const isActive = activeTab === item.id;
               return (
                 <button
@@ -104,6 +108,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               );
             })}
           </div>
+          <button onClick={onClose} className="p-2 bg-white dark:bg-zinc-900 shadow-sm rounded-full text-slate-400 border border-slate-200 dark:border-zinc-800 shrink-0 ml-2"><X className="w-5 h-5" /></button>
         </div>
 
         {/* Sidebar */}
@@ -113,7 +118,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
 
           <nav className="flex-1 space-y-2">
-            {menuItems.map((item) => (
+            {menuItems.filter(item => { if (item.id === 'notifications' && !Capacitor.isNativePlatform()) return false; return true; }).map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
@@ -217,12 +222,9 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
         </div>
 
-        {/* Floating Close Button */}
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 md:top-8 md:right-8 z-30 p-2 md:p-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-all text-slate-400 border border-slate-100 dark:border-zinc-800/50 shadow-md"
-        >
-          <X className="w-5 h-5 md:w-6 md:h-6" />
+        {/* Floating Close Button Desktop Only */}
+        <button onClick={onClose} className="hidden md:block absolute top-8 right-8 z-30 p-3 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-all text-slate-400 border border-slate-100 dark:border-zinc-800/50 shadow-md">
+          <X className="w-6 h-6" />
         </button>
       </motion.div>
     </div>

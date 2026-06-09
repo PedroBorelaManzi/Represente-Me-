@@ -325,7 +325,7 @@ export default function Login() {
           </div>
         </div>
 
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+        <div className="mt-auto pt-16 pb-8 text-center">
            <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.5em] whitespace-nowrap">
               Represente-se — Tecnologia de Ponta
            </p>
