@@ -48,11 +48,13 @@ serve(async (req) => {
         }
     }
 
-    if (!customer.email || !customer.cpfCnpj || !customer.phone || !customer.name) {
-      return new Response(JSON.stringify({ success: false, message: 'Dados do formulário incompletos ou em branco.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      });
+    if (action !== 'check-uniqueness') {
+      if (!customer.email || !customer.cpfCnpj || !customer.phone || !customer.name) {
+        return new Response(JSON.stringify({ success: false, message: 'Dados do formulário incompletos ou em branco.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        });
+      }
     }
 
     console.log('Recebido:', { planId, billingCycle, paymentMethod, email: customer.email })
@@ -64,8 +66,8 @@ serve(async (req) => {
       })
     }
 
-    const cleanCpf = customer.cpfCnpj.replace(/\D/g, '')
-    const cleanPhone = customer.phone.replace(/\D/g, '')
+    const cleanCpf = customer.cpfCnpj ? customer.cpfCnpj.replace(/\D/g, '') : ''
+    const cleanPhone = customer.phone ? customer.phone.replace(/\D/g, '') : ''
 
     // Ação rápida de verificação de duplicidade antes do pagamento
     if (action === 'check-uniqueness') {
@@ -78,7 +80,7 @@ serve(async (req) => {
             for (const u of userData.users) {
               if (u.id === userId) continue;
               
-              if (u.email?.toLowerCase() === customer.email.toLowerCase()) {
+              if (customer.email && u.email?.toLowerCase() === customer.email.toLowerCase()) {
                 return new Response(JSON.stringify({ success: false, message: 'Este e-mail já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
                   headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                   status: 200
@@ -86,7 +88,7 @@ serve(async (req) => {
               }
               
               const uCpf = (u.user_metadata?.cpf_cnpj || '').replace(/\D/g, '')
-              if (uCpf && uCpf === cleanCpf) {
+              if (cleanCpf && uCpf && uCpf === cleanCpf) {
                 return new Response(JSON.stringify({ success: false, message: 'Este CPF/CNPJ já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
                   headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                   status: 200
@@ -94,7 +96,7 @@ serve(async (req) => {
               }
               
               const uPhone = (u.user_metadata?.phone || '').replace(/\D/g, '')
-              if (uPhone && uPhone === cleanPhone) {
+              if (cleanPhone && uPhone && uPhone === cleanPhone) {
                 return new Response(JSON.stringify({ success: false, message: 'Este número de WhatsApp já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
                   headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                   status: 200
@@ -102,8 +104,8 @@ serve(async (req) => {
               }
 
               const uName = (u.user_metadata?.name || '').trim().toLowerCase()
-              const searchName = (customer.name || '').trim().toLowerCase()
-              if (uName && searchName && uName === searchName) {
+              const searchName = customer.name ? customer.name.trim().toLowerCase() : ''
+              if (searchName && uName && uName === searchName) {
                 return new Response(JSON.stringify({ success: false, message: 'Este nome completo já está cadastrado no sistema. Cada pessoa pode ter apenas uma conta.' }), {
                   headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                   status: 200
@@ -116,7 +118,7 @@ serve(async (req) => {
         }
       }
 
-      if (ASAAS_API_KEY) {
+      if (ASAAS_API_KEY && cleanCpf) {
         try {
           const cpfResp = await fetch(`${ASAAS_API_URL}/customers?cpfCnpj=${encodeURIComponent(cleanCpf)}`, {
             headers: { 'access_token': ASAAS_API_KEY }
