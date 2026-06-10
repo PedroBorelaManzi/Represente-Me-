@@ -188,6 +188,26 @@ export default function Checkout() {
     }, 800);
   };
 
+  const handleNextStep = async () => {
+    if (!isStep1Valid) return;
+    setIsCheckingUniqueness(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('process-checkout', {
+        body: { action: 'check-uniqueness', userId: 'temp', customer: formData }
+      });
+      if (error) throw error;
+      if (!data.success) {
+        toast.error(data.message);
+        return;
+      }
+      setStep(2);
+    } catch (err) {
+      toast.error("Erro ao validar dados no servidor.");
+    } finally {
+      setIsCheckingUniqueness(false);
+    }
+  };
+
   const handleProcessPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isPasswordValid) return toast.error("Senha não atende aos requisitos.");
@@ -259,13 +279,13 @@ export default function Checkout() {
                   <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm space-y-6">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700">E-mail Corporativo</label>
-                      <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="nome@empresa.com" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                      <input required type="email" autoComplete="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="nome@empresa.com" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
                     </div>
 
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700">Crie uma Senha Forte</label>
                       <div className="relative">
-                        <input required type={showPassword ? "text" : "password"} value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder="••••••••" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                        <input required type={showPassword ? "text" : "password"} autoComplete="new-password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder="••••••••" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                           {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
@@ -283,7 +303,7 @@ export default function Checkout() {
 
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700">Nome Completo</label>
-                      <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Como no seu documento" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                      <input required type="text" autoComplete="name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Como no seu documento" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -293,17 +313,17 @@ export default function Checkout() {
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-700">WhatsApp</label>
-                        <input required type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: formatPhone(e.target.value)})} placeholder="(00) 00000-0000" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                        <input required type="tel" autoComplete="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: formatPhone(e.target.value)})} placeholder="(00) 00000-0000" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
                       </div>
                     </div>
                   </div>
 
                   <button 
                     type="button" disabled={isCheckingUniqueness || !isStep1Valid}
-                    onClick={() => { if(isStep1Valid) setStep(2); }}
+                    onClick={handleNextStep}
                     className="w-full py-4 rounded-xl font-bold text-lg bg-slate-900 text-white hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                   >
-                    Prosseguir para Pagamento <ChevronRight className="w-5 h-5" />
+                    {isCheckingUniqueness ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Prosseguir para Pagamento <ChevronRight className="w-5 h-5" /></>}
                   </button>
                 </motion.div>
               ) : (
@@ -436,9 +456,9 @@ export default function Checkout() {
                 </div>
 
                 <div className="space-y-3 pt-6 border-t border-white/10 text-sm font-medium text-slate-300">
-                  <div className="flex justify-between">
-                    <span>Subtotal (1 ano)</span>
-                    <span>R$ {baseValue.toFixed(2).replace('.', ',')}</span>
+                  <div className="flex justify-between items-center text-lg text-white font-bold">
+                    <span>Acesso Anual (12 meses)</span>
+                    <span>{paymentMethod === 'CREDIT_CARD' ? `12x R$ ${(finalPrice / installments).toFixed(2).replace('.', ',')}` : `R$ ${finalPrice.toFixed(2).replace('.', ',')} à vista`}</span>
                   </div>
                   {appliedCoupon && (
                     <div className="flex justify-between text-emerald-400">
@@ -452,12 +472,8 @@ export default function Checkout() {
                       <span>- R$ {pixDiscount.toFixed(2).replace('.', ',')}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-white text-lg font-bold pt-2 border-t border-white/10">
-                    <span>Total cobrado no limite</span>
-                    <span>R$ {finalPrice.toFixed(2).replace('.', ',')}</span>
-                  </div>
                   {paymentMethod === 'CREDIT_CARD' && (
-                    <p className="text-xs text-slate-500 leading-relaxed text-right">O valor total será comprometido no limite do seu cartão de crédito para garantir os 12 meses de acesso.</p>
+                    <p className="text-xs text-slate-400 leading-relaxed text-center pt-4">Sua assinatura anual compromete o limite do cartão para garantir os 12 meses de acesso ininterrupto, cobrados em {installments} vezes.</p>
                   )}
                 </div>
 
