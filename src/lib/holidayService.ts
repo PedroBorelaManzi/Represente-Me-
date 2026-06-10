@@ -48,7 +48,13 @@ async function getCachedOrFetch<T>(key: string, url: string): Promise<T | null> 
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to fetch ${url}`);
     const data = await res.json();
-    localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+    
+    try {
+      localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+    } catch (storageError) {
+      console.warn(`Could not save ${key} to localStorage (quota exceeded?)`, storageError);
+    }
+    
     return data as T;
   } catch (e) {
     console.error(`Error fetching ${url}`, e);
