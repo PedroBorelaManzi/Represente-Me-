@@ -132,6 +132,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [isCheckingUniqueness, setIsCheckingUniqueness] = useState(false);
+  const [formErrors, setFormErrors] = useState<{field: string, message: string} | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   
   const [couponCode, setCouponCode] = useState("");
@@ -197,9 +198,18 @@ export default function Checkout() {
       });
       if (error) throw error;
       if (!data.success) {
-        toast.error(data.message);
+        let field = 'general';
+        const msg = data.message.toLowerCase();
+        if (msg.includes('e-mail') || msg.includes('email')) field = 'email';
+        else if (msg.includes('cpf') || msg.includes('cnpj')) field = 'cpfCnpj';
+        else if (msg.includes('whatsapp') || msg.includes('número')) field = 'phone';
+        else if (msg.includes('nome')) field = 'name';
+        
+        setFormErrors({ field, message: data.message });
+        toast.error("Verifique os campos destacados em vermelho.");
         return;
       }
+      setFormErrors(null);
       setStep(2);
     } catch (err) {
       toast.error("Erro ao validar dados no servidor.");
@@ -279,7 +289,8 @@ export default function Checkout() {
                   <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm space-y-6">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700">E-mail Corporativo</label>
-                      <input required type="email" autoComplete="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="nome@empresa.com" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                      <input required type="email" autoComplete="email" value={formData.email} onChange={(e) => { setFormData({...formData, email: e.target.value}); setFormErrors(null); }} placeholder="nome@empresa.com" className={cn("w-full border rounded-xl px-4 py-3 text-base outline-none transition-all", formErrors?.field === 'email' ? "bg-red-50/50 border-red-500 focus:ring-1 focus:ring-red-500 text-red-900" : "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500")} />
+                      {formErrors?.field === 'email' && <p className="text-xs text-red-500 font-bold mt-2 animate-in fade-in slide-in-from-top-1">{formErrors.message}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -303,17 +314,20 @@ export default function Checkout() {
 
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700">Nome Completo</label>
-                      <input required type="text" autoComplete="name" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="Como no seu documento" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                      <input required type="text" autoComplete="name" value={formData.name} onChange={(e) => { setFormData({...formData, name: e.target.value}); setFormErrors(null); }} placeholder="Como no seu documento" className={cn("w-full border rounded-xl px-4 py-3 text-base outline-none transition-all", formErrors?.field === 'name' ? "bg-red-50/50 border-red-500 focus:ring-1 focus:ring-red-500 text-red-900" : "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500")} />
+                      {formErrors?.field === 'name' && <p className="text-xs text-red-500 font-bold mt-2 animate-in fade-in slide-in-from-top-1">{formErrors.message}</p>}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-700">CPF ou CNPJ</label>
-                        <input required type="text" value={formData.cpfCnpj} onChange={(e) => setFormData({...formData, cpfCnpj: formatCpfCnpj(e.target.value)})} placeholder="000.000.000-00" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                        <input required type="text" value={formData.cpfCnpj} onChange={(e) => { setFormData({...formData, cpfCnpj: formatCpfCnpj(e.target.value)}); setFormErrors(null); }} placeholder="000.000.000-00" className={cn("w-full border rounded-xl px-4 py-3 text-base outline-none transition-all", formErrors?.field === 'cpfCnpj' ? "bg-red-50/50 border-red-500 focus:ring-1 focus:ring-red-500 text-red-900" : "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500")} />
+                        {formErrors?.field === 'cpfCnpj' && <p className="text-xs text-red-500 font-bold mt-2 animate-in fade-in slide-in-from-top-1">{formErrors.message}</p>}
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-700">WhatsApp</label>
-                        <input required type="tel" autoComplete="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: formatPhone(e.target.value)})} placeholder="(00) 00000-0000" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                        <input required type="tel" autoComplete="tel" value={formData.phone} onChange={(e) => { setFormData({...formData, phone: formatPhone(e.target.value)}); setFormErrors(null); }} placeholder="(00) 00000-0000" className={cn("w-full border rounded-xl px-4 py-3 text-base outline-none transition-all", formErrors?.field === 'phone' ? "bg-red-50/50 border-red-500 focus:ring-1 focus:ring-red-500 text-red-900" : "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500")} />
+                        {formErrors?.field === 'phone' && <p className="text-xs text-red-500 font-bold mt-2 animate-in fade-in slide-in-from-top-1">{formErrors.message}</p>}
                       </div>
                     </div>
                   </div>
