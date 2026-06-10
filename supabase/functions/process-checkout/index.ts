@@ -36,6 +36,18 @@ serve(async (req) => {
   try {
     const { action, userId, planId, billingCycle, paymentMethod, coupon, customer = {}, creditCard } = body
 
+    if (action !== 'check-uniqueness') {
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) {
+           return new Response(JSON.stringify({ success: false, message: 'Não autorizado. Faltando credenciais JWT.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 });
+        }
+        const supabaseClient = createClient(SUPABASE_URL!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader } } });
+        const { data: { user: callerUser }, error: callerError } = await supabaseClient.auth.getUser();
+        if (callerError || !callerUser || callerUser.id !== userId) {
+           return new Response(JSON.stringify({ success: false, message: 'Sessão inválida ou expirada. Tente novamente.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 });
+        }
+    }
+
     if (!customer.email || !customer.cpfCnpj || !customer.phone || !customer.name) {
       return new Response(JSON.stringify({ success: false, message: 'Dados do formulário incompletos ou em branco.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
