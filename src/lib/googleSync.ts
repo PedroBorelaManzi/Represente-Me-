@@ -144,18 +144,18 @@ export async function pushEventToGoogle(userId: string, appointment: any) {
       endTime = parts[1] + ":00";
     }
 
-    const startStr = `${appointment.date}T${startTime}`;
-    const endStr = `${appointment.date}T${endTime}`;
+    const startStr = `${appointment.date}T${startTime}-03:00`;
+    const endStr = `${appointment.date}T${endTime}-03:00`;
 
     const event = {
       summary: appointment.title,
       start: {
         dateTime: startStr,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        timeZone: America/Sao_Paulo
       },
       end: {
         dateTime: endStr,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        timeZone: America/Sao_Paulo
       }
     };
 
