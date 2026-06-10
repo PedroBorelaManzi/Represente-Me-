@@ -318,10 +318,13 @@ export default function Dashboard() {
   const handleSync = async () => {
     if (!user) return;
     setIsSyncing(true);
+    const toastId = toast.loading("Sincronizando bidirecionalmente...");
     const res = await syncGoogleEvents(user.id);
-    alert(res.message);
     if (res.success) {
+      toast.success(res.message, { id: toastId });
       await refetch();
+    } else {
+      toast.error(res.message, { id: toastId });
     }
     setIsSyncing(false);
   };
