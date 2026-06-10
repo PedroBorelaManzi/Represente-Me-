@@ -332,8 +332,18 @@ export default function Dashboard() {
 
     silentSync();
 
-    const interval = setInterval(silentSync, 10 * 60 * 1000);
-    return () => clearInterval(interval);
+    // Real-time monitor: sync instantly when user focuses the tab or window
+    const handleFocus = () => silentSync();
+    
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') silentSync();
+    });
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('visibilitychange', handleFocus);
+    };
   }, [user, googleConnected]);
 
   const handleSync = async () => {
