@@ -315,6 +315,27 @@ export default function Dashboard() {
     }
   }, [clients, currentDate.getFullYear()]);
 
+  // Background Auto-Sync
+  useEffect(() => {
+    if (!user || !googleConnected) return;
+    
+    const silentSync = async () => {
+      try {
+        const res = await syncGoogleEvents(user.id);
+        if (res.success) {
+          refetch();
+        }
+      } catch (e) {
+        console.warn("Background sync failed", e);
+      }
+    };
+
+    silentSync();
+
+    const interval = setInterval(silentSync, 10 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [user, googleConnected]);
+
   const handleSync = async () => {
     if (!user) return;
     setIsSyncing(true);
