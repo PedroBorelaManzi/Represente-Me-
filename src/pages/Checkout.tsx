@@ -132,7 +132,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [isCheckingUniqueness, setIsCheckingUniqueness] = useState(false);
-  const [formErrors, setFormErrors] = useState<{field: string, message: string} | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   
   const [couponCode, setCouponCode] = useState("");
@@ -189,6 +189,25 @@ export default function Checkout() {
     }, 800);
   };
 
+  const checkFieldUniqueness = async (fieldName: string) => {
+    const value = (formData as any)[fieldName];
+    if (!value) return;
+    try {
+      const { data } = await supabase.functions.invoke('process-checkout', {
+        body: { action: 'check-uniqueness', userId: 'temp', customer: { [fieldName]: value } }
+      });
+      if (data && !data.success) {
+        setFormErrors(prev => ({ ...prev, [fieldName]: data.message }));
+      } else {
+        setFormErrors(prev => {
+          const next = { ...prev };
+          delete next[fieldName];
+          return next;
+        });
+      }
+    } catch (err) {}
+  };
+
   const handleNextStep = async () => {
     if (!isStep1Valid) return;
     setIsCheckingUniqueness(true);
@@ -205,11 +224,11 @@ export default function Checkout() {
         else if (msg.includes('whatsapp') || msg.includes('número')) field = 'phone';
         else if (msg.includes('nome')) field = 'name';
         
-        setFormErrors({ field, message: data.message });
+        setFormErrors(prev => ({ ...prev, [field]: data.message }));
         toast.error("Verifique os campos destacados em vermelho.");
         return;
       }
-      setFormErrors(null);
+      setFormErrors({});
       setStep(2);
     } catch (err) {
       toast.error("Erro ao validar dados no servidor.");
@@ -289,8 +308,8 @@ export default function Checkout() {
                   <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm space-y-6">
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700">E-mail Corporativo</label>
-                      <input required type="email" autoComplete="email" value={formData.email} onChange={(e) => { setFormData({...formData, email: e.target.value}); setFormErrors(null); }} placeholder="nome@empresa.com" className={cn("w-full border rounded-xl px-4 py-3 text-base outline-none transition-all", formErrors?.field === 'email' ? "bg-red-50/50 border-red-500 focus:ring-1 focus:ring-red-500 text-red-900" : "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500")} />
-                      {formErrors?.field === 'email' && <p className="text-xs text-red-500 font-bold mt-2 animate-in fade-in slide-in-from-top-1">{formErrors.message}</p>}
+                      <input required type="email" autoComplete="email" value={formData.email} onChange={(e) => { setFormData({...formData, email: e.target.value}); setFormErrors(prev => ({ ...prev, email: '' })); }} onBlur={() => checkFieldUniqueness('email')} placeholder="nome@empresa.com" className={cn("w-full border rounded-xl px-4 py-3 text-base outline-none transition-all", formErrors.email ? "bg-red-50/50 border-red-500 focus:ring-1 focus:ring-red-500 text-red-900" : "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500")} />
+                      {formErrors.email && <p className="text-xs text-red-500 font-bold mt-2 animate-in fade-in slide-in-from-top-1">{formErrors.email}</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -314,20 +333,20 @@ export default function Checkout() {
 
                     <div className="space-y-2">
                       <label className="text-sm font-semibold text-slate-700">Nome Completo</label>
-                      <input required type="text" autoComplete="name" value={formData.name} onChange={(e) => { setFormData({...formData, name: e.target.value}); setFormErrors(null); }} placeholder="Como no seu documento" className={cn("w-full border rounded-xl px-4 py-3 text-base outline-none transition-all", formErrors?.field === 'name' ? "bg-red-50/50 border-red-500 focus:ring-1 focus:ring-red-500 text-red-900" : "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500")} />
-                      {formErrors?.field === 'name' && <p className="text-xs text-red-500 font-bold mt-2 animate-in fade-in slide-in-from-top-1">{formErrors.message}</p>}
+                      <input required type="text" autoComplete="name" value={formData.name} onChange={(e) => { setFormData({...formData, name: e.target.value}); setFormErrors(prev => ({ ...prev, name: '' })); }} onBlur={() => checkFieldUniqueness('name')} placeholder="Como no seu documento" className={cn("w-full border rounded-xl px-4 py-3 text-base outline-none transition-all", formErrors.name ? "bg-red-50/50 border-red-500 focus:ring-1 focus:ring-red-500 text-red-900" : "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500")} />
+                      {formErrors.name && <p className="text-xs text-red-500 font-bold mt-2 animate-in fade-in slide-in-from-top-1">{formErrors.name}</p>}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-700">CPF ou CNPJ</label>
-                        <input required type="text" value={formData.cpfCnpj} onChange={(e) => { setFormData({...formData, cpfCnpj: formatCpfCnpj(e.target.value)}); setFormErrors(null); }} placeholder="000.000.000-00" className={cn("w-full border rounded-xl px-4 py-3 text-base outline-none transition-all", formErrors?.field === 'cpfCnpj' ? "bg-red-50/50 border-red-500 focus:ring-1 focus:ring-red-500 text-red-900" : "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500")} />
-                        {formErrors?.field === 'cpfCnpj' && <p className="text-xs text-red-500 font-bold mt-2 animate-in fade-in slide-in-from-top-1">{formErrors.message}</p>}
+                        <input required type="text" value={formData.cpfCnpj} onChange={(e) => { setFormData({...formData, cpfCnpj: formatCpfCnpj(e.target.value)}); setFormErrors(prev => ({ ...prev, cpfCnpj: '' })); }} onBlur={() => checkFieldUniqueness('cpfCnpj')} placeholder="000.000.000-00" className={cn("w-full border rounded-xl px-4 py-3 text-base outline-none transition-all", formErrors.cpfCnpj ? "bg-red-50/50 border-red-500 focus:ring-1 focus:ring-red-500 text-red-900" : "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500")} />
+                        {formErrors.cpfCnpj && <p className="text-xs text-red-500 font-bold mt-2 animate-in fade-in slide-in-from-top-1">{formErrors.cpfCnpj}</p>}
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-semibold text-slate-700">WhatsApp</label>
-                        <input required type="tel" autoComplete="tel" value={formData.phone} onChange={(e) => { setFormData({...formData, phone: formatPhone(e.target.value)}); setFormErrors(null); }} placeholder="(00) 00000-0000" className={cn("w-full border rounded-xl px-4 py-3 text-base outline-none transition-all", formErrors?.field === 'phone' ? "bg-red-50/50 border-red-500 focus:ring-1 focus:ring-red-500 text-red-900" : "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500")} />
-                        {formErrors?.field === 'phone' && <p className="text-xs text-red-500 font-bold mt-2 animate-in fade-in slide-in-from-top-1">{formErrors.message}</p>}
+                        <input required type="tel" autoComplete="tel" value={formData.phone} onChange={(e) => { setFormData({...formData, phone: formatPhone(e.target.value)}); setFormErrors(prev => ({ ...prev, phone: '' })); }} onBlur={() => checkFieldUniqueness('phone')} placeholder="(00) 00000-0000" className={cn("w-full border rounded-xl px-4 py-3 text-base outline-none transition-all", formErrors.phone ? "bg-red-50/50 border-red-500 focus:ring-1 focus:ring-red-500 text-red-900" : "bg-slate-50 border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500")} />
+                        {formErrors.phone && <p className="text-xs text-red-500 font-bold mt-2 animate-in fade-in slide-in-from-top-1">{formErrors.phone}</p>}
                       </div>
                     </div>
                   </div>
@@ -487,7 +506,7 @@ export default function Checkout() {
                     </div>
                   )}
                   {paymentMethod === 'CREDIT_CARD' && (
-                    <p className="text-xs text-slate-400 leading-relaxed text-center pt-4">Sua assinatura anual compromete o limite do cartão para garantir os 12 meses de acesso ininterrupto, cobrados em {installments} vezes.</p>
+                    <p className="text-[11px] text-slate-400 leading-relaxed text-center pt-4 border-t border-white/10 mt-4">Acesso liberado por 1 ano. Cobrança de {installments}x de R$ {(finalPrice / installments).toFixed(2).replace('.', ',')} no cartão.<br/><span className="opacity-50">Valor total (compromete limite): R$ {finalPrice.toFixed(2).replace('.', ',')}</span></p>
                   )}
                 </div>
 
