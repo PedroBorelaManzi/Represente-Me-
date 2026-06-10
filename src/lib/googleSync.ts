@@ -151,11 +151,11 @@ export async function pushEventToGoogle(userId: string, appointment: any) {
       summary: appointment.title,
       start: {
         dateTime: startStr,
-        timeZone: America/Sao_Paulo
+        timeZone: "America/Sao_Paulo"
       },
       end: {
         dateTime: endStr,
-        timeZone: America/Sao_Paulo
+        timeZone: "America/Sao_Paulo"
       }
     };
 
