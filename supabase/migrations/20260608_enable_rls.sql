@@ -20,6 +20,7 @@ USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
 -- Políticas para appointments
+DROP POLICY IF EXISTS "Users can manage their own appointments" ON public.appointments;
 CREATE POLICY "Users can manage their own appointments" 
 ON public.appointments 
 FOR ALL 
