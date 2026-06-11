@@ -146,7 +146,8 @@ export default function AppointmentForm({
 
   // Determine if the appointment is an all‑day event (no time or marked as Dia Inteiro)
   const isAllDayInitial = !appointment.time || appointment.time.includes("(Dia Inteiro)");
-  const initialTimes = (appointment.time || "09:00 - 10:00").split(" - ");
+  const cleanTime = appointment.time ? appointment.time.replace(" (Dia Inteiro)", "") : "";
+  const initialTimes = (cleanTime || "09:00 - 10:00").split(" - ");
   const [formData, setFormData] = React.useState({
     title: appointment.title || "",
     client_id: appointment.client_id || "",
