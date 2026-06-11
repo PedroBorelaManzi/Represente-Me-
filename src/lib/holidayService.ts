@@ -33,16 +33,28 @@ const normalize = (str: string) =>
   (str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 async function getCachedOrFetch<T>(key: string, url: string): Promise<T | null> {
-  const cached = localStorage.getItem(key);
-  if (cached) {
-    try {
-      const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < 24 * 60 * 60 * 1000) {
+  try {
+    // 1. Try idb-keyval first
+    const idbCached = await get(key);
+    if (idbCached) {
+      const { data, timestamp } = idbCached as { data: any, timestamp: number };
+      if (Date.now() - timestamp < 24 * 60 * 60 * 1000) return data as T;
+    }
+  } catch (e) {
+    console.warn('IDB read failed', e);
+  }
+
+  try {
+    // 2. Fallback to old localStorage cache (this saves users who have network blocked today but had it working yesterday!)
+    const lsCached = localStorage.getItem(key);
+    if (lsCached) {
+      const { data, timestamp } = JSON.parse(lsCached);
+      if (Date.now() - timestamp < 7 * 24 * 60 * 60 * 1000) { // Extend cache validity to 7 days for emergencies
         return data as T;
       }
-    } catch (e) {
-      console.error(`Error parsing cache for ${key}`, e);
     }
+  } catch (e) {
+    console.warn('LS read failed', e);
   }
 
   try {

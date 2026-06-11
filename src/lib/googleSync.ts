@@ -125,6 +125,9 @@ export async function syncGoogleEvents(userId: string) {
 
   } catch (error: any) {
     console.error('Erro técnico:', error);
+    if (error.message === "Failed to fetch") {
+      return { success: false, message: 'A conexão com o Google foi bloqueada pelo seu navegador ou antivírus (AdBlock, Web Shield, etc).' };
+    }
     return { success: false, message: `Erro técnico na sincronização. ${error.message || error}` };
   }
 }
