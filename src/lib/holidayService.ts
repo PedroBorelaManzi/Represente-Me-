@@ -4,6 +4,8 @@ export interface Holiday {
   date: string;
   type: string;
   description?: string;
+  city?: string;
+  state?: string;
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
