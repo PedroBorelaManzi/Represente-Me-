@@ -395,17 +395,34 @@ export default function Dashboard() {
       const appt = events.find(ev => ev.id === id);
       if (!appt) return;
 
-      const [startH, startM] = appt.time.split(" - ")[0].split(":").map(Number);
-      const [endH, endM] = appt.time.split(" - ")[1].split(":").map(Number);
-      const durationMin = (endH * 60 + endM) - (startH * 60 + startM);
+      const timeParts = appt.time.split(" - ");
+      const startStr = timeParts[0] || "09:00";
+      const endStr = timeParts[1] || "10:00";
+
+      const startH = parseInt(startStr.split(":")[0]) || 9;
+      const startM = parseInt(startStr.split(":")[1]) || 0;
+      
+      let endH = parseInt(endStr.split(":")[0]);
+      let endM = parseInt(endStr.split(":")[1]);
+      
+      if (isNaN(endH)) endH = startH + 1;
+      if (isNaN(endM)) endM = startM;
+
+      let durationMin = (endH * 60 + endM) - (startH * 60 + startM);
+      if (durationMin <= 0) durationMin = 60; // minimum 1 hour if something goes wrong
       
       const finalStartH = targetHour;
-      const finalStartM = 0;
+      const finalStartM = startM; // preserve original minutes
+      
       const newEndMin = (finalStartH * 60 + finalStartM) + durationMin;
       const finalEndH = Math.floor(newEndMin / 60);
       const finalEndM = newEndMin % 60;
       
-      const newTime = `${String(finalStartH).padStart(2, "0")}:${String(finalStartM).padStart(2, "0")} - ${String(finalEndH).padStart(2, "0")}:${String(finalEndM).padStart(2, "0")}`;
+      let newTime = `${String(finalStartH).padStart(2, "0")}:${String(finalStartM).padStart(2, "0")} - ${String(finalEndH).padStart(2, "0")}:${String(finalEndM).padStart(2, "0")}`;
+      
+      if (appt.time.includes("(Dia Inteiro)")) {
+          newTime += " (Dia Inteiro)";
+      }
       const isoDate = formatDateLocal(targetDate);
 
       setEvents(events.map(ev => ev.id === id ? { ...ev, date: isoDate, time: newTime } : ev));
