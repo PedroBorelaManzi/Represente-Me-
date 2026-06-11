@@ -9,6 +9,7 @@ import AppointmentForm from "../components/AppointmentForm";
 import RevenueChart from "../components/RevenueChart";
 import DailyNotes from "../components/DailyNotes";
 import { offlineCache, CacheKeys } from "../lib/offlineCache";
+import { toast } from "sonner";
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
