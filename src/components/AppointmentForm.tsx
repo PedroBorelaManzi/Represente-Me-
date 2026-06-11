@@ -1,4 +1,4 @@
-﻿import { SearchableClientPicker } from './SearchableClientPicker';
+import { SearchableClientPicker } from './SearchableClientPicker';
 import React, { useState, useRef, useEffect } from "react";
 import { X, Clock, Plus, Trash2, Save } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,7 +30,7 @@ function ScrollableTimePicker({
 }: { 
   value: string; 
   onChange: (val: string) => void; 
-  label: string;
+  label: string; 
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -40,7 +40,7 @@ function ScrollableTimePicker({
   const [hour, minute] = value.split(":");
   const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
   const minutes = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
-
+  
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -50,7 +50,7 @@ function ScrollableTimePicker({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
+  
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => {
@@ -61,11 +61,11 @@ function ScrollableTimePicker({
       }, 50);
     }
   }, [isOpen, hour, minute]);
-
+  
   const handleSelect = (newHour: string, newMin: string) => {
     onChange(`${newHour}:${newMin}`);
   };
-
+  
   return (
     <div className="relative" ref={dropdownRef}>
       <label className="block text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2 px-1">
@@ -82,7 +82,6 @@ function ScrollableTimePicker({
         <span>{value}</span>
         <Clock className={cn("w-4 h-4 transition-colors", isOpen ? "text-emerald-600" : "text-slate-400 group-hover:text-emerald-600")} />
       </button>
-
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -145,6 +144,8 @@ export default function AppointmentForm({
 }: AppointmentFormProps) {
   if (!appointment) return null;
 
+  // Determine if the appointment is an all‑day event (no time or marked as Dia Inteiro)
+  const isAllDayInitial = !appointment.time || appointment.time.includes("(Dia Inteiro)");
   const initialTimes = (appointment.time || "09:00 - 10:00").split(" - ");
   const [formData, setFormData] = React.useState({
     title: appointment.title || "",
@@ -152,6 +153,7 @@ export default function AppointmentForm({
     date: appointment.date || "",
     startTime: initialTimes[0] || "09:00",
     endTime: initialTimes[1] || "10:00",
+    isAllDay: isAllDayInitial,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,7 +161,7 @@ export default function AppointmentForm({
     const payload = {
       title: formData.title,
       date: formData.date,
-      time: `${formData.startTime} - ${formData.endTime}`,
+      time: formData.isAllDay ? "" : `${formData.startTime} - ${formData.endTime}`,
       client_id: formData.client_id || null
     };
     await onSave(payload);
@@ -220,25 +222,55 @@ export default function AppointmentForm({
                 Quando?
               </label>
               <input 
-                type="date" 
-                value={formData.date} 
-                onChange={e => setFormData({...formData, date: e.target.value})} 
-                className="w-full px-5 py-4 border border-slate-100 dark:border-zinc-800 rounded-[24px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 text-sm font-black transition-all focus:ring-4 focus:ring-emerald-600/10 focus:border-emerald-600 outline-none" 
+                type="date"
+                value={formData.date}
+                onChange={e => setFormData({...formData, date: e.target.value})}
+                className="w-full px-5 py-4 border border-slate-100 dark:border-zinc-800 rounded-[24px] bg-slate-50 dark:bg-zinc-950/50 text-slate-900 dark:text-zinc-100 text-sm font-black transition-all focus:ring-4 focus:ring-emerald-600/10 focus:border-emerald-600 outline-none"
               />
+              {/* All‑day toggle */}
+              <div className="flex items-center mt-3">
+                <input
+                  id="allDay"
+                  type="checkbox"
+                  checked={formData.isAllDay}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    setFormData(prev => ({
+                      ...prev,
+                      isAllDay: checked,
+                      ...(checked ? { startTime: "09:00", endTime: "10:00" } : {}),
+                    }));
+                  }}
+                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                />
+                <label htmlFor="allDay" className="ml-2 text-sm font-black text-slate-400 dark:text-zinc-500">
+                  Dia inteiro
+                </label>
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-8">
-            <ScrollableTimePicker 
-              label="Check-in"
-              value={formData.startTime}
-              onChange={(val) => setFormData({...formData, startTime: val})}
-            />
-            <ScrollableTimePicker 
-              label="Check-out"
-              value={formData.endTime}
-              onChange={(val) => setFormData({...formData, endTime: val})}
-            />
+            {/* Show time pickers only when not an all‑day event */}
+            {!formData.isAllDay && (
+              <>
+                <ScrollableTimePicker 
+                  label="Check-in"
+                  value={formData.startTime}
+                  onChange={(val) => setFormData({...formData, startTime: val})}
+                />
+                <ScrollableTimePicker 
+                  label="Check-out"
+                  value={formData.endTime}
+                  onChange={(val) => setFormData({...formData, endTime: val})}
+                />
+              </>
+            )}
+            {formData.isAllDay && (
+              <div className="flex items-center justify-center text-sm text-slate-500 dark:text-zinc-400">
+                Evento de dia inteiro (sem horário específico)
+              </div>
+            )}
           </div>
 
           <div className="pt-4 flex flex-col sm:flex-row gap-4">
@@ -270,4 +302,3 @@ export default function AppointmentForm({
     </div>
   );
 }
-
