@@ -105,6 +105,12 @@ export async function syncGoogleEvents(userId: string) {
 
     const data = res.data;
     const googleEvents = data?.items || [];
+
+    const { data: allClients } = await supabase
+      .from('clients')
+      .select('id, name')
+      .eq('user_id', userId);
+
     
     if (googleEvents.length === 0) {
       return { success: true, count: 0, message: 'Nenhum evento encontrado no seu Google Agenda (últimos 60 dias).' };
@@ -141,6 +147,20 @@ export async function syncGoogleEvents(userId: string) {
         timeStr = "";
       }
 
+      
+      let extractedClientId = null;
+      if (gevent.description && gevent.description.includes('Cliente: ')) {
+        const lines = gevent.description.split('\n');
+        const clientLine = lines.find((l: string) => l.startsWith('Cliente: '));
+        if (clientLine) {
+          const clientName = clientLine.replace('Cliente: ', '').trim();
+          const matchedClient = allClients?.find((c: any) => c.name === clientName);
+          if (matchedClient) {
+            extractedClientId = matchedClient.id;
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('appointments')
         .upsert({
@@ -148,6 +168,7 @@ export async function syncGoogleEvents(userId: string) {
           title: gevent.summary || 'Evento do Google',
           date: dateStr,
           time: timeStr,
+          client_id: extractedClientId,
           google_event_id: gevent.id,
           updated_at: new Date().toISOString()
         }, { onConflict: 'google_event_id' });
