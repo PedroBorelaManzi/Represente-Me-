@@ -1,4 +1,10 @@
-import { Holiday } from '../types';
+export interface Holiday {
+  id?: string;
+  name: string;
+  date: string;
+  type: string;
+  description?: string;
+}
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
