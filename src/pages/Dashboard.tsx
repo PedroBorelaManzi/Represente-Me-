@@ -119,7 +119,7 @@ export default function Dashboard() {
       };
     },
     enabled: !!user && offlineCache.isOnline(),
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,
   });
 
   // Sync state with React Query Data
@@ -432,6 +432,7 @@ export default function Dashboard() {
 
       await pushEventToGoogle(user.id, { ...appt, date: isoDate, time: newTime });
       queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
+      queryClient.invalidateQueries({ queryKey: ['agendaData'] });
     } catch (err) {
       console.error("Error updating appointment:", err);
       refetch();
@@ -463,6 +464,7 @@ export default function Dashboard() {
     }
 
     queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
+      queryClient.invalidateQueries({ queryKey: ['agendaData'] });
     setIsSaving(false);
     setEditingEvent(null);
   };
@@ -486,6 +488,7 @@ export default function Dashboard() {
       setEvents(events.filter(ev => ev.id !== editingEvent.id)); 
       setEditingEvent(null); 
       queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
+      queryClient.invalidateQueries({ queryKey: ['agendaData'] });
       toast.success("Compromisso excluído com sucesso!");
     } catch (e) {
       console.error("Exception in handleDelete:", e);
