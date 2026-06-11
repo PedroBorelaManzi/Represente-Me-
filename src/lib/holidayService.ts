@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { get, set } from 'idb-keyval';
 
 const MANUAL_HOLIDAYS_BY_CITY: Record<string, { month: number, day: number, name: string }[]> = {
   "porto feliz": [
