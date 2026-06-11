@@ -470,16 +470,29 @@ export default function Dashboard() {
   const handleDelete = async () => {
     if (!editingEvent?.id || !user || !window.confirm("Deseja realmente excluir este compromisso?")) return;
     setIsSaving(true);
-    const { error } = await supabase.from("appointments").delete().eq("id", editingEvent.id).eq("user_id", user.id);
-    if (!error) {
+    try {
+      const { error } = await supabase.from("appointments").delete().eq("id", editingEvent.id).eq("user_id", user.id);
+      
+      if (error) {
+        console.error("Supabase delete error:", error);
+        toast.error("Erro ao excluir do banco de dados.");
+        return;
+      }
+      
       if (editingEvent.google_event_id) {
         await deleteEventFromGoogle(user.id, editingEvent.google_event_id);
       }
+      
       setEvents(events.filter(ev => ev.id !== editingEvent.id)); 
       setEditingEvent(null); 
       queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
+      toast.success("Compromisso excluído com sucesso!");
+    } catch (e) {
+      console.error("Exception in handleDelete:", e);
+      toast.error("Ocorreu um erro inesperado ao excluir.");
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const openNewEventModal = (date: Date, hour?: number) => {
