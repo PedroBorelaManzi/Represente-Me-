@@ -202,10 +202,10 @@ export async function syncGoogleEvents(userId: string) {
 export async function pushEventToGoogle(userId: string, appointment: any) {
   try {
     const integration = await checkGoogleIntegration(userId);
-    if (!integration.isConnected) return false;
+    if (!integration.isConnected) return { success: false, message: 'Google Agenda não conectado' };
 
     const accessToken = await getValidToken(userId);
-    if (!accessToken) return false;
+    if (!accessToken) return { success: false, message: 'Token do Google inválido ou expirado. Por favor, reconecte.' };
 
     const isAllDay = appointment.time && appointment.time.includes('(Dia Inteiro)');
     let event: any = {
@@ -253,22 +253,22 @@ export async function pushEventToGoogle(userId: string, appointment: any) {
               .update({ google_event_id: res.data.id })
               .eq('id', appointment.id);
         }
-        return true;
+        return { success: true };
     }
-    return false;
-  } catch (error) {
+    return { success: false, message: res.data?.error?.message || JSON.stringify(res.data) };
+  } catch (error: any) {
     console.error('Erro ao enviar evento para o Google:', error);
-    return false;
+    return { success: false, message: error.message || String(error) };
   }
 }
 
 export async function deleteEventFromGoogle(userId: string, googleEventId: string) {
   try {
     const integration = await checkGoogleIntegration(userId);
-    if (!integration.isConnected) return false;
+    if (!integration.isConnected) return { success: false, message: 'Google Agenda não conectado' };
 
     const accessToken = await getValidToken(userId);
-    if (!accessToken) return false;
+    if (!accessToken) return { success: false, message: 'Token do Google inválido ou expirado. Por favor, reconecte.' };
 
     const res = await proxyGoogleRequest('DELETE', { accessToken, eventId: googleEventId });
     return res.success || res.status === 204;
