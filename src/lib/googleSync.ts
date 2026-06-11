@@ -138,7 +138,7 @@ export async function syncGoogleEvents(userId: string) {
         timeStr = `${getLocalTime(startISO)} - ${getLocalTime(endISO)}`;
       } else {
         dateStr = gevent.start.date || new Date().toISOString().substring(0, 10);
-        timeStr = "08:00 - 18:00 (Dia Inteiro)";
+        timeStr = "";
       }
 
       const { error } = await supabase
@@ -207,7 +207,7 @@ export async function pushEventToGoogle(userId: string, appointment: any) {
     const accessToken = await getValidToken(userId);
     if (!accessToken) return { success: false, message: 'Token do Google inválido ou expirado. Por favor, reconecte.' };
 
-    const isAllDay = appointment.time && appointment.time.includes('(Dia Inteiro)');
+    const isAllDay = !appointment.time || appointment.time.includes('(Dia Inteiro)');
     let event: any = {
       summary: appointment.title,
       description: appointment.notes || '',
@@ -218,8 +218,8 @@ export async function pushEventToGoogle(userId: string, appointment: any) {
       const nextDay = new Date(appointment.date);
       nextDay.setDate(nextDay.getDate() + 1);
       const nextDayStr = nextDay.toISOString().substring(0, 10);
-      event.start = { date: appointment.date };
-      event.end = { date: nextDayStr };
+      event.start = { date: appointment.date, dateTime: null };
+      event.end = { date: nextDayStr, dateTime: null };
     } else {
       let startTime = "09:00:00";
       let endTime = "10:00:00";
@@ -228,8 +228,8 @@ export async function pushEventToGoogle(userId: string, appointment: any) {
         startTime = parts[0].trim().substring(0, 5) + ":00";
         endTime = parts[1].trim().substring(0, 5) + ":00";
       }
-      event.start = { dateTime: `${appointment.date}T${startTime}-03:00`, timeZone: 'America/Sao_Paulo' };
-      event.end = { dateTime: `${appointment.date}T${endTime}-03:00`, timeZone: 'America/Sao_Paulo' };
+      event.start = { dateTime: `${appointment.date}T${startTime}-03:00`, timeZone: 'America/Sao_Paulo', date: null };
+      event.end = { dateTime: `${appointment.date}T${endTime}-03:00`, timeZone: 'America/Sao_Paulo', date: null };
     }
 
     const payload: any = { event };
