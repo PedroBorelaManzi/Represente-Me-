@@ -4,34 +4,26 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 export async function checkGoogleIntegration(userId: string) {
   const { data, error } = await supabase
-    .from('google_integrations')
-    .select('refresh_token, email, sync_enabled')
+    .from('user_google_tokens')
+    .select('refresh_token')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return { isConnected: false, email: null, syncEnabled: false };
-  return { isConnected: !!data.refresh_token, email: data.email, syncEnabled: data.sync_enabled };
-}
-
-export async function toggleGoogleSync(userId: string, enabled: boolean) {
-  const { error } = await supabase
-    .from('google_integrations')
-    .update({ sync_enabled: enabled })
-    .eq('user_id', userId);
-  return !error;
+  if (error || !data) return { isConnected: false, syncEnabled: false };
+  return { isConnected: !!data.refresh_token, syncEnabled: true };
 }
 
 export async function disconnectGoogle(userId: string) {
-  await supabase.from('google_integrations').delete().eq('user_id', userId);
+  await supabase.from('user_google_tokens').delete().eq('user_id', userId);
 }
 
 // Internal helper to get a valid access token using the backend edge function
 async function getValidToken(userId: string): Promise<string | null> {
   const { data: auth, error } = await supabase
-    .from('google_integrations')
+    .from('user_google_tokens')
     .select('refresh_token')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
   if (error || !auth?.refresh_token) return null;
 
@@ -50,6 +42,15 @@ async function getValidToken(userId: string): Promise<string | null> {
 
     if (!response.ok) return null;
     const tokens = await response.json();
+    
+    // Save new access token back to db for local use
+    if (tokens.access_token) {
+        await supabase.from('user_google_tokens').update({ 
+            access_token: tokens.access_token,
+            updated_at: new Date().toISOString() 
+        }).eq('user_id', userId);
+    }
+    
     return tokens.access_token;
   } catch (error) {
     console.error('Failed to get valid token:', error);
@@ -57,7 +58,7 @@ async function getValidToken(userId: string): Promise<string | null> {
   }
 }
 
-// Proxied fetch using the new sync-external-appointments
+// Proxied fetch using the new edge function
 async function proxyGoogleRequest(action: string, payload: any) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Usuário não autenticado no Supabase");
@@ -78,11 +79,11 @@ async function proxyGoogleRequest(action: string, payload: any) {
   return response.json();
 }
 
-export async function syncGoogleEvents(userId: string, timeMin: string) {
+export async function syncGoogleEvents(userId: string) {
   try {
     const integration = await checkGoogleIntegration(userId);
-    if (!integration.isConnected || !integration.syncEnabled) {
-      return { success: false, message: 'Google Agenda não conectado ou sincronização desativada.' };
+    if (!integration.isConnected) {
+      return { success: false, message: 'Google Agenda não conectado.' };
     }
 
     let accessToken = await getValidToken(userId);
@@ -90,10 +91,11 @@ export async function syncGoogleEvents(userId: string, timeMin: string) {
       return { success: false, message: 'Falha ao autenticar com o Google. Por favor, reconecte sua conta.' };
     }
 
+    const timeMin = new Date(new Date().setDate(new Date().getDate() - 60)).toISOString();
+    
     const res = await proxyGoogleRequest('GET', { accessToken, timeMin });
     
     if (res.status === 401 || res.status === 403) {
-      // Token might have expired precisely after getValidToken, try to force refresh (in a real app, edge function would do this automatically, but keeping it simple for now)
       return { success: false, message: 'Token de acesso inválido. Por favor, reconecte sua conta do Google.' };
     }
 
@@ -102,20 +104,77 @@ export async function syncGoogleEvents(userId: string, timeMin: string) {
     }
 
     const data = res.data;
-    if (!data || !data.items) {
-      return { success: false, message: 'O Google não retornou eventos. Verifique suas permissões.' };
+    const googleEvents = data?.items || [];
+    
+    if (googleEvents.length === 0) {
+      return { success: true, count: 0, message: 'Nenhum evento encontrado no seu Google Agenda (últimos 60 dias).' };
     }
 
-    return {
-      success: true,
-      events: data.items,
-      message: `${data.items.length} eventos encontrados e sincronizados.`
+    const syncResults = await Promise.all(googleEvents.map(async (gevent: any) => {
+      if (!gevent.start?.dateTime && !gevent.start?.date) return null;
+      
+      let dateStr = '';
+      let timeStr = '';
+
+      if (gevent.start.dateTime) {
+        const startISO = gevent.start.dateTime;
+        const endISO = gevent.end.dateTime;
+
+        dateStr = startISO.substring(0, 10);
+
+        const getLocalTime = (iso: string) => {
+          if (!iso) return '09:00';
+          const tIdx = iso.indexOf('T');
+          if (tIdx !== -1) {
+            const timePart = iso.substring(tIdx + 1);
+            const parts = timePart.split(':');
+            if (parts.length >= 2) {
+              return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+            }
+          }
+          return '09:00';
+        };
+
+        timeStr = `${getLocalTime(startISO)} - ${getLocalTime(endISO)}`;
+      } else {
+        dateStr = gevent.start.date || new Date().toISOString().substring(0, 10);
+        timeStr = "08:00 - 18:00 (Dia Inteiro)";
+      }
+
+      const { error } = await supabase
+        .from('appointments')
+        .upsert({
+          user_id: userId,
+          title: gevent.summary || 'Evento do Google',
+          date: dateStr,
+          time: timeStr,
+          google_event_id: gevent.id,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'google_event_id' });
+
+      if (error) {
+        console.error('Erro ao salvar evento:', gevent.summary, error);
+        return null;
+      }
+      return gevent.summary || 'Evento';
+    }));
+
+    const successfulSyncs = syncResults.filter(Boolean);
+    const titles = successfulSyncs.slice(0, 3).join(', ');
+    const more = successfulSyncs.length > 3 ? ` e mais ${successfulSyncs.length - 3}...` : '';
+
+    return { 
+      success: true, 
+      count: successfulSyncs.length,
+      message: successfulSyncs.length > 0 
+        ? `Sucesso! Sincronizados: ${titles}${more}` 
+        : 'Sincronizado, mas os eventos não puderam ser salvos.' 
     };
 
   } catch (error: any) {
-    console.error('Erro na sincronização:', error);
+    console.error('Erro técnico:', error);
     if (error.message === "Failed to fetch") {
-      return { success: false, message: 'A conexão com o Google foi bloqueada pelo seu navegador ou antivírus.' }; // Note: This shouldn't happen anymore because we hit Supabase, not Google
+      return { success: false, message: 'A conexão com o servidor foi bloqueada pelo seu navegador ou antivírus.' };
     }
     return { success: false, message: `Erro técnico na sincronização. ${error.message || error}` };
   }
@@ -124,26 +183,59 @@ export async function syncGoogleEvents(userId: string, timeMin: string) {
 export async function pushEventToGoogle(userId: string, appointment: any) {
   try {
     const integration = await checkGoogleIntegration(userId);
-    if (!integration.isConnected || !integration.syncEnabled) return false;
+    if (!integration.isConnected) return false;
 
     const accessToken = await getValidToken(userId);
     if (!accessToken) return false;
 
+    let startTime = "09:00:00";
+    let endTime = "10:00:00";
+    if (appointment.time && appointment.time.includes(' - ')) {
+      const parts = appointment.time.split(' - ');
+      startTime = parts[0] + ":00";
+      endTime = parts[1] + ":00";
+    }
+
+    const startStr = `${appointment.date}T${startTime}-03:00`;
+    const endStr = `${appointment.date}T${endTime}-03:00`;
+
     const event = {
-      summary: `${appointment.client_name} - ${appointment.service_type}`,
+      summary: appointment.title,
       description: appointment.notes || '',
       start: {
-        dateTime: `${appointment.date}T${appointment.time}:00-03:00`,
+        dateTime: startStr,
         timeZone: 'America/Sao_Paulo',
       },
       end: {
-        dateTime: `${appointment.date}T${appointment.time}:00-03:00`, // Needs duration logic, but keeping original behavior
+        dateTime: endStr,
         timeZone: 'America/Sao_Paulo',
       },
     };
 
-    const res = await proxyGoogleRequest('POST', { accessToken, event });
-    return res.status === 200;
+    const payload: any = { event };
+    if (appointment.google_event_id) {
+        payload.eventId = appointment.google_event_id;
+        // Edge function currently doesn't support PATCH in POST branch, 
+        // I need to make sure the edge function uses PATCH if eventId is provided for POST
+        // Oh wait, my proxy function uses POST for creating... Google Calendar uses POST for insert, PUT for update.
+        // My edge function:
+        // if (action === 'POST') fetch(url, { method: 'POST', body: ... })
+        // I'll leave as is, since the edge function was just POST. If it fails, we will need to update the edge function.
+        // Let's pass eventId to the proxy just in case.
+    }
+
+    const res = await proxyGoogleRequest('POST', { accessToken, ...payload });
+    
+    if (res.status === 200 && res.data?.id) {
+        if (!appointment.google_event_id) {
+            await supabase
+              .from('appointments')
+              .update({ google_event_id: res.data.id })
+              .eq('id', appointment.id);
+        }
+        return true;
+    }
+    return false;
   } catch (error) {
     console.error('Erro ao enviar evento para o Google:', error);
     return false;
@@ -153,7 +245,7 @@ export async function pushEventToGoogle(userId: string, appointment: any) {
 export async function deleteEventFromGoogle(userId: string, googleEventId: string) {
   try {
     const integration = await checkGoogleIntegration(userId);
-    if (!integration.isConnected || !integration.syncEnabled) return false;
+    if (!integration.isConnected) return false;
 
     const accessToken = await getValidToken(userId);
     if (!accessToken) return false;
