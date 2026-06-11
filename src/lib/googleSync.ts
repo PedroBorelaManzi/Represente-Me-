@@ -208,9 +208,24 @@ export async function pushEventToGoogle(userId: string, appointment: any) {
     if (!accessToken) return { success: false, message: 'Token do Google inválido ou expirado. Por favor, reconecte.' };
 
     const isAllDay = !appointment.time || appointment.time.includes('(Dia Inteiro)');
+    
+    let description = appointment.notes || '';
+    if (appointment.client_id) {
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('name')
+        .eq('id', appointment.client_id)
+        .maybeSingle();
+      
+      if (clientData && clientData.name) {
+        const clientText = `Cliente: ${clientData.name}`;
+        description = description ? `${clientText}\n\n${description}` : clientText;
+      }
+    }
+
     let event: any = {
       summary: appointment.title,
-      description: appointment.notes || '',
+      description: description,
     };
 
     if (isAllDay) {
