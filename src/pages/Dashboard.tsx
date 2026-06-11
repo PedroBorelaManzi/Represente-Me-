@@ -341,9 +341,15 @@ export default function Dashboard() {
       if (document.visibilityState === 'visible') silentSync();
     });
 
+    // Auto-sync every 3 minutes while the page is open
+    const interval = setInterval(() => {
+      silentSync();
+    }, 3 * 60 * 1000);
+
     return () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('visibilitychange', handleFocus);
+      clearInterval(interval);
     };
   }, [user, googleConnected]);
 
