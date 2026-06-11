@@ -262,40 +262,44 @@ export default function Agenda() {
     if (!editingEvent?.id || !window.confirm("Deseja realmente excluir este compromisso?")) return;
     setIsSaving(true);
 
-    if (!offlineCache.isOnline()) {
-      syncQueue.enqueue('appointments', 'DELETE', null, editingEvent.id);
-      const newEvents = events.filter(e => e.id !== editingEvent.id);
-      setEvents(newEvents);
-      offlineCache.set(CacheKeys.APPOINTMENTS, newEvents);
-      toast.success("Compromisso removido offline!");
+    try {
+      if (!offlineCache.isOnline()) {
+        syncQueue.enqueue('appointments', 'DELETE', null, editingEvent.id);
+        const newEvents = events.filter(e => e.id !== editingEvent.id);
+        setEvents(newEvents);
+        offlineCache.set(CacheKeys.APPOINTMENTS, newEvents);
+        toast.success("Compromisso removido offline!");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("appointments")
+        .delete()
+        .eq("id", editingEvent.id)
+        .eq("user_id", user?.id);
+
+      if (!error && editingEvent.google_event_id && user) {
+        try {
+          await deleteEventFromGoogle(user.id, editingEvent.google_event_id);
+        } catch (gErr) {
+          console.warn("Failed to delete from Google Calendar:", gErr);
+        }
+      }
+      
+      if (!error) {
+        await invalidateAgenda();
+        toast.success("Evento removido.");
+      } else {
+        toast.error("Erro ao remover compromisso.");
+      }
+    } catch (e) {
+      console.error("Error in handleDelete:", e);
+      toast.error("Ocorreu um erro ao excluir o evento.");
+    } finally {
       setIsSaving(false);
       setIsModalOpen(false);
       setEditingEvent(null);
-      return;
     }
-
-    const { error } = await supabase
-      .from("appointments")
-      .delete()
-      .eq("id", editingEvent.id)
-      .eq("user_id", user.id);
-
-    if (!error && editingEvent.google_event_id) {
-      try {
-        await deleteEventFromGoogle(user.id, editingEvent.google_event_id);
-      } catch (gErr) {
-        console.warn("Failed to delete from Google Calendar:", gErr);
-      }
-    }
-    if (!error) {
-      await invalidateAgenda();
-      toast.success("Evento removido.");
-    } else {
-      toast.error("Erro ao remover compromisso.");
-    }
-    setIsSaving(false);
-    setIsModalOpen(false);
-    setEditingEvent(null);
   };
 
   const handleGoogleConnect = () => {
