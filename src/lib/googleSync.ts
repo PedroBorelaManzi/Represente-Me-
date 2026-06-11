@@ -123,9 +123,9 @@ export async function syncGoogleEvents(userId: string) {
         : 'Sincronizado, mas os eventos não puderam ser salvos.' 
     };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro técnico:', error);
-    return { success: false, message: 'Erro técnico na sincronização.' };
+    return { success: false, message: `Erro técnico na sincronização. ${error.message || error}` };
   }
 }
 
