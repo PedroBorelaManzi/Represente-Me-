@@ -240,7 +240,9 @@ export default function Agenda() {
 
     if (!dbResult.error && dbResult.data) {
       try {
-        await pushEventToGoogle(user.id, dbResult.data);
+        const client = clients.find(c => c.id === dbResult.data.client_id);
+        const syncPayload = { ...dbResult.data, client_name: client?.name };
+        await pushEventToGoogle(user.id, syncPayload);
       } catch (gErr) {
         console.warn("Failed to push to Google Calendar:", gErr);
       }
@@ -358,7 +360,9 @@ export default function Agenda() {
 
     if (!error && data) {
       try {
-        await pushEventToGoogle(user.id, data);
+        const client = clients.find(c => c.id === data.client_id);
+        const syncPayload = { ...data, client_name: client?.name };
+        await pushEventToGoogle(user.id, syncPayload);
       } catch (gErr) {
         console.warn("Failed to sync reschedule with Google Calendar:", gErr);
       }

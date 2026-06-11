@@ -430,7 +430,8 @@ export default function Dashboard() {
       const { error } = await supabase.from("appointments").update({ date: isoDate, time: newTime }).eq("id", id).eq("user_id", user.id);
       if (error) throw error;
 
-      const resG = await pushEventToGoogle(user.id, { ...appt, date: isoDate, time: newTime });
+      const client = clients.find(c => c.id === appt.client_id);
+      const resG = await pushEventToGoogle(user.id, { ...appt, date: isoDate, time: newTime, client_name: client?.name });
       if (resG && !resG.success) {
         toast.error(`Google não atualizou: ${resG.message}`);
       } else {
@@ -465,7 +466,8 @@ export default function Dashboard() {
     }
 
     if (savedEvent) {
-      await pushEventToGoogle(user.id, savedEvent);
+      const client = clients.find(c => c.id === savedEvent.client_id);
+      await pushEventToGoogle(user.id, { ...savedEvent, client_name: client?.name });
     }
 
     queryClient.invalidateQueries({ queryKey: ['dashboardData'] });

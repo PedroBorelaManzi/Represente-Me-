@@ -210,17 +210,22 @@ export async function pushEventToGoogle(userId: string, appointment: any) {
     const isAllDay = !appointment.time || appointment.time.includes('(Dia Inteiro)');
     
     let description = appointment.notes || '';
-    if (appointment.client_id) {
-      const { data: clientData } = await supabase
-        .from('clients')
-        .select('name')
-        .eq('id', appointment.client_id)
-        .maybeSingle();
-      
-      if (clientData && clientData.name) {
-        const clientText = `Cliente: ${clientData.name}`;
-        description = description ? `${clientText}\n\n${description}` : clientText;
-      }
+    
+    let clientNameStr = appointment.client_name;
+    if (!clientNameStr && appointment.client_id) {
+      try {
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('name')
+          .eq('id', appointment.client_id)
+          .maybeSingle();
+        if (clientData) clientNameStr = clientData.name;
+      } catch (e) {}
+    }
+
+    if (clientNameStr) {
+      const clientText = `Cliente: ${clientNameStr}`;
+      description = description ? `${clientText}\n\n${description}` : clientText;
     }
 
     let event: any = {
