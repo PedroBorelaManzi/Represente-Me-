@@ -116,6 +116,13 @@ export async function syncGoogleEvents(userId: string) {
       return { success: true, count: 0, message: 'Nenhum evento encontrado no seu Google Agenda (últimos 60 dias).' };
     }
 
+    const googleEventIds = googleEvents.map((e) => e.id).filter(Boolean);
+    const { data: existingAppts } = await supabase
+      .from('appointments')
+      .select('id, google_event_id, client_id')
+      .in('google_event_id', googleEventIds)
+      .eq('user_id', userId);
+
     const syncResults = await Promise.all(googleEvents.map(async (gevent: any) => {
       if (!gevent.start?.dateTime && !gevent.start?.date) return null;
       
@@ -126,19 +133,21 @@ export async function syncGoogleEvents(userId: string) {
         const startISO = gevent.start.dateTime;
         const endISO = gevent.end.dateTime;
 
-        dateStr = startISO.substring(0, 10);
+        const dStart = new Date(startISO);
+        if (!isNaN(dStart.getTime())) {
+          const yyyy = dStart.getFullYear();
+          const mm = String(dStart.getMonth() + 1).padStart(2, '0');
+          const dd = String(dStart.getDate()).padStart(2, '0');
+          dateStr = `${yyyy}-${mm}-${dd}`;
+        } else {
+          dateStr = startISO.substring(0, 10);
+        }
 
         const getLocalTime = (iso: string) => {
           if (!iso) return '09:00';
-          const tIdx = iso.indexOf('T');
-          if (tIdx !== -1) {
-            const timePart = iso.substring(tIdx + 1);
-            const parts = timePart.split(':');
-            if (parts.length >= 2) {
-              return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
-            }
-          }
-          return '09:00';
+          const d = new Date(iso);
+          if (isNaN(d.getTime())) return '09:00';
+          return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
         };
 
         timeStr = `${getLocalTime(startISO)} - ${getLocalTime(endISO)}`;
@@ -168,7 +177,13 @@ export async function syncGoogleEvents(userId: string) {
           title: gevent.summary || 'Evento do Google',
           date: dateStr,
           time: timeStr,
-          client_id: extractedClientId,
+          client_id: (() => {
+            const existingAppt = existingAppts?.find((a) => a.google_event_id === gevent.id);
+            if (!extractedClientId && existingAppt && existingAppt.client_id) {
+                return existingAppt.client_id;
+            }
+            return extractedClientId;
+          })(),
           google_event_id: gevent.id,
           updated_at: new Date().toISOString()
         }, { onConflict: 'google_event_id' });
