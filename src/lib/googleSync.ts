@@ -207,29 +207,30 @@ export async function pushEventToGoogle(userId: string, appointment: any) {
     const accessToken = await getValidToken(userId);
     if (!accessToken) return false;
 
-    let startTime = "09:00:00";
-    let endTime = "10:00:00";
-    if (appointment.time && appointment.time.includes(' - ')) {
-      const parts = appointment.time.split(' - ');
-      startTime = parts[0] + ":00";
-      endTime = parts[1] + ":00";
-    }
-
-    const startStr = `${appointment.date}T${startTime}-03:00`;
-    const endStr = `${appointment.date}T${endTime}-03:00`;
-
-    const event = {
+    const isAllDay = appointment.time && appointment.time.includes('(Dia Inteiro)');
+    let event: any = {
       summary: appointment.title,
       description: appointment.notes || '',
-      start: {
-        dateTime: startStr,
-        timeZone: 'America/Sao_Paulo',
-      },
-      end: {
-        dateTime: endStr,
-        timeZone: 'America/Sao_Paulo',
-      },
     };
+
+    if (isAllDay) {
+      // For all day events, use 'date' instead of 'dateTime'. End date must be exclusive (next day)
+      const nextDay = new Date(appointment.date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDayStr = nextDay.toISOString().substring(0, 10);
+      event.start = { date: appointment.date };
+      event.end = { date: nextDayStr };
+    } else {
+      let startTime = "09:00:00";
+      let endTime = "10:00:00";
+      if (appointment.time && appointment.time.includes(' - ')) {
+        const parts = appointment.time.split(' - ');
+        startTime = parts[0].trim().substring(0, 5) + ":00";
+        endTime = parts[1].trim().substring(0, 5) + ":00";
+      }
+      event.start = { dateTime: `${appointment.date}T${startTime}-03:00`, timeZone: 'America/Sao_Paulo' };
+      event.end = { dateTime: `${appointment.date}T${endTime}-03:00`, timeZone: 'America/Sao_Paulo' };
+    }
 
     const payload: any = { event };
     if (appointment.google_event_id) {

@@ -430,7 +430,12 @@ export default function Dashboard() {
       const { error } = await supabase.from("appointments").update({ date: isoDate, time: newTime }).eq("id", id).eq("user_id", user.id);
       if (error) throw error;
 
-      await pushEventToGoogle(user.id, { ...appt, date: isoDate, time: newTime });
+      const resG = await pushEventToGoogle(user.id, { ...appt, date: isoDate, time: newTime });
+      if (resG && !resG.success) {
+        toast.error(`Google não atualizou: ${resG.message}`);
+      } else {
+        toast.success("Reagendado com sucesso!");
+      }
       queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
       queryClient.invalidateQueries({ queryKey: ['agendaData'] });
     } catch (err) {
