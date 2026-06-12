@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Crown, Gem, CheckCircle2, Clock, TrendingUp, Building2, Map as MapIcon, Plus, MessageCircle, ChevronRight, Sparkles, Zap } from 'lucide-react';
+import { Trophy, Crown, Gem, CheckCircle2, Clock, TrendingUp, Building2, Map as MapIcon, Plus, MessageCircle, ChevronRight, Sparkles, Zap, Check, Mail, BarChart3, Star, Infinity } from 'lucide-react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/utils';
@@ -111,6 +111,70 @@ export const SettingsSubscription = React.memo(function SettingsSubscription({ o
               <div>
                 <p className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.3em]">Plano Atual</p>
                 <h3 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase">Acesso {currentPlan.name}</h3>
+              </div>
+           </div>
+
+           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { label: 'Status', value: 'Ativo', icon: CheckCircle2, color: 'text-emerald-500' },
+                { label: 'Renovação', value: localStorage.getItem('rm_billing_cycle') || 'Mensal', icon: TrendingUp, color: 'text-blue-500' },
+                { label: 'Vencimento', value: localStorage.getItem('rm_expiration_date') || '30 dias', icon: Clock, color: 'text-amber-500' }
+              ].map((stat, i) => (
+                <div key={i} className="p-4 bg-white/50 dark:bg-zinc-900/50 rounded-2xl border border-white/20 dark:border-zinc-800 text-left">
+                  <p className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1">{stat.label}</p>
+                  <div className="flex items-center gap-2">
+                    <stat.icon className={cn("w-3 h-3", stat.color)} />
+                    <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{stat.value}</span>
+                  </div>
+                </div>
+              ))}
+           </div>
+
+           <div className="space-y-3">
+              <p className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4 text-left">Seus Benefícios</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {tierId === 'exclusivo' && [
+                  { text: '1 Empresa cadastrada', icon: Building2 },
+                  { text: 'Mapa Territorial Básico', icon: MapIcon },
+                  { text: 'CRM Essencial', icon: Check },
+                  { text: 'Suporte por E-mail', icon: Mail }
+                ].map((b, i) => (
+                  <div key={i} className="flex items-center gap-3 text-slate-600 dark:text-zinc-300">
+                    <b.icon className="w-3.5 h-3.5" />
+                    <span className="text-[9px] font-black uppercase tracking-tight">{b.text}</span>
+                  </div>
+                ))}
+                {(tierId === 'profissional' || tierId === 'premium') && [
+                  { text: 'Até 5 Empresas', icon: Building2 },
+                  { text: 'Mapa Territorial Básico', icon: MapIcon },
+                  { text: 'CRM Essencial', icon: Check },
+                  { text: 'Busca CNPJ Automática', icon: Zap },
+                  { text: 'Dashboard de Faturamento', icon: BarChart3 },
+                  { text: 'Exportação de Relatórios', icon: Check },
+                  { text: 'Suporte via WhatsApp', icon: Star }
+                ].map((b, i) => (
+                  <div key={i} className="flex items-center gap-3 text-slate-600 dark:text-zinc-300">
+                    <b.icon className="w-3.5 h-3.5" />
+                    <span className="text-[9px] font-black uppercase tracking-tight">{b.text}</span>
+                  </div>
+                ))}
+                {tierId === 'master' && [
+                  { text: 'Empresas Ilimitadas', icon: Infinity },
+                  { text: 'Radar Territorial Avançado', icon: MapIcon },
+                  { text: 'CRM Essencial', icon: Check },
+                  { text: 'Busca CNPJ Automática', icon: Zap },
+                  { text: 'BI & Analytics Avançado', icon: BarChart3 },
+                  { text: 'Exportação de Relatórios', icon: Check },
+                  { text: 'Lançamento via IA (Gemini)', icon: Sparkles },
+                  { text: 'Automação de Pedidos', icon: Zap },
+                  { text: 'Integração com Inbox', icon: Mail },
+                  { text: 'Suporte via WhatsApp Prioritário', icon: Star }
+                ].map((b, i) => (
+                  <div key={i} className="flex items-center gap-3 text-slate-600 dark:text-zinc-300">
+                    <b.icon className="w-3.5 h-3.5" />
+                    <span className="text-[9px] font-black uppercase tracking-tight">{b.text}</span>
+                  </div>
+                ))}
               </div>
            </div>
 

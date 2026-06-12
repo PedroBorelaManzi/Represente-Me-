@@ -30,7 +30,7 @@ const planDetails = {
     color: "text-slate-500",
     bg: "bg-slate-50 dark:bg-zinc-800/50",
     border: "border-slate-100 dark:border-zinc-700/50",
-    features: ["1 Empresa Cadastrada", "Mapa de Clientes Básico", "CRM Básico", "Suporte via E-mail"]
+    features: ["1 Empresa cadastrada", "Mapa Territorial Básico", "CRM Essencial", "Suporte por E-mail"]
   },
   profissional: {
     name: "Profissional",
@@ -40,11 +40,13 @@ const planDetails = {
     bg: "bg-emerald-50 dark:bg-emerald-950/20",
     border: "border-emerald-100 dark:border-emerald-900/30",
     features: [
-      "Até 3 Empresas Cadastradas",
-      "Busca Automática por CNPJ",
-      "Dashboard de Faturamento Avançado",
-      "IA Gemini Pro 1.5 Integrada",
-      "Suporte via WhatsApp Prioritário"
+      "Até 5 Empresas",
+      "Mapa Territorial Básico",
+      "CRM Essencial",
+      "Busca CNPJ Automática",
+      "Dashboard de Faturamento",
+      "Exportação de Relatórios",
+      "Suporte via WhatsApp"
     ]
   },
   master: {
@@ -55,12 +57,16 @@ const planDetails = {
     bg: "bg-amber-50 dark:bg-amber-950/20",
     border: "border-amber-100 dark:border-amber-900/30",
     features: [
-      "Empresas Cadastradas Ilimitadas",
-      "IA Gemini Pro 1.5 Avançada",
-      "BI & Analytics Completo de Vendas",
-      "Relatórios de Exportação White-label",
-      "Inbox e E-mails Integrados",
-      "Suporte Ultra Prioritário e Mentor"
+      "Empresas Ilimitadas",
+      "Radar Territorial Avançado",
+      "CRM Essencial",
+      "Busca CNPJ Automática",
+      "BI & Analytics Avançado",
+      "Exportação de Relatórios",
+      "Lançamento via IA (Gemini)",
+      "Automação de Pedidos",
+      "Integração com Inbox",
+      "Suporte via WhatsApp Prioritário"
     ]
   }
 };

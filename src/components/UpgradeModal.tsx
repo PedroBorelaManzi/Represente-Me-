@@ -13,7 +13,7 @@ const features = {
   empresas: {
     title: 'Mais Representadas',
     description: 'Você atingiu o limite de empresas do seu plano atual.',
-    benefit: 'Gerencie até 3 ou 10 empresas ao mesmo tempo.',
+    benefit: 'Gerencie até 5 empresas ou tenha empresas ilimitadas ao mesmo tempo.',
     icon: Building2,
     plan: 'Profissional'
   },
