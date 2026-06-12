@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Check, 
   ArrowRight, 
@@ -30,8 +30,8 @@ const plans = [
     monthlyPrice: 97,
     semiannualPrice: 77,
     annualPrice: 67,
-    description: "Para quem está começando.",
-    features: ["1 Empresa", "Mapa Básico", "CRM Básico", "Suporte Email"],
+    description: "Para quem est� come�ando.",
+    features: ["1 Empresa", "Mapa B�sico", "CRM B�sico", "Suporte Email"],
     icon: Building2,
     color: "from-slate-500 to-slate-600",
     popular: false,
@@ -43,7 +43,7 @@ const plans = [
     semiannualPrice: 117,
     annualPrice: 107,
     description: "Ideal para equipes em crescimento.",
-    features: ["5 Empresas", "Mapa Básico", "CRM Básico", "Busca CNPJ Automática", "Dashboard de Faturamento", "Suporte WhatsApp"],
+    features: ["5 Empresas", "Mapa B�sico", "CRM B�sico", "Busca CNPJ Autom�tica", "Dashboard de Faturamento", "Suporte WhatsApp"],
     icon: Star,
     color: "from-emerald-500 to-emerald-600",
     popular: true,
@@ -54,8 +54,8 @@ const plans = [
     monthlyPrice: 197,
     semiannualPrice: 157,
     annualPrice: 137,
-    description: "A solução completa definitiva.",
-    features: ["Empresas Ilimitadas", "Radar Territorial Avançado", "CRM Básico", "Busca CNPJ Automática", "BI & Analytics Avançado", "Lançamento via IA (Gemini)", "Personalização White-label", "Inbox Integrada", "Suporte Ultra Prioritário"],
+    description: "A solu��o completa definitiva.",
+    features: ["Empresas Ilimitadas", "Radar Territorial Avan�ado", "CRM B�sico", "Busca CNPJ Autom�tica", "BI & Analytics Avan�ado", "Lan�amento via IA (Gemini)", "Personaliza��o White-label", "Inbox Integrada", "Suporte Ultra Priorit�rio"],
     icon: Crown,
     color: "from-emerald-600 to-emerald-700",
     popular: false,
@@ -74,7 +74,7 @@ export default function Planos() {
       if (!user) return;
       const { data } = await supabase
         .from('user_settings')
-        .select('subscription_status, subscription_tier')
+        .select('subscription_status, subscription_plan')
         .eq('id', user.id)
         .single();
       setCurrentSubscription(data);
@@ -92,7 +92,7 @@ export default function Planos() {
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 p-4 lg:p-12 transition-colors duration-300 font-sans">
       <div className="max-w-7xl mx-auto">
         {/* Planos Upgrade Upsell Header Banner */}
-        {user && (currentSubscription?.subscription_tier?.toLowerCase() === 'profissional' || currentSubscription?.subscription_tier?.toLowerCase() === 'premium') && (
+        {user && (currentSubscription?.subscription_plan?.toLowerCase() === 'profissional' || currentSubscription?.subscription_plan?.toLowerCase() === 'premium') && (
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -106,7 +106,7 @@ export default function Planos() {
               <div className="space-y-1">
                 <h4 className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">Upgrade de Assinatura Exclusivo</h4>
                 <p className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 leading-normal uppercase">
-                  Você já possui o plano Profissional! Por apenas <span className="text-amber-600 dark:text-amber-400 font-black">R$ 50 a mais por mês</span>, mude para o plano <span className="text-amber-600 dark:text-amber-400 font-black">Master</span> e tenha Empresas Ilimitadas, IA avançada, BI Analytics e suporte ultra priorizado!
+                  Voc� j� possui o plano Profissional! Por apenas <span className="text-amber-600 dark:text-amber-400 font-black">R$ 50 a mais por m�s</span>, mude para o plano <span className="text-amber-600 dark:text-amber-400 font-black">Master</span> e tenha Empresas Ilimitadas, IA avan�ada, BI Analytics e suporte ultra priorizado!
                 </p>
               </div>
             </div>
@@ -130,7 +130,7 @@ export default function Planos() {
           </motion.div>
           
           <h1 className="text-4xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mb-6 leading-none">
-            Escolha o nível do seu <br /> <span className="text-emerald-600">Sucesso Profissional</span>
+            Escolha o n�vel do seu <br /> <span className="text-emerald-600">Sucesso Profissional</span>
           </h1>
           <p className="text-slate-500 dark:text-zinc-400 font-medium max-w-2xl mx-auto text-lg leading-relaxed mb-8">
             Invista na tecnologia que organiza sua rotina e potencializa suas vendas. 
@@ -147,7 +147,7 @@ export default function Planos() {
               <div className="relative z-10">
                 <h4 className="text-xs font-black uppercase tracking-widest text-emerald-900 dark:text-emerald-400 mb-1">Garantia Incondicional de 7 Dias</h4>
                 <p className="text-xs text-emerald-700 dark:text-emerald-500/80 font-bold leading-normal uppercase">
-                  Satisfação garantida ou seu dinheiro de volta! Teste por 7 dias e cancele quando quiser sem custo.
+                  Satisfa��o garantida ou seu dinheiro de volta! Teste por 7 dias e cancele quando quiser sem custo.
                 </p>
               </div>
             </div>
@@ -173,7 +173,7 @@ export default function Planos() {
               >
                 Semestral
                 <div className="absolute -top-3 -right-2 px-3 py-1 bg-emerald-500 text-white text-[8px] rounded-full font-black uppercase shadow-lg shadow-emerald-500/20">
-                  -R$10/mês
+                  -R$10/m�s
                 </div>
               </button>
               <button
@@ -183,7 +183,7 @@ export default function Planos() {
                   billingCycle === "annual" ? "bg-emerald-600 text-white shadow-xl scale-105 border-2 border-emerald-400 shadow-emerald-500/20" : "text-slate-400 hover:text-slate-600"
                 )}
               >
-                Anual 🔥
+                Anual ??
                 <div className="absolute -top-3 -right-2 px-3 py-1 bg-amber-500 text-white text-[8px] rounded-full font-black uppercase shadow-lg shadow-amber-500/20 animate-pulse">
                   RECOMENDADO (-30%)
                 </div>
@@ -197,9 +197,9 @@ export default function Planos() {
             >
               <TrendingUp className="w-4 h-4 text-emerald-600" />
               <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">
-                {billingCycle === "annual" ? "Economize até R$ 720,00 por ano optando pelo plano anual" : 
-                 billingCycle === "semiannual" ? "Economize até R$ 240,00 por semestre no plano semestral" : 
-                 "Plano mensal flexível sem fidelidade"}
+                {billingCycle === "annual" ? "Economize at� R$ 720,00 por ano optando pelo plano anual" : 
+                 billingCycle === "semiannual" ? "Economize at� R$ 240,00 por semestre no plano semestral" : 
+                 "Plano mensal flex�vel sem fidelidade"}
               </span>
             </motion.div>
           </div>
@@ -211,7 +211,7 @@ export default function Planos() {
             if (billingCycle === "monthly") price = plan.monthlyPrice;
             if (billingCycle === "semiannual") price = plan.semiannualPrice;
 
-            const isCurrent = currentSubscription?.subscription_tier?.toLowerCase() === plan.id.toLowerCase();
+            const isCurrent = currentSubscription?.subscription_plan?.toLowerCase() .includes(plan.id.toLowerCase());
 
             return (
               <motion.div
@@ -255,12 +255,12 @@ export default function Planos() {
                       </span>
                     </div>
                   ) : (
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Preço Regular</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Pre�o Regular</span>
                   )}
                   <div className="flex items-baseline gap-1 mt-1">
                     <span className="text-sm font-black text-slate-400">R$</span>
                     <span className="text-5xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter">{price}</span>
-                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">/mês</span>
+                    <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">/m�s</span>
                   </div>
                 </div>
 
@@ -307,7 +307,7 @@ export default function Planos() {
           <div className="relative z-10">
             <h4 className="text-xl font-black text-slate-900 dark:text-zinc-100 uppercase tracking-tighter mb-4">Gerenciar Minha Conta</h4>
             <p className="text-slate-500 dark:text-zinc-400 font-medium mb-8 max-w-lg mx-auto">
-              Precisa pausar ou cancelar sua assinatura? Fale com nosso suporte para processarmos seu pedido com segurança.
+              Precisa pausar ou cancelar sua assinatura? Fale com nosso suporte para processarmos seu pedido com seguran�a.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
