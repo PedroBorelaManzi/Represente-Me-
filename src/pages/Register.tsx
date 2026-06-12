@@ -33,7 +33,7 @@ const plans = [
     id: 'exclusivo',
     name: 'Exclusivo',
     price: '97',
-    originalPrice: undefined,
+    originalPrice: '134',
     period: '/mês',
     description: 'Para quem está começando.',
     justification: 'Ideal para validar sua operação com baixo investimento e organização básica.',

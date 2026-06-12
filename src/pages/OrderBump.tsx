@@ -25,8 +25,8 @@ import { cn } from "../lib/utils";
 const planDetails = {
   exclusivo: {
     name: "Exclusivo",
-    price: 117,
-    originalPrice: undefined,
+    price: 97,
+    originalPrice: 134,
     icon: Building2,
     color: "text-slate-500",
     bg: "bg-slate-50 dark:bg-zinc-800/50",
