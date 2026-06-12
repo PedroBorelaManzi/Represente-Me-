@@ -72,7 +72,7 @@ async function getValidEmailToken(userId: string, provider: EmailProvider, email
   if (error || !tokenData) return null;
 
   const now = Math.floor(Date.now() / 1000);
-  if (tokenData.expires_at > now + 60) return tokenData.access_token;
+  if (new Date(tokenData.expires_at).getTime() / 1000 > now + 60) return tokenData.access_token;
 
   if (provider === 'google') {
     try {
@@ -243,9 +243,10 @@ export async function fetchEmailsFromApi(
       }));
 
       return { success: true, emails: emailDetails.filter(e => e !== null), nextPageToken: listData.nextPageToken || null };
-    } catch (err) {
-      return { success: false, error: "Falha ao buscar e-mails" };
-    }
+    } catch (err: any) {
+        console.error(err);
+        return { success: false, error: "Falha ao buscar e-mails: " + err.message };
+      }
   }
   return { success: false, error: "Provedor não suportado" };
 }
