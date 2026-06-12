@@ -10,7 +10,7 @@ export async function exchangeGoogleCode(code: string, redirectUri: string) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not authenticated");
 
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/google-token-exchange`, {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/exchange-auth-token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -31,7 +31,7 @@ export async function refreshGoogleToken(refreshToken: string) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) return null;
 
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/google-token-exchange`, {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/exchange-auth-token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
