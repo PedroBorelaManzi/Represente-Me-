@@ -147,36 +147,7 @@ export default function Agenda() {
     }
   };
 
-  // Background Auto-Sync
-  useEffect(() => {
-    if (!user || !googleConnected) return;
-    
-    const silentSync = async () => {
-      try {
-        const res = await syncGoogleEvents(user.id);
-        if (res.success) {
-          await invalidateAgenda();
-        }
-      } catch (e) {
-        console.warn("Background sync failed", e);
-      }
-    };
-
-    silentSync();
-
-    // Real-time monitor: sync instantly when user focuses the tab or window
-    const handleFocus = () => silentSync();
-    
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') silentSync();
-    });
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('visibilitychange', handleFocus);
-    };
-  }, [user, googleConnected]);
+  
 
   const handleSync = async () => {
     if (!user) return;
