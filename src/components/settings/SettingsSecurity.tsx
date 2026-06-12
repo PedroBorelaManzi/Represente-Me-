@@ -136,6 +136,14 @@ export const SettingsSecurity = React.memo(function SettingsSecurity() {
                       });
                       
                       if (error) throw error;
+                      if (data && data.success === false) {
+                        // The edge function returned 200 OK but caught an error internally (e.g. Resend API failed)
+                        console.warn("Edge function failed internally:", data.message);
+                        toast.error(`Falha no servidor de e-mail: ${data.message}. Preenchendo código de emergência.`, { duration: 8000 });
+                        setPasswordStep(2);
+                        setInputCode(code);
+                        return;
+                      }
                       
                       setPasswordStep(2);
                       if (data?.demoMode) {
