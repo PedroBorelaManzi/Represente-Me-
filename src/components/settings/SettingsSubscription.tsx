@@ -171,14 +171,35 @@ export const SettingsSubscription = React.memo(function SettingsSubscription({ o
       </div>
 
       {currentIndex === 2 ? (
-        <div className="p-8 rounded-[32px] bg-gradient-to-r from-amber-500/5 to-yellow-500/5 border border-amber-500/20 text-center space-y-3">
-          <div className="w-16 h-16 rounded-3xl bg-amber-500/10 flex items-center justify-center mx-auto text-amber-500">
-            <Crown className="w-8 h-8 animate-bounce" />
+        <div className="flex flex-col gap-4">
+          <div className="p-8 rounded-[32px] bg-gradient-to-r from-amber-500/5 to-yellow-500/5 border border-amber-500/20 text-center space-y-3">
+            <div className="w-16 h-16 rounded-3xl bg-amber-500/10 flex items-center justify-center mx-auto text-amber-500">
+              <Crown className="w-8 h-8 animate-bounce" />
+            </div>
+            <h3 className="text-lg font-black text-slate-800 dark:text-zinc-100 uppercase tracking-wider">Você já está usando o plano Master</h3>
+            <p className="text-[10px] text-slate-400 uppercase tracking-widest leading-relaxed">
+              Parabéns! Sua assinatura está no nível máximo com acesso ilimitado a todas as ferramentas e recursos da plataforma.
+            </p>
           </div>
-          <h3 className="text-lg font-black text-slate-800 dark:text-zinc-100 uppercase tracking-wider">Você já está usando o plano Master</h3>
-          <p className="text-[10px] text-slate-400 uppercase tracking-widest leading-relaxed">
-            Parabéns! Sua assinatura está no nível máximo com acesso ilimitado a todas as ferramentas e recursos da plataforma.
-          </p>
+          <div className="flex flex-col sm:flex-row gap-4 mt-2">
+            <button 
+              onClick={() => {
+                onClose();
+                setTimeout(() => navigate('/dashboard/planos'), 100);
+              }}
+              className="flex-1 py-4 rounded-[20px] bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-all flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Ver Todos os Planos
+            </button>
+            <button 
+              onClick={() => window.open('https://wa.me/5515997472785', '_blank')}
+              className="flex-1 py-4 rounded-[20px] bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-600 font-black uppercase text-[10px] tracking-widest hover:bg-red-100 dark:hover:bg-red-900/40 transition-all flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Gerenciar / Cancelar
+            </button>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -194,6 +215,26 @@ export const SettingsSubscription = React.memo(function SettingsSubscription({ o
             DÊ UM UPGRADE NO SEU PLANO 
             <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
           </button>
+          
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button 
+              onClick={() => {
+                onClose();
+                setTimeout(() => navigate('/dashboard/planos'), 100);
+              }}
+              className="flex-1 py-4 rounded-[20px] bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-all flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Ver Todos os Planos
+            </button>
+            <button 
+              onClick={() => window.open('https://wa.me/5515997472785', '_blank')}
+              className="flex-1 py-4 rounded-[20px] bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 text-red-600 font-black uppercase text-[10px] tracking-widest hover:bg-red-100 dark:hover:bg-red-900/40 transition-all flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-4 h-4" />
+              Gerenciar / Cancelar
+            </button>
+          </div>
         </div>
       )}
     </div>
