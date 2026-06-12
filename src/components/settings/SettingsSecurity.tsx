@@ -131,14 +131,19 @@ export const SettingsSecurity = React.memo(function SettingsSecurity() {
                     setVerificationCode(code);
                     
                     try {
-                      const { error } = await supabase.functions.invoke('reset-user-password', {
+                      const { data, error } = await supabase.functions.invoke('reset-user-password', {
                         body: { email: user?.email, code }
                       });
                       
                       if (error) throw error;
                       
                       setPasswordStep(2);
-                      toast.success("Código de segurança enviado com sucesso!");
+                      if (data?.demoMode) {
+                        toast.success(`Aviso: Servidor de E-mail não configurado. Código auto-preenchido: ${code}`, { duration: 6000 });
+                        setInputCode(code);
+                      } else {
+                        toast.success("Código de segurança enviado com sucesso!");
+                      }
                     } catch (error) {
                       console.error("Erro ao enviar código:", error);
                       toast.error("Erro ao enviar e-mail com o código de segurança. Tente novamente.");
