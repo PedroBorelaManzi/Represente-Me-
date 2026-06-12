@@ -202,7 +202,7 @@ export async function syncGoogleEvents(userId: string) {
     const more = successfulSyncs.length > 3 ? ` e mais ${successfulSyncs.length - 3}...` : '';
     
     let msg = totalSynced > 0 
-        ? `Sucesso! ${successfulSyncs.length} baixados e ${pushedCount} enviados.` 
+        ? `Sucesso! ${successfulSyncs.length} baixados .` 
         : 'Sincronização concluída. Tudo já estava atualizado.';
 
     return { 

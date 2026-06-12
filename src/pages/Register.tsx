@@ -33,6 +33,7 @@ const plans = [
     id: 'exclusivo',
     name: 'Exclusivo',
     price: '97',
+    originalPrice: undefined,
     period: '/mês',
     description: 'Para quem está começando.',
     justification: 'Ideal para validar sua operação com baixo investimento e organização básica.',
@@ -49,7 +50,8 @@ const plans = [
   {
     id: 'profissional',
     name: 'Profissional',
-    price: '147',
+    price: "147",
+    originalPrice: "197",
     period: '/mês',
     description: 'Ideal para equipes em crescimento.',
     justification: 'A automação de busca de CNPJ economiza cerca de 10 horas de trabalho manual por mês.',
@@ -69,7 +71,8 @@ const plans = [
   {
     id: 'master',
     name: 'Master',
-    price: '197',
+    price: "197",
+    originalPrice: "297",
     period: '/mês',
     description: 'Para grandes volumes e IA.',
     justification: 'Potencializado por Inteligência Artificial para processar pedidos e analisar mercado em tempo real.',
@@ -252,6 +255,16 @@ const Register = () => {
                       <p className={cn("text-[9px] font-bold uppercase opacity-70 leading-tight", plan.featured ? "text-emerald-50" : "text-slate-400")}>
                         {plan.description}
                       </p>
+                    </div>
+                    <div className="mb-2 flex flex-col gap-1 min-h-[30px]">
+                      {plan.originalPrice && (
+                        <div className="flex items-center gap-2">
+                          <span className={cn("text-xs font-bold line-through", plan.featured ? "text-emerald-100/70" : "text-slate-400")}>De R$ {plan.originalPrice}</span>
+                          <span className={cn("px-2 py-0.5 text-[8px] font-black uppercase rounded-md tracking-wider", plan.featured ? "bg-white/20 text-white" : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400")}>
+                            {Math.round(((Number(plan.originalPrice) - Number(plan.price)) / Number(plan.originalPrice)) * 100)}% de desconto
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-baseline gap-1 mb-6">
                       <span className="text-xs font-black opacity-50">R$</span>

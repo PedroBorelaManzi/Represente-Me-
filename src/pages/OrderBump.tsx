@@ -26,6 +26,7 @@ const planDetails = {
   exclusivo: {
     name: "Exclusivo",
     price: 117,
+    originalPrice: undefined,
     icon: Building2,
     color: "text-slate-500",
     bg: "bg-slate-50 dark:bg-zinc-800/50",
@@ -34,7 +35,8 @@ const planDetails = {
   },
   profissional: {
     name: "Profissional",
-    price: 167,
+    price: 147,
+    originalPrice: 197,
     icon: Gem,
     color: "text-emerald-500",
     bg: "bg-emerald-50 dark:bg-emerald-950/20",
@@ -51,7 +53,8 @@ const planDetails = {
   },
   master: {
     name: "Master",
-    price: 217,
+    price: 197,
+    originalPrice: 297,
     icon: Crown,
     color: "text-amber-500",
     bg: "bg-amber-50 dark:bg-amber-950/20",
@@ -357,7 +360,14 @@ export default function OrderBump() {
                   <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider bg-emerald-500/10 px-2 py-0.5 rounded-full animate-pulse">Recomendado</span>
                 </div>
                 <h3 className="text-sm font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight leading-none mb-1">{nextPlan.name}</h3>
-                <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">R$ {nextPlan.price}<span className="text-[9px] font-bold">/mês</span></p>
+                <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                  <span>R$ {nextPlan.price}<span className="text-[9px] font-bold">/m�s</span></span>
+                  {nextPlan.originalPrice && (
+                    <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase rounded-md tracking-wider">
+                      {Math.round(((nextPlan.originalPrice - nextPlan.price) / nextPlan.originalPrice) * 100)}% de desconto
+                    </span>
+                  )}
+                </p>
               </div>
 
             </div>

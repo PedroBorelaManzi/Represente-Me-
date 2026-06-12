@@ -178,59 +178,6 @@ export const SettingsSubscription = React.memo(function SettingsSubscription({ o
               </div>
            </div>
 
-           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { label: 'Status', value: 'Ativo', icon: CheckCircle2, color: 'text-emerald-500' },
-                { label: 'Renovação', value: localStorage.getItem('rm_billing_cycle') || 'Mensal', icon: TrendingUp, color: 'text-blue-500' },
-                { label: 'Vencimento', value: localStorage.getItem('rm_expiration_date') || '30 dias', icon: Clock, color: 'text-amber-500' }
-              ].map((stat, i) => (
-                <div key={i} className="p-4 bg-white/50 dark:bg-zinc-900/50 rounded-2xl border border-white/20 dark:border-zinc-800 text-left">
-                  <p className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-1">{stat.label}</p>
-                  <div className="flex items-center gap-2">
-                    <stat.icon className={cn("w-3 h-3", stat.color)} />
-                    <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{stat.value}</span>
-                  </div>
-                </div>
-              ))}
-           </div>
-
-           <div className="space-y-3">
-              <p className="text-[10px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-4 text-left">Seus Benefícios</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {tierId === 'exclusivo' && [
-                  { text: '1 Empresa Cadastrada', icon: Building2 },
-                  { text: 'Mapa e CRM Básico', icon: MapIcon },
-                  { text: 'Lançamento Manual', icon: Plus }
-                ].map((b, i) => (
-                  <div key={i} className="flex items-center gap-3 text-slate-600 dark:text-zinc-300">
-                    <b.icon className="w-3.5 h-3.5" />
-                    <span className="text-[9px] font-black uppercase tracking-tight">{b.text}</span>
-                  </div>
-                ))}
-                {(tierId === 'profissional' || tierId === 'premium') && [
-                  { text: 'Até 3 Empresas', icon: Building2 },
-                  { text: 'Busca CNPJ Auto', icon: Zap },
-                  { text: 'IA Gemini Pro 1.5', icon: Sparkles },
-                  { text: 'Suporte Prioritário', icon: MessageCircle }
-                ].map((b, i) => (
-                  <div key={i} className="flex items-center gap-3 text-slate-600 dark:text-zinc-300">
-                    <b.icon className="w-3.5 h-3.5" />
-                    <span className="text-[9px] font-black uppercase tracking-tight">{b.text}</span>
-                  </div>
-                ))}
-                {tierId === 'master' && [
-                  { text: 'Empresas Ilimitadas', icon: Building2 },
-                  { text: 'IA Avançada', icon: Sparkles },
-                  { text: 'Suporte Ultra Priorizado', icon: MessageCircle },
-                  { text: 'Dashboard Avançado', icon: TrendingUp }
-                ].map((b, i) => (
-                  <div key={i} className="flex items-center gap-3 text-slate-600 dark:text-zinc-300">
-                    <b.icon className="w-3.5 h-3.5" />
-                    <span className="text-[9px] font-black uppercase tracking-tight">{b.text}</span>
-                  </div>
-                ))}
-              </div>
-           </div>
         </div>
       </div>
 
