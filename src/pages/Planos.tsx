@@ -240,7 +240,7 @@ export default function Planos() {
                   {plan.originalPrice ? (
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-400 line-through">De R$ {plan.originalPrice}</span>
-                      <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase rounded-md tracking-wider">
+                      <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase rounded-lg tracking-widest shadow-sm shadow-amber-500/20">
                         {Math.round(((Number(plan.originalPrice) - Number(plan.price)) / Number(plan.originalPrice)) * 100)}% de desconto
                       </span>
                     </div>

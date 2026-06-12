@@ -363,7 +363,7 @@ export default function OrderBump() {
                 <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                   <span>R$ {nextPlan.price}<span className="text-[9px] font-bold">/m�s</span></span>
                   {nextPlan.originalPrice && (
-                    <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase rounded-md tracking-wider">
+                    <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase rounded-lg tracking-widest shadow-sm shadow-amber-500/20">
                       {Math.round(((nextPlan.originalPrice - nextPlan.price) / nextPlan.originalPrice) * 100)}% de desconto
                     </span>
                   )}
