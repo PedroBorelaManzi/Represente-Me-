@@ -185,7 +185,7 @@ export const SettingsSubscription = React.memo(function SettingsSubscription({ o
             <button 
               onClick={() => {
                 onClose();
-                setTimeout(() => navigate('/dashboard/planos'), 100);
+                setTimeout(() => navigate('/planos'), 100);
               }}
               className="flex-1 py-4 rounded-[20px] bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-all flex items-center justify-center gap-2"
             >
@@ -220,7 +220,7 @@ export const SettingsSubscription = React.memo(function SettingsSubscription({ o
             <button 
               onClick={() => {
                 onClose();
-                setTimeout(() => navigate('/dashboard/planos'), 100);
+                setTimeout(() => navigate('/planos'), 100);
               }}
               className="flex-1 py-4 rounded-[20px] bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 font-black uppercase text-[10px] tracking-widest hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-all flex items-center justify-center gap-2"
             >
