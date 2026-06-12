@@ -34,6 +34,7 @@ const plans = [
     id: 'exclusivo',
     name: 'Exclusivo',
     price: '97',
+    originalPrice: '147',
     period: '/mês',
     description: 'Para quem está começando.',
     justification: 'Ideal para validar sua operação com baixo investimento e organização básica.',
@@ -51,6 +52,7 @@ const plans = [
     id: 'profissional',
     name: 'Profissional',
     price: '147',
+    originalPrice: '197',
     period: '/mês',
     description: 'Ideal para equipes em crescimento.',
     justification: 'A automação de busca de CNPJ economiza cerca de 10 horas de trabalho manual por mês.',
@@ -71,6 +73,7 @@ const plans = [
     id: 'master',
     name: 'Master',
     price: '197',
+    originalPrice: '297',
     period: '/mês',
     description: 'Para grandes volumes e IA.',
     justification: 'Potencializado por Inteligência Artificial para processar pedidos e analisar mercado em tempo real.',
@@ -100,7 +103,7 @@ export default function Planos() {
 
   useEffect(() => {
     if (user?.email === 'pedroborelamanzi@gmail.com' && !localStorage.getItem('temp_downgrade_done_3')) {
-      supabase.from('user_settings').update({ subscription_plan: 'Acesso Exclusivo' }).eq('id', user.id).then(() => {
+      supabase.from('user_settings').update({ subscription_plan: 'Acesso Exclusivo' }).eq('user_id', user.id).then(() => {
         localStorage.setItem('temp_downgrade_done_3', 'true');
         toast.success("Plano voltado para Exclusivo com sucesso para testes!");
         setTimeout(() => window.location.reload(), 1500);
@@ -114,7 +117,7 @@ export default function Planos() {
       const { data } = await supabase
         .from('user_settings')
         .select('subscription_status, subscription_plan')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
       setCurrentSubscription(data);
     };
@@ -234,7 +237,16 @@ export default function Planos() {
                 </div>
 
                 <div className="mb-8 flex flex-col gap-1 text-left min-h-[70px]">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Preço Regular</span>
+                  {plan.originalPrice ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-400 line-through">De R$ {plan.originalPrice}</span>
+                      <span className="px-2 py-0.5 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase rounded-md tracking-wider">
+                        Oferta Especial
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Preço Regular</span>
+                  )}
                   <div className="flex items-baseline gap-1 mt-1">
                     <span className="text-sm font-black text-slate-400">R$</span>
                     <span className="text-5xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter">{plan.price}</span>
