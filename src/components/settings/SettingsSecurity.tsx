@@ -35,7 +35,7 @@ export const SettingsSecurity = React.memo(function SettingsSecurity() {
       setIsBiometricEnabled(false);
       localStorage.setItem("rm_biometric_enabled", "false");
       try {
-        await NativeBiometric.deleteCredentials({ server: "representeme.app" });
+        await NativeBiometric.deleteCredentials({ server: "representese.app" });
       } catch (e) {}
       toast.success("Biometria desativada.");
     } else {
@@ -52,7 +52,7 @@ export const SettingsSecurity = React.memo(function SettingsSecurity() {
       await NativeBiometric.setCredentials({
         username: user?.email || "",
         password: biometricPassword,
-        server: "representeme.app"
+        server: "representese.app"
       });
       setIsBiometricEnabled(true);
       localStorage.setItem("rm_biometric_enabled", "true");

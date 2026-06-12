@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.representeme.app',
-  appName: 'Represente-Me',
+  appId: 'com.representese.app',
+  appName: 'Representese',
   webDir: 'dist',
   plugins: {
     LocalNotifications: {

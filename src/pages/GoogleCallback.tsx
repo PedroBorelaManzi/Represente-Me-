@@ -48,7 +48,7 @@ export default function GoogleCallback() {
         if (upsertError) throw upsertError;
 
         setStatus("success");
-        setMessage("Google Agenda sincronizado com o Ecossistema Represente-se.");
+        setMessage("Google Agenda sincronizado com o Ecossistema Representese.");
         
         setTimeout(() => {
           navigate("/dashboard/agenda");

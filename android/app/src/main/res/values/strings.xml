@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Represente-Me</string>
-    <string name="title_activity_main">Represente-Me</string>
-    <string name="package_name">com.representeme.app</string>
-    <string name="custom_url_scheme">com.representeme.app</string>
+    <string name="app_name">Representese</string>
+    <string name="title_activity_main">Representese</string>
+    <string name="package_name">com.representese.app</string>
+    <string name="custom_url_scheme">com.representese.app</string>
 </resources>

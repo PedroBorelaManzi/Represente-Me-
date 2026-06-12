@@ -87,7 +87,7 @@ export const SettingsNotifications = React.memo(function SettingsNotifications()
   const handleTriggerTestNotification = async () => {
     toast.info("Enviando notificação de teste em 3 segundos. Saia do app ou bloqueie a tela para testar!");
     setTimeout(async () => {
-      const title = "Represente-Me 📈 🔔";
+      const title = "Representese 📈 🔔";
       const body = "Parabéns! Suas notificações push estão ativas e funcionando perfeitamente.";
       
       if (Capacitor.isNativePlatform()) {

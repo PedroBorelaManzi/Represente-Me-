@@ -223,7 +223,7 @@ export default function Dashboard() {
           
           if (triggerTime > now) {
             notificationsToSchedule.push({
-              title: "Represente-Me 📈 🔔",
+              title: "Representese 📈 🔔",
               body: `Visita marcada: ${appt.title} às ${startTimeStr}.`,
               id: Math.abs(hashCode(appt.id || String(Math.random()))),
               schedule: { at: triggerTime },

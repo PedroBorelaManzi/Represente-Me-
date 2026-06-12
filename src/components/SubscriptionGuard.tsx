@@ -59,7 +59,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   if (isBlocked) {
     const whatsappNumber = "5515997472785";
     const userEmail = user?.email || "não informado";
-    const whatsappMessage = encodeURIComponent(`Olá! Estou com uma pendência no meu acesso ao Represente-Me e gostaria de regularizar. Meu e-mail é: ${userEmail}`);
+    const whatsappMessage = encodeURIComponent(`Olá! Estou com uma pendência no meu acesso ao Representese e gostaria de regularizar. Meu e-mail é: ${userEmail}`);
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
     return (

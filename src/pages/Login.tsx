@@ -96,12 +96,12 @@ export default function Login() {
         reason: "Autentique-se para entrar de forma rápida",
         title: "Acesso Biométrico",
         subtitle: "Use a digital ou Face ID",
-        description: "Confirme sua identidade para entrar no Represente-se!",
+        description: "Confirme sua identidade para entrar no Representese!",
         maxAttempts: 3,
       });
 
       const creds = await NativeBiometric.getCredentials({
-        server: "representeme.app",
+        server: "representese.app",
       });
 
       if (creds && creds.username && creds.password) {
@@ -161,7 +161,7 @@ export default function Login() {
               const isEnabled = localStorage.getItem("rm_biometric_enabled") === "true";
               if (isEnabled) {
                 const creds = await NativeBiometric.getCredentials({
-                  server: "representeme.app",
+                  server: "representese.app",
                 });
                 if (creds && creds.username === email && creds.password === password) {
                   signInOffline(cachedUser);
@@ -327,7 +327,7 @@ export default function Login() {
 
         <div className="mt-auto pt-16 pb-8 text-center">
            <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.5em] whitespace-nowrap">
-              Represente-se — Tecnologia de Ponta
+              Representese — Tecnologia de Ponta
            </p>
         </div>
       </div>

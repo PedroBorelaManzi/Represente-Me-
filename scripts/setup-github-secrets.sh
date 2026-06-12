@@ -4,7 +4,7 @@
 # Pré-requisito: ter o GitHub CLI instalado (https://cli.github.com)
 # e estar autenticado com: gh auth login
 
-REPO="PedroBorelaManzi/Represente-Me-"
+REPO="PedroBorelaManzi/Representese-"
 
 echo "🔐 Configurando secrets do GitHub Actions para $REPO"
 echo ""

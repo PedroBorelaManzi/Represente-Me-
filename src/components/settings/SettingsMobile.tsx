@@ -44,7 +44,7 @@ export const SettingsMobile = React.memo(function SettingsMobile() {
                       await NativeBiometric.setCredentials({
                         username: user?.email || "",
                         password: pass,
-                        server: "representeme.app"
+                        server: "representese.app"
                       });
                       localStorage.setItem("rm_biometric_enabled", "true");
                       setIsBiometricEnabled(true);
@@ -55,7 +55,7 @@ export const SettingsMobile = React.memo(function SettingsMobile() {
                   } else {
                     localStorage.removeItem("rm_biometric_enabled");
                     await NativeBiometric.deleteCredentials({
-                      server: "representeme.app"
+                      server: "representese.app"
                     });
                     setIsBiometricEnabled(false);
                     toast.success("Desbloqueio biométrico desativado.");

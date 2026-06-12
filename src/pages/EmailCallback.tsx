@@ -89,7 +89,7 @@ export default function EmailCallback() {
         if (upsertError) throw upsertError;
 
         setStatus("success");
-        setMessage(`${providerState === 'google' ? 'Gmail' : 'Outlook'} sincronizado com o Ecossistema Represente-se.`);
+        setMessage(`${providerState === 'google' ? 'Gmail' : 'Outlook'} sincronizado com o Ecossistema Representese.`);
         
         setTimeout(() => {
           navigate("/dashboard/email");

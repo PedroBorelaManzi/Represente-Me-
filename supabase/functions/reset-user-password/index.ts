@@ -58,13 +58,13 @@ serve(async (req) => {
         'Authorization': `Bearer ${resendApiKey}`
       },
       body: JSON.stringify({
-        from: 'Represente-Me <onboarding@resend.dev>',
+        from: 'Representese <suporte@representese.com>',
         to: email,
-        subject: 'Código de Segurança - Represente-Me',
+        subject: 'Código de Segurança - Representese',
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 16px;">
             <div style="text-align: center; margin-bottom: 24px;">
-              <h2 style="color: #059669; font-weight: 900; margin: 0; font-size: 24px; letter-spacing: -0.025em; text-transform: uppercase;">Represente-Me</h2>
+              <h2 style="color: #059669; font-weight: 900; margin: 0; font-size: 24px; letter-spacing: -0.025em; text-transform: uppercase;">Representese</h2>
               <p style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px;">Segurança da Conta</p>
             </div>
             
@@ -95,7 +95,7 @@ serve(async (req) => {
             
             <div style="text-align: center;">
               <p style="font-size: 9px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.2em; margin: 0;">
-                Represente-Me — Tecnologia de Ponta
+                Representese — Tecnologia de Ponta
               </p>
             </div>
           </div>

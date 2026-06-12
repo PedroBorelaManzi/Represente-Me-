@@ -30,7 +30,7 @@ export const Logo: React.FC<LogoProps & { variant?: 'light' | 'dark' | 'auto' }>
       <div className={cn("relative flex items-center justify-center shrink-0 rounded-lg overflow-hidden", sizeMap[size])}>
         <img 
           src={logoUrl}
-          alt="Represente-se"
+          alt="Representese"
           className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110 mix-blend-multiply dark:mix-blend-normal"
         />
       </div>

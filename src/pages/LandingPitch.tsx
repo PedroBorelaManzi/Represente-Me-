@@ -437,7 +437,7 @@ export default function LandingPitch() {
               Pronto para ser um <br /> <span className="text-emerald-400 text-3xl sm:text-5xl md:text-8xl">SUPER REPRESENTANTE?</span>
             </h2>
             <p className="text-slate-400 font-medium text-lg max-w-xl mx-auto mb-12">
-              Junte-se a mais de 2.000 que já alavancaram mais de 150% de suas vendas com a Represente-se
+              Junte-se a mais de 2.000 que já alavancaram mais de 150% de suas vendas com a Representese
             </p>
             <div className="flex flex-col items-center gap-4">
               <Link to="/register" className="px-12 py-6 rounded-2xl bg-emerald-500 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-2xl shadow-emerald-500/20 inline-block">
@@ -454,7 +454,7 @@ export default function LandingPitch() {
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-8">
           <Logo className="opacity-50 h-8 md:h-10" showText={true} variant="light" />
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">
-            © 2026 Represente-se — Tecnologia para Representações Comerciais
+            © 2026 Representese — Tecnologia para Representações Comerciais
           </p>
           <div className="flex gap-8">
             <Link to="/privacy" className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">Privacidade</Link>

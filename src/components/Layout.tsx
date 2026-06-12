@@ -163,7 +163,7 @@ export default function Layout() {
             const timeDiff = Math.round((apptDate.getTime() - now.getTime()) / (60 * 1000));
             if (timeDiff >= 0 && timeDiff <= 60) {
               sendNotification(
-                "Represente-Me 📈 🔔",
+                "Representese 📈 🔔",
                 `Lembrete de Compromisso: Não esqueça que você tem um agendamento para daqui ${timeDiff} minutos: ${appt.title}`,
                 `appt_${appt.id}`
               );
@@ -204,7 +204,7 @@ export default function Layout() {
             
             if (stateName) {
               sendNotification(
-                "Represente-Me 📈 🔔",
+                "Representese 📈 🔔",
                 "Alerta de Inatividade (" + stateName + "): " + client.name + " está há " + daysInactive + " dias sem comprar (limiar: " + targetDays + " dias).",
                 "client_state_" + client.id + "_" + stateName + "_" + targetDays + "_" + client.last_contact
               );
@@ -237,7 +237,7 @@ export default function Layout() {
               msg += `. Planeje suas visitas e rotas considerando este feriado!`;
               
               sendNotification(
-                "Represente-Me 📈 🔔",
+                "Representese 📈 🔔",
                 `Feriado Hoje: ${msg}`,
                 `holiday_${h.id}_${todayStr}`
               );
@@ -552,7 +552,7 @@ export default function Layout() {
               <button onClick={() => setSidebarOpen(true)} className="p-3 bg-slate-50 dark:bg-zinc-800 rounded-2xl text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-all active:scale-90">
                 <Menu className="w-6 h-6" />
               </button>
-              <Link to="/dashboard" className="font-black text-base uppercase tracking-tighter text-slate-900 dark:text-zinc-100">Represente-se</Link>
+              <Link to="/dashboard" className="font-black text-base uppercase tracking-tighter text-slate-900 dark:text-zinc-100">Representese</Link>
             </div>
             <div className="flex items-center gap-3">
                

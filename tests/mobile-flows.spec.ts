@@ -9,7 +9,7 @@ test.describe('Etapa 2: Revisão Frontend (Mobile + Responsivo)', () => {
   test('Deve renderizar a Landing Page com layout empilhado e responsivo', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('text=Represente-se').first()).toBeVisible();
+    await expect(page.locator('text=Representese').first()).toBeVisible();
     await page.goto('/planos');
     await page.waitForLoadState('networkidle');
     await expect(page.locator('text=Sucesso Profissional')).toBeVisible();
