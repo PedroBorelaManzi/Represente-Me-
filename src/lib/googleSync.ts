@@ -197,22 +197,7 @@ export async function syncGoogleEvents(userId: string) {
 
     const successfulSyncs = syncResults.filter(Boolean);
     
-    // Push local events to Google that failed to push previously (or were created offline)
-    const { data: localEvents } = await supabase
-      .from('appointments')
-      .select('*')
-      .eq('user_id', userId)
-      .is('google_event_id', null);
-      
-    let pushedCount = 0;
-    if (localEvents && localEvents.length > 0) {
-      for (const localEvent of localEvents) {
-        const pushed = await pushEventToGoogle(userId, localEvent);
-        if (pushed) pushedCount++;
-      }
-    }
-
-    const totalSynced = successfulSyncs.length + pushedCount;
+    const totalSynced = successfulSyncs.length;
     const titles = successfulSyncs.slice(0, 3).join(', ');
     const more = successfulSyncs.length > 3 ? ` e mais ${successfulSyncs.length - 3}...` : '';
     
