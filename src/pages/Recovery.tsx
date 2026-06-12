@@ -78,6 +78,18 @@ export default function Recovery() {
 
     setIsLoading(true);
     try {
+      // Verifica se a senha nova é a mesma da atual fazendo um signIn rápido (já que ele não sabe a atual, mas podemos testar)
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: newPassword
+      });
+
+      if (!signInError && signInData.session) {
+        toast.error("A nova senha não pode ser igual à senha atual.");
+        setIsLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       

@@ -252,6 +252,21 @@ export const SettingsSecurity = React.memo(function SettingsSecurity() {
                     }
                     
                     setIsSavingPassword(true);
+                    
+                    // Verifica se a nova senha é a mesma que a atual usando o email do usuário logado
+                    if (user?.email) {
+                      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                        email: user.email,
+                        password: newPassword
+                      });
+                      
+                      if (!signInError && signInData.session) {
+                        toast.error("A nova senha não pode ser igual à senha atual.");
+                        setIsSavingPassword(false);
+                        return;
+                      }
+                    }
+
                     const { error } = await supabase.auth.updateUser({ password: newPassword });
                     setIsSavingPassword(false);
                     
