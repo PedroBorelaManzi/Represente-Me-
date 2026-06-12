@@ -137,21 +137,13 @@ export const SettingsSecurity = React.memo(function SettingsSecurity() {
                       
                       if (error) throw error;
                       if (data && data.success === false) {
-                        // The edge function returned 200 OK but caught an error internally (e.g. Resend API failed)
                         console.warn("Edge function failed internally:", data.message);
-                        toast.error(`Falha no servidor de e-mail: ${data.message}. Preenchendo código de emergência.`, { duration: 8000 });
-                        setPasswordStep(2);
-                        setInputCode(code);
+                        toast.error(`Falha no servidor de e-mail: ${data.message}`, { duration: 8000 });
                         return;
                       }
                       
                       setPasswordStep(2);
-                      if (data?.demoMode) {
-                        toast.success(`Aviso: Servidor de E-mail não configurado. Código auto-preenchido: ${code}`, { duration: 6000 });
-                        setInputCode(code);
-                      } else {
-                        toast.success("Código de segurança enviado com sucesso!");
-                      }
+                      toast.success("Código de segurança enviado com sucesso para o seu e-mail!");
                     } catch (error) {
                       console.error("Erro ao enviar código:", error);
                       toast.error("Erro ao enviar e-mail com o código de segurança. Tente novamente.");
