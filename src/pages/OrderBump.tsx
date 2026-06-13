@@ -186,10 +186,10 @@ export default function OrderBump() {
   
   // Calculate discount
   let discountAmount = 0;
-  if (activeCoupon === 'UPGRADE20') {
-    discountAmount = 10; // 20% off the diff
-  } else if (activeCoupon === 'REPRESENTE50') {
-    discountAmount = 25; // 50% off the diff
+  if (activeCoupon === 'REPRESENTE95') {
+    discountAmount = Math.round((standardDiff * 95) / 100);
+  } else if (activeCoupon === 'TESTE') {
+    discountAmount = Math.round((standardDiff * 50) / 100);
   }
 
   const finalDiff = standardDiff - discountAmount;
@@ -199,13 +199,13 @@ export default function OrderBump() {
     setCouponError("");
     const normalized = couponCode.toUpperCase().trim();
     
-    if (normalized === 'UPGRADE20') {
-      setActiveCoupon('UPGRADE20');
-      toast.success("Cupom UPGRADE20 aplicado: 20% de desconto recorrente!");
-    } else if (normalized === 'REPRESENTE50') {
-      setActiveCoupon('REPRESENTE50');
-      toast.success("Cupom REPRESENTE50 aplicado: 50% de desconto na primeira parcela!");
-    } else if (couponCode === "") {
+    if (normalized === 'REPRESENTE95') {
+        setActiveCoupon('REPRESENTE95');
+        toast.success("Cupom aplicado com sucesso!");
+      } else if (normalized === 'TESTE') {
+        setActiveCoupon('TESTE');
+        toast.success("Cupom aplicado com sucesso!");
+      } else if (couponCode === "") {
       setCouponError("Insira um código válido.");
     } else {
       setCouponError("Cupom inválido ou expirado.");
