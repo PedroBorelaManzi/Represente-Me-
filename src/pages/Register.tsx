@@ -287,14 +287,14 @@ const Register = () => {
                         <div className="flex items-center gap-2">
                           <span className={cn("text-xs font-bold line-through", plan.featured ? "text-emerald-100/70" : "text-slate-400")}>De R$ {plan.originalPrice}</span>
                           <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase rounded-lg tracking-widest shadow-sm shadow-amber-500/20">
-                            {Math.round(((Number(plan.originalPrice) - Number(plan.price)) / Number(plan.originalPrice)) * 100)}% de desconto
+                            {plan.id === 'exclusivo' ? '25' : plan.id === 'profissional' ? '30' : '35'}% de desconto
                           </span>
                         </div>
                       )}
                     </div>
                     <div className="flex items-baseline gap-1 mb-6">
                       <span className="text-xs font-black opacity-50">R$</span>
-                      <span className="text-4xl font-black tracking-tighter">{plan.price}</span>
+                      <span className="text-4xl font-black tracking-tighter">{billingCycle === 'ANNUAL' ? plan.annualPrice : plan.price}</span>
                       <span className="text-[10px] font-black uppercase opacity-50">{plan.period}</span>
                     </div>
                     
