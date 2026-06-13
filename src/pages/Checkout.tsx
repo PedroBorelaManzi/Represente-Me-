@@ -516,8 +516,7 @@ export default function Checkout() {
                   {paymentMethod === 'CREDIT_CARD' && (
                     billingCycle === 'ANNUAL' ? (
       <p className="text-[11px] text-slate-400 leading-relaxed text-center pt-4 border-t border-white/10 mt-4">
-        Acesso liberado por 1 ano. Cobrança de {installments}x de R$ {(finalPrice / installments).toFixed(2).replace('.', ',')} no cartão.<br/>
-        <span className="opacity-50">Valor total (compromete limite): R$ {finalPrice.toFixed(2).replace('.', ',')}</span>
+        Acesso liberado por 1 ano. Cobrança de {installments}x de R$ {(finalPrice / installments).toFixed(2).replace('.', ',')} no cartão.
       </p>
     ) : (
       <p className="text-[11px] text-slate-400 leading-relaxed text-center pt-4 border-t border-white/10 mt-4">
