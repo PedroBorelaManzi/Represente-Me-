@@ -89,7 +89,7 @@ export default function OrderBump() {
 
   // Checkout states
   const [showCheckout, setShowCheckout] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<'Mensal' | 'Anual'>('Mensal');
+  const billingCycle = (localStorage.getItem('rm_billing_cycle') || 'Mensal') as 'Mensal' | 'Anual';
   const [cardHolder, setCardHolder] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
@@ -422,27 +422,6 @@ export default function OrderBump() {
 
                 {/* Billing Cycle Selection */}
                 <div className="space-y-3">
-                  <label className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-emerald-500 animate-pulse" /> Selecione o ciclo do seu plano atual:
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['Mensal', 'Anual'] as const).map((cycle) => (
-                      <button
-                        key={cycle}
-                        type="button"
-                        onClick={() => setBillingCycle(cycle)}
-                        className={cn(
-                          "py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95",
-                          billingCycle === cycle
-                            ? "bg-slate-900 border-slate-900 text-white dark:bg-zinc-100 dark:border-zinc-100 dark:text-zinc-900"
-                            : "bg-slate-50 border-slate-100 text-slate-500 dark:bg-zinc-800/40 dark:border-zinc-700/50 dark:text-zinc-400"
-                        )}
-                      >
-                        {cycle}
-                      </button>
-                    ))}
-                  </div>
-                  
                   {/* Dynamic Expiration Wording */}
                   <div className="p-4 bg-amber-500/10 dark:bg-amber-500/5 border-2 border-amber-500/30 dark:border-amber-500/20 rounded-2xl space-y-2 shadow-lg shadow-amber-500/5 ring-1 ring-amber-500/10">
                     <p className="text-[10px] text-amber-700 dark:text-amber-400 font-black uppercase tracking-tight">
