@@ -461,10 +461,15 @@ export default function Checkout() {
 
                 <div className="pt-2">
                   <p className="text-slate-400 text-sm mb-1">Acesso Premium {selectedPlan.name}</p>
-                  {paymentMethod === 'CREDIT_CARD' ? (
+                  {paymentMethod === 'CREDIT_CARD' && billingCycle === 'ANNUAL' ? (
                     <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-medium text-slate-400">12x</span>
+                      <span className="text-2xl font-medium text-slate-400">{installments}x</span>
                       <span className="text-5xl font-extrabold tracking-tighter text-white">R$ {(finalPrice / installments).toFixed(2).replace('.', ',')}</span>
+                      <span className="text-lg text-slate-400">/mês</span>
+                    </div>
+                  ) : paymentMethod === 'CREDIT_CARD' && billingCycle === 'MONTHLY' ? (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-extrabold tracking-tighter text-white">R$ {finalPrice.toFixed(2).replace('.', ',')}</span>
                       <span className="text-lg text-slate-400">/mês</span>
                     </div>
                   ) : (
@@ -493,8 +498,8 @@ export default function Checkout() {
 
                 <div className="space-y-3 pt-6 border-t border-white/10 text-sm font-medium text-slate-300">
                   <div className="flex justify-between items-center text-lg text-white font-bold">
-                    <span>Acesso Anual (12 meses)</span>
-                    <span>{paymentMethod === 'CREDIT_CARD' ? `12x R$ ${(finalPrice / installments).toFixed(2).replace('.', ',')}` : `R$ ${finalPrice.toFixed(2).replace('.', ',')} à vista`}</span>
+                    <span>{billingCycle === 'ANNUAL' ? 'Acesso Anual (12 meses)' : 'Assinatura Mensal'}</span>
+                    <span>{paymentMethod === 'CREDIT_CARD' && billingCycle === 'ANNUAL' ? `${installments}x R$ ${(finalPrice / installments).toFixed(2).replace('.', ',')}` : `R$ ${finalPrice.toFixed(2).replace('.', ',')}${billingCycle === 'MONTHLY' ? '/mês' : ' à vista'}`}</span>
                   </div>
                   {appliedCoupon && (
                     <div className="flex justify-between text-emerald-400">
