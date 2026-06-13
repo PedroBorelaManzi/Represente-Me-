@@ -287,7 +287,7 @@ const Register = () => {
                         <div className="flex items-center gap-2">
                           <span className={cn("text-xs font-bold line-through", plan.featured ? "text-emerald-100/70" : "text-slate-400")}>De R$ {plan.originalPrice}</span>
                           <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase rounded-lg tracking-widest shadow-sm shadow-amber-500/20">
-                            {plan.id === 'exclusivo' ? '25' : plan.id === 'profissional' ? '30' : '35'}% de desconto
+                            {plan.id === 'exclusivo' ? '25' : plan.id === 'profissional' ? '30' : '35'}% DE DESCONTO LANÇAMENTO
                           </span>
                         </div>
                       )}
