@@ -456,7 +456,7 @@ export default function Checkout() {
               <div className="relative z-10 space-y-8">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-bold tracking-tight">Resumo do Pedido</h3>
-                  <span className="px-3 py-1 bg-white/10 text-emerald-400 text-xs font-bold rounded-full border border-white/10">Plano Anual</span>
+                  <span className="px-3 py-1 bg-white/10 text-emerald-400 text-xs font-bold rounded-full border border-white/10">{billingCycle === 'ANNUAL' ? 'Plano Anual' : 'Plano Mensal'}</span>
                 </div>
 
                 <div className="pt-2">
