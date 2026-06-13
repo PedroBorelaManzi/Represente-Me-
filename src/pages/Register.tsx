@@ -34,7 +34,7 @@ const plans = [
     name: 'Exclusivo',
     price: '97',
     annualPrice: '77',
-    originalPrice: '129',
+    originalPrice: '134',
     period: '/mês',
     description: 'Para quem está começando.',
     justification: 'Ideal para validar sua operação com baixo investimento e organização básica.',
@@ -51,8 +51,9 @@ const plans = [
   {
     id: 'profissional',
     name: 'Profissional',
-    price: "147",
-    originalPrice: "210",
+    price: '147',
+    annualPrice: '117',
+    originalPrice: '210',
     period: '/mês',
     description: 'Ideal para equipes em crescimento.',
     justification: 'A automação de busca de CNPJ economiza cerca de 10 horas de trabalho manual por mês.',
@@ -72,8 +73,9 @@ const plans = [
   {
     id: 'master',
     name: 'Master',
-    price: "197",
-    originalPrice: "303",
+    price: '197',
+    annualPrice: '157',
+    originalPrice: '303',
     period: '/mês',
     description: 'Para grandes volumes e IA.',
     justification: 'Potencializado por Inteligência Artificial para processar pedidos e analisar mercado em tempo real.',
@@ -233,12 +235,34 @@ const Register = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              
+                {/* Toggle Mensal/Anual */}
+                <div className="flex justify-center items-center gap-4 mb-8">
+                  <span className={cn("text-sm font-bold transition-colors", billingCycle === 'MONTHLY' ? "text-slate-900 dark:text-white" : "text-slate-400")}>
+                    Mensal
+                  </span>
+                  <button 
+                    onClick={() => setBillingCycle(prev => prev === 'MONTHLY' ? 'ANNUAL' : 'MONTHLY')}
+                    className="relative w-16 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 p-1 cursor-pointer transition-colors"
+                  >
+                    <div className={cn("w-6 h-6 rounded-full bg-emerald-500 shadow-md transition-transform duration-300", billingCycle === 'ANNUAL' ? "translate-x-8" : "translate-x-0")} />
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <span className={cn("text-sm font-bold transition-colors", billingCycle === 'ANNUAL' ? "text-slate-900 dark:text-white" : "text-slate-400")}>
+                      Anual
+                    </span>
+                    <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 text-[9px] font-black uppercase rounded-full tracking-widest animate-pulse">
+                      -20% OFF
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
                 {plans.map((plan) => (
                   <motion.div
                     key={plan.id}
                     whileHover={{ y: -8 }}
-                    onClick={() => navigate(`/checkout?plan=${plan.id}`)}
+                    onClick={() => navigate(`/checkout?plan=${plan.id}&period=${billingCycle}`)}
                     className={cn(
                       "relative flex flex-col p-6 rounded-[40px] border transition-all duration-500 cursor-pointer",
                       plan.featured 
