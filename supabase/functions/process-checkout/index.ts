@@ -14,10 +14,10 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
 const PLAN_PRICES = {
-  'exclusivo': { MONTHLY: 97, SEMIANNUAL: 77, ANNUAL: 67 },
-  'profissional': { MONTHLY: 147, SEMIANNUAL: 117, ANNUAL: 107 },
-  'master': { MONTHLY: 197, SEMIANNUAL: 157, ANNUAL: 137 },
-  'default': { MONTHLY: 147, SEMIANNUAL: 117, ANNUAL: 107 }
+  'exclusivo': { MONTHLY: 97, SEMIANNUAL: 77, ANNUAL: 87 },
+  'profissional': { MONTHLY: 147, SEMIANNUAL: 117, ANNUAL: 132 },
+  'master': { MONTHLY: 197, SEMIANNUAL: 157, ANNUAL: 177 },
+  'default': { MONTHLY: 147, SEMIANNUAL: 117, ANNUAL: 132 }
 };
 
 

@@ -34,7 +34,7 @@ const plans = [
     id: 'exclusivo',
     name: 'Exclusivo',
     price: '97',
-    annualPrice: '77',
+    annualPrice: '87',
     originalPrice: '134',
     period: '/mês',
     description: 'Para quem está começando.',
@@ -53,7 +53,7 @@ const plans = [
     id: 'profissional',
     name: 'Profissional',
     price: '147',
-    annualPrice: '117',
+    annualPrice: '132',
     originalPrice: '210',
     period: '/mês',
     description: 'Ideal para equipes em crescimento.',
@@ -75,7 +75,7 @@ const plans = [
     id: 'master',
     name: 'Master',
     price: '197',
-    annualPrice: '157',
+    annualPrice: '177',
     originalPrice: '303',
     period: '/mês',
     description: 'Para grandes volumes e IA.',
@@ -205,7 +205,7 @@ export default function Planos() {
                 Anual
               </span>
               <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 text-[9px] font-black uppercase rounded-full tracking-widest animate-pulse">
-                -20% OFF
+                -10% OFF
               </span>
             </div>
           </div>

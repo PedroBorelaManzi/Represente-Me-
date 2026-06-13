@@ -17,21 +17,21 @@ const plans = {
     name: 'Exclusivo',
     icon: Trophy,
     color: 'text-slate-400',
-    prices: { MONTHLY: 97, ANNUAL: 924 }
+    prices: { MONTHLY: 97, ANNUAL: 1044 }
   },
   profissional: {
     id: 'profissional',
     name: 'Profissional',
     icon: Gem,
     color: 'text-emerald-500',
-    prices: { MONTHLY: 147, ANNUAL: 1404 }
+    prices: { MONTHLY: 147, ANNUAL: 1584 }
   },
   master: {
     id: 'master',
     name: 'Master',
     icon: Crown,
     color: 'text-amber-500',
-    prices: { MONTHLY: 197, ANNUAL: 1884 }
+    prices: { MONTHLY: 197, ANNUAL: 2124 }
   }
 };
 
