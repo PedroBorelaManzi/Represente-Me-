@@ -26,7 +26,8 @@ const planDetails = {
   exclusivo: {
     name: "Exclusivo",
     price: 97,
-    originalPrice: 129,
+    annualPrice: 87,
+    originalPrice: 134,
     icon: Building2,
     color: "text-slate-500",
     bg: "bg-slate-50 dark:bg-zinc-800/50",
@@ -36,6 +37,7 @@ const planDetails = {
   profissional: {
     name: "Profissional",
     price: 147,
+    annualPrice: 132,
     originalPrice: 210,
     icon: Gem,
     color: "text-emerald-500",
@@ -54,6 +56,7 @@ const planDetails = {
   master: {
     name: "Master",
     price: 197,
+    annualPrice: 177,
     originalPrice: 303,
     icon: Crown,
     color: "text-amber-500",
@@ -86,7 +89,7 @@ export default function OrderBump() {
 
   // Checkout states
   const [showCheckout, setShowCheckout] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<'Mensal' | 'Semestral' | 'Anual'>('Mensal');
+  const [billingCycle, setBillingCycle] = useState<'Mensal' | 'Anual'>('Mensal');
   const [cardHolder, setCardHolder] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
@@ -94,24 +97,20 @@ export default function OrderBump() {
 
   const currentTier = settings.plan_id ? (settings.plan_id === 'premium' ? 'profissional' : settings.plan_id) : 'exclusivo';
 
-  const getExpirationDate = (cycle: 'Mensal' | 'Semestral' | 'Anual') => {
+  const getExpirationDate = (cycle: 'Mensal' | 'Anual') => {
     const date = new Date();
     if (cycle === 'Mensal') {
       date.setDate(date.getDate() + 30);
-    } else if (cycle === 'Semestral') {
-      date.setMonth(date.getMonth() + 6);
     } else if (cycle === 'Anual') {
       date.setFullYear(date.getFullYear() + 1);
     }
     return date.toLocaleDateString('pt-BR');
   };
 
-  const getExpirationMonthName = (cycle: 'Mensal' | 'Semestral' | 'Anual') => {
+  const getExpirationMonthName = (cycle: 'Mensal' | 'Anual') => {
     const date = new Date();
     if (cycle === 'Mensal') {
       date.setDate(date.getDate() + 30);
-    } else if (cycle === 'Semestral') {
-      date.setMonth(date.getMonth() + 6);
     } else if (cycle === 'Anual') {
       date.setFullYear(date.getFullYear() + 1);
     }
@@ -181,7 +180,9 @@ export default function OrderBump() {
   const currentPlan = planDetails[currentTier as keyof typeof planDetails];
   const nextPlan = planDetails[nextTier as keyof typeof planDetails];
   
-  const standardDiff = nextPlan.price - currentPlan.price; // R$ 50
+  const currentPrice = billingCycle === 'Anual' ? currentPlan.annualPrice : currentPlan.price;
+    const nextPrice = billingCycle === 'Anual' ? nextPlan.annualPrice : nextPlan.price;
+    const standardDiff = nextPrice - currentPrice; // R$ 50
   
   // Calculate discount
   let discountAmount = 0;
@@ -286,7 +287,7 @@ export default function OrderBump() {
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">R$ {nextPlan.price}/mês</p>
+              <p className="text-xs font-black text-emerald-600 dark:text-emerald-400">R$ {billingCycle === 'Anual' ? nextPlan.annualPrice : nextPlan.price}/mês</p>
               <p className="text-[8px] font-bold text-slate-400 uppercase">Faturamento {localStorage.getItem('rm_billing_cycle') || 'Mensal'}</p>
             </div>
           </div>
@@ -347,7 +348,7 @@ export default function OrderBump() {
                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider border border-slate-100 dark:border-zinc-800 px-2 py-0.5 rounded-full">Plano Atual</span>
                 </div>
                 <h3 className="text-sm font-black text-slate-400 uppercase tracking-tight leading-none mb-1">{currentPlan.name}</h3>
-                <p className="text-lg font-black text-slate-500">R$ {currentPlan.price}<span className="text-[9px] font-bold">/mês</span></p>
+                <p className="text-lg font-black text-slate-500">R$ {billingCycle === 'Anual' ? currentPlan.annualPrice : currentPlan.price}<span className="text-[9px] font-bold">/mês</span></p>
               </div>
 
               {/* Next Plan Upsell Mini Box */}
@@ -364,7 +365,7 @@ export default function OrderBump() {
                   <span>R$ {nextPlan.price}<span className="text-[9px] font-bold">/m�s</span></span>
                   {nextPlan.originalPrice && (
                     <span className="px-3 py-1 bg-amber-500 text-white text-[10px] font-black uppercase rounded-lg tracking-widest shadow-sm shadow-amber-500/20">
-                      {Math.round(((nextPlan.originalPrice - nextPlan.price) / nextPlan.originalPrice) * 100)}% de desconto
+                      {nextTier === 'profissional' ? '30' : '35'}% DE DESCONTO LANÇAMENTO
                     </span>
                   )}
                 </p>
@@ -424,8 +425,8 @@ export default function OrderBump() {
                   <label className="text-[9px] font-black text-slate-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-emerald-500 animate-pulse" /> Selecione o ciclo do seu plano atual:
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(['Mensal', 'Semestral', 'Anual'] as const).map((cycle) => (
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['Mensal', 'Anual'] as const).map((cycle) => (
                       <button
                         key={cycle}
                         type="button"
@@ -548,11 +549,11 @@ export default function OrderBump() {
                 <div className="space-y-4">
                   <div className="flex justify-between text-xs font-bold text-slate-500">
                     <span>Novo Plano ({nextPlan.name})</span>
-                    <span>R$ {nextPlan.price}/mês</span>
+                    <span>R$ {billingCycle === 'Anual' ? nextPlan.annualPrice : nextPlan.price}/mês</span>
                   </div>
                   <div className="flex justify-between text-xs font-bold text-slate-400">
                     <span>Crédito do Plano Atual ({currentPlan.name})</span>
-                    <span>-R$ {currentPlan.price}/mês</span>
+                    <span>-R$ {billingCycle === 'Anual' ? currentPlan.annualPrice : currentPlan.price}/mês</span>
                   </div>
                   
                   {activeCoupon && (
