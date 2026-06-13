@@ -34,6 +34,7 @@ const plans = [
     id: 'exclusivo',
     name: 'Exclusivo',
     price: '97',
+    annualPrice: '77',
     originalPrice: '129',
     period: '/mês',
     description: 'Para quem está começando.',
@@ -52,6 +53,7 @@ const plans = [
     id: 'profissional',
     name: 'Profissional',
     price: '147',
+    annualPrice: '117',
     originalPrice: '210',
     period: '/mês',
     description: 'Ideal para equipes em crescimento.',
@@ -73,6 +75,7 @@ const plans = [
     id: 'master',
     name: 'Master',
     price: '197',
+    annualPrice: '157',
     originalPrice: '303',
     period: '/mês',
     description: 'Para grandes volumes e IA.',
@@ -96,6 +99,7 @@ const plans = [
 ];
 
 export default function Planos() {
+  const [billingCycle, setBillingCycle] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -131,7 +135,7 @@ export default function Planos() {
     }
     setLoading(true);
     // Navigate to public checkout with query params
-    navigate(`/checkout?plan=${plan.id}&period=ANNUAL`);
+    navigate(`/checkout?plan=${plan.id}&period=${billingCycle}`);
   };
 
   return (
@@ -183,6 +187,28 @@ export default function Planos() {
             Invista na tecnologia que organiza sua rotina e potencializa suas vendas. 
             Mude de plano quando quiser.
           </p>
+
+          
+          {/* Toggle Mensal/Anual */}
+          <div className="flex justify-center items-center gap-4 mb-8">
+            <span className={cn("text-sm font-bold transition-colors", billingCycle === 'MONTHLY' ? "text-slate-900 dark:text-white" : "text-slate-400")}>
+              Mensal
+            </span>
+            <button 
+              onClick={() => setBillingCycle(prev => prev === 'MONTHLY' ? 'ANNUAL' : 'MONTHLY')}
+              className="relative w-16 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/40 p-1 cursor-pointer transition-colors"
+            >
+              <div className={cn("w-6 h-6 rounded-full bg-emerald-500 shadow-md transition-transform duration-300", billingCycle === 'ANNUAL' ? "translate-x-8" : "translate-x-0")} />
+            </button>
+            <div className="flex items-center gap-2">
+              <span className={cn("text-sm font-bold transition-colors", billingCycle === 'ANNUAL' ? "text-slate-900 dark:text-white" : "text-slate-400")}>
+                Anual
+              </span>
+              <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 text-[9px] font-black uppercase rounded-full tracking-widest animate-pulse">
+                -20% OFF
+              </span>
+            </div>
+          </div>
 
           {/* 7-Day Guarantee Banner Prominently at the Top */}
           <div className="max-w-2xl mx-auto mb-10 relative">
@@ -249,7 +275,7 @@ export default function Planos() {
                   )}
                   <div className="flex items-baseline gap-1 mt-1">
                     <span className="text-sm font-black text-slate-400">R$</span>
-                    <span className="text-5xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter">{plan.price}</span>
+                    <span className="text-5xl md:text-6xl font-black text-slate-900 dark:text-zinc-100 tracking-tighter">{billingCycle === 'ANNUAL' ? plan.annualPrice : plan.price}</span>
                     <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">/mês</span>
                   </div>
                 </div>

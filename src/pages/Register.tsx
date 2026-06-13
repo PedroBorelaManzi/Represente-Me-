@@ -33,6 +33,7 @@ const plans = [
     id: 'exclusivo',
     name: 'Exclusivo',
     price: '97',
+    annualPrice: '77',
     originalPrice: '129',
     period: '/mês',
     description: 'Para quem está começando.',
@@ -124,6 +125,7 @@ const PasswordRequirementsDisplay = ({ requirements }: { requirements: any }) =>
 };
 
 const Register = () => {
+  const [billingCycle, setBillingCycle] = useState<'MONTHLY' | 'ANNUAL'>('MONTHLY');
   const [step, setStep] = useState(1);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [email, setEmail] = useState("");

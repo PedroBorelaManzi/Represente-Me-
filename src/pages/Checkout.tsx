@@ -17,21 +17,21 @@ const plans = {
     name: 'Exclusivo',
     icon: Trophy,
     color: 'text-slate-400',
-    prices: { ANNUAL: 97 }
+    prices: { MONTHLY: 97, ANNUAL: 924 }
   },
   profissional: {
     id: 'profissional',
     name: 'Profissional',
     icon: Gem,
     color: 'text-emerald-500',
-    prices: { ANNUAL: 147 }
+    prices: { MONTHLY: 147, ANNUAL: 1404 }
   },
   master: {
     id: 'master',
     name: 'Master',
     icon: Crown,
     color: 'text-amber-500',
-    prices: { ANNUAL: 197 }
+    prices: { MONTHLY: 197, ANNUAL: 1884 }
   }
 };
 
@@ -127,7 +127,8 @@ export default function Checkout() {
   let planId = rawPlanId === 'premium' ? 'profissional' : rawPlanId;
   const [selectedPlan] = useState<any>(plans[planId as keyof typeof plans] || plans.profissional);
   
-  const billingCycle = 'ANNUAL';
+  const urlParams = new URLSearchParams(window.location.search);
+  const billingCycle = urlParams.get('period')?.toUpperCase() === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY';
   const [paymentMethod, setPaymentMethod] = useState<'CREDIT_CARD' | 'PIX' | 'BOLETO'>('CREDIT_CARD');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
@@ -172,7 +173,7 @@ export default function Checkout() {
   
   const isStep1Valid = formData.name && formData.email && formData.cpfCnpj && docValid && docNameMatch && formData.phone && phoneValid && isPasswordValid;
 
-  const baseValue = selectedPlan.prices.ANNUAL * 12;
+  const baseValue = selectedPlan.prices[billingCycle];
   const couponDiscount = appliedCoupon ? (baseValue * appliedCoupon.discount) / 100 : 0;
   const priceAfterCoupon = baseValue - couponDiscount;
   const pixDiscount = paymentMethod === 'PIX' ? (priceAfterCoupon * 5) / 100 : 0;
@@ -401,14 +402,16 @@ export default function Checkout() {
                           <label className="text-sm font-semibold text-slate-700">Nome do Titular</label>
                           <input type="text" value={formData.holderName} onChange={(e) => setFormData({...formData, holderName: e.target.value})} placeholder="Como no cartão" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 uppercase" />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-semibold text-slate-700">Parcelamento</label>
-                          <select value={installments} onChange={(e) => setInstallments(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base font-medium outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 appearance-none cursor-pointer">
-                            {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
-                              <option key={num} value={num}>{num}x de R$ {(finalPrice / num).toFixed(2).replace('.', ',')} Sem Juros</option>
-                            ))}
-                          </select>
-                        </div>
+                        {billingCycle === 'ANNUAL' && (
+      <div className="space-y-2">
+        <label className="text-sm font-semibold text-slate-700">Parcelamento</label>
+        <select value={installments} onChange={(e) => setInstallments(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base font-medium outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 appearance-none cursor-pointer">
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((num) => (
+            <option key={num} value={num}>{num}x de R$ {(finalPrice / num).toFixed(2).replace('.', ',')} Sem Juros</option>
+          ))}
+        </select>
+      </div>
+    )}
                       </div>
                     )}
 
@@ -506,7 +509,17 @@ export default function Checkout() {
                     </div>
                   )}
                   {paymentMethod === 'CREDIT_CARD' && (
-                    <p className="text-[11px] text-slate-400 leading-relaxed text-center pt-4 border-t border-white/10 mt-4">Acesso liberado por 1 ano. Cobrança de {installments}x de R$ {(finalPrice / installments).toFixed(2).replace('.', ',')} no cartão.<br/><span className="opacity-50">Valor total (compromete limite): R$ {finalPrice.toFixed(2).replace('.', ',')}</span></p>
+                    billingCycle === 'ANNUAL' ? (
+      <p className="text-[11px] text-slate-400 leading-relaxed text-center pt-4 border-t border-white/10 mt-4">
+        Acesso liberado por 1 ano. Cobrança de {installments}x de R$ {(finalPrice / installments).toFixed(2).replace('.', ',')} no cartão.<br/>
+        <span className="opacity-50">Valor total (compromete limite): R$ {finalPrice.toFixed(2).replace('.', ',')}</span>
+      </p>
+    ) : (
+      <p className="text-[11px] text-slate-400 leading-relaxed text-center pt-4 border-t border-white/10 mt-4">
+        Renovação automática todo mês. Cancele quando quiser.<br/>
+        <span className="opacity-50 text-emerald-400">Não compromete o limite total do seu cartão.</span>
+      </p>
+    )
                   )}
                 </div>
 
